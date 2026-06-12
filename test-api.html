@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>ShopHub API Test</h1>
+    <button onclick="testAPI()">Test Products API</button>
+    <div id="results"></div>
+
+    <script>
+        async function testAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing API...</p>';
+
+            try {
+                const apiUrl = 'http://localhost:5000/api/products';
+                console.log('Fetching from:', apiUrl);
+
+                const response = await fetch(apiUrl);
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Data received:', data);
+
+                resultsDiv.innerHTML = `
+                    <h2 class="success">✅ API Test Successful!</h2>
+                    <p><strong>Products found:</strong> ${data.total}</p>
+                    <p><strong>Products in response:</strong> ${data.count}</p>
+                    <h3>First 3 Products:</h3>
+                    <pre>${JSON.stringify(data.products.slice(0, 3), null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('API test failed:', error);
+                resultsDiv.innerHTML = `
+                    <h2 class="error">❌ API Test Failed</h2>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p><strong>Make sure:</strong></p>
+                    <ul>
+                        <li>Backend server is running on http://localhost:5000</li>
+                        <li>MongoDB is running</li>
+                        <li>Database has been seeded (npm run seed)</li>
+                    </ul>
+                    <p><strong>Full error:</strong></p>
+                    <pre>${error.stack || error}</pre>
+                `;
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = testAPI;
+    </script>
+</body>
+</html>

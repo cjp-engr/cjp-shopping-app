@@ -1,74 +1,129 @@
 import type { Product, ProductFilters, SortOption } from '../types/product';
-import { mockProducts } from '../data/mockProducts';
-import { filterProducts, sortProducts } from '../utils/helpers';
+import { API_ENDPOINTS, getHeaders } from '../config/api';
 
 class ProductService {
-  private products: Product[] = mockProducts;
-
   async getProducts(filters?: ProductFilters, sortBy?: SortOption): Promise<Product[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300));
+    const params = new URLSearchParams();
 
-    let result = [...this.products];
-
-    // Apply filters if provided
-    if (filters) {
-      result = filterProducts(result, filters);
+    if (filters?.category && filters.category !== 'All') {
+      params.append('category', filters.category);
     }
 
-    // Apply sorting if provided
+    if (filters?.priceRange) {
+      params.append('minPrice', filters.priceRange.min.toString());
+      params.append('maxPrice', filters.priceRange.max.toString());
+    }
+
+    if (filters?.rating) {
+      params.append('rating', filters.rating.toString());
+    }
+
+    if (filters?.searchQuery) {
+      params.append('search', filters.searchQuery);
+    }
+
     if (sortBy) {
-      result = sortProducts(result, sortBy);
+      params.append('sort', sortBy);
     }
 
-    return result;
+    const url = `${API_ENDPOINTS.PRODUCTS}${params.toString() ? `?${params}` : ''}`;
+    const response = await fetch(url, {
+      headers: getHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch products');
+    }
+
+    const data = await response.json();
+
+    // Adapt backend response to frontend format
+    return data.products.map((p: any) => ({
+      id: p._id,
+      name: p.name,
+      description: p.description,
+      price: p.price,
+      category: p.category,
+      image: p.image,
+      images: p.images,
+      stock: p.stock,
+      rating: p.rating,
+      reviews: p.reviews,
+      tags: p.tags,
+      specifications: p.specifications,
+      createdAt: p.createdAt
+    }));
   }
 
   async getProductById(id: string): Promise<Product | null> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 200));
+    try {
+      const response = await fetch(API_ENDPOINTS.PRODUCT(id), {
+        headers: getHeaders()
+      });
 
-    const product = this.products.find(p => p.id === id);
-    return product || null;
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      const p = data.product;
+
+      return {
+        id: p._id,
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        category: p.category,
+        image: p.image,
+        images: p.images,
+        stock: p.stock,
+        rating: p.rating,
+        reviews: p.reviews,
+        tags: p.tags,
+        specifications: p.specifications,
+        createdAt: p.createdAt
+      };
+    } catch (error) {
+      return null;
+    }
   }
 
   async searchProducts(query: string): Promise<Product[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 250));
-
-    const lowercaseQuery = query.toLowerCase();
-    return this.products.filter(p =>
-      p.name.toLowerCase().includes(lowercaseQuery) ||
-      p.description.toLowerCase().includes(lowercaseQuery) ||
-      p.category.toLowerCase().includes(lowercaseQuery) ||
-      p.tags?.some(tag => tag.toLowerCase().includes(lowercaseQuery))
-    );
+    return this.getProducts({ searchQuery: query });
   }
 
   getCategories(): string[] {
-    const categories = new Set(this.products.map(p => p.category));
-    return ['All', ...Array.from(categories).sort()];
+    // Return static categories for now
+    return ['All', 'Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports & Outdoors'];
   }
 
-  getFeaturedProducts(count: number = 8): Product[] {
-    // Return top-rated products
-    return [...this.products]
-      .sort((a, b) => b.rating - a.rating)
-      .slice(0, count);
+  getFeaturedProducts(_count: number = 8): Product[] {
+    // This is synchronous, so we'll need to fetch products first
+    // For now, return empty array - components should use async version
+    return [];
   }
 
-  getRelatedProducts(productId: string, count: number = 4): Product[] {
-    const product = this.products.find(p => p.id === productId);
+  async getFeaturedProductsAsync(count: number = 8): Promise<Product[]> {
+    const products = await this.getProducts(undefined, 'rating');
+    return products.slice(0, count);
+  }
+
+  getRelatedProducts(_productId: string, _count: number = 4): Product[] {
+    // This is synchronous, so we'll need to fetch products first
+    // For now, return empty array - components should use async version
+    return [];
+  }
+
+  async getRelatedProductsAsync(productId: string, count: number = 4): Promise<Product[]> {
+    const product = await this.getProductById(productId);
     if (!product) return [];
 
-    // Return products from the same category, excluding the current product
-    return this.products
-      .filter(p => p.category === product.category && p.id !== productId)
-      .slice(0, count);
+    const products = await this.getProducts({ category: product.category });
+    return products.filter(p => p.id !== productId).slice(0, count);
   }
 
-  checkStock(productId: string, quantity: number): boolean {
-    const product = this.products.find(p => p.id === productId);
+  async checkStock(productId: string, quantity: number): Promise<boolean> {
+    const product = await this.getProductById(productId);
     if (!product) return false;
     return product.stock >= quantity;
   }

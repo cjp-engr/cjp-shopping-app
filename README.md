@@ -1,6 +1,6 @@
-# ShopHub - React Shopping App
+# ShopHub - Full-Stack E-Commerce Application
 
-A full-featured e-commerce shopping application built with React, TypeScript, and Tailwind CSS.
+A full-featured e-commerce shopping application with React frontend and Node.js backend, built with TypeScript, Tailwind CSS, Express, and MongoDB.
 
 ## Features
 
@@ -24,19 +24,28 @@ A full-featured e-commerce shopping application built with React, TypeScript, an
 
 ## Tech Stack
 
-- **Frontend**: React 18+ with TypeScript
+### Frontend
+- **Framework**: React 18+ with TypeScript
 - **Build Tool**: Vite
 - **Styling**: Tailwind CSS
 - **Routing**: React Router v6
 - **Icons**: Lucide React
 - **State Management**: React Context API
-- **Data Storage**: Browser LocalStorage
+- **Data Storage**: Browser LocalStorage (can be connected to backend API)
+
+### Backend
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Language**: TypeScript
+- **Database**: MongoDB with Mongoose ODM
+- **Authentication**: JWT (JSON Web Tokens)
+- **Security**: bcryptjs, Helmet, CORS
 
 ## Project Structure
 
 ```
 shopping-app-automation/
-├── src/
+├── src/                     # Frontend source code
 │   ├── components/
 │   │   ├── common/          # Reusable UI components
 │   │   ├── layout/          # Layout components (Navbar, Layout)
@@ -51,7 +60,19 @@ shopping-app-automation/
 │   ├── App.tsx             # Main app component
 │   ├── main.tsx            # App entry point
 │   └── index.css           # Global styles
+├── backend/                 # Backend API
+│   ├── src/
+│   │   ├── config/          # Configuration files
+│   │   ├── controllers/     # Route controllers
+│   │   ├── middleware/      # Express middleware
+│   │   ├── models/          # Mongoose models
+│   │   ├── routes/          # API routes
+│   │   ├── utils/           # Utility functions
+│   │   └── server.ts        # Express app setup
+│   ├── .env                 # Environment variables
+│   └── package.json
 ├── public/                  # Static assets
+├── BACKEND_INTEGRATION.md   # Backend integration guide
 ├── package.json
 ├── tsconfig.json
 ├── tailwind.config.js
@@ -64,8 +85,9 @@ shopping-app-automation/
 
 - Node.js (v16 or higher)
 - npm or yarn
+- MongoDB (local installation or MongoDB Atlas account)
 
-### Installation
+### Frontend-Only Setup (Mock Data)
 
 1. Navigate to the project directory:
 ```bash
@@ -87,12 +109,72 @@ npm run dev
 http://localhost:5173
 ```
 
+### Full-Stack Setup (with Backend API)
+
+1. **Install Frontend Dependencies**:
+```bash
+npm install
+```
+
+2. **Install Backend Dependencies**:
+```bash
+cd backend
+npm install
+```
+
+3. **Start MongoDB**:
+```bash
+# On macOS (with Homebrew)
+brew services start mongodb-community
+
+# On Windows (if installed as a service)
+net start MongoDB
+
+# On Linux
+sudo systemctl start mongod
+
+# Or use Docker
+docker run -d -p 27017:27017 --name mongodb mongo:latest
+```
+
+4. **Seed the Database**:
+```bash
+cd backend
+npm run seed
+```
+
+This creates 40 products and a test user (test@example.com / password123)
+
+5. **Start the Backend Server**:
+```bash
+cd backend
+npm run dev
+```
+
+Backend runs at `http://localhost:5000`
+
+6. **Start the Frontend** (in a new terminal):
+```bash
+npm run dev
+```
+
+Frontend runs at `http://localhost:5173`
+
+For detailed backend integration instructions, see [BACKEND_INTEGRATION.md](./BACKEND_INTEGRATION.md)
+
 ### Available Scripts
 
+#### Frontend
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+
+#### Backend
+- `cd backend && npm run dev` - Start backend in development mode
+- `cd backend && npm run build` - Build backend for production
+- `cd backend && npm start` - Start backend in production mode
+- `cd backend && npm run seed` - Seed database with initial data
 
 ## Usage
 
@@ -212,11 +294,47 @@ Every component, service, and utility function is fully typed with TypeScript in
 
 ## Security Notes
 
+### Frontend-Only Mode (Mock Data)
 This is a **demo application** with mock authentication:
 - Passwords are not actually encrypted
 - JWT tokens are base64-encoded (not secure)
 - All data is stored client-side
 - **Do not use in production without proper backend**
+
+### Full-Stack Mode (with Backend)
+The backend includes proper security measures:
+- Passwords are hashed with bcryptjs
+- JWT tokens are properly signed and verified
+- CORS protection
+- Helmet security headers
+- Input validation with Mongoose schemas
+- Protected routes requiring authentication
+
+## Backend API Documentation
+
+The backend API provides the following endpoints:
+
+### Authentication Endpoints
+- `POST /api/auth/signup` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/me` - Get current user (protected)
+- `PUT /api/auth/profile` - Update user profile (protected)
+
+### Product Endpoints
+- `GET /api/products` - Get all products with filters
+- `GET /api/products/:id` - Get single product
+- `POST /api/products` - Create product
+- `PUT /api/products/:id` - Update product
+- `DELETE /api/products/:id` - Delete product
+- `GET /api/products/categories/all` - Get all categories
+
+### Order Endpoints (Protected)
+- `POST /api/orders` - Create new order
+- `GET /api/orders` - Get user orders
+- `GET /api/orders/:id` - Get single order
+- `PUT /api/orders/:id/status` - Update order status
+
+For detailed API documentation, see [backend/README.md](./backend/README.md)
 
 ## Future Enhancements
 

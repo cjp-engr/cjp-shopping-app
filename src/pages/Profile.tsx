@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/common/Card';
@@ -27,6 +27,7 @@ export const Profile: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orderSummary, setOrderSummary] = useState<{ totalOrders: number; totalSpent: number } | null>(null);
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -40,7 +41,20 @@ export const Profile: React.FC = () => {
     country: user?.address?.country || '',
   });
 
-  const orderSummary = user ? orderService.getOrderSummary(user.id) : null;
+  useEffect(() => {
+    const loadOrderSummary = async () => {
+      if (user) {
+        try {
+          const summary = await orderService.getOrderSummaryAsync(user.id);
+          setOrderSummary(summary);
+        } catch (error) {
+          console.error('Failed to load order summary:', error);
+        }
+      }
+    };
+
+    loadOrderSummary();
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

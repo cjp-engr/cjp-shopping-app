@@ -1,8 +1,5 @@
 import type { User, LoginCredentials, SignupData } from '../types/user';
-import { mockUsers, findUserByEmail, MOCK_PASSWORD } from '../data/mockUsers';
-import { STORAGE_KEYS, TOKEN_EXPIRY_HOURS } from '../utils/constants';
-import storageService from './storageService';
-import { generateId } from '../utils/helpers';
+import { API_ENDPOINTS, getAuthHeaders, getHeaders } from '../config/api';
 
 interface AuthResponse {
   user: User;
@@ -10,118 +7,104 @@ interface AuthResponse {
 }
 
 class AuthService {
-  private users: User[] = [...mockUsers];
-
-  // Generate mock JWT token (base64 encoded)
-  private generateToken(user: User): string {
-    const tokenData = {
-      userId: user.id,
-      email: user.email,
-      exp: Date.now() + TOKEN_EXPIRY_HOURS * 60 * 60 * 1000
-    };
-    return btoa(JSON.stringify(tokenData));
-  }
-
-  // Decode and validate token
-  validateToken(token: string): boolean {
-    try {
-      const decoded = JSON.parse(atob(token));
-      return decoded.exp > Date.now();
-    } catch {
-      return false;
-    }
-  }
-
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const response = await fetch(API_ENDPOINTS.LOGIN, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(credentials)
+    });
 
-    const user = findUserByEmail(credentials.email);
-
-    if (!user || credentials.password !== MOCK_PASSWORD) {
-      throw new Error('Invalid email or password');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
     }
 
-    const token = this.generateToken(user);
+    const data = await response.json();
 
-    // Store auth data
-    storageService.set(STORAGE_KEYS.AUTH_TOKEN, token);
-    storageService.set(STORAGE_KEYS.USER_DATA, user);
+    // Store token and user data
+    localStorage.setItem('shopping_app_auth_token', data.token);
+    localStorage.setItem('shopping_app_user_data', JSON.stringify(data.user));
 
-    return { user, token };
-  }
-
-  async signup(data: SignupData): Promise<AuthResponse> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    // Check if user already exists
-    const existingUser = findUserByEmail(data.email);
-    if (existingUser) {
-      throw new Error('User with this email already exists');
-    }
-
-    // Validate password match
-    if (data.password !== data.confirmPassword) {
-      throw new Error('Passwords do not match');
-    }
-
-    // Create new user
-    const newUser: User = {
-      id: generateId('user'),
-      email: data.email,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      createdAt: new Date().toISOString().split('T')[0]
+    return {
+      user: data.user,
+      token: data.token
     };
-
-    // Add to mock database
-    this.users.push(newUser);
-
-    const token = this.generateToken(newUser);
-
-    // Store auth data
-    storageService.set(STORAGE_KEYS.AUTH_TOKEN, token);
-    storageService.set(STORAGE_KEYS.USER_DATA, newUser);
-
-    return { user: newUser, token };
   }
 
-  logout(): void {
-    storageService.remove(STORAGE_KEYS.AUTH_TOKEN);
-    storageService.remove(STORAGE_KEYS.USER_DATA);
+  async signup(signupData: SignupData): Promise<AuthResponse> {
+    const response = await fetch(API_ENDPOINTS.SIGNUP, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(signupData)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Signup failed');
+    }
+
+    const data = await response.json();
+
+    localStorage.setItem('shopping_app_auth_token', data.token);
+    localStorage.setItem('shopping_app_user_data', JSON.stringify(data.user));
+
+    return {
+      user: data.user,
+      token: data.token
+    };
   }
 
   async getCurrentUser(): Promise<User | null> {
-    const token = storageService.get<string>(STORAGE_KEYS.AUTH_TOKEN);
+    const token = localStorage.getItem('shopping_app_auth_token');
 
-    if (!token || !this.validateToken(token)) {
-      this.logout();
+    if (!token) {
       return null;
     }
 
-    const user = storageService.get<User>(STORAGE_KEYS.USER_DATA);
-    return user;
+    try {
+      const response = await fetch(API_ENDPOINTS.GET_ME, {
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        this.logout();
+        return null;
+      }
+
+      const data = await response.json();
+      localStorage.setItem('shopping_app_user_data', JSON.stringify(data.user));
+      return data.user;
+    } catch (error) {
+      this.logout();
+      return null;
+    }
   }
 
-  async updateProfile(userId: string, updates: Partial<User>): Promise<User> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 400));
+  async updateProfile(_userId: string, updates: Partial<User>): Promise<User> {
+    const response = await fetch(API_ENDPOINTS.UPDATE_PROFILE, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(updates)
+    });
 
-    const user = storageService.get<User>(STORAGE_KEYS.USER_DATA);
-    if (!user || user.id !== userId) {
-      throw new Error('User not found');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Update failed');
     }
 
-    const updatedUser = { ...user, ...updates };
-    storageService.set(STORAGE_KEYS.USER_DATA, updatedUser);
+    const data = await response.json();
+    localStorage.setItem('shopping_app_user_data', JSON.stringify(data.user));
+    return data.user;
+  }
 
-    return updatedUser;
+  logout(): void {
+    localStorage.removeItem('shopping_app_auth_token');
+    localStorage.removeItem('shopping_app_user_data');
   }
 
   isAuthenticated(): boolean {
-    const token = storageService.get<string>(STORAGE_KEYS.AUTH_TOKEN);
-    return token !== null && this.validateToken(token);
+    const token = localStorage.getItem('shopping_app_auth_token');
+    return token !== null;
   }
 }
 

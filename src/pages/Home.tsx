@@ -20,7 +20,7 @@ export const Home: React.FC = () => {
     const loadFeaturedProducts = async () => {
       try {
         setLoading(true);
-        const products = productService.getFeaturedProducts(8);
+        const products = await productService.getFeaturedProductsAsync(8);
         setFeaturedProducts(products);
       } catch (error) {
         console.error('Failed to load featured products:', error);

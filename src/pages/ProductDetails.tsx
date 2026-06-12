@@ -50,7 +50,7 @@ export const ProductDetails: React.FC = () => {
         setSelectedImage(0);
 
         // Load related products
-        const related = productService.getRelatedProducts(id, 4);
+        const related = await productService.getRelatedProductsAsync(id, 4);
         setRelatedProducts(related);
       } catch (err) {
         setError('Failed to load product details');
