@@ -21,6 +21,17 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 
+type TabKey = 'all' | 'pending' | 'to-ship' | 'to-receive' | 'complete' | 'cancelled';
+
+const TABS: { key: TabKey; label: string; statuses: OrderStatus[] }[] = [
+  { key: 'all',        label: 'All',        statuses: [] },
+  { key: 'pending',    label: 'Pending',    statuses: ['pending'] },
+  { key: 'to-ship',    label: 'To Ship',    statuses: ['processing'] },
+  { key: 'to-receive', label: 'To Receive', statuses: ['shipped'] },
+  { key: 'complete',   label: 'Complete',   statuses: ['delivered'] },
+  { key: 'cancelled',  label: 'Cancelled',  statuses: ['cancelled'] },
+];
+
 export const OrderHistory: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -28,6 +39,7 @@ export const OrderHistory: React.FC = () => {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
 
@@ -82,6 +94,13 @@ export const OrderHistory: React.FC = () => {
       }
     }
   };
+
+  const filteredOrders = activeTab === 'all'
+    ? orders
+    : orders.filter(o => TABS.find(t => t.key === activeTab)!.statuses.includes(o.status));
+
+  const tabCount = (tab: typeof TABS[number]) =>
+    tab.key === 'all' ? orders.length : orders.filter(o => tab.statuses.includes(o.status)).length;
 
   const getStatusConfig = (
     status: OrderStatus
@@ -142,25 +161,61 @@ export const OrderHistory: React.FC = () => {
         </div>
       )}
 
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex gap-1 overflow-x-auto">
+          {TABS.map((tab) => {
+            const count = tabCount(tab);
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  isActive
+                    ? 'border-primary-600 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {tab.label}
+                <span
+                  className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    isActive
+                      ? 'bg-primary-100 text-primary-700'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
       {/* Orders List */}
-      {orders.length === 0 ? (
+      {filteredOrders.length === 0 ? (
         <Card className="text-center py-12">
           <div className="text-gray-400 mb-4">
             <Package className="w-24 h-24 mx-auto" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            No Orders Yet
+            {activeTab === 'all' ? 'No Orders Yet' : `No ${TABS.find(t => t.key === activeTab)!.label} Orders`}
           </h3>
           <p className="text-gray-600 mb-6">
-            You haven't placed any orders yet. Start shopping to see your orders here.
+            {activeTab === 'all'
+              ? "You haven't placed any orders yet. Start shopping to see your orders here."
+              : `You have no ${TABS.find(t => t.key === activeTab)!.label.toLowerCase()} orders.`}
           </p>
-          <Button size="lg" onClick={() => navigate('/products')}>
-            Start Shopping
-          </Button>
+          {activeTab === 'all' && (
+            <Button size="lg" onClick={() => navigate('/products')}>
+              Start Shopping
+            </Button>
+          )}
         </Card>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => {
+          {filteredOrders.map((order) => {
             const statusConfig = getStatusConfig(order.status);
             const isExpanded = expandedOrders.has(order.id);
             const StatusIcon = statusConfig.icon;
@@ -345,7 +400,7 @@ export const OrderHistory: React.FC = () => {
       )}
 
       {/* Empty State for No Orders */}
-      {orders.length > 0 && (
+      {filteredOrders.length > 0 && (
         <Card className="bg-gray-50">
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">

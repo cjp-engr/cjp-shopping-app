@@ -10,6 +10,7 @@ import { errorHandler, notFound } from './middleware/errorHandler.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
+import sellerRoutes from './routes/sellerRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -23,7 +24,9 @@ connectDB();
 // Middleware
 app.use(helmet()); // Security headers
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: process.env.NODE_ENV === 'development'
+    ? /^http:\/\/localhost:\d+$/
+    : process.env.CORS_ORIGIN,
   credentials: true
 }));
 app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined')); // Logging
@@ -43,6 +46,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/seller', sellerRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

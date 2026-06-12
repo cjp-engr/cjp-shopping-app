@@ -115,7 +115,7 @@ class OrderService {
           rating: item.product.rating || 0,
           reviews: item.product.reviews || 0,
           tags: item.product.tags,
-          specifications: item.product.specifications ? Object.fromEntries(item.product.specifications) : undefined,
+          specifications: item.product.specifications ?? undefined,
           createdAt: item.product.createdAt || new Date().toISOString()
         } : {
           id: item.product.toString(),

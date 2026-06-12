@@ -26,7 +26,9 @@ class ProductService {
       params.append('sort', sortBy);
     }
 
-    const url = `${API_ENDPOINTS.PRODUCTS}${params.toString() ? `?${params}` : ''}`;
+    params.append('limit', '100');
+
+    const url = `${API_ENDPOINTS.PRODUCTS}?${params}`;
     const response = await fetch(url, {
       headers: getHeaders()
     });

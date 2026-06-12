@@ -14,6 +14,7 @@ export interface IUser extends Document {
   password: string;
   firstName: string;
   lastName: string;
+  role: 'buyer' | 'seller';
   avatar?: string;
   phone?: string;
   address?: IAddress;
@@ -23,14 +24,19 @@ export interface IUser extends Document {
 }
 
 const AddressSchema = new Schema<IAddress>({
-  street: { type: String, required: true },
-  city: { type: String, required: true },
-  state: { type: String, required: true },
-  zipCode: { type: String, required: true },
-  country: { type: String, required: true, default: 'USA' }
+  street: { type: String, default: '' },
+  city: { type: String, default: '' },
+  state: { type: String, default: '' },
+  zipCode: { type: String, default: '' },
+  country: { type: String, default: '' }
 });
 
 const UserSchema = new Schema<IUser>({
+  role: {
+    type: String,
+    enum: ['buyer', 'seller'],
+    default: 'buyer'
+  },
   email: {
     type: String,
     required: true,

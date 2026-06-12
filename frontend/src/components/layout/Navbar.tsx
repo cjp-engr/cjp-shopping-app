@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Package } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Package, Store } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 
@@ -62,6 +62,15 @@ const Navbar = () => {
                     <Package className="h-4 w-4 mr-2" />
                     Orders
                   </Link>
+                  {user?.role === 'seller' && (
+                    <Link
+                      to="/seller"
+                      className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    >
+                      <Store className="h-4 w-4 mr-2" />
+                      Seller Dashboard
+                    </Link>
+                  )}
                   <button
                     onClick={logout}
                     className="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"

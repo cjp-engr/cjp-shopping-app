@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   AlertCircle,
   CheckCircle,
+  Store,
 } from 'lucide-react';
 import orderService from '../services/orderService';
 
@@ -90,6 +91,7 @@ export const Profile: React.FC = () => {
       await updateProfile({
         firstName: formData.firstName,
         lastName: formData.lastName,
+        email: formData.email,
         phone: formData.phone || undefined,
         address: {
           street: formData.street,
@@ -128,7 +130,7 @@ export const Profile: React.FC = () => {
             Manage your account settings and preferences
           </p>
         </div>
-        <Button variant="outline" onClick={() => navigate('/order-history')}>
+        <Button variant="outline" onClick={() => navigate('/orders')}>
           <ShoppingBag className="w-4 h-4 mr-2" />
           Order History
         </Button>
@@ -195,6 +197,30 @@ export const Profile: React.FC = () => {
                 )}
               </Button>
 
+              {user.role === 'seller' ? (
+                <Button fullWidth variant="outline" onClick={() => navigate('/seller')}>
+                  <Store className="w-4 h-4 mr-2" />
+                  Seller Dashboard
+                </Button>
+              ) : (
+                <Button
+                  fullWidth
+                  variant="outline"
+                  disabled={loading}
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      await updateProfile({ role: 'seller' } as any);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                >
+                  <Store className="w-4 h-4 mr-2" />
+                  Become a Seller
+                </Button>
+              )}
+
               <Button fullWidth variant="outline" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign Out
@@ -224,7 +250,7 @@ export const Profile: React.FC = () => {
                 fullWidth
                 variant="outline"
                 className="mt-4"
-                onClick={() => navigate('/order-history')}
+                onClick={() => navigate('/orders')}
               >
                 View All Orders
               </Button>
@@ -293,8 +319,10 @@ export const Profile: React.FC = () => {
                     type="email"
                     name="email"
                     value={formData.email}
-                    disabled
+                    onChange={handleChange}
+                    disabled={!isEditing}
                     fullWidth
+                    required
                   />
                   <Input
                     label="Phone Number"

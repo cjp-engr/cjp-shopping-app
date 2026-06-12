@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +28,7 @@ export const Checkout: React.FC = () => {
   const [step, setStep] = useState<'shipping' | 'payment' | 'review'>('shipping');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const orderPlaced = useRef(false);
 
   const [shippingData, setShippingData] = useState({
     street: user?.address?.street || '',
@@ -158,8 +159,9 @@ export const Checkout: React.FC = () => {
       };
 
       const order = await orderService.createOrder(checkoutData, cart, user.id);
+      orderPlaced.current = true;
       clearCart();
-      navigate(`/order-history?success=${order.id}`);
+      navigate(`/orders?success=${order.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to place order');
     } finally {
@@ -167,7 +169,7 @@ export const Checkout: React.FC = () => {
     }
   };
 
-  if (cart.items.length === 0) {
+  if (cart.items.length === 0 && !orderPlaced.current) {
     navigate('/cart');
     return null;
   }

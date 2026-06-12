@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IProduct extends Document {
   name: string;
@@ -12,6 +12,7 @@ export interface IProduct extends Document {
   reviews: number;
   tags?: string[];
   specifications?: Map<string, string>;
+  sellerId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -66,6 +67,11 @@ const ProductSchema = new Schema<IProduct>({
   specifications: {
     type: Map,
     of: String
+  },
+  sellerId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
   }
 }, {
   timestamps: true

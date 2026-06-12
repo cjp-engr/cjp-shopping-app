@@ -16,6 +16,12 @@ export const API_ENDPOINTS = {
   ORDERS: `${API_BASE_URL}/orders`,
   ORDER: (id: string) => `${API_BASE_URL}/orders/${id}`,
   ORDER_STATUS: (id: string) => `${API_BASE_URL}/orders/${id}/status`,
+
+  // Seller
+  SELLER_PRODUCTS: `${API_BASE_URL}/seller/products`,
+  SELLER_PRODUCT: (id: string) => `${API_BASE_URL}/seller/products/${id}`,
+  SELLER_ORDERS: `${API_BASE_URL}/seller/orders`,
+  SELLER_ORDER_STATUS: (id: string) => `${API_BASE_URL}/seller/orders/${id}/status`,
 };
 
 export const getAuthHeaders = () => {

@@ -11,6 +11,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  role: 'buyer' | 'seller';
   avatar?: string;
   phone?: string;
   address?: Address;

@@ -162,18 +162,6 @@ export const Login: React.FC = () => {
             </Button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600 mb-3">Demo credentials:</p>
-            <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
-              <p className="font-mono text-gray-700">
-                <strong>Email:</strong> demo@example.com
-              </p>
-              <p className="font-mono text-gray-700">
-                <strong>Password:</strong> password123
-              </p>
-            </div>
-          </div>
         </Card>
 
         {/* Signup Link */}

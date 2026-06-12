@@ -49,6 +49,7 @@ export const signup = async (req: Request, res: Response) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role,
         avatar: user.avatar,
         phone: user.phone,
         address: user.address,
@@ -110,6 +111,7 @@ export const login = async (req: Request, res: Response) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role,
         avatar: user.avatar,
         phone: user.phone,
         address: user.address,
@@ -145,6 +147,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role,
         avatar: user.avatar,
         phone: user.phone,
         address: user.address,
@@ -174,13 +177,29 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     }
 
     // Update fields
-    user.firstName = req.body.firstName || user.firstName;
-    user.lastName = req.body.lastName || user.lastName;
-    user.phone = req.body.phone || user.phone;
-    user.avatar = req.body.avatar || user.avatar;
+    if (req.body.firstName) user.firstName = req.body.firstName;
+    if (req.body.lastName) user.lastName = req.body.lastName;
+    if (req.body.phone !== undefined) user.phone = req.body.phone;
+    if (req.body.avatar) user.avatar = req.body.avatar;
+
+    // Update email with duplicate check
+    if (req.body.email && req.body.email !== user.email) {
+      const emailExists = await User.findOne({ email: req.body.email });
+      if (emailExists) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email already in use by another account'
+        });
+      }
+      user.email = req.body.email.toLowerCase().trim();
+    }
 
     if (req.body.address) {
       user.address = req.body.address;
+    }
+
+    if (req.body.role === 'seller') {
+      user.role = 'seller';
     }
 
     const updatedUser = await user.save();
@@ -192,6 +211,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         email: updatedUser.email,
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName,
+        role: updatedUser.role,
         avatar: updatedUser.avatar,
         phone: updatedUser.phone,
         address: updatedUser.address,
