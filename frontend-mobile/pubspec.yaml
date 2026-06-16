@@ -1,0 +1,42 @@
+name: shophub
+description: ShopHub - Mobile Shopping App
+version: 1.0.0+1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+
+  # Navigation
+  go_router: ^14.2.7
+
+  # Networking
+  dio: ^5.4.3+1
+
+  # Local Storage
+  shared_preferences: ^2.5.5
+
+  # Image picker
+  image_picker: ^1.1.2
+
+  # Utilities
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  bloc_test: ^9.1.7
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
