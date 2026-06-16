@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/common/Card';
@@ -17,6 +17,7 @@ import {
   AlertCircle,
   CheckCircle,
   Store,
+  Camera,
 } from 'lucide-react';
 import orderService from '../services/orderService';
 
@@ -29,6 +30,9 @@ export const Profile: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderSummary, setOrderSummary] = useState<{ totalOrders: number; totalSpent: number } | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
+  const [avatarData, setAvatarData] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -64,6 +68,22 @@ export const Profile: React.FC = () => {
     setSuccess(false);
   };
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image must be under 2 MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUrl = ev.target?.result as string;
+      setAvatarPreview(dataUrl);
+      setAvatarData(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleCancel = () => {
     setFormData({
       firstName: user?.firstName || '',
@@ -76,6 +96,9 @@ export const Profile: React.FC = () => {
       zipCode: user?.address?.zipCode || '',
       country: user?.address?.country || '',
     });
+    setAvatarPreview(user?.avatar || null);
+    setAvatarData(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setIsEditing(false);
     setError(null);
     setSuccess(false);
@@ -93,6 +116,7 @@ export const Profile: React.FC = () => {
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone || undefined,
+        ...(avatarData ? { avatar: avatarData } : {}),
         address: {
           street: formData.street,
           city: formData.city,
@@ -100,9 +124,11 @@ export const Profile: React.FC = () => {
           zipCode: formData.zipCode,
           country: formData.country,
         },
-      });
+      } as any);
       setIsEditing(false);
       setSuccess(true);
+      setAvatarData(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile');
@@ -165,9 +191,39 @@ export const Profile: React.FC = () => {
         <div className="lg:col-span-1 space-y-6">
           <Card padding="lg">
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-primary-100 text-primary-600 mb-4">
-                <User className="w-12 h-12" />
+              {/* Avatar with upload button */}
+              <div className="relative inline-block mb-4">
+                <div className="w-24 h-24 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center ring-4 ring-white shadow-md">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-12 h-12 text-primary-600" />
+                  )}
+                </div>
+                {isEditing && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                      aria-label="Upload profile photo"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute bottom-0 right-0 w-8 h-8 bg-primary-600 hover:bg-primary-700 text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+                      aria-label="Change profile photo"
+                    >
+                      <Camera className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
               </div>
+              {isEditing && (
+                <p className="text-xs text-gray-400 mb-3">Click the camera to upload (max 2 MB)</p>
+              )}
               <h2 className="text-xl font-bold text-gray-900">
                 {user.firstName} {user.lastName}
               </h2>

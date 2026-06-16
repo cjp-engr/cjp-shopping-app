@@ -3,7 +3,7 @@ import clsx from 'clsx';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   hover?: boolean;
-  padding?: 'sm' | 'md' | 'lg';
+  padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -14,6 +14,7 @@ export const Card: React.FC<CardProps> = ({
   ...props
 }) => {
   const paddingStyles = {
+    none: '',
     sm: 'p-3',
     md: 'p-4',
     lg: 'p-6'
@@ -22,9 +23,9 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       className={clsx(
-        'bg-white rounded-lg shadow-md border border-gray-200',
+        'bg-white rounded-xl shadow-sm border border-gray-100',
         paddingStyles[padding],
-        hover && 'transition-transform duration-200 hover:shadow-lg hover:-translate-y-1',
+        hover && 'transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer',
         className
       )}
       {...props}

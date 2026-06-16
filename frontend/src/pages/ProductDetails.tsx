@@ -117,9 +117,9 @@ export const ProductDetails: React.FC = () => {
       {/* Breadcrumb */}
       <button
         onClick={() => navigate('/products')}
-        className="flex items-center text-primary-600 hover:text-primary-700 font-medium"
+        className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
       >
-        <ArrowLeft className="w-4 h-4 mr-2" />
+        <ArrowLeft className="w-4 h-4" />
         Back to Products
       </button>
 
@@ -226,78 +226,59 @@ export const ProductDetails: React.FC = () => {
             </div>
           </div>
 
-          {/* Quantity Selector */}
+          {/* Quantity + Add to Cart */}
           {product.stock > 0 && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Quantity
-                </label>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center border border-gray-300 rounded-lg">
-                    <button
-                      onClick={decrementQuantity}
-                      disabled={quantity <= 1}
-                      className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="px-6 py-2 font-medium">{quantity}</span>
-                    <button
-                      onClick={incrementQuantity}
-                      disabled={quantity >= product.stock}
-                      className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <Button
-                    size="lg"
-                    fullWidth
-                    onClick={handleAddToCart}
-                    className="flex-1"
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">Quantity</label>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
+                  <button
+                    onClick={decrementQuantity}
+                    disabled={quantity <= 1}
+                    className="w-11 h-11 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Decrease quantity"
                   >
-                    <ShoppingCart className="w-5 h-5 mr-2" />
-                    Add to Cart
-                  </Button>
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="px-5 py-2 font-semibold text-base min-w-[3rem] text-center bg-gray-50 select-none">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={incrementQuantity}
+                    disabled={quantity >= product.stock}
+                    className="w-11 h-11 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Increase quantity"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
                 </div>
+                <Button size="lg" fullWidth onClick={handleAddToCart} className="flex-1">
+                  <ShoppingCart className="w-5 h-5 mr-2" />
+                  Add to Cart
+                </Button>
               </div>
             </div>
           )}
 
           {/* Features */}
-          <Card padding="lg" className="bg-gray-50">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3">
-                <Truck className="w-5 h-5 text-primary-600 mt-0.5" />
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { icon: Truck, label: 'Free Shipping', sub: 'On orders over $50' },
+              { icon: RotateCcw, label: 'Easy Returns', sub: '30-day return policy' },
+              { icon: Shield, label: 'Secure Payment', sub: '100% secure checkout' },
+              { icon: Package, label: 'Quality Assured', sub: 'Premium products only' },
+            ].map(({ icon: Icon, label, sub }) => (
+              <div key={label} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-primary-600" />
+                </div>
                 <div>
-                  <h4 className="font-medium text-gray-900">Free Shipping</h4>
-                  <p className="text-sm text-gray-600">On orders over $50</p>
+                  <p className="text-xs font-semibold text-gray-900">{label}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{sub}</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <RotateCcw className="w-5 h-5 text-primary-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Easy Returns</h4>
-                  <p className="text-sm text-gray-600">30-day return policy</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Shield className="w-5 h-5 text-primary-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Secure Payment</h4>
-                  <p className="text-sm text-gray-600">100% secure checkout</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Package className="w-5 h-5 text-primary-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Quality Assured</h4>
-                  <p className="text-sm text-gray-600">Premium products only</p>
-                </div>
-              </div>
-            </div>
-          </Card>
+            ))}
+          </div>
 
           {/* Specifications */}
           {product.specifications && Object.keys(product.specifications).length > 0 && (
@@ -323,37 +304,28 @@ export const ProductDetails: React.FC = () => {
 
       {/* Related Products */}
       {relatedProducts.length > 0 && (
-        <section className="mt-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Related Products
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {relatedProducts.map((relatedProduct) => (
+        <section>
+          <h2 className="text-xl font-bold text-gray-900 mb-5">You Might Also Like</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {relatedProducts.map(rp => (
               <Card
-                key={relatedProduct.id}
+                key={rp.id}
                 hover
-                className="flex flex-col cursor-pointer"
-                onClick={() => navigate(`/products/${relatedProduct.id}`)}
+                padding="none"
+                className="flex flex-col overflow-hidden"
+                onClick={() => navigate(`/products/${rp.id}`)}
               >
-                <div className="aspect-square mb-3 overflow-hidden rounded-lg bg-gray-100">
-                  <img
-                    src={relatedProduct.image}
-                    alt={relatedProduct.name}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="aspect-square overflow-hidden bg-gray-50">
+                  <img src={rp.image} alt={rp.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" loading="lazy" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                  {relatedProduct.name}
-                </h3>
-                <div className="flex items-center gap-1 mb-2">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">
-                    {relatedProduct.rating}
-                  </span>
+                <div className="p-3">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2 leading-snug">{rp.name}</h3>
+                  <div className="flex items-center gap-1 mb-1">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    <span className="text-xs text-gray-600">{rp.rating}</span>
+                  </div>
+                  <p className="text-base font-bold text-primary-600">{formatCurrency(rp.price)}</p>
                 </div>
-                <p className="text-lg font-bold text-primary-600">
-                  {formatCurrency(relatedProduct.price)}
-                </p>
               </Card>
             ))}
           </div>

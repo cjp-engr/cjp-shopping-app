@@ -1,5 +1,5 @@
 import type { Product } from '../types/product';
-import type { Order, OrderStatus } from '../types/order';
+import type { Order } from '../types/order';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 
 export interface ProductFormData {
@@ -117,7 +117,7 @@ class SellerService {
     return data.orders.map(adaptOrder);
   }
 
-  async updateOrderStatus(orderId: string, status: 'processing' | 'shipped' | 'cancelled'): Promise<void> {
+  async updateOrderStatus(orderId: string, status: 'processing' | 'shipped' | 'delivered' | 'cancelled'): Promise<void> {
     const res = await fetch(API_ENDPOINTS.SELLER_ORDER_STATUS(orderId), {
       method: 'PUT',
       headers: getAuthHeaders(),

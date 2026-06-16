@@ -20,6 +20,7 @@ import {
   CreditCard,
   ArrowLeft,
 } from 'lucide-react';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 
 type TabKey = 'all' | 'pending' | 'to-ship' | 'to-receive' | 'complete' | 'cancelled';
 
@@ -42,6 +43,7 @@ export const OrderHistory: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
+  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; orderId: string | null; loading: boolean }>({ open: false, orderId: null, loading: false });
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -81,17 +83,21 @@ export const OrderHistory: React.FC = () => {
     });
   };
 
-  const handleCancelOrder = async (orderId: string) => {
-    if (!user) return;
+  const handleCancelOrder = (orderId: string) => {
+    setCancelDialog({ open: true, orderId, loading: false });
+  };
 
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      try {
-        await orderService.cancelOrder(orderId, user.id);
-        const updatedOrders = await orderService.getOrders(user.id);
-        setOrders(updatedOrders);
-      } catch (error) {
-        console.error('Failed to cancel order:', error);
-      }
+  const confirmCancelOrder = async () => {
+    if (!user || !cancelDialog.orderId) return;
+    setCancelDialog(d => ({ ...d, loading: true }));
+    try {
+      await orderService.cancelOrder(cancelDialog.orderId, user.id);
+      const updatedOrders = await orderService.getOrders(user.id);
+      setOrders(updatedOrders);
+      setCancelDialog({ open: false, orderId: null, loading: false });
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+      setCancelDialog(d => ({ ...d, loading: false }));
     }
   };
 
@@ -134,28 +140,28 @@ export const OrderHistory: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Order History</h1>
-          <p className="text-gray-600 mt-1">
-            View and manage your orders
+          <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {orders.length} {orders.length === 1 ? 'order' : 'orders'} total
           </p>
         </div>
         <button
           onClick={() => navigate('/profile')}
-          className="flex items-center text-primary-600 hover:text-primary-700 font-medium"
+          className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4" />
           Back to Profile
         </button>
       </div>
 
       {/* Success Message */}
       {successOrderId && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
-          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <h3 className="text-sm font-medium text-green-800">Order Placed Successfully!</h3>
-            <p className="text-sm text-green-700 mt-1">
-              Your order has been received and is being processed. Order ID: {successOrderId}
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" aria-hidden />
+          <div>
+            <p className="text-sm font-semibold text-emerald-800">Order Placed Successfully!</p>
+            <p className="text-sm text-emerald-700 mt-0.5">
+              Your order has been received and is being processed.
             </p>
           </div>
         </div>
@@ -163,7 +169,7 @@ export const OrderHistory: React.FC = () => {
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex gap-1 overflow-x-auto">
+        <nav className="-mb-px flex gap-0 overflow-x-auto scrollbar-none">
           {TABS.map((tab) => {
             const count = tabCount(tab);
             const isActive = activeTab === tab.key;
@@ -171,7 +177,7 @@ export const OrderHistory: React.FC = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                   isActive
                     ? 'border-primary-600 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -179,10 +185,8 @@ export const OrderHistory: React.FC = () => {
               >
                 {tab.label}
                 <span
-                  className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    isActive
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'bg-gray-100 text-gray-600'
+                  className={`inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-xs font-bold ${
+                    isActive ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-500'
                   }`}
                 >
                   {count}
@@ -195,20 +199,20 @@ export const OrderHistory: React.FC = () => {
 
       {/* Orders List */}
       {filteredOrders.length === 0 ? (
-        <Card className="text-center py-12">
-          <div className="text-gray-400 mb-4">
-            <Package className="w-24 h-24 mx-auto" />
+        <Card className="text-center py-16">
+          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <Package className="w-8 h-8 text-gray-300" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
             {activeTab === 'all' ? 'No Orders Yet' : `No ${TABS.find(t => t.key === activeTab)!.label} Orders`}
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
             {activeTab === 'all'
               ? "You haven't placed any orders yet. Start shopping to see your orders here."
-              : `You have no ${TABS.find(t => t.key === activeTab)!.label.toLowerCase()} orders.`}
+              : `You have no ${TABS.find(t => t.key === activeTab)!.label.toLowerCase()} orders right now.`}
           </p>
           {activeTab === 'all' && (
-            <Button size="lg" onClick={() => navigate('/products')}>
+            <Button size="md" onClick={() => navigate('/products')}>
               Start Shopping
             </Button>
           )}
@@ -399,22 +403,26 @@ export const OrderHistory: React.FC = () => {
         </div>
       )}
 
-      {/* Empty State for No Orders */}
       {filteredOrders.length > 0 && (
-        <Card className="bg-gray-50">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Need something else?
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Continue browsing our collection
-            </p>
-            <Button variant="outline" onClick={() => navigate('/products')}>
-              Browse Products
-            </Button>
-          </div>
-        </Card>
+        <div className="bg-gray-50 rounded-xl p-6 text-center border border-gray-100">
+          <p className="text-sm text-gray-600 mb-3">Need to shop for something new?</p>
+          <Button variant="outline" size="sm" onClick={() => navigate('/products')}>
+            Browse Products
+          </Button>
+        </div>
       )}
+
+      <ConfirmDialog
+        open={cancelDialog.open}
+        title="Cancel Order"
+        message="Are you sure you want to cancel this order? This action cannot be undone."
+        confirmLabel="Yes, Cancel Order"
+        cancelLabel="Keep Order"
+        variant="danger"
+        loading={cancelDialog.loading}
+        onConfirm={confirmCancelOrder}
+        onCancel={() => setCancelDialog({ open: false, orderId: null, loading: false })}
+      />
     </div>
   );
 };

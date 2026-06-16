@@ -14,7 +14,21 @@ import { formatCurrency, formatDate } from '../utils/formatters';
 import {
   Package, Plus, Edit, Trash2, Truck, CheckCircle,
   XCircle, Clock, AlertCircle, ShoppingBag, Store,
+  Upload, ImageOff, DollarSign,
 } from 'lucide-react';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
+
+const ImgWithFallback: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className }) => {
+  const [failed, setFailed] = useState(false);
+  if (failed || !src) {
+    return (
+      <div className={`flex items-center justify-center bg-gray-100 ${className ?? ''}`}>
+        <ImageOff className="w-8 h-8 text-gray-300" />
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />;
+};
 
 const CATEGORIES = ['Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports & Outdoors'];
 
@@ -30,7 +44,7 @@ const statusConfig = (status: string) => {
   switch (status) {
     case 'pending':    return { icon: Clock,        variant: 'warning' as const, label: 'Pending' };
     case 'processing': return { icon: Package,      variant: 'primary' as const, label: 'To Ship' };
-    case 'shipped':    return { icon: Truck,        variant: 'primary' as const, label: 'To Receive' };
+    case 'shipped':    return { icon: Truck,        variant: 'gray'    as const, label: 'To Receive' };
     case 'delivered':  return { icon: CheckCircle,  variant: 'success' as const, label: 'Delivered' };
     case 'cancelled':  return { icon: XCircle,      variant: 'danger'  as const, label: 'Cancelled' };
     default:           return { icon: Package,      variant: 'gray'    as const, label: status };
@@ -51,11 +65,13 @@ export const SellerDashboard: React.FC = () => {
   const [form, setForm] = useState<ProductFormData>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
+  const [imageMode, setImageMode] = useState<'url' | 'upload'>('url');
 
   // Orders state
   const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; productId: string | null; loading: boolean }>({ open: false, productId: null, loading: false });
 
   useEffect(() => {
     loadProducts();
@@ -79,12 +95,21 @@ export const SellerDashboard: React.FC = () => {
   };
 
   // ── Product form ──────────────────────────────────────────
-  const openCreate = () => { setEditingProduct(null); setForm(EMPTY_FORM); setFormError(null); setShowForm(true); };
+  const openCreate = () => { setEditingProduct(null); setForm(EMPTY_FORM); setFormError(null); setImageMode('url'); setShowForm(true); };
   const openEdit = (p: Product) => {
     setEditingProduct(p);
     setForm({ name: p.name, description: p.description, price: p.price, category: p.category, image: p.image, stock: p.stock });
     setFormError(null);
+    setImageMode(p.image?.startsWith('data:') ? 'upload' : 'url');
     setShowForm(true);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setForm(prev => ({ ...prev, image: ev.target?.result as string }));
+    reader.readAsDataURL(file);
   };
   const closeForm = () => { setShowForm(false); setEditingProduct(null); };
 
@@ -116,18 +141,25 @@ export const SellerDashboard: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this product?')) return;
+  const handleDelete = (id: string) => {
+    setDeleteDialog({ open: true, productId: id, loading: false });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteDialog.productId) return;
+    setDeleteDialog(d => ({ ...d, loading: true }));
     try {
-      await sellerService.deleteProduct(id);
-      setProducts(prev => prev.filter(p => p.id !== id));
+      await sellerService.deleteProduct(deleteDialog.productId);
+      setProducts(prev => prev.filter(p => p.id !== deleteDialog.productId));
+      setDeleteDialog({ open: false, productId: null, loading: false });
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete');
+      console.error(err instanceof Error ? err.message : 'Failed to delete');
+      setDeleteDialog(d => ({ ...d, loading: false }));
     }
   };
 
   // ── Order status ──────────────────────────────────────────
-  const handleStatusUpdate = async (orderId: string, status: 'processing' | 'shipped' | 'cancelled') => {
+  const handleStatusUpdate = async (orderId: string, status: 'processing' | 'shipped' | 'delivered' | 'cancelled') => {
     setStatusError(null);
     try {
       await sellerService.updateOrderStatus(orderId, status);
@@ -156,42 +188,83 @@ export const SellerDashboard: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card padding="lg" className="text-center">
-          <p className="text-3xl font-bold text-primary-600">{products.length}</p>
-          <p className="text-gray-600 mt-1">Products Listed</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card padding="lg" className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
+            <ShoppingBag className="w-6 h-6 text-primary-600" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+            <p className="text-sm text-gray-500 mt-0.5">Products</p>
+          </div>
         </Card>
-        <Card padding="lg" className="text-center">
-          <p className="text-3xl font-bold text-primary-600">{orders.length}</p>
-          <p className="text-gray-600 mt-1">Total Orders</p>
+        <Card padding="lg" className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-yellow-100 flex items-center justify-center flex-shrink-0">
+            <Package className="w-6 h-6 text-yellow-600" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900">
+              {orders.filter(o => !['delivered', 'cancelled'].includes(o.status)).length}
+            </p>
+            <p className="text-sm text-gray-500 mt-0.5">Active Orders</p>
+          </div>
         </Card>
-        <Card padding="lg" className="text-center">
-          <p className="text-3xl font-bold text-primary-600">
-            {orders.filter(o => o.status === 'pending').length}
-          </p>
-          <p className="text-gray-600 mt-1">Pending Orders</p>
+        <Card padding="lg" className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+            <Truck className="w-6 h-6 text-orange-600" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900">
+              {orders.filter(o => o.status === 'pending').length}
+            </p>
+            <p className="text-sm text-gray-500 mt-0.5">To Ship</p>
+          </div>
+        </Card>
+        <Card padding="lg" className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+            <DollarSign className="w-6 h-6 text-green-600" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900">
+              {formatCurrency(orders.filter(o => o.status === 'delivered').reduce((s, o) => s + o.total, 0))}
+            </p>
+            <p className="text-sm text-gray-500 mt-0.5">Revenue</p>
+          </div>
         </Card>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex gap-1">
-          {([['products', 'My Products', ShoppingBag], ['orders', 'Orders', Package]] as const).map(([key, label, Icon]) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
-                tab === key
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          ))}
-        </nav>
-      </div>
+      {(() => {
+        const actionableCount = orders.filter(o => ['pending', 'processing', 'shipped'].includes(o.status)).length;
+        return (
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex gap-1">
+              {([
+                { key: 'products', label: 'My Products', Icon: ShoppingBag, badge: null },
+                { key: 'orders',   label: 'Orders',      Icon: Package,     badge: actionableCount || null },
+              ] as const).map(({ key, label, Icon, badge }) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    tab === key
+                      ? 'border-primary-600 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                  {badge !== null && (
+                    <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-primary-600 text-white">
+                      {badge}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
+        );
+      })()}
 
       {/* ── Products Tab ── */}
       {tab === 'products' && (
@@ -246,15 +319,45 @@ export const SellerDashboard: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input label="Price ($) *" name="price" type="number" value={form.price} onChange={handleFormChange} fullWidth required />
                   <Input label="Stock *" name="stock" type="number" value={form.stock} onChange={handleFormChange} fullWidth required />
-                  <Input label="Image URL *" name="image" value={form.image} onChange={handleFormChange} fullWidth required />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Product Image *</label>
+                  <div className="flex rounded-lg overflow-hidden border border-gray-300 w-fit mb-3">
+                    <button type="button" onClick={() => setImageMode('url')}
+                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${imageMode === 'url' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                      Image URL
+                    </button>
+                    <button type="button" onClick={() => setImageMode('upload')}
+                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${imageMode === 'upload' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                      Upload File
+                    </button>
+                  </div>
+
+                  {imageMode === 'url' ? (
+                    <Input
+                      name="image"
+                      placeholder="https://example.com/image.jpg"
+                      value={form.image.startsWith('data:') ? '' : form.image}
+                      onChange={handleFormChange}
+                      fullWidth
+                    />
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors">
+                      <Upload className="w-6 h-6 text-gray-400 mb-1" />
+                      <span className="text-sm text-gray-500">Click to upload</span>
+                      <span className="text-xs text-gray-400 mt-0.5">PNG, JPG, WEBP</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                    </label>
+                  )}
                 </div>
 
                 {form.image && (
                   <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100">
-                    <img src={form.image} alt="preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+                    <ImgWithFallback src={form.image} alt="preview" className="w-full h-full object-cover" />
                   </div>
                 )}
 
@@ -279,28 +382,42 @@ export const SellerDashboard: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {products.map(product => (
-                <Card key={product.id} padding="lg" className="flex flex-col">
-                  <div className="aspect-video mb-3 rounded-lg overflow-hidden bg-gray-100">
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                <Card key={product.id} padding="none" className="flex flex-col overflow-hidden">
+                  <div className="aspect-square bg-gray-100 relative">
+                    <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                    <span className={`absolute top-2 right-2 text-xs font-semibold px-2 py-1 rounded-full ${
+                      product.stock === 0
+                        ? 'bg-red-100 text-red-700'
+                        : product.stock <= 5
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-green-100 text-green-700'
+                    }`}>
+                      {product.stock === 0 ? 'Out of stock' : `Stock: ${product.stock}`}
+                    </span>
                   </div>
-                  <div className="flex-1">
-                    <Badge variant="primary" size="sm" className="mb-1">{product.category}</Badge>
-                    <h3 className="font-semibold text-gray-900 line-clamp-1">{product.name}</h3>
-                    <p className="text-sm text-gray-500 line-clamp-2 mt-1">{product.description}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-lg font-bold text-primary-600">{formatCurrency(product.price)}</span>
-                      <span className={`text-sm font-medium ${product.stock === 0 ? 'text-red-500' : 'text-green-600'}`}>
-                        {product.stock === 0 ? 'Out of stock' : `Stock: ${product.stock}`}
-                      </span>
+                  <div className="flex flex-col flex-1 p-4">
+                    <Badge variant="gray" size="sm" className="mb-2 w-fit">{product.category}</Badge>
+                    <h3 className="font-semibold text-gray-900 line-clamp-1 mb-1">{product.name}</h3>
+                    <p className="text-sm text-gray-500 line-clamp-2 flex-1">{product.description}</p>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                      <span className="text-lg font-bold text-gray-900">{formatCurrency(product.price)}</span>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => openEdit(product)}
+                          className="p-2 rounded-lg text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                          aria-label="Edit product"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product.id)}
+                          className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          aria-label="Delete product"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
-                    <Button variant="outline" size="sm" fullWidth onClick={() => openEdit(product)}>
-                      <Edit className="w-4 h-4 mr-1" /> Edit
-                    </Button>
-                    <Button variant="danger" size="sm" fullWidth onClick={() => handleDelete(product.id)}>
-                      <Trash2 className="w-4 h-4 mr-1" /> Delete
-                    </Button>
                   </div>
                 </Card>
               ))}
@@ -330,45 +447,54 @@ export const SellerDashboard: React.FC = () => {
             orders.map(order => {
               const cfg = statusConfig(order.status);
               const StatusIcon = cfg.icon;
-              const canToShip   = order.status === 'pending';
-              const canToReceive = order.status === 'processing';
-              const canCancel   = order.status === 'pending' || order.status === 'processing';
+              const canToShip        = order.status === 'pending';
+              const canToReceive     = order.status === 'processing';
+              const canMarkDelivered = order.status === 'shipped';
+              const canCancel        = order.status === 'pending' || order.status === 'processing' || order.status === 'shipped';
 
               return (
-                <Card key={order.id} padding="lg">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    <div className="flex-1">
-                      {/* Order meta */}
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-gray-900">
-                          Order #{order.id.slice(0, 8).toUpperCase()}
-                        </h3>
-                        <Badge variant={cfg.variant} className="flex items-center gap-1">
-                          <StatusIcon className="w-3.5 h-3.5" />
-                          {cfg.label}
-                        </Badge>
-                      </div>
+                <Card key={order.id} padding="none" className="overflow-hidden">
+                  {/* Order header */}
+                  <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-sm font-semibold text-gray-700">
+                        #{order.id.slice(0, 8).toUpperCase()}
+                      </span>
+                      <Badge variant={cfg.variant} size="sm" className="flex items-center gap-1">
+                        <StatusIcon className="w-3 h-3" />
+                        {cfg.label}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-gray-400">{formatDate(order.createdAt)}</span>
+                      <span className="text-sm font-bold text-gray-900">{formatCurrency(order.total)}</span>
+                    </div>
+                  </div>
 
-                      <div className="text-sm text-gray-500 space-y-0.5 mb-3">
-                        <p>Placed: {formatDate(order.createdAt)}</p>
-                        {order.buyer && (
-                          <p>Buyer: {order.buyer.firstName} {order.buyer.lastName} ({order.buyer.email})</p>
-                        )}
-                        <p className="font-medium text-gray-900">Total: {formatCurrency(order.total)}</p>
-                      </div>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 p-5">
+                    <div className="flex-1 min-w-0">
+                      {/* Buyer */}
+                      {order.buyer && (
+                        <p className="text-sm text-gray-500 mb-3">
+                          <span className="font-medium text-gray-700">
+                            {order.buyer.firstName} {order.buyer.lastName}
+                          </span>
+                          {' · '}{order.buyer.email}
+                        </p>
+                      )}
 
                       {/* Items */}
                       <div className="space-y-2">
                         {order.items.map(({ product, quantity }) => (
                           <div key={product.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                            <div className="w-10 h-10 rounded overflow-hidden bg-white flex-shrink-0">
-                              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-gray-100">
+                              <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                              <p className="text-xs text-gray-500">Qty: {quantity} × {formatCurrency(product.price)}</p>
+                              <p className="text-xs text-gray-500">Qty {quantity} × {formatCurrency(product.price)}</p>
                             </div>
-                            <p className="text-sm font-semibold text-gray-900 flex-shrink-0">
+                            <p className="text-sm font-semibold text-gray-900 flex-shrink-0 tabular-nums">
                               {formatCurrency(product.price * quantity)}
                             </p>
                           </div>
@@ -377,20 +503,25 @@ export const SellerDashboard: React.FC = () => {
                     </div>
 
                     {/* Actions */}
-                    {(canToShip || canToReceive || canCancel) && (
-                      <div className="flex flex-col gap-2 sm:min-w-[140px]">
+                    {(canToShip || canToReceive || canMarkDelivered || canCancel) && (
+                      <div className="flex sm:flex-col gap-2 sm:min-w-[148px]">
                         {canToShip && (
-                          <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'processing')}>
-                            <Truck className="w-4 h-4 mr-1" /> Mark To Ship
+                          <Button size="sm" fullWidth onClick={() => handleStatusUpdate(order.id, 'processing')}>
+                            <Package className="w-4 h-4 mr-1" /> Mark to Ship
                           </Button>
                         )}
                         {canToReceive && (
-                          <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'shipped')}>
-                            <CheckCircle className="w-4 h-4 mr-1" /> Mark Shipped
+                          <Button size="sm" fullWidth onClick={() => handleStatusUpdate(order.id, 'shipped')}>
+                            <Truck className="w-4 h-4 mr-1" /> Mark Shipped
+                          </Button>
+                        )}
+                        {canMarkDelivered && (
+                          <Button size="sm" fullWidth variant="success" onClick={() => handleStatusUpdate(order.id, 'delivered')}>
+                            <CheckCircle className="w-4 h-4 mr-1" /> Mark Delivered
                           </Button>
                         )}
                         {canCancel && (
-                          <Button size="sm" variant="danger" onClick={() => handleStatusUpdate(order.id, 'cancelled')}>
+                          <Button size="sm" fullWidth variant="danger" onClick={() => handleStatusUpdate(order.id, 'cancelled')}>
                             <XCircle className="w-4 h-4 mr-1" /> Cancel
                           </Button>
                         )}
@@ -403,6 +534,18 @@ export const SellerDashboard: React.FC = () => {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        title="Delete Product"
+        message="Are you sure you want to delete this product? This action cannot be undone."
+        confirmLabel="Delete Product"
+        cancelLabel="Keep Product"
+        variant="danger"
+        loading={deleteDialog.loading}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteDialog({ open: false, productId: null, loading: false })}
+      />
     </div>
   );
 };
