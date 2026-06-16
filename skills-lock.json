@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "flutter-dart-code-review": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-dart-code-review/SKILL.md",
+      "computedHash": "1867d8498fdc3cd1c5652dd5538c9d1db6e80fbda9eb3e28082542630503487b"
+    },
+    "flutter-dev": {
+      "source": "MiniMax-AI/skills",
+      "sourceType": "github",
+      "skillPath": "skills/flutter-dev/SKILL.md",
+      "computedHash": "bfdcb3982bd4da9d0d33d6c7cceb51cd035e76a460edfc029e4a87dd56a5d2bd"
+    },
+    "frontend-code-review": {
+      "source": "langflow-ai/langflow",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/frontend-code-review/SKILL.md",
+      "computedHash": "88e8443ae06325d11e172421a354b0151899239477820018c3f195fbaa777c3e"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
+    }
+  }
+}

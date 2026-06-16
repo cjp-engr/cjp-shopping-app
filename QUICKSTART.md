@@ -1,4 +1,4 @@
-# ShopHub Full-Stack Quick Start Guide
+# TokoMart Full-Stack Quick Start Guide
 
 The frontend is now connected to the backend API. Follow these steps to run the full application.
 
@@ -128,7 +128,7 @@ VITE_API_BASE_URL=http://localhost:5000/api
 PORT=5000
 NODE_ENV=development
 MONGODB_URI=mongodb://localhost:27017/shopping-app
-JWT_SECRET=shophub-secret-key-2024-change-in-production
+JWT_SECRET=TokoMart-secret-key-2024-change-in-production
 JWT_EXPIRES_IN=7d
 CORS_ORIGIN=http://localhost:5173
 ```

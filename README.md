@@ -1,4 +1,4 @@
-# ShopHub - Full-Stack E-Commerce Application
+# TokoMart - Full-Stack E-Commerce Application
 
 A full-featured e-commerce shopping application with React frontend and Node.js backend, built with TypeScript, Tailwind CSS, Express, and MongoDB.
 

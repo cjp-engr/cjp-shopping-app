@@ -28,6 +28,8 @@ export interface IOrder extends Document {
   total: number;
   status: OrderStatus;
   estimatedDelivery?: Date;
+  shippedAt?: Date;
+  refundRequestedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -124,7 +126,9 @@ const OrderSchema = new Schema<IOrder>({
     enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
     default: 'pending'
   },
-  estimatedDelivery: Date
+  estimatedDelivery: Date,
+  shippedAt: Date,
+  refundRequestedAt: Date
 }, {
   timestamps: true
 });

@@ -120,12 +120,7 @@ export const updateSellerOrderStatus = async (req: AuthRequest, res: Response) =
   try {
     const { status } = req.body;
 
-    const allowedStatuses = ['processing', 'shipped', 'cancelled'];
-    if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ success: false, message: 'Invalid status. Allowed: processing, shipped, cancelled' });
-    }
-
-    const order = await Order.findById(req.params.id).populate('items.product');
+    const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
@@ -137,6 +132,23 @@ export const updateSellerOrderStatus = async (req: AuthRequest, res: Response) =
     const hasSellersProduct = order.items.some(item => sellerProductIds.has(item.product.toString()));
     if (!hasSellersProduct) {
       return res.status(403).json({ success: false, message: 'Not authorized to update this order' });
+    }
+
+    // Enforce valid status transitions
+    const validTransitions: Record<string, string[]> = {
+      pending:    ['processing', 'cancelled'],
+      processing: ['shipped', 'cancelled'],
+      shipped:    ['delivered', 'cancelled'],
+      delivered:  [],
+      cancelled:  []
+    };
+
+    const allowedNext = validTransitions[order.status] ?? [];
+    if (!allowedNext.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot transition order from '${order.status}' to '${status}'`
+      });
     }
 
     // Restore stock if cancelling
@@ -151,6 +163,9 @@ export const updateSellerOrderStatus = async (req: AuthRequest, res: Response) =
     }
 
     order.status = status;
+    if (status === 'shipped' && !order.shippedAt) {
+      order.shippedAt = new Date();
+    }
     await order.save();
 
     res.status(200).json({ success: true, order });

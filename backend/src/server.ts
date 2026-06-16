@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { connectDB } from './config/database.js';
+import { startAutoCompleteJob } from './jobs/autoCompleteOrders.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 // Import routes
@@ -30,8 +31,8 @@ app.use(cors({
   credentials: true
 }));
 app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined')); // Logging
-app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -52,7 +53,7 @@ app.use('/api/seller', sellerRoutes);
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'ShopHub API',
+    message: 'TokoMart API',
     version: '1.0.0',
     endpoints: {
       auth: '/api/auth',
@@ -74,6 +75,7 @@ app.listen(PORT, () => {
   console.log(`\n🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
   console.log(`📍 API: http://localhost:${PORT}`);
   console.log(`❤️  Health Check: http://localhost:${PORT}/health\n`);
+  startAutoCompleteJob();
 });
 
 export default app;

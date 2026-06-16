@@ -1,6 +1,6 @@
-# ShopHub Backend API
+# TokoMart Backend API
 
-Backend REST API for the ShopHub e-commerce application built with Node.js, Express, TypeScript, and MongoDB.
+Backend REST API for the TokoMart e-commerce application built with Node.js, Express, TypeScript, and MongoDB.
 
 ## Features
 

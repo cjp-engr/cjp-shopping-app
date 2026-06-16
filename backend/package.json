@@ -1,7 +1,7 @@
 {
   "name": "shopping-app-backend",
   "version": "1.0.0",
-  "description": "Backend API for ShopHub e-commerce application",
+  "description": "Backend API for TokoMart e-commerce application",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
