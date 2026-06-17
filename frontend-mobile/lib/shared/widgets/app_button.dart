@@ -24,16 +24,11 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? AppColors.danger : AppColors.primary;
-
     final child = loading
         ? const SizedBox(
             height: 20,
             width: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Colors.white,
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
           )
         : Row(
             mainAxisSize: MainAxisSize.min,
@@ -46,6 +41,7 @@ class AppButton extends StatelessWidget {
             ],
           );
 
+    // Outlined — always neutral: white bg, gray border, dark text
     if (outline) {
       return SizedBox(
         width: width ?? double.infinity,
@@ -53,13 +49,25 @@ class AppButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: loading ? null : onPressed,
           style: OutlinedButton.styleFrom(
-            foregroundColor: color,
-            side: BorderSide(color: color, width: 1.5),
+            backgroundColor: Colors.white,
+            foregroundColor: AppColors.textPrimary,
+            side: const BorderSide(color: AppColors.borderStrong, width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+            minimumSize: const Size(double.infinity, AppSizes.buttonHeight),
           ),
           child: child,
         ),
       );
     }
+
+    // Filled — red for danger, dark for normal
+    final bgColor = danger ? AppColors.danger : AppColors.darkButton;
 
     return SizedBox(
       width: width ?? double.infinity,
@@ -67,8 +75,20 @@ class AppButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: loading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          disabledBackgroundColor: color.withAlpha(153),
+          backgroundColor: bgColor,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: bgColor.withAlpha(130),
+          disabledForegroundColor: Colors.white60,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+          minimumSize: const Size(double.infinity, AppSizes.buttonHeight),
         ),
         child: child,
       ),

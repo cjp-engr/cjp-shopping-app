@@ -24,15 +24,18 @@ import 'features/orders/data/datasources/order_remote_datasource.dart';
 import 'features/orders/data/repositories/order_repository_impl.dart';
 import 'features/orders/presentation/bloc/order_bloc.dart';
 
-class ShopHubApp extends StatefulWidget {
+// Features - Wishlist
+import 'features/wishlist/presentation/bloc/wishlist_bloc.dart';
+
+class TokoMart extends StatefulWidget {
   final StorageService storageService;
-  const ShopHubApp({super.key, required this.storageService});
+  const TokoMart({super.key, required this.storageService});
 
   @override
-  State<ShopHubApp> createState() => _ShopHubAppState();
+  State<TokoMart> createState() => _TokoMartState();
 }
 
-class _ShopHubAppState extends State<ShopHubApp> {
+class _TokoMartState extends State<TokoMart> {
   late final ApiClient _apiClient;
   late final AuthBloc _authBloc;
 
@@ -43,8 +46,7 @@ class _ShopHubAppState extends State<ShopHubApp> {
 
     // Auth
     final authDs = AuthRemoteDataSource(_apiClient.dio);
-    final authRepo =
-        AuthRepositoryImpl(authDs, widget.storageService);
+    final authRepo = AuthRepositoryImpl(authDs, widget.storageService);
     _authBloc = AuthBloc(authRepo, widget.storageService)
       ..add(AuthCheckRequested());
   }
@@ -70,6 +72,7 @@ class _ShopHubAppState extends State<ShopHubApp> {
         BlocProvider.value(value: _authBloc),
         BlocProvider(create: (_) => ProductBloc(productRepo)),
         BlocProvider(create: (_) => CartBloc()),
+        BlocProvider(create: (_) => WishlistBloc()),
         BlocProvider(create: (_) => OrderBloc(orderRepo)),
       ],
       child: _RouterWrapper(authBloc: _authBloc),
@@ -91,7 +94,7 @@ class _RouterWrapperState extends State<_RouterWrapper> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'ShopHub',
+      title: 'TokoMart',
       theme: AppTheme.light,
       routerConfig: router,
       debugShowCheckedModeBanner: false,

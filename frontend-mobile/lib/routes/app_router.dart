@@ -10,6 +10,7 @@ import '../features/cart/presentation/screens/cart_screen.dart';
 import '../features/orders/presentation/screens/orders_screen.dart';
 import '../features/orders/presentation/screens/checkout_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
+import '../features/wishlist/presentation/screens/wishlist_screen.dart';
 import '../shared/widgets/main_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -77,6 +78,10 @@ GoRouter createRouter(AuthBloc authBloc) {
           GoRoute(
             path: '/orders',
             builder: (_, __) => const OrdersScreen(),
+          ),
+          GoRoute(
+            path: '/wishlist',
+            builder: (_, __) => const WishlistScreen(),
           ),
           GoRoute(
             path: '/profile',

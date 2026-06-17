@@ -40,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.splashBg,
       body: BlocListener<AuthBloc, AuthState>(
         listenWhen: (prev, curr) => prev.status != curr.status,
         listener: (context, state) {
@@ -52,98 +53,153 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           }
         },
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSizes.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: AppSizes.xxl),
-                // Header
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius:
-                        BorderRadius.circular(AppSizes.radiusMd),
+        child: Stack(
+          children: [
+            // Background fashion grid
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: MediaQuery.of(context).size.height * 0.45,
+              child: GridView.count(
+                crossAxisCount: 3,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                children: List.generate(
+                  9,
+                  (i) => Container(
+                    decoration: BoxDecoration(
+                      color: [
+                        const Color(0xFF2A1F5A),
+                        const Color(0xFF3D2B6B),
+                        const Color(0xFF1E1A4A),
+                      ][i % 3],
+                    ),
+                    child: const Icon(
+                      Icons.shopping_bag_outlined,
+                      color: Colors.white12,
+                      size: 32,
+                    ),
                   ),
-                  child: const Icon(Icons.shopping_bag,
-                      color: Colors.white, size: 32),
                 ),
-                const SizedBox(height: AppSizes.lg),
-                Text(
-                  'Welcome back',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ),
+            // White card
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(AppSizes.radiusXl),
+                  ),
                 ),
-                const SizedBox(height: AppSizes.xs),
-                const Text(
-                  'Sign in to your ShopHub account',
-                  style: TextStyle(
-                      color: AppColors.textSecondary, fontSize: 15),
+                padding: EdgeInsets.fromLTRB(
+                  AppSizes.lg,
+                  AppSizes.xl,
+                  AppSizes.lg,
+                  MediaQuery.of(context).padding.bottom + AppSizes.lg,
                 ),
-                const SizedBox(height: AppSizes.xl),
-                // Form
-                Form(
-                  key: _formKey,
+                child: SingleChildScrollView(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      AppTextField(
-                        label: AppStrings.email,
-                        controller: _emailCtrl,
-                        keyboardType: TextInputType.emailAddress,
-                        prefixIcon: Icons.email_outlined,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Email is required';
-                          }
-                          if (!v.contains('@')) return 'Enter a valid email';
-                          return null;
-                        },
+                      const Text(
+                        'Welcome Back',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                      const SizedBox(height: AppSizes.md),
-                      AppTextField(
-                        label: AppStrings.password,
-                        controller: _passwordCtrl,
-                        obscure: true,
-                        prefixIcon: Icons.lock_outline,
-                        validator: (v) {
-                          if (v == null || v.isEmpty) {
-                            return 'Password is required';
-                          }
-                          if (v.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
-                          return null;
-                        },
+                      const SizedBox(height: AppSizes.xs),
+                      const Text(
+                        'Sign in to your ShopHub account',
+                        style: TextStyle(
+                            color: AppColors.textSecondary, fontSize: 14),
                       ),
                       const SizedBox(height: AppSizes.xl),
-                      BlocBuilder<AuthBloc, AuthState>(
-                        buildWhen: (p, c) => p.status != c.status,
-                        builder: (context, state) {
-                          return AppButton(
-                            label: AppStrings.login,
-                            loading: state.status == AuthStatus.loading,
-                            onPressed: _submit,
-                          );
-                        },
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            AppTextField(
+                              label: AppStrings.email,
+                              controller: _emailCtrl,
+                              keyboardType: TextInputType.emailAddress,
+                              prefixIcon: Icons.email_outlined,
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Email is required';
+                                }
+                                if (!v.contains('@')) {
+                                  return 'Enter a valid email';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: AppSizes.md),
+                            AppTextField(
+                              label: AppStrings.password,
+                              controller: _passwordCtrl,
+                              obscure: true,
+                              prefixIcon: Icons.lock_outline,
+                              validator: (v) {
+                                if (v == null || v.isEmpty) {
+                                  return 'Password is required';
+                                }
+                                if (v.length < 6) {
+                                  return 'At least 6 characters';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: AppSizes.xl),
+                            BlocBuilder<AuthBloc, AuthState>(
+                              buildWhen: (p, c) => p.status != c.status,
+                              builder: (context, state) {
+                                return AppButton(
+                                  label: AppStrings.login,
+                                  loading:
+                                      state.status == AuthStatus.loading,
+                                  onPressed: _submit,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.md),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => context.push('/signup'),
+                          child: RichText(
+                            text: const TextSpan(
+                              text: "Don't have an account? ",
+                              style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14),
+                              children: [
+                                TextSpan(
+                                  text: 'Sign Up',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSizes.lg),
-                Center(
-                  child: TextButton(
-                    onPressed: () => context.push('/signup'),
-                    child: const Text(AppStrings.noAccount),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

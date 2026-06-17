@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,8 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
 import '../../../cart/presentation/bloc/cart_event.dart';
 import '../../../cart/presentation/bloc/cart_state.dart';
@@ -24,6 +28,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   final _searchCtrl = TextEditingController();
   String? _selectedCategory;
   String _sortBy = 'newest';
+  bool _searchActive = false;
 
   @override
   void initState() {
@@ -34,9 +39,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   void _load({bool refresh = false}) {
     context.read<ProductBloc>().add(ProductsLoadRequested(
-          search: _searchCtrl.text.trim().isEmpty
-              ? null
-              : _searchCtrl.text.trim(),
+          search:
+              _searchCtrl.text.trim().isEmpty ? null : _searchCtrl.text.trim(),
           category: _selectedCategory,
           sortBy: _sortBy,
           refresh: refresh,
@@ -52,207 +56,500 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppStrings.products),
-        actions: [
-          BlocBuilder<CartBloc, CartState>(
-            builder: (context, state) {
-              final count = state.items.fold<int>(0, (s, i) => s + i.quantity);
-              return Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.shopping_cart_outlined),
-                    onPressed: () => context.push('/cart'),
-                  ),
-                  if (count > 0)
-                    Positioned(
-                      right: 6,
-                      top: 6,
-                      child: Container(
-                        width: 16,
-                        height: 16,
-                        decoration: const BoxDecoration(
-                          color: AppColors.danger,
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          '$count',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700),
-                        ),
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            _buildSearchBar(),
+            const SizedBox(height: AppSizes.sm),
+            _buildCategoryChips(),
+            const SizedBox(height: AppSizes.sm),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.sm),
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          final name = state.status == AuthStatus.authenticated
+              ? state.user?.firstName ?? 'there'
+              : 'there';
+          final avatar = state.status == AuthStatus.authenticated
+              ? state.user?.avatar
+              : null;
+          final firstName = name;
+          return Row(
+            children: [
+              _buildAvatar(avatar, firstName),
+              const SizedBox(width: AppSizes.sm),
+              // Greeting
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hello $firstName',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.2,
                       ),
                     ),
-                ],
-              );
-            },
+                    const Text(
+                      'Welcome to TokoMart',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Notification + Cart
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.notifications_outlined,
+                    color: AppColors.textPrimary, size: 24),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              ),
+              BlocBuilder<CartBloc, CartState>(
+                builder: (context, state) {
+                  final count = state.totalQuantity;
+                  return Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.shopping_bag_outlined,
+                            color: AppColors.textPrimary, size: 24),
+                        onPressed: () => context.push('/cart'),
+                        padding: EdgeInsets.zero,
+                        constraints:
+                            const BoxConstraints(minWidth: 40, minHeight: 40),
+                      ),
+                      if (count > 0)
+                        Positioned(
+                          right: 4,
+                          top: 4,
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: const BoxDecoration(
+                              color: AppColors.danger,
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '$count',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildAvatar(String? avatar, String firstName) {
+    if (avatar != null &&
+        avatar.isNotEmpty &&
+        avatar.startsWith('data:image')) {
+      // base64 data URI — use Image.memory
+      try {
+        final b64 = avatar.contains(',') ? avatar.split(',')[1] : avatar;
+        final bytes = base64Decode(b64);
+        return Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withAlpha(26),
+            shape: BoxShape.circle,
+            border:
+                Border.all(color: AppColors.primary.withAlpha(77), width: 3),
           ),
-          // Sort menu
+          clipBehavior: Clip.antiAlias,
+          child: Image.memory(
+            bytes,
+            width: 42,
+            height: 42,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _avatarFallback(firstName),
+          ),
+        );
+      } catch (_) {
+        return _avatarFallback(firstName);
+      }
+    }
+
+    if (avatar != null && avatar.isNotEmpty) {
+      return Image.network(
+        avatar,
+        width: 42,
+        height: 42,
+        fit: BoxFit.cover,
+        loadingBuilder: (_, child, p) =>
+            p == null ? child : _avatarFallback(firstName),
+        errorBuilder: (_, __, ___) => _avatarFallback(firstName),
+      );
+    }
+
+    return _avatarFallback(firstName);
+  }
+
+  Widget _avatarFallback(String name) {
+    return Container(
+      width: 96,
+      height: 96,
+      color: AppColors.primary.withAlpha(26),
+      alignment: Alignment.center,
+      child: Text(
+        name.isNotEmpty ? name[0].toUpperCase() : '?',
+        style: const TextStyle(
+          fontSize: 36,
+          fontWeight: FontWeight.w800,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: TextField(
+                controller: _searchCtrl,
+                decoration: InputDecoration(
+                  hintText: AppStrings.search,
+                  hintStyle:
+                      const TextStyle(color: AppColors.textMuted, fontSize: 14),
+                  prefixIcon: const Icon(Icons.search,
+                      color: AppColors.textMuted, size: 20),
+                  suffixIcon: _searchCtrl.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear,
+                              color: AppColors.textMuted, size: 18),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            _load();
+                            setState(() => _searchActive = false);
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onChanged: (v) {
+                  setState(() => _searchActive = v.isNotEmpty);
+                  if (v.length >= 2 || v.isEmpty) _load();
+                },
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSizes.sm),
+          // Filter button
           PopupMenuButton<String>(
-            icon: const Icon(Icons.sort),
             onSelected: (v) {
               setState(() => _sortBy = v);
               _load();
             },
             itemBuilder: (_) => const [
               PopupMenuItem(value: 'newest', child: Text('Newest')),
-              PopupMenuItem(value: 'price-asc', child: Text('Price: Low to High')),
-              PopupMenuItem(value: 'price-desc', child: Text('Price: High to Low')),
+              PopupMenuItem(
+                  value: 'price-asc', child: Text('Price: Low to High')),
+              PopupMenuItem(
+                  value: 'price-desc', child: Text('Price: High to Low')),
               PopupMenuItem(value: 'rating', child: Text('Top Rated')),
             ],
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: const Icon(Icons.tune_rounded,
+                  color: AppColors.textPrimary, size: 22),
+            ),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSizes.md, AppSizes.sm, AppSizes.md, 0),
-            child: TextField(
-              controller: _searchCtrl,
-              decoration: InputDecoration(
-                hintText: AppStrings.search,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchCtrl.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          _load();
-                          setState(() {});
-                        },
-                      )
-                    : null,
-                isDense: true,
-              ),
-              onChanged: (v) {
-                setState(() {});
-                if (v.length >= 2 || v.isEmpty) _load();
-              },
-            ),
-          ),
-          // Category chips
-          BlocBuilder<ProductBloc, ProductState>(
-            buildWhen: (p, c) => p.categories != c.categories,
-            builder: (context, state) {
-              if (state.categories.isEmpty) return const SizedBox.shrink();
-              final all = ['All', ...state.categories];
-              return SizedBox(
-                height: 44,
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.md, vertical: AppSizes.xs),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: all.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(width: AppSizes.sm),
-                  itemBuilder: (_, i) {
-                    final cat = all[i];
-                    final isSelected = cat == 'All'
-                        ? _selectedCategory == null
-                        : _selectedCategory == cat;
-                    return FilterChip(
-                      label: Text(cat),
-                      selected: isSelected,
-                      onSelected: (_) {
-                        setState(() {
-                          _selectedCategory = cat == 'All' ? null : cat;
-                        });
-                        _load();
-                      },
-                      selectedColor: AppColors.primary,
-                      checkmarkColor: Colors.white,
-                      labelStyle: TextStyle(
-                        color:
-                            isSelected ? Colors.white : AppColors.textPrimary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    );
-                  },
+    );
+  }
+
+  Widget _buildCategoryChips() {
+    return BlocBuilder<ProductBloc, ProductState>(
+      buildWhen: (p, c) => p.categories != c.categories,
+      builder: (context, state) {
+        final all = ['All', ...state.categories];
+        return SizedBox(
+          height: 38,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+            scrollDirection: Axis.horizontal,
+            itemCount: all.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (_, i) {
+              final cat = all[i];
+              final isSelected = cat == 'All'
+                  ? _selectedCategory == null
+                  : _selectedCategory == cat;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedCategory = cat == 'All' ? null : cat;
+                  });
+                  _load();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                  ),
+                  child: Text(
+                    cat,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color:
+                          isSelected ? Colors.white : AppColors.textSecondary,
+                    ),
+                  ),
                 ),
               );
             },
           ),
-          const SizedBox(height: AppSizes.xs),
-          // Product grid
-          Expanded(
-            child: BlocBuilder<ProductBloc, ProductState>(
-              buildWhen: (p, c) =>
-                  p.status != c.status || p.products != c.products,
-              builder: (context, state) {
-                if (state.status == ProductStatus.loading &&
-                    state.products.isEmpty) {
-                  return const LoadingWidget();
-                }
-                if (state.status == ProductStatus.failure) {
-                  return ErrorWidget2(
-                    message: state.errorMessage ?? AppStrings.genericError,
-                    onRetry: _load,
-                  );
-                }
-                if (state.products.isEmpty) {
-                  return EmptyWidget(
-                    message: AppStrings.noProducts,
-                    icon: Icons.search_off,
-                    actionLabel: 'Clear Filters',
-                    onAction: () {
-                      _searchCtrl.clear();
-                      setState(() => _selectedCategory = null);
-                      _load();
-                    },
-                  );
-                }
-                return RefreshIndicator(
-                  onRefresh: () async => _load(refresh: true),
-                  child: GridView.builder(
-                    padding: const EdgeInsets.all(AppSizes.md),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.60,
-                      crossAxisSpacing: AppSizes.sm,
-                      mainAxisSpacing: AppSizes.sm,
-                    ),
-                    itemCount: state.products.length,
-                    itemBuilder: (_, i) {
+        );
+      },
+    );
+  }
+
+  Widget _buildBody() {
+    return BlocBuilder<ProductBloc, ProductState>(
+      buildWhen: (p, c) => p.status != c.status || p.products != c.products,
+      builder: (context, state) {
+        if (state.status == ProductStatus.loading && state.products.isEmpty) {
+          return const LoadingWidget();
+        }
+        if (state.status == ProductStatus.failure) {
+          return ErrorWidget2(
+            message: state.errorMessage ?? AppStrings.genericError,
+            onRetry: _load,
+          );
+        }
+        if (state.products.isEmpty) {
+          return EmptyWidget(
+            message: AppStrings.noProducts,
+            icon: Icons.search_off_rounded,
+            actionLabel: 'Clear Filters',
+            onAction: () {
+              _searchCtrl.clear();
+              setState(() => _selectedCategory = null);
+              _load();
+            },
+          );
+        }
+
+        return RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () async => _load(refresh: true),
+          child: CustomScrollView(
+            slivers: [
+              // Promo banner
+              if (!_searchActive)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                    child: _PromoBanner(),
+                  ),
+                ),
+              if (!_searchActive)
+                const SliverToBoxAdapter(child: SizedBox(height: AppSizes.md)),
+              // Section header
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _searchActive
+                            ? '${state.products.length} results'
+                            : 'New Arrivals',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text('See All',
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: AppSizes.sm)),
+              // Product grid
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.62,
+                    crossAxisSpacing: AppSizes.sm,
+                    mainAxisSpacing: AppSizes.sm,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (_, i) {
                       final product = state.products[i];
                       return ProductCard(
                         product: product,
-                        onTap: () =>
-                            context.push('/products/${product.id}'),
+                        onTap: () => context.push('/products/${product.id}'),
                         onAddToCart: product.inStock
                             ? () {
-                                context.read<CartBloc>().add(
-                                    CartItemAdded(product: product));
-                                final messenger =
-                                    ScaffoldMessenger.of(context);
-                                messenger
+                                context
+                                    .read<CartBloc>()
+                                    .add(CartItemAdded(product: product));
+                                ScaffoldMessenger.of(context)
                                   ..hideCurrentSnackBar()
-                                  ..showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          '${product.name} added to cart'),
-                                      duration:
-                                          const Duration(seconds: 2),
-                                      action: SnackBarAction(
-                                        label: 'Hide',
-                                        onPressed:
-                                            messenger.hideCurrentSnackBar,
-                                      ),
-                                    ),
-                                  );
+                                  ..showSnackBar(SnackBar(
+                                    content:
+                                        Text('${product.name} added to cart'),
+                                    duration: const Duration(seconds: 2),
+                                  ));
                               }
                             : null,
                       );
                     },
+                    childCount: state.products.length,
                   ),
-                );
-              },
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: AppSizes.xl)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PromoBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 160,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.bannerStart, AppColors.bannerEnd],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+      ),
+      padding: const EdgeInsets.all(AppSizes.md),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(30),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                  ),
+                  child: const Text(
+                    'Opulent Savings',
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Exclusive 50%\nLuxury Sale',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.darkButton,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                    ),
+                    child: const Text(
+                      'Shop Now',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+          const Icon(Icons.shopping_bag_rounded,
+              color: Colors.white24, size: 90),
         ],
       ),
     );

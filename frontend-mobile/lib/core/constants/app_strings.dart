@@ -1,7 +1,7 @@
 class AppStrings {
   AppStrings._();
 
-  static const String appName = 'ShopHub';
+  static const String appName = 'TokoMart';
   static const String tagline = 'Discover Amazing Products';
 
   // Auth

@@ -7,21 +7,57 @@ import '../widgets/cart_item_tile.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
-import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  final _promoCtrl = TextEditingController();
+  double _discount = 0;
+
+  @override
+  void dispose() {
+    _promoCtrl.dispose();
+    super.dispose();
+  }
+
+  void _applyPromo() {
+    // Demo: promo code "SAVE10" gives 10% discount
+    if (_promoCtrl.text.trim().toUpperCase() == 'SAVE10') {
+      final state = context.read<CartBloc>().state;
+      setState(() => _discount = state.subtotal * 0.1);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Promo applied: 10% off')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid promo code')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.surfaceVariant,
       appBar: AppBar(
+        backgroundColor: AppColors.surface,
         title: const Text(AppStrings.cart),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_bag_outlined),
+            onPressed: () {},
+          ),
+        ],
       ),
       body: BlocBuilder<CartBloc, CartState>(
         builder: (context, state) {
@@ -36,119 +72,147 @@ class CartScreen extends StatelessWidget {
 
           return Column(
             children: [
-              // Free shipping progress
-              if (!state.freeShipping)
-                Container(
-                  margin: const EdgeInsets.fromLTRB(
-                      AppSizes.md, AppSizes.sm, AppSizes.md, 0),
-                  padding: const EdgeInsets.all(AppSizes.sm),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFFBEB),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    border: Border.all(color: const Color(0xFFFDE68A)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Add \$${(50 - state.subtotal).toStringAsFixed(2)} more for free shipping',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF92400E),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius:
-                            BorderRadius.circular(AppSizes.radiusFull),
-                        child: LinearProgressIndicator(
-                          value: (state.subtotal / 50).clamp(0.0, 1.0),
-                          minHeight: 6,
-                          backgroundColor: const Color(0xFFFDE68A),
-                          valueColor:
-                              const AlwaysStoppedAnimation(AppColors.warning),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Container(
-                  margin: const EdgeInsets.fromLTRB(
-                      AppSizes.md, AppSizes.sm, AppSizes.md, 0),
-                  padding: const EdgeInsets.all(AppSizes.sm),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFECFDF5),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    border: Border.all(color: const Color(0xFF6EE7B7)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.local_shipping_outlined,
-                          color: AppColors.success, size: 18),
-                      SizedBox(width: AppSizes.sm),
-                      Text(
-                        'You have free shipping!',
-                        style: TextStyle(
-                          color: Color(0xFF064E3B),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              // Items list
               Expanded(
-                child: ListView.builder(
+                child: ListView(
                   padding: const EdgeInsets.all(AppSizes.md),
-                  itemCount: state.items.length,
-                  itemBuilder: (_, i) => CartItemTile(item: state.items[i]),
-                ),
-              ),
-              // Order summary
-              Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  border: Border(top: BorderSide(color: AppColors.border)),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 12,
-                        offset: Offset(0, -4))
-                  ],
-                ),
-                padding: const EdgeInsets.all(AppSizes.md),
-                child: Column(
                   children: [
-                    _SummaryRow(AppStrings.subtotal,
-                        '\$${state.subtotal.toStringAsFixed(2)}'),
-                    const SizedBox(height: AppSizes.xs),
-                    _SummaryRow(
-                      AppStrings.shipping,
-                      state.freeShipping
-                          ? AppStrings.freeShipping
-                          : '\$${state.shipping.toStringAsFixed(2)}',
-                      valueColor: state.freeShipping ? AppColors.success : null,
+                    // Items
+                    ...state.items
+                        .map((item) => CartItemTile(item: item)),
+                    const SizedBox(height: AppSizes.sm),
+                    // Promo code
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.md, vertical: AppSizes.sm),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusLg),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withAlpha(6),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2))
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _promoCtrl,
+                              decoration: const InputDecoration(
+                                hintText: 'Promo Code',
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                                fillColor: Colors.transparent,
+                              ),
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: _applyPromo,
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(0, 44),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    AppSizes.radiusFull),
+                              ),
+                              backgroundColor: AppColors.darkButton,
+                            ),
+                            child: const Text('Apply',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white)),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: AppSizes.xs),
-                    _SummaryRow(
-                        AppStrings.tax, '\$${state.tax.toStringAsFixed(2)}'),
-                    const Divider(height: AppSizes.md),
-                    _SummaryRow(
-                      AppStrings.total,
-                      '\$${state.total.toStringAsFixed(2)}',
-                      bold: true,
-                      valueColor: AppColors.primary,
+                    const SizedBox(height: AppSizes.sm),
+                    // Order summary card
+                    Container(
+                      padding: const EdgeInsets.all(AppSizes.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusLg),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withAlpha(6),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2))
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          _SummaryRow(
+                            'Order Amount',
+                            '\$${state.subtotal.toStringAsFixed(2)}',
+                          ),
+                          const SizedBox(height: AppSizes.sm),
+                          if (_discount > 0) ...[
+                            _SummaryRow(
+                              'Discount',
+                              '-\$${_discount.toStringAsFixed(2)}',
+                              valueColor: AppColors.success,
+                            ),
+                            const SizedBox(height: AppSizes.sm),
+                          ],
+                          _SummaryRow(
+                            AppStrings.shipping,
+                            state.freeShipping
+                                ? AppStrings.freeShipping
+                                : '\$${state.shipping.toStringAsFixed(2)}',
+                            valueColor: state.freeShipping
+                                ? AppColors.success
+                                : null,
+                          ),
+                          const SizedBox(height: AppSizes.sm),
+                          const Divider(height: 1),
+                          const SizedBox(height: AppSizes.sm),
+                          _SummaryRow(
+                            'Total Payment',
+                            '\$${(state.total - _discount).clamp(0, double.infinity).toStringAsFixed(2)}',
+                            bold: true,
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: AppSizes.md),
-                    AppButton(
-                      label: AppStrings.checkout,
-                      icon: Icons.lock_outline,
-                      onPressed: () => context.push('/checkout'),
-                    ),
                   ],
+                ),
+              ),
+              // Checkout button
+              Container(
+                color: AppColors.surface,
+                padding: EdgeInsets.fromLTRB(
+                  AppSizes.md,
+                  AppSizes.sm,
+                  AppSizes.md,
+                  MediaQuery.of(context).padding.bottom + AppSizes.sm,
+                ),
+                child: ElevatedButton(
+                  onPressed: () => context.push('/checkout'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize:
+                        const Size(double.infinity, AppSizes.buttonHeight),
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppSizes.radiusFull),
+                    ),
+                    backgroundColor: AppColors.darkButton,
+                  ),
+                  child: const Text(
+                    AppStrings.checkout,
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             ],
@@ -176,9 +240,9 @@ class _SummaryRow extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: bold ? AppColors.textPrimary : AppColors.textSecondary,
+            color: AppColors.textSecondary,
             fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-            fontSize: bold ? 16 : 14,
+            fontSize: bold ? 15 : 14,
           ),
         ),
         Text(
@@ -187,7 +251,7 @@ class _SummaryRow extends StatelessWidget {
             color: valueColor ??
                 (bold ? AppColors.textPrimary : AppColors.textPrimary),
             fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-            fontSize: bold ? 17 : 14,
+            fontSize: bold ? 16 : 14,
           ),
         ),
       ],

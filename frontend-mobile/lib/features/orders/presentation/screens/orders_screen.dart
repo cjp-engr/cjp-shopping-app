@@ -21,13 +21,58 @@ class _TabDef {
 }
 
 const _kTabs = [
-  _TabDef('All',        []),
   _TabDef('Pending',    ['pending']),
   _TabDef('To Ship',    ['processing']),
   _TabDef('To Receive', ['shipped']),
   _TabDef('Complete',   ['delivered']),
   _TabDef('Cancelled',  ['cancelled']),
 ];
+
+int _statusStep(String status) {
+  switch (status) {
+    case 'pending':    return 0;
+    case 'processing': return 1;
+    case 'shipped':    return 2;
+    case 'delivered':  return 3;
+    default:           return -1;
+  }
+}
+
+Color _statusColor(String status) {
+  switch (status) {
+    case 'pending':    return AppColors.warning;
+    case 'processing': return AppColors.primary;
+    case 'shipped':    return AppColors.primaryLight;
+    case 'delivered':  return AppColors.success;
+    case 'cancelled':  return AppColors.danger;
+    default:           return AppColors.textMuted;
+  }
+}
+
+IconData _statusIcon(String status) {
+  switch (status) {
+    case 'pending':    return Icons.access_time_rounded;
+    case 'processing': return Icons.inventory_2_outlined;
+    case 'shipped':    return Icons.local_shipping_outlined;
+    case 'delivered':  return Icons.check_circle_outline_rounded;
+    case 'cancelled':  return Icons.cancel_outlined;
+    default:           return Icons.help_outline;
+  }
+}
+
+String _formatDate(String? raw) {
+  if (raw == null || raw.isEmpty) return '';
+  try {
+    final dt = DateTime.parse(raw).toLocal();
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  } catch (_) {
+    return raw;
+  }
+}
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -56,28 +101,6 @@ class _OrdersScreenState extends State<OrdersScreen>
     super.dispose();
   }
 
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'pending':    return AppColors.warning;
-      case 'processing': return AppColors.primary;
-      case 'shipped':    return AppColors.primaryLight;
-      case 'delivered':  return AppColors.success;
-      case 'cancelled':  return AppColors.danger;
-      default:           return AppColors.textMuted;
-    }
-  }
-
-  IconData _statusIcon(String status) {
-    switch (status) {
-      case 'pending':    return Icons.access_time;
-      case 'processing': return Icons.inventory_2_outlined;
-      case 'shipped':    return Icons.local_shipping_outlined;
-      case 'delivered':  return Icons.check_circle_outline;
-      case 'cancelled':  return Icons.cancel_outlined;
-      default:           return Icons.help_outline;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<OrderBloc, OrderState>(
@@ -85,50 +108,56 @@ class _OrdersScreenState extends State<OrdersScreen>
         final orders = state.orders;
 
         return Scaffold(
+          backgroundColor: AppColors.surfaceVariant,
           appBar: AppBar(
+            backgroundColor: AppColors.surface,
             title: const Text(AppStrings.orders),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(48),
-              child: TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.textSecondary,
-                indicatorColor: AppColors.primary,
-                indicatorWeight: 2.5,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-                tabs: _kTabs.map((tab) {
-                  final count = tab.filter(orders).length;
-                  return Tab(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(tab.label,
-                            style: const TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w600)),
-                        if (count > 0) ...[
-                          const SizedBox(width: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withAlpha(26),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '$count',
+              child: Container(
+                color: AppColors.surface,
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: AppColors.textSecondary,
+                  indicatorColor: AppColors.primary,
+                  indicatorWeight: 2.5,
+                  dividerColor: AppColors.border,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  tabs: _kTabs.map((tab) {
+                    final count = tab.filter(orders).length;
+                    return Tab(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(tab.label,
                               style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary),
+                                  fontSize: 13, fontWeight: FontWeight.w600)),
+                          if (count > 0) ...[
+                            const SizedBox(width: 5),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withAlpha(26),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$count',
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary),
+                              ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
-                    ),
-                  );
-                }).toList(),
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
             ),
           ),
@@ -153,8 +182,6 @@ class _OrdersScreenState extends State<OrdersScreen>
                         return _OrderList(
                           orders: filtered,
                           emptyLabel: tab.label,
-                          statusColor: _statusColor,
-                          statusIcon: _statusIcon,
                           onRefresh: () async {
                             final user = context.read<AuthBloc>().state.user;
                             if (user != null) {
@@ -180,19 +207,17 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 }
 
+// ── Order list ────────────────────────────────────────────────────────────────
+
 class _OrderList extends StatelessWidget {
   final List<OrderEntity> orders;
   final String emptyLabel;
-  final Color Function(String) statusColor;
-  final IconData Function(String) statusIcon;
   final Future<void> Function() onRefresh;
   final void Function(String orderId) onCancel;
 
   const _OrderList({
     required this.orders,
     required this.emptyLabel,
-    required this.statusColor,
-    required this.statusIcon,
     required this.onRefresh,
     required this.onCancel,
   });
@@ -200,29 +225,23 @@ class _OrderList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (orders.isEmpty) {
-      return EmptyWidget(
-        message: emptyLabel == 'All'
-            ? AppStrings.noOrders
-            : 'No $emptyLabel orders',
-        icon: Icons.shopping_bag_outlined,
-      );
+      return _EmptyOrdersState(label: emptyLabel);
     }
 
     return RefreshIndicator(
+      color: AppColors.primary,
       onRefresh: onRefresh,
       child: ListView.separated(
-        padding: const EdgeInsets.all(AppSizes.md),
+        padding: const EdgeInsets.fromLTRB(
+            AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.xl),
         itemCount: orders.length,
         separatorBuilder: (_, __) => const SizedBox(height: AppSizes.sm),
         itemBuilder: (_, i) {
           final order = orders[i];
-          final color = statusColor(order.status);
           return _OrderCard(
             order: order,
-            statusColor: color,
-            statusIcon: statusIcon(order.status),
             onCancel: order.status == 'pending'
-                ? () => _showCancelDialog(context, order.id)
+                ? () => _showCancelDialog(context, order)
                 : null,
           );
         },
@@ -230,46 +249,98 @@ class _OrderList extends StatelessWidget {
     );
   }
 
-  Future<void> _showCancelDialog(BuildContext context, String orderId) async {
+  Future<void> _showCancelDialog(BuildContext context, OrderEntity order) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Cancel Order'),
-        content:
-            const Text('Are you sure you want to cancel this order?'),
+        content: Text(
+            'Cancel order #${order.shortId}?\nThis action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: const Text('Keep'),
+            child: const Text('Keep Order'),
           ),
           TextButton(
-            style: TextButton.styleFrom(
-                foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             onPressed: () => Navigator.of(dialogCtx).pop(true),
             child: const Text('Yes, Cancel'),
           ),
         ],
       ),
     );
-    if (confirm == true) onCancel(orderId);
+    if (confirm == true) onCancel(order.id);
   }
 }
 
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+class _EmptyOrdersState extends StatelessWidget {
+  final String label;
+  const _EmptyOrdersState({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withAlpha(16),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.shopping_bag_outlined,
+                  size: 40, color: AppColors.primary),
+            ),
+            const SizedBox(height: AppSizes.md),
+            Text(
+              label == 'All' ? 'No orders yet' : 'No ${label.toLowerCase()} orders',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Your orders will appear here\nonce you start shopping.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: AppSizes.lg),
+            SizedBox(
+              width: 180,
+              height: AppSizes.buttonHeight,
+              child: ElevatedButton(
+                onPressed: () => context.go('/'),
+                child: const Text('Browse Products'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Order card ────────────────────────────────────────────────────────────────
+
 class _OrderCard extends StatelessWidget {
   final OrderEntity order;
-  final Color statusColor;
-  final IconData statusIcon;
   final VoidCallback? onCancel;
 
-  const _OrderCard({
-    required this.order,
-    required this.statusColor,
-    required this.statusIcon,
-    this.onCancel,
-  });
+  const _OrderCard({required this.order, this.onCancel});
 
-  static void _showAllItems(
-      BuildContext context, List<OrderItemEntity> items) {
+  static void _showAllItems(BuildContext context, List<OrderItemEntity> items) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -278,69 +349,93 @@ class _OrderCard extends StatelessWidget {
     );
   }
 
-  static String _formatDelivery(String? raw) {
-    if (raw == null || raw.isEmpty) return '';
-    try {
-      final dt = DateTime.parse(raw).toLocal();
-      const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-      ];
-      return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
-    } catch (_) {
-      return raw;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    // 3 previews × (56 + 6) = 186px + overflow badge 56px = 242px
-    // safely fits inside any card on phones ≥ 320px wide
-    const imgSize = 56.0;
-    const imgGap = 6.0;
+    const imgSize = 64.0;
+    const imgGap = 8.0;
     const maxPreview = 3;
     final preview = order.items.take(maxPreview).toList();
     final extra = order.items.length - maxPreview;
 
+    final color = _statusColor(order.status);
+    final icon = _statusIcon(order.status);
+    final stepIndex = _statusStep(order.status);
+    final isCancelled = order.status == 'cancelled';
+    final dateStr = _formatDate(order.createdAt);
+    final deliveryStr = _formatDate(order.estimatedDelivery);
+
     final statusLabel = order.status.isNotEmpty
         ? order.status[0].toUpperCase() + order.status.substring(1)
         : '';
-    final delivery = _formatDelivery(order.estimatedDelivery);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header: order id + status badge ───────────────────────────
-            Row(
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Card header ───────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.sm),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Order #${order.shortId}',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Order #${order.shortId}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      if (dateStr.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          dateStr,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                const Spacer(),
+                const SizedBox(width: AppSizes.sm),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                      horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: statusColor.withAlpha(26),
+                    color: color.withAlpha(20),
                     borderRadius:
                         BorderRadius.circular(AppSizes.radiusFull),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(statusIcon, size: 13, color: statusColor),
+                      Icon(icon, size: 12, color: color),
                       const SizedBox(width: 4),
                       Text(
                         statusLabel,
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: statusColor,
+                          fontWeight: FontWeight.w700,
+                          color: color,
                         ),
                       ),
                     ],
@@ -348,10 +443,14 @@ class _OrderCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppSizes.sm),
+          ),
 
-            // ── Product image strip ────────────────────────────────────────
-            Row(
+          const Divider(height: 1),
+
+          // ── Product image strip + total ────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(AppSizes.md),
+            child: Row(
               children: [
                 ...preview.map((item) {
                   final canNavigate = item.productId.isNotEmpty;
@@ -363,7 +462,7 @@ class _OrderCard extends StatelessWidget {
                           : null,
                       child: ClipRRect(
                         borderRadius:
-                            BorderRadius.circular(AppSizes.radiusSm),
+                            BorderRadius.circular(AppSizes.radiusMd),
                         child: item.productImage.isNotEmpty
                             ? Image.network(
                                 item.productImage,
@@ -372,11 +471,11 @@ class _OrderCard extends StatelessWidget {
                                 fit: BoxFit.cover,
                                 loadingBuilder: (_, child, p) => p == null
                                     ? child
-                                    : const _ImagePlaceholder(size: imgSize),
+                                    : _ImagePlaceholder(size: imgSize),
                                 errorBuilder: (_, __, ___) =>
-                                    const _ImagePlaceholder(size: imgSize),
+                                    _ImagePlaceholder(size: imgSize),
                               )
-                            : const _ImagePlaceholder(size: imgSize),
+                            : _ImagePlaceholder(size: imgSize),
                       ),
                     ),
                   );
@@ -388,11 +487,11 @@ class _OrderCard extends StatelessWidget {
                       width: imgSize,
                       height: imgSize,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(20),
+                        color: AppColors.primary.withAlpha(16),
                         borderRadius:
-                            BorderRadius.circular(AppSizes.radiusSm),
+                            BorderRadius.circular(AppSizes.radiusMd),
                         border: Border.all(
-                            color: AppColors.primary.withAlpha(60)),
+                            color: AppColors.primary.withAlpha(50)),
                       ),
                       alignment: Alignment.center,
                       child: Column(
@@ -418,55 +517,200 @@ class _OrderCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                const Spacer(),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '\$${order.total.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${order.items.length} item${order.items.length > 1 ? 's' : ''}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-            const SizedBox(height: AppSizes.sm),
+          ),
 
-            // ── Item count + total ─────────────────────────────────────────
-            Text(
-              '${order.items.length} item${order.items.length > 1 ? 's' : ''}'
-              ' · \$${order.total.toStringAsFixed(2)}',
-              style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 13),
+          // ── Status section ────────────────────────────────────────────────
+          if (isCancelled)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSizes.md, 0, AppSizes.md, AppSizes.md),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.md, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.danger.withAlpha(16),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  border:
+                      Border.all(color: AppColors.danger.withAlpha(40)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.cancel_outlined,
+                        size: 16, color: AppColors.danger),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'This order has been cancelled',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.danger,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.sm),
+              child: _StatusStepper(currentStep: stepIndex),
             ),
-            if (delivery.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Row(
+            if (deliveryStr.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+                child: Row(
+                  children: [
+                    const Icon(Icons.local_shipping_outlined,
+                        size: 13, color: AppColors.textMuted),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Est. delivery: $deliveryStr',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              const SizedBox(height: AppSizes.sm),
+          ],
+
+          // ── Cancel action ─────────────────────────────────────────────────
+          if (onCancel != null) ...[
+            const Divider(height: 1),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppSizes.sm),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  const Icon(Icons.local_shipping_outlined,
-                      size: 13, color: AppColors.textSecondary),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Est. delivery: $delivery',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                        foregroundColor: AppColors.danger,
+                        textStyle: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600)),
+                    icon: const Icon(Icons.cancel_outlined, size: 15),
+                    label: const Text('Cancel Order'),
+                    onPressed: onCancel,
                   ),
                 ],
               ),
-            ],
-            if (onCancel != null) ...[
-              const SizedBox(height: AppSizes.sm),
-              const Divider(),
-              const SizedBox(height: AppSizes.xs),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  style: TextButton.styleFrom(
-                      foregroundColor: AppColors.danger),
-                  icon: const Icon(Icons.cancel_outlined, size: 16),
-                  label: const Text('Cancel Order'),
-                  onPressed: onCancel,
-                ),
-              ),
-            ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
 }
 
-// ── Bottom sheet: full product list ───────────────────────────────────────────
+// ── Status stepper ────────────────────────────────────────────────────────────
+
+class _StatusStepper extends StatelessWidget {
+  final int currentStep; // 0=pending, 1=processing, 2=shipped, 3=delivered
+
+  const _StatusStepper({required this.currentStep});
+
+  static const _steps = [
+    (Icons.access_time_rounded, 'Placed'),
+    (Icons.inventory_2_outlined, 'Packed'),
+    (Icons.local_shipping_outlined, 'Shipped'),
+    (Icons.check_circle_outline_rounded, 'Delivered'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(_steps.length * 2 - 1, (i) {
+        if (i.isOdd) {
+          final lineIndex = i ~/ 2;
+          final done = lineIndex < currentStep;
+          return Expanded(
+            child: Container(
+              height: 2,
+              color: done ? AppColors.primary : AppColors.border,
+            ),
+          );
+        }
+
+        final stepIndex = i ~/ 2;
+        final done = stepIndex <= currentStep;
+        final active = stepIndex == currentStep;
+        final (icon, label) = _steps[stepIndex];
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: done ? AppColors.primary : AppColors.border,
+                shape: BoxShape.circle,
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withAlpha(60),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        )
+                      ]
+                    : null,
+              ),
+              child: Icon(
+                icon,
+                size: 15,
+                color: done ? Colors.white : AppColors.textMuted,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                color: done ? AppColors.primary : AppColors.textMuted,
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+}
+
+// ── Bottom sheet: full product list ──────────────────────────────────────────
 
 class _OrderItemsSheet extends StatelessWidget {
   final List<OrderItemEntity> items;
@@ -487,7 +731,6 @@ class _OrderItemsSheet extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // Handle
             Padding(
               padding: const EdgeInsets.only(top: 12, bottom: 8),
               child: Container(
@@ -500,7 +743,6 @@ class _OrderItemsSheet extends StatelessWidget {
                 ),
               ),
             ),
-            // Title
             Padding(
               padding: const EdgeInsets.fromLTRB(
                   AppSizes.md, 4, AppSizes.md, AppSizes.sm),
@@ -541,7 +783,6 @@ class _OrderItemsSheet extends StatelessWidget {
               ),
             ),
             const Divider(height: 1),
-            // Item list
             Expanded(
               child: ListView.separated(
                 controller: scrollCtrl,
@@ -549,7 +790,7 @@ class _OrderItemsSheet extends StatelessWidget {
                     vertical: AppSizes.sm),
                 itemCount: items.length,
                 separatorBuilder: (_, __) =>
-                    const Divider(height: 1, indent: 72),
+                    const Divider(height: 1, indent: 76),
                 itemBuilder: (ctx, i) {
                   final item = items[i];
                   final canNavigate = item.productId.isNotEmpty;
@@ -566,7 +807,6 @@ class _OrderItemsSheet extends StatelessWidget {
                           vertical: AppSizes.sm),
                       child: Row(
                         children: [
-                          // Thumbnail
                           ClipRRect(
                             borderRadius: BorderRadius.circular(
                                 AppSizes.radiusSm),
@@ -577,17 +817,14 @@ class _OrderItemsSheet extends StatelessWidget {
                                     height: 56,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) =>
-                                        const _ImagePlaceholder(
-                                            size: 56),
+                                        const _ImagePlaceholder(size: 56),
                                   )
                                 : const _ImagePlaceholder(size: 56),
                           ),
                           const SizedBox(width: AppSizes.sm),
-                          // Name + price
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   item.productName,
@@ -609,7 +846,6 @@ class _OrderItemsSheet extends StatelessWidget {
                               ],
                             ),
                           ),
-                          // Subtotal + chevron
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
@@ -641,7 +877,7 @@ class _OrderItemsSheet extends StatelessWidget {
   }
 }
 
-// ── Image placeholder ──────────────────────────────────────────────────────────
+// ── Image placeholder ─────────────────────────────────────────────────────────
 
 class _ImagePlaceholder extends StatelessWidget {
   final double size;

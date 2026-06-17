@@ -13,5 +13,5 @@ void main() async {
 
   final storage = await StorageService.init();
 
-  runApp(ShopHubApp(storageService: storage));
+  runApp(TokoMart(storageService: storage));
 }

@@ -81,9 +81,9 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: AppSizes.xs),
                 const Text(
-                  'Join ShopHub and start shopping',
-                  style: TextStyle(
-                      color: AppColors.textSecondary, fontSize: 15),
+                  'Join TokoMart and start shopping',
+                  style:
+                      TextStyle(color: AppColors.textSecondary, fontSize: 15),
                 ),
                 const SizedBox(height: AppSizes.xl),
                 Form(
@@ -97,10 +97,9 @@ class _SignupScreenState extends State<SignupScreen> {
                               label: AppStrings.firstName,
                               controller: _firstCtrl,
                               prefixIcon: Icons.person_outline,
-                              validator: (v) =>
-                                  v == null || v.trim().isEmpty
-                                      ? 'Required'
-                                      : null,
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'Required'
+                                  : null,
                             ),
                           ),
                           const SizedBox(width: AppSizes.sm),
@@ -108,10 +107,9 @@ class _SignupScreenState extends State<SignupScreen> {
                             child: AppTextField(
                               label: AppStrings.lastName,
                               controller: _lastCtrl,
-                              validator: (v) =>
-                                  v == null || v.trim().isEmpty
-                                      ? 'Required'
-                                      : null,
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'Required'
+                                  : null,
                             ),
                           ),
                         ],

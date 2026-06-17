@@ -1,6 +1,6 @@
-# ShopHub Mobile
+# TokoMart Mobile
 
-Flutter mobile app for ShopHub, consuming the same Express/MongoDB backend.
+Flutter mobile app for TokoMart, consuming the same Express/MongoDB backend.
 
 ## Architecture
 

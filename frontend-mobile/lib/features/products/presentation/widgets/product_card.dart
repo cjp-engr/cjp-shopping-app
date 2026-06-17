@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../wishlist/presentation/bloc/wishlist_bloc.dart';
+import '../../../wishlist/presentation/bloc/wishlist_event.dart';
+import '../../../wishlist/presentation/bloc/wishlist_state.dart';
 
 class ProductCard extends StatelessWidget {
   final ProductEntity product;
@@ -15,39 +19,46 @@ class ProductCard extends StatelessWidget {
     this.onAddToCart,
   });
 
+  double get _originalPrice => product.price * 1.4;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Card(
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(8),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
-            AspectRatio(
-              aspectRatio: 1,
+            // Image + wishlist
+            Expanded(
+              flex: 3,
               child: Stack(
                 children: [
-                  Image.network(
-                    product.image,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (_, child, progress) => progress == null
-                        ? child
-                        : Container(
-                            color: AppColors.shimmerBase,
-                            child: const Center(
-                              child: Icon(Icons.image_outlined,
-                                  color: AppColors.textMuted, size: 40),
-                            ),
-                          ),
-                    errorBuilder: (_, __, ___) => Container(
-                      color: AppColors.shimmerBase,
-                      child: const Center(
-                        child: Icon(Icons.broken_image_outlined,
-                            color: AppColors.textMuted, size: 40),
+                  Positioned.fill(
+                    child: Image.network(
+                      product.image,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (_, child, progress) => progress == null
+                          ? child
+                          : Container(color: AppColors.shimmerBase),
+                      errorBuilder: (_, __, ___) => Container(
+                        color: AppColors.shimmerBase,
+                        child: const Center(
+                          child: Icon(Icons.image_outlined,
+                              color: AppColors.textMuted, size: 36),
+                        ),
                       ),
                     ),
                   ),
@@ -59,30 +70,66 @@ class ProductCard extends StatelessWidget {
                         child: const Text(
                           'Out of Stock',
                           style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12),
                         ),
                       ),
                     ),
+                  // Wishlist button — reads from WishlistBloc
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: BlocBuilder<WishlistBloc, WishlistState>(
+                      builder: (context, wishlist) {
+                        final wishlisted = wishlist.contains(product.id);
+                        return GestureDetector(
+                          onTap: () => context
+                              .read<WishlistBloc>()
+                              .add(WishlistToggled(product)),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withAlpha(15),
+                                    blurRadius: 6)
+                              ],
+                            ),
+                            child: Icon(
+                              wishlisted
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              color: wishlisted
+                                  ? AppColors.danger
+                                  : AppColors.textMuted,
+                              size: 16,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                   if (product.lowStock)
                     Positioned(
-                      top: AppSizes.sm,
-                      left: AppSizes.sm,
+                      top: 8,
+                      left: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                            horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
                           color: AppColors.warning,
                           borderRadius:
                               BorderRadius.circular(AppSizes.radiusFull),
                         ),
                         child: Text(
-                          'Only ${product.stock} left',
+                          '${product.stock} left',
                           style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
                               color: Colors.white),
                         ),
                       ),
@@ -91,74 +138,88 @@ class ProductCard extends StatelessWidget {
               ),
             ),
             // Info
-            Padding(
-              padding: const EdgeInsets.all(AppSizes.sm),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.category,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                      height: 1.3,
-                    ),
-                  ),
-                  const SizedBox(height: AppSizes.xs),
-                  Row(
-                    children: [
-                      const Icon(Icons.star,
-                          size: 12, color: AppColors.warning),
-                      const SizedBox(width: 2),
-                      Text(
-                        '${product.rating.toStringAsFixed(1)} (${product.reviews})',
-                        style: const TextStyle(
-                            fontSize: 11, color: AppColors.textSecondary),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      product.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSizes.xs),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '\$${product.price.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
+                    ),
+                    Row(
+                      children: [
+                        const Icon(Icons.star_rounded,
+                            size: 13, color: AppColors.warning),
+                        const SizedBox(width: 2),
+                        Text(
+                          product.rating.toStringAsFixed(1),
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary),
                         ),
-                      ),
-                      if (onAddToCart != null && product.inStock)
-                        GestureDetector(
-                          onTap: onAddToCart,
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '\$${product.price.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
-                            child: const Icon(Icons.add,
-                                color: Colors.white, size: 16),
-                          ),
+                            Text(
+                              '\$${_originalPrice.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textMuted,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          ],
                         ),
-                    ],
-                  ),
-                ],
+                        if (onAddToCart != null && product.inStock)
+                          GestureDetector(
+                            onTap: onAddToCart,
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: AppColors.darkButton,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withAlpha(25),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ],
+                              ),
+                              child: const Icon(Icons.add_shopping_cart_rounded,
+                                  color: Colors.white, size: 14),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

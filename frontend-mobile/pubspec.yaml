@@ -1,5 +1,5 @@
-name: shophub
-description: ShopHub - Mobile Shopping App
+name: TokoMart
+description: TokoMart - Mobile Shopping App
 version: 1.0.0+1
 publish_to: 'none'
 
@@ -25,6 +25,9 @@ dependencies:
 
   # Image picker
   image_picker: ^1.1.2
+
+  # Fonts
+  google_fonts: ^6.2.1
 
   # Utilities
   intl: ^0.19.0
