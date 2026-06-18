@@ -6,72 +6,93 @@ import '../../features/cart/presentation/bloc/cart_bloc.dart';
 import '../../features/cart/presentation/bloc/cart_state.dart';
 import '../../features/wishlist/presentation/bloc/wishlist_bloc.dart';
 import '../../features/wishlist/presentation/bloc/wishlist_state.dart';
+import '../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../features/auth/presentation/bloc/auth_state.dart';
 
 class MainShell extends StatelessWidget {
   final Widget child;
   const MainShell({super.key, required this.child});
 
-  int _selectedIndex(String location) {
+  int _selectedIndex(String location, bool isSeller) {
     if (location.startsWith('/wishlist')) return 2;
     if (location.startsWith('/orders')) return 1;
-    if (location.startsWith('/profile')) return 3;
+    if (isSeller) {
+      if (location.startsWith('/seller')) return 3;
+      if (location.startsWith('/profile')) return 4;
+    } else {
+      if (location.startsWith('/profile')) return 3;
+    }
     return 0;
   }
 
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
-    final index = _selectedIndex(location);
 
     return Scaffold(
       body: child,
-      bottomNavigationBar: BlocBuilder<CartBloc, CartState>(
-        builder: (context, cart) {
-          final cartCount = cart.totalQuantity;
-          return BlocBuilder<WishlistBloc, WishlistState>(
-            builder: (context, wishlist) {
-              final wishlistCount = wishlist.items.length;
-              return Container(
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              border: Border(top: BorderSide(color: AppColors.border)),
-            ),
-            child: SafeArea(
-              child: SizedBox(
-                height: 62,
-                child: Row(
-                  children: [
-                    _NavItem(
-                      icon: Icons.home_outlined,
-                      activeIcon: Icons.home_rounded,
-                      isActive: index == 0,
-                      onTap: () => context.go('/'),
+      bottomNavigationBar: BlocBuilder<AuthBloc, AuthState>(
+        buildWhen: (p, c) => p.user?.role != c.user?.role,
+        builder: (context, authState) {
+          final isSeller = authState.user?.isSeller ?? false;
+          final index = _selectedIndex(location, isSeller);
+
+          return BlocBuilder<CartBloc, CartState>(
+            builder: (context, cart) {
+              final cartCount = cart.totalQuantity;
+              return BlocBuilder<WishlistBloc, WishlistState>(
+                builder: (context, wishlist) {
+                  final wishlistCount = wishlist.items.length;
+                  return Container(
+                    decoration: const BoxDecoration(
+                      color: AppColors.surface,
+                      border: Border(top: BorderSide(color: AppColors.border)),
                     ),
-                    _NavItem(
-                      icon: Icons.grid_view_outlined,
-                      activeIcon: Icons.grid_view_rounded,
-                      isActive: index == 1,
-                      badge: cartCount > 0 ? cartCount : null,
-                      onTap: () => context.go('/orders'),
+                    child: SafeArea(
+                      child: SizedBox(
+                        height: 62,
+                        child: Row(
+                          children: [
+                            _NavItem(
+                              icon: Icons.home_outlined,
+                              activeIcon: Icons.home_rounded,
+                              isActive: index == 0,
+                              onTap: () => context.go('/'),
+                            ),
+                            _NavItem(
+                              icon: Icons.grid_view_outlined,
+                              activeIcon: Icons.grid_view_rounded,
+                              isActive: index == 1,
+                              badge: cartCount > 0 ? cartCount : null,
+                              onTap: () => context.go('/orders'),
+                            ),
+                            _NavItem(
+                              icon: Icons.favorite_border_rounded,
+                              activeIcon: Icons.favorite_rounded,
+                              isActive: index == 2,
+                              badge: wishlistCount > 0 ? wishlistCount : null,
+                              onTap: () => context.go('/wishlist'),
+                            ),
+                            if (isSeller)
+                              _NavItem(
+                                icon: Icons.storefront_outlined,
+                                activeIcon: Icons.storefront_rounded,
+                                isActive: index == 3,
+                                onTap: () => context.go('/seller'),
+                              ),
+                            _NavItem(
+                              icon: Icons.person_outline_rounded,
+                              activeIcon: Icons.person_rounded,
+                              isActive: isSeller ? index == 4 : index == 3,
+                              onTap: () => context.go('/profile'),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    _NavItem(
-                      icon: Icons.favorite_border_rounded,
-                      activeIcon: Icons.favorite_rounded,
-                      isActive: index == 2,
-                      badge: wishlistCount > 0 ? wishlistCount : null,
-                      onTap: () => context.go('/wishlist'),
-                    ),
-                    _NavItem(
-                      icon: Icons.person_outline_rounded,
-                      activeIcon: Icons.person_rounded,
-                      isActive: index == 3,
-                      onTap: () => context.go('/profile'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
+                  );
+                },
+              );
             },
           );
         },

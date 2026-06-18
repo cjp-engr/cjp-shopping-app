@@ -41,7 +41,7 @@ class WishlistScreen extends StatelessWidget {
                   Container(
                     width: 88,
                     height: 88,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.primaryLight,
                       shape: BoxShape.circle,
                     ),
@@ -61,8 +61,8 @@ class WishlistScreen extends StatelessWidget {
                   const Text(
                     'Tap the heart on any product\nto save it here',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 14, color: AppColors.textSecondary),
+                    style:
+                        TextStyle(fontSize: 14, color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: AppSizes.xl),
                   ElevatedButton(
@@ -110,8 +110,7 @@ class WishlistScreen extends StatelessWidget {
                     final product = state.items[i];
                     final originalPrice = product.price * 1.4;
                     return GestureDetector(
-                      onTap: () =>
-                          context.push('/products/${product.id}'),
+                      onTap: () => context.push('/products/${product.id}'),
                       child: Container(
                         decoration: BoxDecoration(
                           color: AppColors.surface,
@@ -158,8 +157,7 @@ class WishlistScreen extends StatelessWidget {
                               child: Padding(
                                 padding: const EdgeInsets.all(AppSizes.md),
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     // Category badge
                                     Container(
@@ -195,17 +193,14 @@ class WishlistScreen extends StatelessWidget {
                                     Row(
                                       children: [
                                         const Icon(Icons.star_rounded,
-                                            size: 13,
-                                            color: AppColors.warning),
+                                            size: 13, color: AppColors.warning),
                                         const SizedBox(width: 2),
                                         Text(
-                                          product.rating
-                                              .toStringAsFixed(1),
+                                          product.rating.toStringAsFixed(1),
                                           style: const TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
-                                              color:
-                                                  AppColors.textSecondary),
+                                              color: AppColors.textSecondary),
                                         ),
                                       ],
                                     ),
@@ -245,7 +240,7 @@ class WishlistScreen extends StatelessWidget {
                                           child: Container(
                                             width: 36,
                                             height: 36,
-                                            decoration: BoxDecoration(
+                                            decoration: const BoxDecoration(
                                               color: AppColors.dangerSurface,
                                               shape: BoxShape.circle,
                                             ),

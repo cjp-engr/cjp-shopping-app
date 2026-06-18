@@ -1,7 +1,12 @@
-import { Response } from 'express';
+﻿import { Response } from 'express';
 import Product from '../models/Product.js';
 import Order from '../models/Order.js';
 import { AuthRequest } from '../middleware/auth.js';
+
+function buildImageUrls(req: AuthRequest, files: Express.Multer.File[]): string[] {
+  const base = `${req.protocol}://${req.get('host')}`;
+  return files.map(f => `${base}/uploads/${f.filename}`);
+}
 
 // @desc    Get seller's products
 // @route   GET /api/seller/products
@@ -18,19 +23,23 @@ export const getSellerProducts = async (req: AuthRequest, res: Response) => {
 // @route   POST /api/seller/products
 export const createProduct = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, description, price, category, image, stock, tags } = req.body;
+    const { name, description, price, category, stock, tags } = req.body;
 
-    if (!name || !description || !price || !category || !image) {
+    if (!name || !description || !price || !category) {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
+
+    const uploadedFiles = (req.files as Express.Multer.File[]) ?? [];
+    const imageUrls = buildImageUrls(req, uploadedFiles);
+    const primaryImage = imageUrls[0] ?? '';
 
     const product = await Product.create({
       name,
       description,
       price,
       category,
-      image,
-      images: image ? [image] : [],
+      image: primaryImage,
+      images: imageUrls,
       stock: stock || 0,
       tags: tags || [],
       sellerId: req.user?.id
@@ -56,15 +65,21 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ success: false, message: 'Not authorized to update this product' });
     }
 
-    const { name, description, price, category, image, stock, tags } = req.body;
+    const { name, description, price, category, stock, tags } = req.body;
+    const uploadedFiles = (req.files as Express.Multer.File[]) ?? [];
 
     if (name) product.name = name;
     if (description) product.description = description;
     if (price !== undefined) product.price = price;
     if (category) product.category = category;
-    if (image) { product.image = image; product.images = [image]; }
     if (stock !== undefined) product.stock = stock;
     if (tags) product.tags = tags;
+
+    if (uploadedFiles.length > 0) {
+      const imageUrls = buildImageUrls(req, uploadedFiles);
+      product.image = imageUrls[0];
+      product.images = imageUrls;
+    }
 
     const updated = await product.save();
     res.status(200).json({ success: true, product: updated });
@@ -122,10 +137,9 @@ export const updateSellerOrderStatus = async (req: AuthRequest, res: Response) =
 
     const order = await Order.findById(req.params.id);
     if (!order) {
-      return res.status(404).json({ success: false, message: 'Order not found' });
+      return res.status(400).json({ success: false, message: 'Order not found' });
     }
 
-    // Verify seller owns at least one product in this order
     const sellerProducts = await Product.find({ sellerId: req.user?.id }).select('_id');
     const sellerProductIds = new Set(sellerProducts.map(p => p._id.toString()));
 
@@ -134,7 +148,6 @@ export const updateSellerOrderStatus = async (req: AuthRequest, res: Response) =
       return res.status(403).json({ success: false, message: 'Not authorized to update this order' });
     }
 
-    // Enforce valid status transitions
     const validTransitions: Record<string, string[]> = {
       pending:    ['processing', 'cancelled'],
       processing: ['shipped', 'cancelled'],
@@ -151,7 +164,6 @@ export const updateSellerOrderStatus = async (req: AuthRequest, res: Response) =
       });
     }
 
-    // Restore stock if cancelling
     if (status === 'cancelled' && order.status !== 'cancelled') {
       for (const item of order.items) {
         const product = await Product.findById(item.product);

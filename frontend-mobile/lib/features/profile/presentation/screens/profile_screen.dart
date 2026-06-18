@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -86,6 +87,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() => _uploadingPhoto = false);
       }
     }
+  }
+
+  void _confirmBecomeSeller(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Become a Seller'),
+        content: const Text(
+          'You\'ll be able to list products and sell on TokoMart. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context
+                  .read<AuthBloc>()
+                  .add(AuthProfileUpdateRequested(const {'role': 'seller'}));
+            },
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _save() {
@@ -404,6 +432,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             : '—',
                       ),
                       const SizedBox(height: AppSizes.xl),
+                      if (user.isSeller)
+                        _ActionTile(
+                          icon: Icons.storefront_outlined,
+                          label: 'My Shop',
+                          onTap: () => context.go('/seller'),
+                        )
+                      else
+                        _ActionTile(
+                          icon: Icons.storefront_outlined,
+                          label: 'Become a Seller',
+                          onTap: () => _confirmBecomeSeller(context),
+                        ),
+                      const SizedBox(height: AppSizes.xs),
                       _ActionTile(
                         icon: Icons.logout,
                         label: AppStrings.logout,

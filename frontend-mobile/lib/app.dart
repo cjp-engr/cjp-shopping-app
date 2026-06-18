@@ -27,6 +27,11 @@ import 'features/orders/presentation/bloc/order_bloc.dart';
 // Features - Wishlist
 import 'features/wishlist/presentation/bloc/wishlist_bloc.dart';
 
+// Features - Seller
+import 'features/seller/data/datasources/seller_remote_datasource.dart';
+import 'features/seller/data/repositories/seller_repository_impl.dart';
+import 'features/seller/presentation/bloc/seller_bloc.dart';
+
 class TokoMart extends StatefulWidget {
   final StorageService storageService;
   const TokoMart({super.key, required this.storageService});
@@ -67,6 +72,10 @@ class _TokoMartState extends State<TokoMart> {
     final orderDs = OrderRemoteDataSource(_apiClient.dio);
     final orderRepo = OrderRepositoryImpl(orderDs);
 
+    // Seller
+    final sellerDs = SellerRemoteDataSource(_apiClient.dio);
+    final sellerRepo = SellerRepositoryImpl(sellerDs);
+
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: _authBloc),
@@ -74,6 +83,7 @@ class _TokoMartState extends State<TokoMart> {
         BlocProvider(create: (_) => CartBloc()),
         BlocProvider(create: (_) => WishlistBloc()),
         BlocProvider(create: (_) => OrderBloc(orderRepo)),
+        BlocProvider(create: (_) => SellerBloc(sellerRepo)),
       ],
       child: _RouterWrapper(authBloc: _authBloc),
     );

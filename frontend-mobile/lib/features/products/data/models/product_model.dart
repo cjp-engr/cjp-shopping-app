@@ -15,9 +15,15 @@ class ProductModel extends ProductEntity {
     super.tags,
     super.specifications,
     required super.createdAt,
+    super.sellerId,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
+    final rawSeller = json['sellerId'] ?? json['seller'] ?? json['createdBy'];
+    final sellerId = rawSeller is Map
+        ? rawSeller['_id']?.toString() ?? rawSeller['id']?.toString()
+        : rawSeller?.toString();
+
     return ProductModel(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       name: json['name'] ?? '',
@@ -34,6 +40,7 @@ class ProductModel extends ProductEntity {
           ? Map<String, String>.from(json['specifications'] as Map)
           : {},
       createdAt: json['createdAt'] ?? '',
+      sellerId: sellerId,
     );
   }
 }

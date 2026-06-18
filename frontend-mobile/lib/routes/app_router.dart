@@ -8,9 +8,13 @@ import '../features/products/presentation/screens/products_screen.dart';
 import '../features/products/presentation/screens/product_detail_screen.dart';
 import '../features/cart/presentation/screens/cart_screen.dart';
 import '../features/orders/presentation/screens/orders_screen.dart';
+import '../features/orders/presentation/screens/order_detail_screen.dart';
 import '../features/orders/presentation/screens/checkout_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/wishlist/presentation/screens/wishlist_screen.dart';
+import '../features/seller/presentation/screens/seller_dashboard_screen.dart';
+import '../features/seller/presentation/screens/add_edit_product_screen.dart';
+import '../features/products/domain/entities/product_entity.dart';
 import '../shared/widgets/main_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -66,6 +70,23 @@ GoRouter createRouter(AuthBloc authBloc) {
         builder: (_, state) =>
             ProductDetailScreen(productId: state.pathParameters['id']!),
       ),
+      GoRoute(
+        path: '/orders/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, state) =>
+            OrderDetailScreen(orderId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/seller/add',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, __) => const AddEditProductScreen(),
+      ),
+      GoRoute(
+        path: '/seller/edit/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, state) =>
+            AddEditProductScreen(product: state.extra as ProductEntity?),
+      ),
       // Shell with bottom nav
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
@@ -82,6 +103,10 @@ GoRouter createRouter(AuthBloc authBloc) {
           GoRoute(
             path: '/wishlist',
             builder: (_, __) => const WishlistScreen(),
+          ),
+          GoRoute(
+            path: '/seller',
+            builder: (_, __) => const SellerDashboardScreen(),
           ),
           GoRoute(
             path: '/profile',

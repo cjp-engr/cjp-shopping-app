@@ -14,6 +14,7 @@ class ProductEntity extends Equatable {
   final List<String> tags;
   final Map<String, String> specifications;
   final String createdAt;
+  final String? sellerId;
 
   const ProductEntity({
     required this.id,
@@ -29,11 +30,12 @@ class ProductEntity extends Equatable {
     this.tags = const [],
     this.specifications = const {},
     required this.createdAt,
+    this.sellerId,
   });
 
   bool get inStock => stock > 0;
   bool get lowStock => stock > 0 && stock <= 5;
 
   @override
-  List<Object?> get props => [id, name, price, category, stock];
+  List<Object?> get props => [id, name, price, category, stock, sellerId];
 }

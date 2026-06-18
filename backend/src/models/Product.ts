@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+﻿import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IProduct extends Document {
   name: string;
@@ -18,66 +18,24 @@ export interface IProduct extends Document {
 }
 
 const ProductSchema = new Schema<IProduct>({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  description: {
-    type: String,
-    required: true
-  },
-  price: {
-    type: Number,
-    required: true,
-    min: 0
-  },
+  name: { type: String, required: true, trim: true },
+  description: { type: String, required: true },
+  price: { type: Number, required: true, min: 0 },
   category: {
     type: String,
     required: true,
     enum: ['Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports & Outdoors']
   },
-  image: {
-    type: String,
-    required: true
-  },
-  images: [{
-    type: String
-  }],
-  stock: {
-    type: Number,
-    required: true,
-    min: 0,
-    default: 0
-  },
-  rating: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 5
-  },
-  reviews: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  tags: [{
-    type: String
-  }],
-  specifications: {
-    type: Map,
-    of: String
-  },
-  sellerId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  }
-}, {
-  timestamps: true
-});
+  image: { type: String, default: '' },
+  images: [{ type: String }],
+  stock: { type: Number, required: true, min: 0, default: 0 },
+  rating: { type: Number, default: 0, min: 0, max: 5 },
+  reviews: { type: Number, default: 0, min: 0 },
+  tags: [{ type: String }],
+  specifications: { type: Map, of: String },
+  sellerId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+}, { timestamps: true });
 
-// Index for search functionality
 ProductSchema.index({ name: 'text', description: 'text' });
 ProductSchema.index({ category: 1 });
 ProductSchema.index({ price: 1 });

@@ -13,6 +13,8 @@ import '../../../cart/presentation/bloc/cart_event.dart';
 import '../../../wishlist/presentation/bloc/wishlist_bloc.dart';
 import '../../../wishlist/presentation/bloc/wishlist_event.dart';
 import '../../../wishlist/presentation/bloc/wishlist_state.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -329,63 +331,107 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ),
       bottomSheet: BlocBuilder<ProductBloc, ProductState>(
         buildWhen: (p, c) => p.selectedProduct != c.selectedProduct,
-        builder: (context, state) {
-          final product = state.selectedProduct;
+        builder: (context, productState) {
+          final product = productState.selectedProduct;
           if (product == null) return const SizedBox.shrink();
-          return Container(
-            padding: EdgeInsets.fromLTRB(
-              AppSizes.md,
-              AppSizes.sm,
-              AppSizes.md,
-              MediaQuery.of(context).padding.bottom + AppSizes.xs,
-            ),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              border: Border(top: BorderSide(color: AppColors.border)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: product.inStock
-                        ? () {
-                            context.read<CartBloc>().add(CartItemAdded(
-                                product: product, quantity: _quantity));
-                            context.push('/cart');
-                          }
-                        : null,
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, AppSizes.buttonHeight),
-                    ),
-                    icon: const Icon(Icons.shopping_bag_outlined, size: 18),
-                    label: const Text('Buy Now'),
+
+          return BlocBuilder<AuthBloc, AuthState>(
+            buildWhen: (p, c) =>
+                p.user?.id != c.user?.id || p.user?.role != c.user?.role,
+            builder: (context, authState) {
+              final user = authState.user;
+              final isOwnProduct = user != null &&
+                  user.isSeller &&
+                  product.sellerId != null &&
+                  product.sellerId == user.id;
+
+              final padding = EdgeInsets.fromLTRB(
+                AppSizes.md,
+                AppSizes.sm,
+                AppSizes.md,
+                MediaQuery.of(context).padding.bottom + AppSizes.xs,
+              );
+
+              if (isOwnProduct) {
+                return Container(
+                  padding: padding,
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border(top: BorderSide(color: AppColors.border)),
                   ),
-                ),
-                const SizedBox(width: AppSizes.sm),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: product.inStock
-                        ? () {
-                            context.read<CartBloc>().add(CartItemAdded(
-                                product: product, quantity: _quantity));
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('Added to cart: ${product.name}'),
-                              duration: const Duration(seconds: 2),
-                              action: SnackBarAction(
-                                label: 'View Cart',
-                                onPressed: () => context.push('/cart'),
-                              ),
-                            ));
-                          }
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(0, AppSizes.buttonHeight),
-                    ),
-                    child: const Text(AppStrings.addToCart),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push(
+                            '/seller/edit/${product.id}',
+                            extra: product,
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, AppSizes.buttonHeight),
+                          ),
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          label: const Text('Edit Product'),
+                        ),
+                      ),
+                    ],
                   ),
+                );
+              }
+
+              return Container(
+                padding: padding,
+                decoration: const BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border(top: BorderSide(color: AppColors.border)),
                 ),
-              ],
-            ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: product.inStock
+                            ? () {
+                                context.read<CartBloc>().add(CartItemAdded(
+                                    product: product, quantity: _quantity));
+                                context.push('/cart');
+                              }
+                            : null,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, AppSizes.buttonHeight),
+                        ),
+                        icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+                        label: const Text('Buy Now'),
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.sm),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: product.inStock
+                            ? () {
+                                context.read<CartBloc>().add(CartItemAdded(
+                                    product: product, quantity: _quantity));
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(SnackBar(
+                                  content:
+                                      Text('Added to cart: ${product.name}'),
+                                  duration: const Duration(seconds: 2),
+                                  action: SnackBarAction(
+                                    label: 'View Cart',
+                                    onPressed: () => context.push('/cart'),
+                                  ),
+                                ));
+                              }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(0, AppSizes.buttonHeight),
+                        ),
+                        child: const Text(AppStrings.addToCart),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           );
         },
       ),
