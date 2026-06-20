@@ -1,6 +1,8 @@
 import type { User, LoginCredentials, SignupData } from '../types/user';
 import { API_ENDPOINTS, getAuthHeaders, getHeaders } from '../config/api';
 
+const getAuthToken = () => localStorage.getItem('shopping_app_auth_token');
+
 interface AuthResponse {
   user: User;
   token: string;
@@ -90,6 +92,27 @@ class AuthService {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Update failed');
+    }
+
+    const data = await response.json();
+    localStorage.setItem('shopping_app_user_data', JSON.stringify(data.user));
+    return data.user;
+  }
+
+  async uploadAvatar(file: File): Promise<User> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const token = getAuthToken();
+    const response = await fetch(API_ENDPOINTS.UPLOAD_AVATAR, {
+      method: 'POST',
+      headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Avatar upload failed');
     }
 
     const data = await response.json();

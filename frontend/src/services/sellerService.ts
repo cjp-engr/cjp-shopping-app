@@ -72,6 +72,12 @@ const adaptOrder = (order: any): Order & { buyer?: { firstName: string; lastName
   estimatedDelivery: order.estimatedDelivery,
 });
 
+// Auth headers without Content-Type (browser sets it for multipart)
+const getAuthHeadersNoContentType = () => {
+  const token = localStorage.getItem('shopping_app_auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 class SellerService {
   async getProducts(): Promise<Product[]> {
     const res = await fetch(API_ENDPOINTS.SELLER_PRODUCTS, { headers: getAuthHeaders() });
@@ -80,22 +86,58 @@ class SellerService {
     return data.products.map(adaptProduct);
   }
 
-  async createProduct(form: ProductFormData): Promise<Product> {
+  async createProduct(form: ProductFormData, imageFiles?: File[]): Promise<Product> {
+    let body: FormData | string;
+    let headers: Record<string, string>;
+
+    if (imageFiles && imageFiles.length > 0) {
+      const fd = new FormData();
+      fd.append('name', form.name);
+      fd.append('description', form.description);
+      fd.append('price', String(form.price));
+      fd.append('category', form.category);
+      fd.append('stock', String(form.stock));
+      imageFiles.forEach(f => fd.append('images', f));
+      body = fd;
+      headers = getAuthHeadersNoContentType();
+    } else {
+      body = JSON.stringify(form);
+      headers = getAuthHeaders();
+    }
+
     const res = await fetch(API_ENDPOINTS.SELLER_PRODUCTS, {
       method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(form),
+      headers,
+      body,
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to create product'); }
     const data = await res.json();
     return adaptProduct(data.product);
   }
 
-  async updateProduct(id: string, form: Partial<ProductFormData>): Promise<Product> {
+  async updateProduct(id: string, form: Partial<ProductFormData>, imageFiles?: File[]): Promise<Product> {
+    let body: FormData | string;
+    let headers: Record<string, string>;
+
+    if (imageFiles && imageFiles.length > 0) {
+      const fd = new FormData();
+      if (form.name)        fd.append('name', form.name);
+      if (form.description) fd.append('description', form.description);
+      if (form.price !== undefined) fd.append('price', String(form.price));
+      if (form.category)    fd.append('category', form.category);
+      if (form.stock !== undefined) fd.append('stock', String(form.stock));
+      imageFiles.forEach(f => fd.append('images', f));
+      body = fd;
+      headers = getAuthHeadersNoContentType();
+    } else {
+      body = JSON.stringify(form);
+      headers = getAuthHeaders();
+    }
+
     const res = await fetch(API_ENDPOINTS.SELLER_PRODUCT(id), {
       method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(form),
+      headers,
+      body,
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to update product'); }
     const data = await res.json();

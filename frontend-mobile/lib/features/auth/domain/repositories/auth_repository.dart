@@ -10,5 +10,6 @@ abstract class AuthRepository {
   });
   Future<UserEntity> getMe();
   Future<UserEntity> updateProfile(Map<String, dynamic> data);
+  Future<UserEntity> uploadAvatar(String filePath);
   Future<void> logout();
 }

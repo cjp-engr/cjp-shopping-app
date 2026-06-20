@@ -1,4 +1,4 @@
-import React, { type HTMLAttributes } from 'react';
+import React, { forwardRef, type HTMLAttributes } from 'react';
 import clsx from 'clsx';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
@@ -6,13 +6,13 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
-export const Card: React.FC<CardProps> = ({
+export const Card = forwardRef<HTMLDivElement, CardProps>(({
   children,
   hover = false,
   padding = 'md',
   className,
   ...props
-}) => {
+}, ref) => {
   const paddingStyles = {
     none: '',
     sm: 'p-3',
@@ -22,6 +22,7 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
+      ref={ref}
       className={clsx(
         'bg-white rounded-xl shadow-sm border border-gray-100',
         paddingStyles[padding],
@@ -33,4 +34,4 @@ export const Card: React.FC<CardProps> = ({
       {children}
     </div>
   );
-};
+});

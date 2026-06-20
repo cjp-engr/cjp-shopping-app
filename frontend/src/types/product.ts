@@ -12,6 +12,7 @@ export interface Product {
   tags?: string[];
   specifications?: Record<string, string>;
   createdAt: string;
+  sellerId?: string;
 }
 
 export interface ProductFilters {

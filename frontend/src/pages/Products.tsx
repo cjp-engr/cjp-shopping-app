@@ -7,6 +7,7 @@ import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { Spinner } from '../components/common/Spinner';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
 import { ShoppingCart, Star, Search, SlidersHorizontal, X } from 'lucide-react';
 
@@ -23,6 +24,7 @@ export const Products: React.FC = () => {
 
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -243,10 +245,10 @@ export const Products: React.FC = () => {
                       size="sm"
                       fullWidth
                       onClick={e => { e.stopPropagation(); addToCart(product, 1); }}
-                      disabled={product.stock === 0}
+                      disabled={product.stock === 0 || product.sellerId === user?.id}
                     >
                       <ShoppingCart className="w-4 h-4 mr-1.5" />
-                      {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                      {product.stock === 0 ? 'Out of Stock' : product.sellerId === user?.id ? 'Your Product' : 'Add to Cart'}
                     </Button>
                   </div>
                 </Card>

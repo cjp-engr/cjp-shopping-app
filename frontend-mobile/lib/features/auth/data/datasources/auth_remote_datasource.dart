@@ -64,4 +64,17 @@ class AuthRemoteDataSource {
       throw mapDioError(e);
     }
   }
+
+  Future<UserModel> uploadAvatar(String filePath) async {
+    try {
+      final fileName = filePath.split(RegExp(r'[/\\]')).last;
+      final formData = FormData.fromMap({
+        'avatar': await MultipartFile.fromFile(filePath, filename: fileName),
+      });
+      final response = await _dio.post('/auth/avatar', data: formData);
+      return UserModel.fromJson(response.data['user'] as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
 }

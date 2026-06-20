@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import Product from '../models/Product.js';
+import User from '../models/User.js';
+import cloudinary from '../config/cloudinary.js';
 
 // @desc    Get all products with filters
 // @route   GET /api/products
@@ -93,7 +95,8 @@ export const getProducts = async (req: Request, res: Response) => {
 // @access  Public
 export const getProduct = async (req: Request, res: Response) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id)
+      .populate('sellerId', 'firstName lastName avatar');
 
     if (!product) {
       return res.status(404).json({
@@ -188,6 +191,76 @@ export const deleteProduct = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: error instanceof Error ? error.message : 'Server error'
+    });
+  }
+};
+
+// @desc    Upload product image to Cloudinary
+// @route   POST /api/products/:id/image
+// @access  Public (should be Admin only in production)
+export const uploadProductImage = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No image file provided' });
+    }
+
+    const file = req.file as Express.Multer.File & { path: string; filename: string };
+    const imageUrl: string = file.path;       // Cloudinary secure URL
+    const publicId: string = file.filename;   // Cloudinary public_id
+
+    // Update the product's image field
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      { image: imageUrl },
+      { new: true, runValidators: true }
+    );
+
+    if (!product) {
+      // Clean up the uploaded image since the product doesn't exist
+      await cloudinary.uploader.destroy(publicId);
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      url: imageUrl,
+      public_id: publicId,
+      product,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Server error',
+    });
+  }
+};
+
+// @desc    Get public seller profile with their products
+// @route   GET /api/products/seller/:sellerId
+// @access  Public
+export const getSellerPublicProfile = async (req: Request, res: Response) => {
+  try {
+    const { sellerId } = req.params;
+    const user = await User.findById(sellerId).select('firstName lastName avatar createdAt');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Seller not found' });
+    }
+    const products = await Product.find({ sellerId }).sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      seller: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatar: user.avatar ?? null,
+        createdAt: user.createdAt,
+      },
+      products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Server error',
     });
   }
 };

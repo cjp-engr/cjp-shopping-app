@@ -1,4 +1,5 @@
 import '../entities/product_entity.dart';
+import '../entities/seller_profile_entity.dart';
 
 abstract class ProductRepository {
   Future<List<ProductEntity>> getProducts({
@@ -14,4 +15,5 @@ abstract class ProductRepository {
 
   Future<ProductEntity> getProduct(String id);
   Future<List<String>> getCategories();
+  Future<SellerProfileEntity> getSellerProfile(String sellerId);
 }

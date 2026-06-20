@@ -7,6 +7,7 @@ import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { Spinner } from '../components/common/Spinner';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
 import {
   ShoppingCart,
@@ -18,12 +19,16 @@ import {
   Truck,
   Shield,
   RotateCcw,
+  Edit,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 export const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart, getItemQuantity } = useCart();
+  const { user } = useAuth();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -31,6 +36,7 @@ export const ProductDetails: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [previewMode, setPreviewMode] = useState(false);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -64,7 +70,7 @@ export const ProductDetails: React.FC = () => {
   }, [id]);
 
   const handleAddToCart = () => {
-    if (product) {
+    if (product && product.sellerId !== user?.id) {
       addToCart(product, quantity);
       setQuantity(1);
     }
@@ -111,17 +117,43 @@ export const ProductDetails: React.FC = () => {
 
   const images = product.images || [product.image];
   const cartQuantity = getItemQuantity(product.id);
+  const isOwnProduct = !!user?.id && user.id === product.sellerId;
+  const showBuyerUI = !isOwnProduct || previewMode;
 
   return (
     <div className="space-y-8">
-      {/* Breadcrumb */}
-      <button
-        onClick={() => navigate('/products')}
-        className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Products
-      </button>
+      {/* Breadcrumb + preview toggle */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate('/products')}
+          className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Products
+        </button>
+
+        {isOwnProduct && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPreviewMode(v => !v)}
+              className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                previewMode
+                  ? 'bg-primary-600 text-white border-primary-600 hover:bg-primary-700'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {previewMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {previewMode ? 'Exit Preview' : 'Preview as Buyer'}
+            </button>
+            {!previewMode && (
+              <Button size="sm" onClick={() => navigate('/seller')}>
+                <Edit className="w-4 h-4 mr-1.5" />
+                Edit in Dashboard
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Product Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -171,22 +203,24 @@ export const ProductDetails: React.FC = () => {
             </h1>
 
             {/* Rating */}
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-5 h-5 ${
-                      i < Math.floor(product.rating)
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-gray-300'
-                    }`}
-                  />
-                ))}
+            {showBuyerUI && (
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-5 h-5 ${
+                        i < Math.floor(product.rating)
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="font-medium">{product.rating}</span>
+                <span className="text-gray-500">({product.reviews} reviews)</span>
               </div>
-              <span className="font-medium">{product.rating}</span>
-              <span className="text-gray-500">({product.reviews} reviews)</span>
-            </div>
+            )}
 
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-6">
@@ -227,7 +261,7 @@ export const ProductDetails: React.FC = () => {
           </div>
 
           {/* Quantity + Add to Cart */}
-          {product.stock > 0 && (
+          {showBuyerUI && product.stock > 0 && (
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700">Quantity</label>
               <div className="flex items-center gap-3">

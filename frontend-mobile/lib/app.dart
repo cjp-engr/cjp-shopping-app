@@ -90,6 +90,13 @@ class _TokoMartState extends State<TokoMart> {
   }
 }
 
+class _NoStretchScrollBehavior extends MaterialScrollBehavior {
+  const _NoStretchScrollBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) => child;
+}
+
 class _RouterWrapper extends StatefulWidget {
   final AuthBloc authBloc;
   const _RouterWrapper({required this.authBloc});
@@ -108,6 +115,7 @@ class _RouterWrapperState extends State<_RouterWrapper> {
       theme: AppTheme.light,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const _NoStretchScrollBehavior(),
     );
   }
 }

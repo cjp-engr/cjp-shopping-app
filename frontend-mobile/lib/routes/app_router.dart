@@ -15,6 +15,7 @@ import '../features/wishlist/presentation/screens/wishlist_screen.dart';
 import '../features/seller/presentation/screens/seller_dashboard_screen.dart';
 import '../features/seller/presentation/screens/add_edit_product_screen.dart';
 import '../features/products/domain/entities/product_entity.dart';
+import '../features/products/presentation/screens/seller_profile_screen.dart';
 import '../shared/widgets/main_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -75,6 +76,12 @@ GoRouter createRouter(AuthBloc authBloc) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (_, state) =>
             OrderDetailScreen(orderId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/seller-profile/:sellerId',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, state) =>
+            SellerProfileScreen(sellerId: state.pathParameters['sellerId']!),
       ),
       GoRoute(
         path: '/seller/add',

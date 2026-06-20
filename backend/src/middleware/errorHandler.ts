@@ -46,6 +46,8 @@ export const errorHandler = (
     message = 'Token expired';
   }
 
+  console.error(`[${statusCode}] ${req.method} ${req.originalUrl} → FULL ERROR:`, JSON.stringify(err, null, 2));
+
   res.status(statusCode).json({
     success: false,
     message,

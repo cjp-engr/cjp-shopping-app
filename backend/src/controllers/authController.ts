@@ -162,6 +162,49 @@ export const getMe = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// @desc    Upload avatar to Cloudinary and save URL
+// @route   POST /api/auth/avatar
+// @access  Private
+export const uploadAvatar = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No image provided' });
+    }
+    const file = req.file as Express.Multer.File & { path: string };
+    const avatarUrl: string = file.path;
+
+    const user = await User.findByIdAndUpdate(
+      req.user?.id,
+      { avatar: avatarUrl },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        avatar: user.avatar,
+        phone: user.phone,
+        address: user.address,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Server error',
+    });
+  }
+};
+
 // @desc    Update user profile
 // @route   PUT /api/auth/profile
 // @access  Private

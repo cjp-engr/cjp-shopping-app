@@ -10,6 +10,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     on<ProductsLoadRequested>(_onLoad);
     on<ProductDetailRequested>(_onDetail);
     on<CategoriesLoadRequested>(_onCategories);
+    on<SellerProfileRequested>(_onSellerProfile);
   }
 
   Future<void> _onLoad(
@@ -51,5 +52,22 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       final cats = await _repository.getCategories();
       emit(state.copyWith(categories: cats));
     } catch (_) {}
+  }
+
+  Future<void> _onSellerProfile(
+      SellerProfileRequested event, Emitter<ProductState> emit) async {
+    emit(state.copyWith(sellerProfileStatus: ProductStatus.loading));
+    try {
+      final profile = await _repository.getSellerProfile(event.sellerId);
+      emit(state.copyWith(
+        sellerProfileStatus: ProductStatus.success,
+        sellerProfile: profile,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        sellerProfileStatus: ProductStatus.failure,
+        sellerProfileError: e.toString(),
+      ));
+    }
   }
 }

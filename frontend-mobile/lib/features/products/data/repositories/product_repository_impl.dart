@@ -1,4 +1,5 @@
 import '../../domain/entities/product_entity.dart';
+import '../../domain/entities/seller_profile_entity.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../datasources/product_remote_datasource.dart';
 
@@ -33,4 +34,8 @@ class ProductRepositoryImpl implements ProductRepository {
 
   @override
   Future<List<String>> getCategories() => _remote.getCategories();
+
+  @override
+  Future<SellerProfileEntity> getSellerProfile(String sellerId) =>
+      _remote.getSellerProfile(sellerId);
 }

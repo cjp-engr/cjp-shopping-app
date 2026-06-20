@@ -14,6 +14,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthSignupRequested>(_onSignup);
     on<AuthLogoutRequested>(_onLogout);
     on<AuthProfileUpdateRequested>(_onProfileUpdate);
+    on<AuthAvatarUploadRequested>(_onAvatarUpload);
   }
 
   Future<void> _onCheck(
@@ -75,6 +76,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(state.copyWith(status: AuthStatus.loading));
     try {
       final user = await _repository.updateProfile(event.data);
+      emit(state.copyWith(status: AuthStatus.authenticated, user: user));
+    } catch (e) {
+      emit(state.copyWith(
+          status: AuthStatus.failure, errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onAvatarUpload(
+      AuthAvatarUploadRequested event, Emitter<AuthState> emit) async {
+    emit(state.copyWith(status: AuthStatus.loading));
+    try {
+      final user = await _repository.uploadAvatar(event.filePath);
       emit(state.copyWith(status: AuthStatus.authenticated, user: user));
     } catch (e) {
       emit(state.copyWith(

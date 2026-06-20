@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import type { Product } from '../types/product';
@@ -14,7 +14,7 @@ import { formatCurrency, formatDate } from '../utils/formatters';
 import {
   Package, Plus, Edit, Trash2, Truck, CheckCircle,
   XCircle, Clock, AlertCircle, ShoppingBag, Store,
-  Upload, ImageOff, DollarSign,
+  Upload, ImageOff, DollarSign, X,
 } from 'lucide-react';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 
@@ -65,7 +65,12 @@ export const SellerDashboard: React.FC = () => {
   const [form, setForm] = useState<ProductFormData>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
-  const [imageMode, setImageMode] = useState<'url' | 'upload'>('url');
+  const [imageMode, setImageMode] = useState<'url' | 'upload'>('upload');
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
+  const [imagePreview, setImagePreview] = useState<string>(''); // URL mode only
+  const formRef = useRef<HTMLDivElement>(null);
 
   // Orders state
   const [orders, setOrders] = useState<SellerOrder[]>([]);
@@ -95,23 +100,48 @@ export const SellerDashboard: React.FC = () => {
   };
 
   // ── Product form ──────────────────────────────────────────
-  const openCreate = () => { setEditingProduct(null); setForm(EMPTY_FORM); setFormError(null); setImageMode('url'); setShowForm(true); };
+  const scrollToForm = () => setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+
+  const openCreate = () => {
+    setEditingProduct(null); setForm(EMPTY_FORM); setFormError(null);
+    setImageMode('upload'); setImageFiles([]); setImagePreviews([]);
+    setExistingImageUrls([]); setImagePreview(''); setShowForm(true);
+    scrollToForm();
+  };
   const openEdit = (p: Product) => {
     setEditingProduct(p);
     setForm({ name: p.name, description: p.description, price: p.price, category: p.category, image: p.image, stock: p.stock });
     setFormError(null);
-    setImageMode(p.image?.startsWith('data:') ? 'upload' : 'url');
+    setImageMode('upload');
+    setImageFiles([]); setImagePreviews([]);
+    const imgs = p.images?.length ? p.images : p.image ? [p.image] : [];
+    setExistingImageUrls(imgs);
+    setImagePreview('');
     setShowForm(true);
+    scrollToForm();
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => setForm(prev => ({ ...prev, image: ev.target?.result as string }));
-    reader.readAsDataURL(file);
+    const picked = Array.from(e.target.files ?? []);
+    if (!picked.length) return;
+    const merged = [...imageFiles, ...picked].slice(0, 10);
+    setImageFiles(merged);
+    setImagePreviews(merged.map(f => URL.createObjectURL(f)));
+    setForm(prev => ({ ...prev, image: merged[0]?.name ?? prev.image }));
+    e.target.value = '';
   };
-  const closeForm = () => { setShowForm(false); setEditingProduct(null); };
+
+  const removeNewImage = (index: number) => {
+    const next = imageFiles.filter((_, i) => i !== index);
+    setImageFiles(next);
+    setImagePreviews(next.map(f => URL.createObjectURL(f)));
+    if (next.length === 0) setForm(prev => ({ ...prev, image: existingImageUrls[0] ?? '' }));
+  };
+
+  const closeForm = () => {
+    setShowForm(false); setEditingProduct(null);
+    setImageFiles([]); setImagePreviews([]); setExistingImageUrls([]); setImagePreview('');
+  };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -121,16 +151,19 @@ export const SellerDashboard: React.FC = () => {
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
-    if (!form.name || !form.description || !form.price || !form.category || !form.image) {
-      setFormError('Please fill in all required fields.');
+    const hasImage = imageMode === 'url'
+      ? !!form.image
+      : imageFiles.length > 0 || existingImageUrls.length > 0;
+    if (!form.name || !form.description || !form.price || !form.category || !hasImage) {
+      setFormError('Please fill in all required fields including at least one product image.');
       return;
     }
     try {
       setFormLoading(true);
       if (editingProduct) {
-        await sellerService.updateProduct(editingProduct.id, form);
+        await sellerService.updateProduct(editingProduct.id, form, imageFiles.length > 0 ? imageFiles : undefined);
       } else {
-        await sellerService.createProduct(form);
+        await sellerService.createProduct(form, imageFiles.length > 0 ? imageFiles : undefined);
       }
       await loadProducts();
       closeForm();
@@ -276,9 +309,9 @@ export const SellerDashboard: React.FC = () => {
             </Button>
           </div>
 
-          {/* Product Form Modal */}
+          {/* Product Form */}
           {showForm && (
-            <Card padding="lg" className="border-2 border-primary-200">
+            <Card padding="lg" className="border-2 border-primary-200" ref={formRef}>
               <h2 className="text-xl font-bold text-gray-900 mb-4">
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
               </h2>
@@ -308,12 +341,18 @@ export const SellerDashboard: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <label className="block text-sm font-medium text-gray-700">Description *</label>
+                    <span className={`text-xs ${form.description.length >= 200 ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                      {form.description.length}/200
+                    </span>
+                  </div>
                   <textarea
                     name="description"
                     value={form.description}
                     onChange={handleFormChange}
                     rows={3}
+                    maxLength={200}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                     required
                   />
@@ -325,7 +364,7 @@ export const SellerDashboard: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Product Image *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Product Images *</label>
                   <div className="flex rounded-lg overflow-hidden border border-gray-300 w-fit mb-3">
                     <button type="button" onClick={() => setImageMode('url')}
                       className={`px-4 py-1.5 text-sm font-medium transition-colors ${imageMode === 'url' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
@@ -333,33 +372,94 @@ export const SellerDashboard: React.FC = () => {
                     </button>
                     <button type="button" onClick={() => setImageMode('upload')}
                       className={`px-4 py-1.5 text-sm font-medium transition-colors ${imageMode === 'upload' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
-                      Upload File
+                      Upload Files
                     </button>
                   </div>
 
                   {imageMode === 'url' ? (
-                    <Input
-                      name="image"
-                      placeholder="https://example.com/image.jpg"
-                      value={form.image.startsWith('data:') ? '' : form.image}
-                      onChange={handleFormChange}
-                      fullWidth
-                    />
+                    <>
+                      <Input
+                        name="image"
+                        placeholder="https://example.com/image.jpg"
+                        value={form.image}
+                        onChange={e => {
+                          handleFormChange(e);
+                          setImagePreview(e.target.value);
+                          setImageFiles([]);
+                        }}
+                        fullWidth
+                      />
+                      {imagePreview && (
+                        <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 mt-2">
+                          <ImgWithFallback src={imagePreview} alt="preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                    </>
                   ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors">
-                      <Upload className="w-6 h-6 text-gray-400 mb-1" />
-                      <span className="text-sm text-gray-500">Click to upload</span>
-                      <span className="text-xs text-gray-400 mt-0.5">PNG, JPG, WEBP</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                    </label>
+                    <div className="space-y-2">
+                      {/* Existing images (editing, no new files yet) */}
+                      {existingImageUrls.length > 0 && imageFiles.length === 0 && (
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1.5">Current images — add new files below to replace them</p>
+                          <div className="flex gap-2 overflow-x-auto pb-1">
+                            {existingImageUrls.map((url, i) => (
+                              <div key={i} className="relative flex-shrink-0">
+                                <ImgWithFallback
+                                  src={url}
+                                  alt={`Image ${i + 1}`}
+                                  className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* New image thumbnails */}
+                      {imagePreviews.length > 0 && (
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                          {imagePreviews.map((src, i) => (
+                            <div key={i} className="relative flex-shrink-0">
+                              <img
+                                src={src}
+                                alt={`New ${i + 1}`}
+                                className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeNewImage(i)}
+                                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-800 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                                aria-label="Remove image"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add photos dropzone */}
+                      {imageFiles.length < 10 && (
+                        <label className="flex items-center gap-3 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors w-full">
+                          <Upload className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                          <div>
+                            <span className="text-sm text-gray-600 font-medium">
+                              {imageFiles.length === 0 ? 'Click to add photos' : 'Add more photos'}
+                            </span>
+                            <span className="block text-xs text-gray-400">
+                              PNG, JPG, WEBP · up to {10 - imageFiles.length} more
+                            </span>
+                          </div>
+                          <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+                        </label>
+                      )}
+
+                      {imageFiles.length > 0 && editingProduct && (
+                        <p className="text-xs text-amber-600">New photos will replace the current images when saved.</p>
+                      )}
+                    </div>
                   )}
                 </div>
-
-                {form.image && (
-                  <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100">
-                    <ImgWithFallback src={form.image} alt="preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
 
                 <div className="flex justify-end gap-3 pt-2">
                   <Button type="button" variant="outline" onClick={closeForm} disabled={formLoading}>Cancel</Button>

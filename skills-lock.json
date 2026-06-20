@@ -19,6 +19,12 @@
       "skillPath": ".agents/skills/frontend-code-review/SKILL.md",
       "computedHash": "88e8443ae06325d11e172421a354b0151899239477820018c3f195fbaa777c3e"
     },
+    "frontend-patterns": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-patterns/SKILL.md",
+      "computedHash": "800420e1cd464491fee0f21f3d118bfdb23ade62750c306c18e3fe4ecfafc5d3"
+    },
     "ui-ux-pro-max": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
       "sourceType": "github",

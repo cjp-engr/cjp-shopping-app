@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -65,20 +64,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         source: ImageSource.gallery,
         maxWidth: 512,
         maxHeight: 512,
-        imageQuality: 75,
+        imageQuality: 85,
       );
       if (image == null || !mounted) return;
 
       setState(() => _uploadingPhoto = true);
-      final bytes = await image.readAsBytes();
-      final base64Avatar =
-          'data:image/jpeg;base64,${base64Encode(bytes)}';
-
-      if (mounted) {
-        context.read<AuthBloc>().add(
-              AuthProfileUpdateRequested({'avatar': base64Avatar}),
-            );
-      }
+      context.read<AuthBloc>().add(AuthAvatarUploadRequested(image.path));
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -139,26 +130,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildAvatar(String? avatar, String firstName) {
-    if (avatar != null &&
-        avatar.isNotEmpty &&
-        avatar.startsWith('data:image')) {
-      // base64 data URI — use Image.memory
-      try {
-        final b64 =
-            avatar.contains(',') ? avatar.split(',')[1] : avatar;
-        final bytes = base64Decode(b64);
-        return Image.memory(
-          bytes,
-          width: 96,
-          height: 96,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _avatarFallback(firstName),
-        );
-      } catch (_) {
-        return _avatarFallback(firstName);
-      }
-    }
-
     if (avatar != null && avatar.isNotEmpty) {
       return Image.network(
         avatar,
@@ -170,7 +141,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         errorBuilder: (_, __, ___) => _avatarFallback(firstName),
       );
     }
-
     return _avatarFallback(firstName);
   }
 
@@ -196,6 +166,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         listenWhen: (p, c) => p.status != c.status,
         listener: (context, state) {
           if (state.status == AuthStatus.failure) {
+            setState(() => _uploadingPhoto = false);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content:

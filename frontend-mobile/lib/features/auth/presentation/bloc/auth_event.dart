@@ -43,3 +43,11 @@ final class AuthProfileUpdateRequested extends AuthEvent {
   @override
   List<Object?> get props => [data];
 }
+
+final class AuthAvatarUploadRequested extends AuthEvent {
+  final String filePath;
+  AuthAvatarUploadRequested(this.filePath);
+
+  @override
+  List<Object?> get props => [filePath];
+}

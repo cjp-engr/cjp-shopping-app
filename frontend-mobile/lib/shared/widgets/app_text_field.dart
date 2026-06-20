@@ -12,6 +12,7 @@ class AppTextField extends StatefulWidget {
   final Widget? suffixWidget;
   final bool readOnly;
   final int? maxLines;
+  final int? maxLength;
 
   const AppTextField({
     super.key,
@@ -26,6 +27,7 @@ class AppTextField extends StatefulWidget {
     this.suffixWidget,
     this.readOnly = false,
     this.maxLines = 1,
+    this.maxLength,
   });
 
   @override
@@ -51,6 +53,7 @@ class _AppTextFieldState extends State<AppTextField> {
       onChanged: widget.onChanged,
       readOnly: widget.readOnly,
       maxLines: widget.maxLines,
+      maxLength: widget.maxLength,
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hint,

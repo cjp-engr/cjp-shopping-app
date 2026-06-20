@@ -3,9 +3,9 @@ import Product from '../models/Product.js';
 import Order from '../models/Order.js';
 import { AuthRequest } from '../middleware/auth.js';
 
-function buildImageUrls(req: AuthRequest, files: Express.Multer.File[]): string[] {
-  const base = `${req.protocol}://${req.get('host')}`;
-  return files.map(f => `${base}/uploads/${f.filename}`);
+function buildImageUrls(files: Express.Multer.File[]): string[] {
+  // When using Cloudinary storage, f.path is the secure Cloudinary URL
+  return files.map(f => (f as any).path || f.filename);
 }
 
 // @desc    Get seller's products
@@ -30,7 +30,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
     }
 
     const uploadedFiles = (req.files as Express.Multer.File[]) ?? [];
-    const imageUrls = buildImageUrls(req, uploadedFiles);
+    const imageUrls = buildImageUrls(uploadedFiles);
     const primaryImage = imageUrls[0] ?? '';
 
     const product = await Product.create({
@@ -47,7 +47,9 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json({ success: true, product });
   } catch (error) {
-    res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Server error' });
+    console.error('[createProduct error]', error);
+    const message = error instanceof Error ? error.message : 'Server error';
+    res.status(500).json({ success: false, message });
   }
 };
 
@@ -76,7 +78,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
     if (tags) product.tags = tags;
 
     if (uploadedFiles.length > 0) {
-      const imageUrls = buildImageUrls(req, uploadedFiles);
+      const imageUrls = buildImageUrls(uploadedFiles);
       product.image = imageUrls[0];
       product.images = imageUrls;
     }
@@ -84,7 +86,9 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
     const updated = await product.save();
     res.status(200).json({ success: true, product: updated });
   } catch (error) {
-    res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Server error' });
+    console.error('[updateProduct error]', error);
+    const message = error instanceof Error ? error.message : 'Server error';
+    res.status(500).json({ success: false, message });
   }
 };
 

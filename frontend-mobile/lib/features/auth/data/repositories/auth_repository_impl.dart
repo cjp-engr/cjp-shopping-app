@@ -44,6 +44,10 @@ class AuthRepositoryImpl implements AuthRepository {
       _remote.updateProfile(data);
 
   @override
+  Future<UserEntity> uploadAvatar(String filePath) =>
+      _remote.uploadAvatar(filePath);
+
+  @override
   Future<void> logout() async {
     await _storage.clear();
   }

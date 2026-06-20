@@ -32,6 +32,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   String? _selectedCategory;
 
   final List<XFile> _pickedFiles = [];
+  late List<String> _existingImageUrls;
   final _picker = ImagePicker();
 
   bool get _isEditing => widget.product != null;
@@ -46,6 +47,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         text: p != null ? p.price.toStringAsFixed(2) : '');
     _stockCtrl = TextEditingController(text: p != null ? '${p.stock}' : '');
     _selectedCategory = (p?.category.isNotEmpty == true) ? p!.category : null;
+    // Seed existing images: prefer the full list, fall back to primary image.
+    final imgs = p?.images ?? [];
+    _existingImageUrls = imgs.isNotEmpty
+        ? List<String>.from(imgs)
+        : (p?.image.isNotEmpty == true ? [p!.image] : []);
     context.read<ProductBloc>().add(CategoriesLoadRequested());
   }
 
@@ -172,6 +178,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   label: 'Description',
                   controller: _descCtrl,
                   maxLines: 3,
+                  maxLength: 200,
                   validator: (v) =>
                       v == null || v.trim().isEmpty ? 'Required' : null,
                 ),
@@ -241,10 +248,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   },
                 ),
                 const SizedBox(height: AppSizes.md),
-                const _SectionLabel('Product Images (Optional)'),
+                const _SectionLabel('Product Images'),
                 _MultiImagePicker(
+                  existingUrls: _existingImageUrls,
                   files: _pickedFiles,
                   onAdd: _showImageSourceSheet,
+                  onRemoveExisting: (i) =>
+                      setState(() => _existingImageUrls.removeAt(i)),
                   onRemove: _removeImage,
                 ),
                 const SizedBox(height: AppSizes.xl),
@@ -266,32 +276,44 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
 }
 
 class _MultiImagePicker extends StatelessWidget {
+  final List<String> existingUrls;
   final List<XFile> files;
   final VoidCallback onAdd;
+  final void Function(int index) onRemoveExisting;
   final void Function(int index) onRemove;
 
   const _MultiImagePicker({
+    required this.existingUrls,
     required this.files,
     required this.onAdd,
+    required this.onRemoveExisting,
     required this.onRemove,
   });
 
   @override
   Widget build(BuildContext context) {
+    final total = existingUrls.length + files.length + 1;
     return SizedBox(
       height: 100,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: files.length + 1,
+        itemCount: total,
         separatorBuilder: (_, __) => const SizedBox(width: AppSizes.sm),
         itemBuilder: (_, i) {
-          if (i == files.length) {
-            return _AddTile(onTap: onAdd);
+          if (i < existingUrls.length) {
+            return _NetworkImageTile(
+              url: existingUrls[i],
+              onRemove: () => onRemoveExisting(i),
+            );
           }
-          return _ImageTile(
-            file: files[i],
-            onRemove: () => onRemove(i),
-          );
+          final newIdx = i - existingUrls.length;
+          if (newIdx < files.length) {
+            return _ImageTile(
+              file: files[newIdx],
+              onRemove: () => onRemove(newIdx),
+            );
+          }
+          return _AddTile(onTap: onAdd);
         },
       ),
     );
@@ -330,6 +352,52 @@ class _AddTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _NetworkImageTile extends StatelessWidget {
+  final String url;
+  final VoidCallback onRemove;
+  const _NetworkImageTile({required this.url, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          child: Image.network(
+            url,
+            width: 100,
+            height: 100,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              width: 100,
+              height: 100,
+              color: AppColors.surfaceVariant,
+              child: const Icon(Icons.broken_image_outlined,
+                  color: AppColors.textMuted),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(3),
+              child:
+                  const Icon(Icons.close, color: Colors.white, size: 14),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

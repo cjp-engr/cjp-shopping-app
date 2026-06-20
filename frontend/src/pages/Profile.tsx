@@ -23,15 +23,15 @@ import orderService from '../services/orderService';
 
 export const Profile: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout, updateProfile } = useAuth();
+  const { user, logout, updateProfile, uploadAvatar } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderSummary, setOrderSummary] = useState<{ totalOrders: number; totalSpent: number } | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
-  const [avatarData, setAvatarData] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -68,20 +68,28 @@ export const Profile: React.FC = () => {
     setSuccess(false);
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
       setError('Image must be under 2 MB');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const dataUrl = ev.target?.result as string;
-      setAvatarPreview(dataUrl);
-      setAvatarData(dataUrl);
-    };
-    reader.readAsDataURL(file);
+
+    const localPreview = URL.createObjectURL(file);
+    setAvatarPreview(localPreview);
+    setUploadingAvatar(true);
+    setError(null);
+
+    try {
+      await uploadAvatar(file);
+    } catch (err) {
+      setAvatarPreview(user?.avatar || null);
+      setError(err instanceof Error ? err.message : 'Failed to upload photo');
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleCancel = () => {
@@ -97,7 +105,6 @@ export const Profile: React.FC = () => {
       country: user?.address?.country || '',
     });
     setAvatarPreview(user?.avatar || null);
-    setAvatarData(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     setIsEditing(false);
     setError(null);
@@ -116,7 +123,6 @@ export const Profile: React.FC = () => {
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone || undefined,
-        ...(avatarData ? { avatar: avatarData } : {}),
         address: {
           street: formData.street,
           city: formData.city,
@@ -127,8 +133,6 @@ export const Profile: React.FC = () => {
       } as any);
       setIsEditing(false);
       setSuccess(true);
-      setAvatarData(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile');
@@ -194,7 +198,11 @@ export const Profile: React.FC = () => {
               {/* Avatar with upload button */}
               <div className="relative inline-block mb-4">
                 <div className="w-24 h-24 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center ring-4 ring-white shadow-md">
-                  {avatarPreview ? (
+                  {uploadingAvatar ? (
+                    <div className="w-full h-full flex items-center justify-center bg-primary-50">
+                      <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  ) : avatarPreview ? (
                     <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <User className="w-12 h-12 text-primary-600" />
@@ -209,11 +217,13 @@ export const Profile: React.FC = () => {
                       className="hidden"
                       onChange={handleAvatarChange}
                       aria-label="Upload profile photo"
+                      disabled={uploadingAvatar}
                     />
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="absolute bottom-0 right-0 w-8 h-8 bg-primary-600 hover:bg-primary-700 text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+                      disabled={uploadingAvatar}
+                      className="absolute bottom-0 right-0 w-8 h-8 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
                       aria-label="Change profile photo"
                     >
                       <Camera className="w-4 h-4" />
@@ -222,7 +232,9 @@ export const Profile: React.FC = () => {
                 )}
               </div>
               {isEditing && (
-                <p className="text-xs text-gray-400 mb-3">Click the camera to upload (max 2 MB)</p>
+                <p className="text-xs text-gray-400 mb-3">
+                  {uploadingAvatar ? 'Uploading to Cloudinary…' : 'Click the camera to upload (max 2 MB)'}
+                </p>
               )}
               <h2 className="text-xl font-bold text-gray-900">
                 {user.firstName} {user.lastName}
@@ -238,7 +250,7 @@ export const Profile: React.FC = () => {
                 fullWidth
                 variant={isEditing ? 'secondary' : 'primary'}
                 onClick={() => setIsEditing(!isEditing)}
-                disabled={loading}
+                disabled={loading || uploadingAvatar}
               >
                 {isEditing ? (
                   <>
@@ -326,7 +338,7 @@ export const Profile: React.FC = () => {
                   type="submit"
                   form="profile-form"
                   loading={loading}
-                  disabled={loading}
+                  disabled={loading || uploadingAvatar}
                 >
                   <Save className="w-4 h-4 mr-2" />
                   Save Changes
@@ -458,11 +470,11 @@ export const Profile: React.FC = () => {
                     type="button"
                     variant="outline"
                     onClick={handleCancel}
-                    disabled={loading}
+                    disabled={loading || uploadingAvatar}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" loading={loading}>
+                  <Button type="submit" loading={loading} disabled={loading || uploadingAvatar}>
                     <Save className="w-4 h-4 mr-2" />
                     Save Changes
                   </Button>

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +9,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
@@ -87,7 +86,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           final firstName = name;
           return Row(
             children: [
-              _buildAvatar(avatar, firstName),
+              SellerAvatar(avatarUrl: avatar, name: firstName, size: 42),
               const SizedBox(width: AppSizes.sm),
               // Greeting
               Expanded(
@@ -163,69 +162,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildAvatar(String? avatar, String firstName) {
-    if (avatar != null &&
-        avatar.isNotEmpty &&
-        avatar.startsWith('data:image')) {
-      // base64 data URI — use Image.memory
-      try {
-        final b64 = avatar.contains(',') ? avatar.split(',')[1] : avatar;
-        final bytes = base64Decode(b64);
-        return Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withAlpha(26),
-            shape: BoxShape.circle,
-            border:
-                Border.all(color: AppColors.primary.withAlpha(77), width: 3),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Image.memory(
-            bytes,
-            width: 42,
-            height: 42,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _avatarFallback(firstName),
-          ),
-        );
-      } catch (_) {
-        return _avatarFallback(firstName);
-      }
-    }
-
-    if (avatar != null && avatar.isNotEmpty) {
-      return Image.network(
-        avatar,
-        width: 42,
-        height: 42,
-        fit: BoxFit.cover,
-        loadingBuilder: (_, child, p) =>
-            p == null ? child : _avatarFallback(firstName),
-        errorBuilder: (_, __, ___) => _avatarFallback(firstName),
-      );
-    }
-
-    return _avatarFallback(firstName);
-  }
-
-  Widget _avatarFallback(String name) {
-    return Container(
-      width: 96,
-      height: 96,
-      color: AppColors.primary.withAlpha(26),
-      alignment: Alignment.center,
-      child: Text(
-        name.isNotEmpty ? name[0].toUpperCase() : '?',
-        style: const TextStyle(
-          fontSize: 36,
-          fontWeight: FontWeight.w800,
-          color: AppColors.primary,
-        ),
       ),
     );
   }
@@ -371,6 +307,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             onRetry: _load,
           );
         }
+
         if (state.products.isEmpty) {
           return EmptyWidget(
             message: AppStrings.noProducts,
@@ -448,10 +385,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (_, i) {
                       final product = state.products[i];
+                      final currentUserId =
+                          context.read<AuthBloc>().state.user?.id;
+                      final isOwn = currentUserId != null &&
+                          product.sellerId == currentUserId;
                       return ProductCard(
                         product: product,
                         onTap: () => context.push('/products/${product.id}'),
-                        onAddToCart: product.inStock
+                        onAddToCart: product.inStock && !isOwn
                             ? () {
                                 context
                                     .read<CartBloc>()

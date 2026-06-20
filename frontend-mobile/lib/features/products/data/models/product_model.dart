@@ -16,6 +16,8 @@ class ProductModel extends ProductEntity {
     super.specifications,
     required super.createdAt,
     super.sellerId,
+    super.sellerName,
+    super.sellerAvatar,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,12 @@ class ProductModel extends ProductEntity {
     final sellerId = rawSeller is Map
         ? rawSeller['_id']?.toString() ?? rawSeller['id']?.toString()
         : rawSeller?.toString();
+    final sellerName = rawSeller is Map
+        ? '${rawSeller['firstName'] ?? ''} ${rawSeller['lastName'] ?? ''}'.trim()
+        : null;
+    final sellerAvatar = rawSeller is Map
+        ? rawSeller['avatar']?.toString()
+        : null;
 
     return ProductModel(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
@@ -41,6 +49,8 @@ class ProductModel extends ProductEntity {
           : {},
       createdAt: json['createdAt'] ?? '',
       sellerId: sellerId,
+      sellerName: sellerName?.isNotEmpty == true ? sellerName : null,
+      sellerAvatar: sellerAvatar?.isNotEmpty == true ? sellerAvatar : null,
     );
   }
 }

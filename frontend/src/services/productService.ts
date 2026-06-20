@@ -53,7 +53,8 @@ class ProductService {
       reviews: p.reviews,
       tags: p.tags,
       specifications: p.specifications,
-      createdAt: p.createdAt
+      createdAt: p.createdAt,
+      sellerId: p.sellerId?._id ?? p.sellerId ?? undefined,
     }));
   }
 
@@ -83,7 +84,8 @@ class ProductService {
         reviews: p.reviews,
         tags: p.tags,
         specifications: p.specifications,
-        createdAt: p.createdAt
+        createdAt: p.createdAt,
+        sellerId: p.sellerId?._id ?? p.sellerId ?? undefined,
       };
     } catch (error) {
       return null;

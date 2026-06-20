@@ -7,6 +7,7 @@ interface AuthContextType extends AuthState {
   signup: (data: SignupData) => Promise<void>;
   logout: () => void;
   updateProfile: (updates: Partial<User>) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -108,8 +109,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const uploadAvatar = async (file: File) => {
+    const updatedUser = await authService.uploadAvatar(file);
+    setAuthState(prev => ({ ...prev, user: updatedUser }));
+  };
+
   return (
-    <AuthContext.Provider value={{ ...authState, login, signup, logout, updateProfile }}>
+    <AuthContext.Provider value={{ ...authState, login, signup, logout, updateProfile, uploadAvatar }}>
       {children}
     </AuthContext.Provider>
   );

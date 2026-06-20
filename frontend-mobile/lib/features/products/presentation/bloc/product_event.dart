@@ -31,3 +31,11 @@ final class ProductDetailRequested extends ProductEvent {
 }
 
 final class CategoriesLoadRequested extends ProductEvent {}
+
+final class SellerProfileRequested extends ProductEvent {
+  final String sellerId;
+  SellerProfileRequested(this.sellerId);
+
+  @override
+  List<Object?> get props => [sellerId];
+}

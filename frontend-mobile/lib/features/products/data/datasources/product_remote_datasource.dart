@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../models/product_model.dart';
+import '../../domain/entities/seller_profile_entity.dart';
 import '../../../../core/network/api_client.dart';
 
 class ProductRemoteDataSource {
@@ -55,6 +56,29 @@ class ProductRemoteDataSource {
       final data = response.data;
       final List list = data is List ? data : (data['categories'] ?? []);
       return list.map((e) => e.toString()).toList();
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  Future<SellerProfileEntity> getSellerProfile(String sellerId) async {
+    try {
+      final response = await _dio.get('/products/seller/$sellerId');
+      final data = response.data as Map<String, dynamic>;
+      final sellerData = data['seller'] as Map<String, dynamic>;
+      final avatar = sellerData['avatar']?.toString();
+      final seller = SellerInfoEntity(
+        id: sellerData['id']?.toString() ?? sellerData['_id']?.toString() ?? '',
+        firstName: sellerData['firstName'] ?? '',
+        lastName: sellerData['lastName'] ?? '',
+        createdAt: sellerData['createdAt']?.toString() ?? '',
+        avatar: avatar?.isNotEmpty == true ? avatar : null,
+      );
+      final List productList = data['products'] ?? [];
+      final products = productList
+          .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return SellerProfileEntity(seller: seller, products: products);
     } on DioException catch (e) {
       throw mapDioError(e);
     }
