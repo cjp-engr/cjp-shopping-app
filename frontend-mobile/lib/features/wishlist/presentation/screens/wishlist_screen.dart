@@ -6,6 +6,7 @@ import '../bloc/wishlist_event.dart';
 import '../bloc/wishlist_state.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/theme_colors.dart';
 
 class WishlistScreen extends StatelessWidget {
   const WishlistScreen({super.key});
@@ -13,7 +14,6 @@ class WishlistScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Favourites'),
         actions: [
@@ -33,6 +33,11 @@ class WishlistScreen extends StatelessWidget {
       ),
       body: BlocBuilder<WishlistBloc, WishlistState>(
         builder: (context, state) {
+          final onSurface = context.onSurfaceColor;
+          final onSurfaceSec = context.onSurfaceSecondary;
+          final muted = context.onSurfaceMuted;
+          final cardBg = context.cardColor;
+
           if (state.items.isEmpty) {
             return Center(
               child: Column(
@@ -49,28 +54,27 @@ class WishlistScreen extends StatelessWidget {
                         size: 44, color: AppColors.primary),
                   ),
                   const SizedBox(height: AppSizes.lg),
-                  const Text(
+                  Text(
                     'No favourites yet',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: onSurface,
                     ),
                   ),
                   const SizedBox(height: AppSizes.xs),
-                  const Text(
+                  Text(
                     'Tap the heart on any product\nto save it here',
                     textAlign: TextAlign.center,
-                    style:
-                        TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: 14, color: onSurfaceSec),
                   ),
                   const SizedBox(height: AppSizes.xl),
                   ElevatedButton(
                     onPressed: () => context.go('/'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.darkButton,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 32, vertical: 14),
+                      minimumSize: Size.zero,
                       shape: RoundedRectangleBorder(
                         borderRadius:
                             BorderRadius.circular(AppSizes.radiusFull),
@@ -93,9 +97,9 @@ class WishlistScreen extends StatelessWidget {
                     AppSizes.md, AppSizes.sm, AppSizes.md, 0),
                 child: Text(
                   '${state.items.length} item${state.items.length == 1 ? '' : 's'}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: onSurfaceSec,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -113,7 +117,7 @@ class WishlistScreen extends StatelessWidget {
                       onTap: () => context.push('/products/${product.id}'),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: cardBg,
                           borderRadius:
                               BorderRadius.circular(AppSizes.radiusLg),
                           boxShadow: [
@@ -126,7 +130,6 @@ class WishlistScreen extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            // Product image
                             ClipRRect(
                               borderRadius: const BorderRadius.horizontal(
                                 left: Radius.circular(AppSizes.radiusLg),
@@ -152,14 +155,12 @@ class WishlistScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            // Info
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.all(AppSizes.md),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Category badge
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 8, vertical: 3),
@@ -182,10 +183,10 @@ class WishlistScreen extends StatelessWidget {
                                       product.name,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.textPrimary,
+                                        color: onSurface,
                                         height: 1.3,
                                       ),
                                     ),
@@ -197,10 +198,10 @@ class WishlistScreen extends StatelessWidget {
                                         const SizedBox(width: 2),
                                         Text(
                                           product.rating.toStringAsFixed(1),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
-                                              color: AppColors.textSecondary),
+                                              color: onSurfaceSec),
                                         ),
                                       ],
                                     ),
@@ -215,24 +216,23 @@ class WishlistScreen extends StatelessWidget {
                                           children: [
                                             Text(
                                               '\$${product.price.toStringAsFixed(0)}',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w900,
-                                                color: AppColors.textPrimary,
+                                                color: onSurface,
                                               ),
                                             ),
                                             Text(
                                               '\$${originalPrice.toStringAsFixed(0)}',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 11,
-                                                color: AppColors.textMuted,
+                                                color: muted,
                                                 decoration:
                                                     TextDecoration.lineThrough,
                                               ),
                                             ),
                                           ],
                                         ),
-                                        // Remove from wishlist
                                         GestureDetector(
                                           onTap: () => context
                                               .read<WishlistBloc>()

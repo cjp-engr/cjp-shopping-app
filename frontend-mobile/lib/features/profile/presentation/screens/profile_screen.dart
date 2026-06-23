@@ -8,6 +8,8 @@ import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/theme/theme_colors.dart';
+import '../../../../core/theme/theme_cubit.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 
@@ -415,6 +417,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           label: 'Become a Seller',
                           onTap: () => _confirmBecomeSeller(context),
                         ),
+                      const SizedBox(height: AppSizes.xs),
+                      BlocBuilder<ThemeCubit, ThemeMode>(
+                        builder: (context, themeMode) {
+                          final isDark = themeMode == ThemeMode.dark;
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              isDark ? Icons.dark_mode : Icons.light_mode,
+                              color: context.onSurfaceColor,
+                            ),
+                            title: Text(
+                              isDark ? 'Dark Mode' : 'Light Mode',
+                              style: TextStyle(
+                                color: context.onSurfaceColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            trailing: Switch(
+                              value: isDark,
+                              activeColor: AppColors.primary,
+                              onChanged: (_) =>
+                                  context.read<ThemeCubit>().toggle(),
+                            ),
+                            onTap: () => context.read<ThemeCubit>().toggle(),
+                          );
+                        },
+                      ),
                       const SizedBox(height: AppSizes.xs),
                       _ActionTile(
                         icon: Icons.logout,

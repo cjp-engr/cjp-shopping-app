@@ -4,10 +4,17 @@
 
 @layer base {
   body {
-    @apply bg-white text-gray-900;
+    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
+
+/* Global dark-mode text overrides — higher specificity than single-class utilities */
+.dark .text-gray-900 { color: rgb(243 244 246); }
+.dark .text-gray-800 { color: rgb(229 231 235); }
+.dark .text-gray-700 { color: rgb(209 213 219); }
+.dark .text-gray-600 { color: rgb(156 163 175); }
+.dark .text-gray-500 { color: rgb(156 163 175); }
 
 @layer components {
   .container {

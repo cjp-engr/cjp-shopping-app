@@ -9,6 +9,7 @@ import '../../../cart/presentation/bloc/cart_bloc.dart';
 import '../../../cart/presentation/bloc/cart_event.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 
 class SellerProfileScreen extends StatefulWidget {
@@ -36,10 +37,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         title: const Text('Seller Store'),
@@ -126,10 +124,10 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                     sliver: SliverToBoxAdapter(
                       child: Text(
                         'Products (${products.length})',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: context.onSurfaceColor,
                         ),
                       ),
                     ),
@@ -148,13 +146,14 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                                 ? () {
                                     context.read<CartBloc>().add(
                                         CartItemAdded(product: product, quantity: 1));
+                                    final router = GoRouter.of(context);
                                     ScaffoldMessenger.of(context)
                                         .showSnackBar(SnackBar(
                                       content: Text('Added: ${product.name}'),
                                       duration: const Duration(seconds: 2),
                                       action: SnackBarAction(
                                         label: 'View Cart',
-                                        onPressed: () => context.push('/cart'),
+                                        onPressed: () => router.push('/cart'),
                                       ),
                                     ));
                                   }
@@ -207,7 +206,7 @@ class _SellerHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.surface,
+      color: context.surfaceColor,
       padding: const EdgeInsets.all(AppSizes.lg),
       child: Column(
         children: [
@@ -219,18 +218,18 @@ class _SellerHeader extends StatelessWidget {
           const SizedBox(height: AppSizes.sm),
           Text(
             name,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: context.onSurfaceColor,
             ),
           ),
           if (joinYear.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
               'Member since $joinYear',
-              style: const TextStyle(
-                  fontSize: 13, color: AppColors.textSecondary),
+              style: TextStyle(
+                  fontSize: 13, color: context.onSurfaceSecondary),
             ),
           ],
           const SizedBox(height: AppSizes.md),

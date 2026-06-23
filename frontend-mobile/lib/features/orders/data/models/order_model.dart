@@ -34,6 +34,8 @@ class OrderItemModel extends OrderItemEntity {
     required super.productImage,
     required super.price,
     required super.quantity,
+    super.sellerId,
+    super.sellerName,
   });
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
@@ -41,6 +43,26 @@ class OrderItemModel extends OrderItemEntity {
 
     // product is a populated Map (from .populate() on getOrders)
     if (product is Map) {
+      // Mongoose populates the field under its schema key name ('sellerId')
+      // but some responses may use 'seller' or 'createdBy'
+      final rawSeller =
+          product['sellerId'] ?? product['seller'] ?? product['createdBy'];
+      final seller = rawSeller is Map ? rawSeller : null;
+      final sellerId = seller != null
+          ? seller['_id']?.toString() ?? seller['id']?.toString()
+          : rawSeller?.toString();
+      String? sellerName;
+      if (seller != null) {
+        final fullName = seller['fullName']?.toString().trim();
+        if (fullName != null && fullName.isNotEmpty) {
+          sellerName = fullName;
+        } else {
+          final first = seller['firstName']?.toString() ?? '';
+          final last = seller['lastName']?.toString() ?? '';
+          final combined = '$first $last'.trim();
+          if (combined.isNotEmpty) sellerName = combined;
+        }
+      }
       return OrderItemModel(
         productId: product['_id']?.toString() ?? product['id']?.toString() ?? '',
         productName: product['name'] ?? json['productName'] ?? '',
@@ -48,6 +70,8 @@ class OrderItemModel extends OrderItemEntity {
         price: (product['price'] as num?)?.toDouble() ??
             (json['productPrice'] as num?)?.toDouble() ?? 0,
         quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+        sellerId: sellerId,
+        sellerName: sellerName,
       );
     }
 

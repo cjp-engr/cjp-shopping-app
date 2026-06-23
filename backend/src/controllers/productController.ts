@@ -70,7 +70,8 @@ export const getProducts = async (req: Request, res: Response) => {
     const products = await Product.find(query)
       .sort(sortOption)
       .skip(skip)
-      .limit(limitNum);
+      .limit(limitNum)
+      .populate('sellerId', 'firstName lastName avatar');
 
     const total = await Product.countDocuments(query);
 

@@ -102,35 +102,56 @@ class OrderService {
     return {
       id: order._id || order.id,
       userId: order.userId,
-      items: order.items.map((item: any) => ({
-        product: item.product._id ? {
-          id: item.product._id,
-          name: item.productName || item.product.name,
-          description: item.product.description || '',
-          price: item.productPrice || item.product.price,
-          category: item.product.category || '',
-          image: item.productImage || item.product.image,
-          images: item.product.images,
-          stock: item.product.stock || 0,
-          rating: item.product.rating || 0,
-          reviews: item.product.reviews || 0,
-          tags: item.product.tags,
-          specifications: item.product.specifications ?? undefined,
-          createdAt: item.product.createdAt || new Date().toISOString()
-        } : {
-          id: item.product.toString(),
-          name: item.productName,
-          description: '',
-          price: item.productPrice,
-          category: '',
-          image: item.productImage,
-          stock: 0,
-          rating: 0,
-          reviews: 0,
-          createdAt: new Date().toISOString()
-        },
-        quantity: item.quantity
-      })),
+      items: order.items.map((item: any) => {
+        const rawSeller = item.product?.sellerId ?? item.product?.seller ?? item.product?.createdBy;
+        const seller = rawSeller && typeof rawSeller === 'object' ? rawSeller : null;
+        const sellerId: string | undefined = seller
+          ? seller._id?.toString() ?? seller.id?.toString()
+          : rawSeller?.toString();
+        let sellerName: string | undefined;
+        if (seller) {
+          const full = seller.fullName?.trim();
+          if (full) {
+            sellerName = full;
+          } else {
+            const combined = `${seller.firstName ?? ''} ${seller.lastName ?? ''}`.trim();
+            if (combined) sellerName = combined;
+          }
+        }
+
+        return {
+          product: item.product?._id ? {
+            id: item.product._id,
+            name: item.productName || item.product.name,
+            description: item.product.description || '',
+            price: item.productPrice || item.product.price,
+            category: item.product.category || '',
+            image: item.productImage || item.product.image,
+            images: item.product.images,
+            stock: item.product.stock || 0,
+            rating: item.product.rating || 0,
+            reviews: item.product.reviews || 0,
+            tags: item.product.tags,
+            specifications: item.product.specifications ?? undefined,
+            createdAt: item.product.createdAt || new Date().toISOString(),
+            sellerId,
+          } : {
+            id: item.product?.toString() ?? '',
+            name: item.productName,
+            description: '',
+            price: item.productPrice,
+            category: '',
+            image: item.productImage,
+            stock: 0,
+            rating: 0,
+            reviews: 0,
+            createdAt: new Date().toISOString(),
+          },
+          quantity: item.quantity,
+          sellerId,
+          sellerName,
+        };
+      }),
       shippingAddress: order.shippingAddress,
       paymentMethod: order.paymentMethod,
       subtotal: order.subtotal,

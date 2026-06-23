@@ -26,7 +26,9 @@ class ProductModel extends ProductEntity {
         ? rawSeller['_id']?.toString() ?? rawSeller['id']?.toString()
         : rawSeller?.toString();
     final sellerName = rawSeller is Map
-        ? '${rawSeller['firstName'] ?? ''} ${rawSeller['lastName'] ?? ''}'.trim()
+        ? (rawSeller['fullName']?.toString().trim().isNotEmpty == true
+            ? rawSeller['fullName'].toString().trim()
+            : '${rawSeller['firstName'] ?? ''} ${rawSeller['lastName'] ?? ''}'.trim())
         : null;
     final sellerAvatar = rawSeller is Map
         ? rawSeller['avatar']?.toString()

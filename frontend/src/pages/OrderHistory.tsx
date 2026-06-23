@@ -19,6 +19,7 @@ import {
   MapPin,
   CreditCard,
   ArrowLeft,
+  Store,
 } from 'lucide-react';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 
@@ -267,64 +268,127 @@ export const OrderHistory: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Order Items Preview */}
-                <div className="flex gap-2 mb-4 overflow-x-auto">
-                  {order.items.slice(0, 4).map(({ product }) => (
-                    <div
-                      key={product.id}
-                      className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 cursor-pointer"
-                      onClick={() => navigate(`/products/${product.id}`)}
-                    >
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                      />
+                {/* Order Items Preview — grouped by seller */}
+                {(() => {
+                  const groups = new Map<string, typeof order.items>();
+                  order.items.forEach(item => {
+                    const key = item.sellerId ?? '__unknown__';
+                    if (!groups.has(key)) groups.set(key, []);
+                    groups.get(key)!.push(item);
+                  });
+                  return (
+                    <div className="space-y-3 mb-4">
+                      {[...groups.entries()].map(([key, items]) => {
+                        const sellerName = items[0].sellerName ?? 'Store';
+                        const MAX_PREVIEW = 3;
+                        const preview = items.slice(0, MAX_PREVIEW);
+                        const extra = items.length - MAX_PREVIEW;
+                        return (
+                          <div key={key}>
+                            {/* Seller label */}
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <Store className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                {sellerName}
+                              </span>
+                            </div>
+                            {/* Image strip */}
+                            <div className="flex gap-2">
+                              {preview.map(({ product }) => (
+                                <div
+                                  key={product.id}
+                                  className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 cursor-pointer"
+                                  onClick={() => navigate(`/products/${product.id}`)}
+                                >
+                                  <img
+                                    src={product.image}
+                                    alt={product.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ))}
+                              {extra > 0 && (
+                                <div className="w-14 h-14 flex-shrink-0 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800 flex items-center justify-center text-xs font-semibold text-primary-600 dark:text-primary-400">
+                                  +{extra}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                  {order.items.length > 4 && (
-                    <div className="w-16 h-16 flex-shrink-0 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600">
-                      +{order.items.length - 4}
-                    </div>
-                  )}
-                </div>
+                  );
+                })()}
 
                 {/* Expanded Order Details */}
                 {isExpanded && (
                   <div className="pt-4 border-t border-gray-200 space-y-4">
-                    {/* Order Items */}
+                    {/* Order Items — grouped by seller */}
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-3">Order Items</h4>
-                      <div className="space-y-3">
-                        {order.items.map(({ product, quantity }) => (
-                          <div
-                            key={product.id}
-                            className="flex gap-4 p-3 bg-gray-50 rounded-lg"
-                          >
-                            <div
-                              className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-white cursor-pointer"
-                              onClick={() => navigate(`/products/${product.id}`)}
-                            >
-                              <img
-                                src={product.image}
-                                alt={product.name}
-                                className="w-full h-full object-cover"
-                              />
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Order Items</h4>
+                      {(() => {
+                        // Group items by sellerId
+                        const groups = new Map<string, typeof order.items>();
+                        order.items.forEach(item => {
+                          const key = item.sellerId ?? '__unknown__';
+                          if (!groups.has(key)) groups.set(key, []);
+                          groups.get(key)!.push(item);
+                        });
+                        return [...groups.entries()].map(([key, items]) => {
+                          const sellerName = items[0].sellerName ?? 'Store';
+                          const groupTotal = items.reduce((s, i) => s + i.product.price * i.quantity, 0);
+                          return (
+                            <div key={key} className="mb-4">
+                              {/* Seller header */}
+                              <div className="flex items-center gap-2 mb-2 px-1">
+                                <Store className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                  {sellerName}
+                                </span>
+                              </div>
+                              <div className="space-y-2">
+                                {items.map(({ product, quantity }) => (
+                                  <div
+                                    key={product.id}
+                                    className="flex gap-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                                  >
+                                    <div
+                                      className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-white cursor-pointer"
+                                      onClick={() => navigate(`/products/${product.id}`)}
+                                    >
+                                      <img
+                                        src={product.image}
+                                        alt={product.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <div className="flex-1">
+                                      <h5 className="font-medium text-gray-900 dark:text-gray-100">{product.name}</h5>
+                                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        Quantity: {quantity} × {formatCurrency(product.price)}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                        {formatCurrency(product.price * quantity)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              {/* Per-seller subtotal */}
+                              <div className="flex justify-between items-center text-sm mt-2 px-1 pt-2 border-t border-gray-100 dark:border-gray-600">
+                                <span className="text-gray-500 dark:text-gray-400">
+                                  {items.reduce((s, i) => s + i.quantity, 0)} item{items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : ''} from {sellerName}
+                                </span>
+                                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                  {formatCurrency(groupTotal)}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex-1">
-                              <h5 className="font-medium text-gray-900">{product.name}</h5>
-                              <p className="text-sm text-gray-600">
-                                Quantity: {quantity} × {formatCurrency(product.price)}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-gray-900">
-                                {formatCurrency(product.price * quantity)}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          );
+                        });
+                      })()}
                     </div>
 
                     {/* Order Summary */}

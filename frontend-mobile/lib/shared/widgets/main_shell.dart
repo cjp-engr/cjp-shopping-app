@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/theme_colors.dart';
 import '../../features/cart/presentation/bloc/cart_bloc.dart';
 import '../../features/cart/presentation/bloc/cart_state.dart';
 import '../../features/wishlist/presentation/bloc/wishlist_bloc.dart';
@@ -28,6 +29,8 @@ class MainShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
+    final surfaceColor = context.surfaceColor;
+    final borderColor = context.borderColor;
 
     return Scaffold(
       body: child,
@@ -44,9 +47,9 @@ class MainShell extends StatelessWidget {
                 builder: (context, wishlist) {
                   final wishlistCount = wishlist.items.length;
                   return Container(
-                    decoration: const BoxDecoration(
-                      color: AppColors.surface,
-                      border: Border(top: BorderSide(color: AppColors.border)),
+                    decoration: BoxDecoration(
+                      color: surfaceColor,
+                      border: Border(top: BorderSide(color: borderColor)),
                     ),
                     child: SafeArea(
                       child: SizedBox(
@@ -118,6 +121,8 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final inactiveColor = context.onSurfaceMuted;
+
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -130,7 +135,7 @@ class _NavItem extends StatelessWidget {
               children: [
                 Icon(
                   isActive ? activeIcon : icon,
-                  color: isActive ? AppColors.primary : AppColors.textMuted,
+                  color: isActive ? AppColors.primary : inactiveColor,
                   size: 26,
                 ),
                 if (badge != null)

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/theme_colors.dart';
 import '../../../wishlist/presentation/bloc/wishlist_bloc.dart';
 import '../../../wishlist/presentation/bloc/wishlist_event.dart';
 import '../../../wishlist/presentation/bloc/wishlist_state.dart';
@@ -23,11 +24,15 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cardBg = context.cardColor;
+    final onSurface = context.onSurfaceColor;
+    final muted = context.onSurfaceMuted;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surfaceCard,
+          color: cardBg,
           borderRadius: BorderRadius.circular(AppSizes.radiusLg),
           boxShadow: [
             BoxShadow(
@@ -76,7 +81,6 @@ class ProductCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                  // Wishlist button — reads from WishlistBloc
                   Positioned(
                     top: 8,
                     right: 8,
@@ -150,10 +154,10 @@ class ProductCard extends StatelessWidget {
                       product.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: onSurface,
                       ),
                     ),
                     Row(
@@ -163,10 +167,10 @@ class ProductCard extends StatelessWidget {
                         const SizedBox(width: 2),
                         Text(
                           product.rating.toStringAsFixed(1),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary),
+                              color: onSurface),
                         ),
                       ],
                     ),
@@ -178,18 +182,18 @@ class ProductCard extends StatelessWidget {
                           children: [
                             Text(
                               '\$${product.price.toStringAsFixed(0)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
+                                color: onSurface,
                               ),
                             ),
                             Text(
                               '\$${_originalPrice.toStringAsFixed(0)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w400,
-                                color: AppColors.textMuted,
+                                color: muted,
                                 decoration: TextDecoration.lineThrough,
                               ),
                             ),
@@ -212,8 +216,10 @@ class ProductCard extends StatelessWidget {
                                   )
                                 ],
                               ),
-                              child: const Icon(Icons.add_shopping_cart_rounded,
-                                  color: Colors.white, size: 14),
+                              child: const Icon(
+                                  Icons.add_shopping_cart_rounded,
+                                  color: Colors.white,
+                                  size: 14),
                             ),
                           ),
                       ],

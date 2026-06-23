@@ -52,7 +52,7 @@ export const Login: React.FC = () => {
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-12 px-4">
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-2xl overflow-hidden shadow-xl border border-gray-100">
+      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-2xl overflow-hidden shadow-xl border border-gray-100 dark:border-gray-700">
         {/* Left Panel – Branding */}
         <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 p-10 text-white">
           <div>
@@ -84,10 +84,10 @@ export const Login: React.FC = () => {
         </div>
 
         {/* Right Panel – Form */}
-        <div className="bg-white p-8 md:p-10">
+        <div className="bg-white dark:bg-gray-900 p-8 md:p-10">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900">Sign in to your account</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Sign in to your account</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Don't have an account?{' '}
               <Link to="/signup" className="font-medium text-primary-600 hover:text-primary-500">
                 Sign up for free
@@ -134,7 +134,7 @@ export const Login: React.FC = () => {
               />
               <button
                 type="button"
-                className="absolute right-3 top-8 text-xs text-gray-500 hover:text-gray-700 font-medium"
+                className="absolute right-3 top-8 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium"
                 onClick={() => setShowPassword(v => !v)}
               >
                 {showPassword ? 'Hide' : 'Show'}
@@ -142,7 +142,7 @@ export const Login: React.FC = () => {
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
                 <input
                   type="checkbox"
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
@@ -163,7 +163,7 @@ export const Login: React.FC = () => {
           <div className="mt-6 text-center">
             <button
               onClick={() => navigate('/')}
-              className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-sm text-gray-400 hover:text-gray-300 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
             >
               ← Back to Home
             </button>

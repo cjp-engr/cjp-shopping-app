@@ -8,6 +8,7 @@ import '../widgets/product_card.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -55,16 +56,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(context),
-            _buildSearchBar(),
+            _buildSearchBar(context),
             const SizedBox(height: AppSizes.sm),
-            _buildCategoryChips(),
+            _buildCategoryChips(context),
             const SizedBox(height: AppSizes.sm),
-            Expanded(child: _buildBody()),
+            Expanded(child: _buildBody(context)),
           ],
         ),
       ),
@@ -72,6 +72,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final onSurface = context.onSurfaceColor;
+    final onSurfaceSec = context.onSurfaceSecondary;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
           AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.sm),
@@ -83,41 +85,38 @@ class _ProductsScreenState extends State<ProductsScreen> {
           final avatar = state.status == AuthStatus.authenticated
               ? state.user?.avatar
               : null;
-          final firstName = name;
           return Row(
             children: [
-              SellerAvatar(avatarUrl: avatar, name: firstName, size: 42),
+              SellerAvatar(avatarUrl: avatar, name: name, size: 42),
               const SizedBox(width: AppSizes.sm),
-              // Greeting
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Hello $firstName',
-                      style: const TextStyle(
+                      'Hello $name',
+                      style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: onSurface,
                         letterSpacing: -0.2,
                       ),
                     ),
-                    const Text(
+                    Text(
                       'Welcome to TokoMart',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: onSurfaceSec,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
                 ),
               ),
-              // Notification + Cart
               IconButton(
                 onPressed: () {},
-                icon: const Icon(Icons.notifications_outlined,
-                    color: AppColors.textPrimary, size: 24),
+                icon: Icon(Icons.notifications_outlined,
+                    color: onSurface, size: 24),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
               ),
@@ -127,8 +126,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   return Stack(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.shopping_bag_outlined,
-                            color: AppColors.textPrimary, size: 24),
+                        icon: Icon(Icons.shopping_bag_outlined,
+                            color: onSurface, size: 24),
                         onPressed: () => context.push('/cart'),
                         padding: EdgeInsets.zero,
                         constraints:
@@ -166,7 +165,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(BuildContext context) {
+    final surfaceVariant = context.surfaceVariantColor;
+    final border = context.borderColor;
+    final onSurface = context.onSurfaceColor;
+    final muted = context.onSurfaceMuted;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
       child: Row(
@@ -175,22 +178,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
             child: Container(
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
+                color: surfaceVariant,
                 borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: border),
               ),
               child: TextField(
                 controller: _searchCtrl,
+                style: TextStyle(color: onSurface),
                 decoration: InputDecoration(
                   hintText: AppStrings.search,
-                  hintStyle:
-                      const TextStyle(color: AppColors.textMuted, fontSize: 14),
-                  prefixIcon: const Icon(Icons.search,
-                      color: AppColors.textMuted, size: 20),
+                  hintStyle: TextStyle(color: muted, fontSize: 14),
+                  prefixIcon: Icon(Icons.search, color: muted, size: 20),
                   suffixIcon: _searchCtrl.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear,
-                              color: AppColors.textMuted, size: 18),
+                          icon: Icon(Icons.clear, color: muted, size: 18),
                           onPressed: () {
                             _searchCtrl.clear();
                             _load();
@@ -198,6 +199,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           },
                         )
                       : null,
+                  filled: true,
+                  fillColor: Colors.transparent,
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -211,7 +214,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
           ),
           const SizedBox(width: AppSizes.sm),
-          // Filter button
           PopupMenuButton<String>(
             onSelected: (v) {
               setState(() => _sortBy = v);
@@ -229,12 +231,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
+                color: surfaceVariant,
                 borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: border),
               ),
-              child: const Icon(Icons.tune_rounded,
-                  color: AppColors.textPrimary, size: 22),
+              child: Icon(Icons.tune_rounded, color: onSurface, size: 22),
             ),
           ),
         ],
@@ -242,10 +243,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  Widget _buildCategoryChips() {
+  Widget _buildCategoryChips(BuildContext context) {
     return BlocBuilder<ProductBloc, ProductState>(
       buildWhen: (p, c) => p.categories != c.categories,
       builder: (context, state) {
+        final surfaceVariant = context.surfaceVariantColor;
+        final onSurfaceSec = context.onSurfaceSecondary;
         final all = ['All', ...state.categories];
         return SizedBox(
           height: 38,
@@ -271,9 +274,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.surfaceVariant,
+                    color: isSelected ? AppColors.primary : surfaceVariant,
                     borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                   ),
                   child: Text(
@@ -281,8 +282,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color:
-                          isSelected ? Colors.white : AppColors.textSecondary,
+                      color: isSelected ? Colors.white : onSurfaceSec,
                     ),
                   ),
                 ),
@@ -294,7 +294,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
+    final onSurface = context.onSurfaceColor;
     return BlocBuilder<ProductBloc, ProductState>(
       buildWhen: (p, c) => p.status != c.status || p.products != c.products,
       builder: (context, state) {
@@ -326,7 +327,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
           onRefresh: () async => _load(refresh: true),
           child: CustomScrollView(
             slivers: [
-              // Promo banner
               if (!_searchActive)
                 SliverToBoxAdapter(
                   child: Padding(
@@ -337,7 +337,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
               if (!_searchActive)
                 const SliverToBoxAdapter(child: SizedBox(height: AppSizes.md)),
-              // Section header
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
@@ -348,10 +347,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         _searchActive
                             ? '${state.products.length} results'
                             : 'New Arrivals',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                          color: onSurface,
                         ),
                       ),
                       TextButton(
@@ -372,7 +371,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSizes.sm)),
-              // Product grid
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
                 sliver: SliverGrid(

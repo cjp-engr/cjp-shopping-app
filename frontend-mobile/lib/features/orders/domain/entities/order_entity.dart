@@ -22,6 +22,8 @@ class OrderItemEntity {
   final String productImage;
   final double price;
   final int quantity;
+  final String? sellerId;
+  final String? sellerName;
 
   const OrderItemEntity({
     required this.productId,
@@ -29,6 +31,8 @@ class OrderItemEntity {
     required this.productImage,
     required this.price,
     required this.quantity,
+    this.sellerId,
+    this.sellerName,
   });
 
   double get total => price * quantity;

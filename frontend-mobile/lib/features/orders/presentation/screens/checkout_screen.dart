@@ -6,10 +6,13 @@ import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
+import '../../../cart/domain/entities/cart_item_entity.dart';
 import '../../../cart/presentation/bloc/cart_event.dart';
 import '../../../cart/presentation/bloc/cart_state.dart';
 
@@ -29,6 +32,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _countryCtrl = TextEditingController(text: 'US');
   String _paymentType = 'credit-card';
 
+  // Per-seller voucher codes (key = sellerId or '__unknown__')
+  final Map<String, TextEditingController> _voucherCtrls = {};
+  final Map<String, double> _voucherDiscounts = {};
+  final Map<String, TextEditingController> _messageCtrls = {};
+
   @override
   void dispose() {
     _streetCtrl.dispose();
@@ -36,20 +44,44 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _stateCtrl.dispose();
     _zipCtrl.dispose();
     _countryCtrl.dispose();
+    for (final c in _voucherCtrls.values) { c.dispose(); }
+    for (final c in _messageCtrls.values) { c.dispose(); }
     super.dispose();
+  }
+
+  TextEditingController _voucherCtrl(String key) =>
+      _voucherCtrls.putIfAbsent(key, () => TextEditingController());
+
+  TextEditingController _messageCtrl(String key) =>
+      _messageCtrls.putIfAbsent(key, () => TextEditingController());
+
+  void _applyVoucher(String key, List<CartItemEntity> items) {
+    final code = _voucherCtrl(key).text.trim().toUpperCase();
+    final groupTotal = items.fold<double>(0, (s, i) => s + i.subtotal);
+    double discount = 0;
+    if (code == 'SAVE10') {
+      discount = groupTotal * 0.1;
+    } else if (code == 'SAVE20') {
+      discount = groupTotal * 0.2;
+    }
+    setState(() => _voucherDiscounts[key] = discount);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(discount > 0
+          ? 'Voucher applied: -\$${discount.toStringAsFixed(2)}'
+          : 'Invalid voucher code'),
+      duration: const Duration(seconds: 2),
+    ));
   }
 
   void _submit(CartState cart) {
     if (!_formKey.currentState!.validate()) return;
-
     final user = context.read<AuthBloc>().state.user;
     if (user == null) return;
-
     final items = cart.items.map((i) => {
           'productId': i.product.id,
           'quantity': i.quantity,
         }).toList();
-
+    final totalDiscount = _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
     context.read<OrderBloc>().add(OrderCreateRequested({
           'userId': user.id,
           'items': items,
@@ -62,10 +94,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           },
           'paymentMethod': {'type': _paymentType},
           'contactEmail': user.email,
-          'subtotal': cart.subtotal,
+          'subtotal': cart.subtotal - totalDiscount,
           'tax': cart.tax,
           'shipping': cart.shipping,
-          'total': cart.total,
+          'total': cart.total - totalDiscount,
         }));
   }
 
@@ -85,13 +117,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           );
         }
         if (state.status == OrderStatus.failure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content:
-                  Text(state.errorMessage ?? 'Failed to place order'),
-              backgroundColor: AppColors.danger,
-            ),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(state.errorMessage ?? 'Failed to place order'),
+            backgroundColor: AppColors.danger,
+          ));
         }
       },
       child: Scaffold(
@@ -102,211 +131,794 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             onPressed: () => context.pop(),
           ),
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSizes.md),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Shipping address
-                const Text(
-                  'Shipping Address',
-                  style: TextStyle(
-                      fontSize: 17, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: AppSizes.md),
-                AppTextField(
-                  label: 'Street Address',
-                  controller: _streetCtrl,
-                  prefixIcon: Icons.home_outlined,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: AppSizes.sm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppTextField(
-                        label: 'City',
-                        controller: _cityCtrl,
-                        validator: (v) =>
-                            v == null || v.trim().isEmpty ? 'Required' : null,
+        body: BlocBuilder<CartBloc, CartState>(
+          builder: (context, cart) {
+            // Group items by seller
+            final groups = <String, List<CartItemEntity>>{};
+            for (final item in cart.items) {
+              final key = item.product.sellerId ?? '__unknown__';
+              groups.putIfAbsent(key, () => []);
+              groups[key]!.add(item);
+            }
+
+            final totalDiscount =
+                _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
+            final grandTotal = cart.total - totalDiscount;
+
+            return Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.only(bottom: AppSizes.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Shipping address ──────────────────────────────
+                          _ShippingAddressSection(
+                            streetCtrl: _streetCtrl,
+                            cityCtrl: _cityCtrl,
+                            stateCtrl: _stateCtrl,
+                            zipCtrl: _zipCtrl,
+                            countryCtrl: _countryCtrl,
+                          ),
+                          const SizedBox(height: 8),
+
+                          // ── Seller cards ──────────────────────────────────
+                          ...groups.entries.map((entry) {
+                            final sellerKey = entry.key;
+                            final items = entry.value;
+                            final sellerName =
+                                items.first.product.sellerName;
+                            final groupSubtotal = items.fold<double>(
+                                0, (s, i) => s + i.subtotal);
+                            final discount =
+                                _voucherDiscounts[sellerKey] ?? 0;
+                            final storeTotal = groupSubtotal - discount;
+
+                            return _SellerCard(
+                              sellerName: sellerName,
+                              items: items,
+                              voucherCtrl: _voucherCtrl(sellerKey),
+                              messageCtrl: _messageCtrl(sellerKey),
+                              discount: discount,
+                              storeTotal: storeTotal,
+                              onApplyVoucher: () =>
+                                  _applyVoucher(sellerKey, items),
+                            );
+                          }),
+
+                          const SizedBox(height: 8),
+
+                          // ── Payment method ────────────────────────────────
+                          _PaymentSection(
+                            selected: _paymentType,
+                            onChanged: (v) =>
+                                setState(() => _paymentType = v),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          // ── Order total breakdown ─────────────────────────
+                          _TotalBreakdown(
+                            cart: cart,
+                            totalDiscount: totalDiscount,
+                            grandTotal: grandTotal,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: AppSizes.sm),
-                    Expanded(
-                      child: AppTextField(
-                        label: 'State',
-                        controller: _stateCtrl,
-                        validator: (v) =>
-                            v == null || v.trim().isEmpty ? 'Required' : null,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSizes.sm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppTextField(
-                        label: 'ZIP Code',
-                        controller: _zipCtrl,
-                        keyboardType: TextInputType.number,
-                        validator: (v) =>
-                            v == null || v.trim().isEmpty ? 'Required' : null,
-                      ),
-                    ),
-                    const SizedBox(width: AppSizes.sm),
-                    Expanded(
-                      child: AppTextField(
-                        label: 'Country',
-                        controller: _countryCtrl,
-                        validator: (v) =>
-                            v == null || v.trim().isEmpty ? 'Required' : null,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSizes.xl),
-                // Payment method
-                const Text(
-                  'Payment Method',
-                  style: TextStyle(
-                      fontSize: 17, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: AppSizes.sm),
-                ...[
-                  ('credit-card', 'Credit Card', Icons.credit_card),
-                  ('debit-card', 'Debit Card', Icons.payment),
-                  ('paypal', 'PayPal', Icons.account_balance_wallet_outlined),
-                ].map(
-                  (p) => RadioListTile<String>(
-                    value: p.$1,
-                    groupValue: _paymentType,
-                    title: Row(
-                      children: [
-                        Icon(p.$3, size: 20, color: AppColors.primary),
-                        const SizedBox(width: AppSizes.sm),
-                        Text(p.$2),
-                      ],
-                    ),
-                    onChanged: (v) => setState(() => _paymentType = v!),
-                    contentPadding: EdgeInsets.zero,
-                    activeColor: AppColors.primary,
                   ),
-                ),
-                const SizedBox(height: AppSizes.xl),
-                // Order summary
-                const Text(
-                  'Order Summary',
-                  style: TextStyle(
-                      fontSize: 17, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: AppSizes.sm),
-                BlocBuilder<CartBloc, CartState>(
-                  builder: (context, cart) {
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSizes.md),
-                        child: Column(
-                          children: [
-                            ...cart.items.map(
-                              (item) => Padding(
-                                padding: const EdgeInsets.only(
-                                    bottom: AppSizes.xs),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        '${item.product.name} × ${item.quantity}',
-                                        style: const TextStyle(
-                                            fontSize: 13,
-                                            color: AppColors.textSecondary),
-                                      ),
-                                    ),
-                                    Text(
-                                      '\$${item.subtotal.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const Divider(),
-                            _Row('Subtotal',
-                                '\$${cart.subtotal.toStringAsFixed(2)}'),
-                            _Row(
-                                'Shipping',
-                                cart.freeShipping
-                                    ? 'FREE'
-                                    : '\$${cart.shipping.toStringAsFixed(2)}'),
-                            _Row('Tax', '\$${cart.tax.toStringAsFixed(2)}'),
-                            const Divider(),
-                            _Row(
-                              'Total',
-                              '\$${cart.total.toStringAsFixed(2)}',
-                              bold: true,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: AppSizes.xl),
-                BlocBuilder<OrderBloc, OrderState>(
-                  buildWhen: (p, c) => p.status != c.status,
-                  builder: (context, orderState) {
-                    return BlocBuilder<CartBloc, CartState>(
-                      builder: (context, cart) {
-                        return AppButton(
-                          label: 'Place Order',
-                          icon: Icons.lock_outline,
-                          loading: orderState.status == OrderStatus.placing,
-                          onPressed: () => _submit(cart),
-                        );
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: AppSizes.xl),
-              ],
-            ),
-          ),
+
+                  // ── Bottom bar ────────────────────────────────────────────
+                  _BottomBar(
+                    total: grandTotal,
+                    saved: totalDiscount,
+                    loading: context
+                            .watch<OrderBloc>()
+                            .state
+                            .status ==
+                        OrderStatus.placing,
+                    onPlace: () => _submit(cart),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _Row extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool bold;
-  const _Row(this.label, this.value, {this.bold = false});
+// ── Shipping address section ──────────────────────────────────────────────────
+
+class _ShippingAddressSection extends StatelessWidget {
+  final TextEditingController streetCtrl, cityCtrl, stateCtrl, zipCtrl,
+      countryCtrl;
+  const _ShippingAddressSection({
+    required this.streetCtrl,
+    required this.cityCtrl,
+    required this.stateCtrl,
+    required this.zipCtrl,
+    required this.countryCtrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: context.surfaceColor,
+      padding: const EdgeInsets.all(AppSizes.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.location_on_outlined,
+                  size: 16, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                'Delivery Address',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: context.onSurfaceColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.sm),
+          AppTextField(
+            label: 'Street Address',
+            controller: streetCtrl,
+            prefixIcon: Icons.home_outlined,
+            validator: (v) =>
+                v == null || v.trim().isEmpty ? 'Required' : null,
+          ),
+          const SizedBox(height: AppSizes.xs),
+          Row(
+            children: [
+              Expanded(
+                child: AppTextField(
+                  label: 'City',
+                  controller: cityCtrl,
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required' : null,
+                ),
+              ),
+              const SizedBox(width: AppSizes.sm),
+              Expanded(
+                child: AppTextField(
+                  label: 'State',
+                  controller: stateCtrl,
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required' : null,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.xs),
+          Row(
+            children: [
+              Expanded(
+                child: AppTextField(
+                  label: 'ZIP Code',
+                  controller: zipCtrl,
+                  keyboardType: TextInputType.number,
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required' : null,
+                ),
+              ),
+              const SizedBox(width: AppSizes.sm),
+              Expanded(
+                child: AppTextField(
+                  label: 'Country',
+                  controller: countryCtrl,
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required' : null,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Per-seller card ───────────────────────────────────────────────────────────
+
+class _SellerCard extends StatelessWidget {
+  final String? sellerName;
+  final List<CartItemEntity> items;
+  final TextEditingController voucherCtrl;
+  final TextEditingController messageCtrl;
+  final double discount;
+  final double storeTotal;
+  final VoidCallback onApplyVoucher;
+
+  const _SellerCard({
+    required this.sellerName,
+    required this.items,
+    required this.voucherCtrl,
+    required this.messageCtrl,
+    required this.discount,
+    required this.storeTotal,
+    required this.onApplyVoucher,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final name = sellerName?.isNotEmpty == true ? sellerName! : 'Store';
+    final itemCount = items.fold<int>(0, (s, i) => s + i.quantity);
+
+    return Container(
+      color: context.surfaceColor,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Seller name header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.xs),
+            child: Row(
+              children: [
+                SellerAvatar(name: name, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: context.onSurfaceColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 1),
+
+          // Items
+          ...items.map((item) => _CheckoutItemRow(item: item)),
+
+          const Divider(height: 1),
+
+          // Shop Voucher row
+          _VoucherRow(
+            controller: voucherCtrl,
+            discount: discount,
+            onApply: onApplyVoucher,
+          ),
+
+          const Divider(height: 1),
+
+          // Message for seller
+          _MessageRow(controller: messageCtrl),
+
+          const Divider(height: 1),
+
+          // Store total
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.md, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Total $itemCount Item${itemCount != 1 ? 's' : ''}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: context.onSurfaceSecondary,
+                  ),
+                ),
+                Text(
+                  '\$${storeTotal.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: context.onSurfaceColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Item row inside seller card ───────────────────────────────────────────────
+
+class _CheckoutItemRow extends StatelessWidget {
+  final CartItemEntity item;
+  const _CheckoutItemRow({required this.item});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.md, vertical: AppSizes.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            child: Image.network(
+              item.product.image,
+              width: 72,
+              height: 72,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                  width: 72, height: 72, color: AppColors.shimmerBase),
+            ),
+          ),
+          const SizedBox(width: AppSizes.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.product.name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: context.onSurfaceColor,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '\$${item.product.price.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    Text(
+                      'x${item.quantity}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.onSurfaceSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Voucher row ───────────────────────────────────────────────────────────────
+
+class _VoucherRow extends StatefulWidget {
+  final TextEditingController controller;
+  final double discount;
+  final VoidCallback onApply;
+  const _VoucherRow({
+    required this.controller,
+    required this.discount,
+    required this.onApply,
+  });
+
+  @override
+  State<_VoucherRow> createState() => _VoucherRowState();
+}
+
+class _VoucherRowState extends State<_VoucherRow> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.md, vertical: 12),
+            child: Row(
+              children: [
+                Icon(Icons.local_offer_outlined,
+                    size: 16, color: context.onSurfaceMuted),
+                const SizedBox(width: 8),
+                Text(
+                  'Shop Voucher',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.onSurfaceColor,
+                  ),
+                ),
+                const Spacer(),
+                if (widget.discount > 0)
+                  Text(
+                    '-\$${widget.discount.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.success,
+                    ),
+                  )
+                else
+                  Text(
+                    'Select or enter code',
+                    style: TextStyle(
+                        fontSize: 13, color: context.onSurfaceMuted),
+                  ),
+                const SizedBox(width: 4),
+                Icon(
+                  _expanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_right,
+                  size: 16,
+                  color: context.onSurfaceMuted,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_expanded)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: widget.controller,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      hintText: 'Enter voucher code',
+                      hintStyle: TextStyle(
+                          fontSize: 13, color: context.onSurfaceMuted),
+                      isDense: true,
+                      filled: true,
+                      fillColor: context.surfaceVariantColor,
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusMd),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                    ),
+                    style: TextStyle(
+                        fontSize: 13, color: context.onSurfaceColor),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: widget.onApply,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                  ),
+                  child: const Text('Apply',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Message for seller row ────────────────────────────────────────────────────
+
+class _MessageRow extends StatefulWidget {
+  final TextEditingController controller;
+  const _MessageRow({required this.controller});
+
+  @override
+  State<_MessageRow> createState() => _MessageRowState();
+}
+
+class _MessageRowState extends State<_MessageRow> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.md, vertical: 12),
+            child: Row(
+              children: [
+                Icon(Icons.chat_bubble_outline,
+                    size: 16, color: context.onSurfaceMuted),
+                const SizedBox(width: 8),
+                Text('Message for Seller',
+                    style: TextStyle(
+                        fontSize: 13, color: context.onSurfaceColor)),
+                const Spacer(),
+                Text(
+                  widget.controller.text.isEmpty
+                      ? 'Please leave a message'
+                      : widget.controller.text,
+                  style: TextStyle(
+                      fontSize: 13, color: context.onSurfaceMuted),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _expanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_right,
+                  size: 16,
+                  color: context.onSurfaceMuted,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_expanded)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+            child: TextField(
+              controller: widget.controller,
+              maxLines: 3,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                hintText: 'Leave a message for the seller...',
+                hintStyle:
+                    TextStyle(fontSize: 13, color: context.onSurfaceMuted),
+                isDense: true,
+                filled: true,
+                fillColor: context.surfaceVariantColor,
+                border: OutlineInputBorder(
+                  borderRadius:
+                      BorderRadius.circular(AppSizes.radiusMd),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.all(12),
+              ),
+              style: TextStyle(fontSize: 13, color: context.onSurfaceColor),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Payment method ────────────────────────────────────────────────────────────
+
+class _PaymentSection extends StatelessWidget {
+  final String selected;
+  final ValueChanged<String> onChanged;
+  const _PaymentSection(
+      {required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final options = [
+      ('credit-card', 'Credit Card', Icons.credit_card),
+      ('debit-card', 'Debit Card', Icons.payment),
+      ('paypal', 'PayPal', Icons.account_balance_wallet_outlined),
+    ];
+
+    return Container(
+      color: context.surfaceColor,
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.md, vertical: AppSizes.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Payment Method',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: context.onSurfaceColor,
+            ),
+          ),
+          ...options.map(
+            (p) => RadioListTile<String>(
+              value: p.$1,
+              groupValue: selected,
+              title: Row(
+                children: [
+                  Icon(p.$3, size: 18, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(p.$2,
+                      style: TextStyle(
+                          fontSize: 13, color: context.onSurfaceColor)),
+                ],
+              ),
+              onChanged: (v) => onChanged(v!),
+              contentPadding: EdgeInsets.zero,
+              activeColor: AppColors.primary,
+              dense: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Order total breakdown ─────────────────────────────────────────────────────
+
+class _TotalBreakdown extends StatelessWidget {
+  final CartState cart;
+  final double totalDiscount;
+  final double grandTotal;
+  const _TotalBreakdown({
+    required this.cart,
+    required this.totalDiscount,
+    required this.grandTotal,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: context.surfaceColor,
+      padding: const EdgeInsets.all(AppSizes.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Order Summary',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: context.onSurfaceColor,
+            ),
+          ),
+          const SizedBox(height: AppSizes.sm),
+          _summaryRow('Merchandise Subtotal',
+              '\$${cart.subtotal.toStringAsFixed(2)}', context),
+          if (totalDiscount > 0)
+            _summaryRow('Voucher Savings',
+                '-\$${totalDiscount.toStringAsFixed(2)}', context,
+                valueColor: AppColors.success),
+          _summaryRow(
+            'Shipping Fee',
+            cart.freeShipping
+                ? 'FREE'
+                : '\$${cart.shipping.toStringAsFixed(2)}',
+            context,
+            valueColor: cart.freeShipping ? AppColors.success : null,
+          ),
+          _summaryRow('Tax', '\$${cart.tax.toStringAsFixed(2)}', context),
+          const Divider(height: AppSizes.lg),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total Payment',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: context.onSurfaceColor,
+                ),
+              ),
+              Text(
+                '\$${grandTotal.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, String value, BuildContext context,
+      {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
               style: TextStyle(
-                  color: bold
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary,
-                  fontWeight:
-                      bold ? FontWeight.w700 : FontWeight.w400)),
+                  fontSize: 13, color: context.onSurfaceSecondary)),
           Text(value,
               style: TextStyle(
-                  fontWeight:
-                      bold ? FontWeight.w800 : FontWeight.w600,
-                  color: bold ? AppColors.primary : null)),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? context.onSurfaceColor,
+              )),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Bottom bar ────────────────────────────────────────────────────────────────
+
+class _BottomBar extends StatelessWidget {
+  final double total;
+  final double saved;
+  final bool loading;
+  final VoidCallback onPlace;
+  const _BottomBar({
+    required this.total,
+    required this.saved,
+    required this.loading,
+    required this.onPlace,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        border: Border(
+            top: BorderSide(color: context.borderColor, width: 0.5)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        AppSizes.md,
+        AppSizes.sm,
+        AppSizes.md,
+        MediaQuery.of(context).padding.bottom + AppSizes.sm,
+      ),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Text('Total  ',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: context.onSurfaceSecondary)),
+                  Text(
+                    '\$${total.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              if (saved > 0)
+                Text(
+                  'Saved \$${saved.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.success,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: AppSizes.md),
+          Expanded(
+            child: AppButton(
+              label: 'Place Order',
+              icon: Icons.lock_outline,
+              loading: loading,
+              onPressed: onPlace,
+            ),
+          ),
         ],
       ),
     );

@@ -8,6 +8,7 @@ import '../../domain/entities/order_entity.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 String _formatDate(String? raw) {
@@ -78,7 +79,6 @@ class OrderDetailScreen extends StatelessWidget {
         if (order == null) {
           return Scaffold(
             appBar: AppBar(
-              backgroundColor: AppColors.surface,
               title: const Text('Order Details'),
             ),
             body: const Center(
@@ -144,9 +144,7 @@ class _OrderDetailView extends StatelessWidget {
     final addr = order.shippingAddress;
 
     return Scaffold(
-      backgroundColor: AppColors.surfaceVariant,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
         title: const Text('Order Details'),
         elevation: 0,
       ),
@@ -337,7 +335,7 @@ class _OrderDetailView extends StatelessWidget {
 
             const SizedBox(height: AppSizes.sm),
 
-            // ── Order items ───────────────────────────────────────────────
+            // ── Order items grouped by seller ─────────────────────────────
             _SectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,15 +364,47 @@ class _OrderDetailView extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: AppSizes.sm),
-                  ...order.items.asMap().entries.map((e) {
-                    final isLast = e.key == order.items.length - 1;
-                    return Column(
-                      children: [
-                        _OrderItemRow(item: e.value),
-                        if (!isLast) const Divider(height: AppSizes.md),
+                  // Group items by seller
+                  ...() {
+                    final groups = <String, List<OrderItemEntity>>{};
+                    for (final item in order.items) {
+                      final key = item.sellerId ?? '__unknown__';
+                      groups.putIfAbsent(key, () => []);
+                      groups[key]!.add(item);
+                    }
+                    final groupEntries = groups.entries.toList();
+                    return [
+                      for (var g = 0; g < groupEntries.length; g++) ...[
+                        // Seller header
+                        _DetailSellerHeader(
+                          sellerName: groupEntries[g].value.first.sellerName,
+                        ),
+                        const SizedBox(height: AppSizes.xs),
+                        // Items in group
+                        ...groupEntries[g].value.asMap().entries.map((e) {
+                          final isLastItem =
+                              e.key == groupEntries[g].value.length - 1;
+                          return Column(
+                            children: [
+                              _OrderItemRow(item: e.value),
+                              if (!isLastItem)
+                                const Divider(height: AppSizes.md),
+                            ],
+                          );
+                        }),
+                        // Divider between seller groups
+                        if (g < groupEntries.length - 1)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                                vertical: AppSizes.sm),
+                            child: Divider(
+                                height: 1,
+                                color: AppColors.primary,
+                                thickness: 0.4),
+                          ),
                       ],
-                    );
-                  }),
+                    ];
+                  }(),
                 ],
               ),
             ),
@@ -451,6 +481,42 @@ class _OrderDetailView extends StatelessWidget {
 }
 
 // ── Section card ──────────────────────────────────────────────────────────────
+
+class _DetailSellerHeader extends StatelessWidget {
+  final String? sellerName;
+  const _DetailSellerHeader({this.sellerName});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = sellerName?.isNotEmpty == true ? sellerName! : 'Store';
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.sm, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withAlpha(12),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      ),
+      child: Row(
+        children: [
+          SellerAvatar(name: name, size: 18),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          const Icon(Icons.storefront_outlined,
+              size: 13, color: AppColors.primary),
+        ],
+      ),
+    );
+  }
+}
 
 class _SectionCard extends StatelessWidget {
   final Widget child;

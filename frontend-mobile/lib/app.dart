@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_cubit.dart';
 import 'core/network/api_client.dart';
 import 'shared/services/storage_service.dart';
 import 'routes/app_router.dart';
@@ -78,6 +79,7 @@ class _TokoMartState extends State<TokoMart> {
 
     return MultiBlocProvider(
       providers: [
+        BlocProvider(create: (_) => ThemeCubit()),
         BlocProvider.value(value: _authBloc),
         BlocProvider(create: (_) => ProductBloc(productRepo)),
         BlocProvider(create: (_) => CartBloc()),
@@ -110,12 +112,18 @@ class _RouterWrapperState extends State<_RouterWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'TokoMart',
-      theme: AppTheme.light,
-      routerConfig: router,
-      debugShowCheckedModeBanner: false,
-      scrollBehavior: const _NoStretchScrollBehavior(),
+    return BlocBuilder<ThemeCubit, ThemeMode>(
+      builder: (context, themeMode) {
+        return MaterialApp.router(
+          title: 'TokoMart',
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: themeMode,
+          routerConfig: router,
+          debugShowCheckedModeBanner: false,
+          scrollBehavior: const _NoStretchScrollBehavior(),
+        );
+      },
     );
   }
 }

@@ -8,7 +8,9 @@ import '../../domain/entities/order_entity.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 class _TabDef {
@@ -29,21 +31,6 @@ const _kTabs = [
   _TabDef('Cancelled', ['cancelled']),
 ];
 
-int _statusStep(String status) {
-  switch (status) {
-    case 'pending':
-      return 0;
-    case 'processing':
-      return 1;
-    case 'shipped':
-      return 2;
-    case 'delivered':
-      return 3;
-    default:
-      return -1;
-  }
-}
-
 Color _statusColor(String status) {
   switch (status) {
     case 'pending':
@@ -58,23 +45,6 @@ Color _statusColor(String status) {
       return AppColors.danger;
     default:
       return AppColors.textMuted;
-  }
-}
-
-IconData _statusIcon(String status) {
-  switch (status) {
-    case 'pending':
-      return Icons.access_time_rounded;
-    case 'processing':
-      return Icons.inventory_2_outlined;
-    case 'shipped':
-      return Icons.local_shipping_outlined;
-    case 'delivered':
-      return Icons.check_circle_outline_rounded;
-    case 'cancelled':
-      return Icons.cancel_outlined;
-    default:
-      return Icons.help_outline;
   }
 }
 
@@ -136,23 +106,19 @@ class _OrdersScreenState extends State<OrdersScreen>
         final orders = state.orders;
 
         return Scaffold(
-          backgroundColor: AppColors.surfaceVariant,
           appBar: AppBar(
-            backgroundColor: AppColors.surface,
             title: const Text(AppStrings.orders),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(48),
-              child: Container(
-                color: AppColors.surface,
-                child: TabBar(
+              child: TabBar(
                   controller: _tabController,
                   isScrollable: true,
                   tabAlignment: TabAlignment.start,
                   labelColor: AppColors.primary,
-                  unselectedLabelColor: AppColors.textSecondary,
+                  unselectedLabelColor: context.onSurfaceSecondary,
                   indicatorColor: AppColors.primary,
                   indicatorWeight: 2.5,
-                  dividerColor: AppColors.border,
+                  dividerColor: context.borderColor,
                   labelPadding: const EdgeInsets.symmetric(horizontal: 16),
                   tabs: _kTabs.map((tab) {
                     final count = tab.filter(orders).length;
@@ -186,7 +152,6 @@ class _OrdersScreenState extends State<OrdersScreen>
                     );
                   }).toList(),
                 ),
-              ),
             ),
           ),
           body: state.status == OrderStatus.loading
@@ -289,19 +254,19 @@ class _EmptyOrdersState extends StatelessWidget {
               label == 'All'
                   ? 'No orders yet'
                   : 'No ${label.toLowerCase()} orders',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: context.onSurfaceColor,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Your orders will appear here\nonce you start shopping.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: context.onSurfaceSecondary,
                 height: 1.5,
               ),
             ),
@@ -321,46 +286,70 @@ class _EmptyOrdersState extends StatelessWidget {
   }
 }
 
-// ── Order card ────────────────────────────────────────────────────────────────
+// ── Order card — emits one sub-card per seller group ─────────────────────────
 
 class _OrderCard extends StatelessWidget {
   final OrderEntity order;
-
   const _OrderCard({required this.order});
-
-  static void _showAllItems(BuildContext context, List<OrderItemEntity> items) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _OrderItemsSheet(items: items),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-    const imgSize = 64.0;
-    const imgGap = 8.0;
-    const maxPreview = 3;
-    final preview = order.items.take(maxPreview).toList();
-    final extra = order.items.length - maxPreview;
+    // Group items by seller
+    final groups = <String, List<OrderItemEntity>>{};
+    for (final item in order.items) {
+      final key = item.sellerId ?? '__unknown__';
+      groups.putIfAbsent(key, () => []);
+      groups[key]!.add(item);
+    }
 
-    final color = _statusColor(order.status);
-    final icon = _statusIcon(order.status);
-    final stepIndex = _statusStep(order.status);
-    final isCancelled = order.status == 'cancelled';
-    final dateStr = _formatDate(order.createdAt);
-    final deliveryStr = _formatDate(order.estimatedDelivery);
+    return Column(
+      children: groups.entries
+          .map((entry) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSizes.sm),
+                child: _SellerOrderCard(
+                  order: order,
+                  sellerKey: entry.key,
+                  items: entry.value,
+                ),
+              ))
+          .toList(),
+    );
+  }
+}
 
+// ── Single seller order card ──────────────────────────────────────────────────
+
+class _SellerOrderCard extends StatelessWidget {
+  final OrderEntity order;
+  final String sellerKey;
+  final List<OrderItemEntity> items;
+
+  const _SellerOrderCard({
+    required this.order,
+    required this.sellerKey,
+    required this.items,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sellerName = items.first.sellerName?.isNotEmpty == true
+        ? items.first.sellerName!
+        : 'Store';
+    final statusColor = _statusColor(order.status);
     final statusLabel = order.status.isNotEmpty
         ? order.status[0].toUpperCase() + order.status.substring(1)
         : '';
+    final deliveryStr = _formatDate(order.estimatedDelivery);
+    final isCancelled = order.status == 'cancelled';
+    final groupTotal =
+        items.fold<double>(0, (s, i) => s + i.total);
+    final itemCount = items.fold<int>(0, (s, i) => s + i.quantity);
 
     return GestureDetector(
       onTap: () => context.push('/orders/${order.id}'),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(AppSizes.radiusLg),
           boxShadow: [
             BoxShadow(
@@ -373,61 +362,30 @@ class _OrderCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Card header ───────────────────────────────────────────────────
+            // ── Seller + status header ────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.sm),
+                  AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.sm),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  SellerAvatar(name: sellerName, size: 20),
+                  const SizedBox(width: 8),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Order #${order.shortId}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            color: AppColors.textPrimary,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                        if (dateStr.isNotEmpty) ...[
-                          const SizedBox(height: 3),
-                          Text(
-                            dateStr,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ],
+                    child: Text(
+                      sellerName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: context.onSurfaceColor,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: AppSizes.sm),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: color.withAlpha(20),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(icon, size: 12, color: color),
-                        const SizedBox(width: 4),
-                        Text(
-                          statusLabel,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: color,
-                          ),
-                        ),
-                      ],
+                  Text(
+                    statusLabel,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
                     ),
                   ),
                 ],
@@ -436,156 +394,130 @@ class _OrderCard extends StatelessWidget {
 
             const Divider(height: 1),
 
-            // ── Product image strip + total ────────────────────────────────────
+            // ── Items ─────────────────────────────────────────────────────
+            ...items.map((item) => _OrderItemRow(item: item)),
+
+            const Divider(height: 1),
+
+            // ── Store total ───────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.all(AppSizes.md),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.md, vertical: 10),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ...preview.map((item) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: imgGap),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                        child: item.productImage.isNotEmpty
-                            ? Image.network(
-                                item.productImage,
-                                width: imgSize,
-                                height: imgSize,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (_, child, p) => p == null
-                                    ? child
-                                    : const _ImagePlaceholder(size: imgSize),
-                                errorBuilder: (_, __, ___) =>
-                                    const _ImagePlaceholder(size: imgSize),
-                              )
-                            : const _ImagePlaceholder(size: imgSize),
-                      ),
-                    );
-                  }),
-                  if (extra > 0)
-                    GestureDetector(
-                      onTap: () => _showAllItems(context, order.items),
-                      child: Container(
-                        width: imgSize,
-                        height: imgSize,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(16),
-                          borderRadius:
-                              BorderRadius.circular(AppSizes.radiusMd),
-                          border: Border.all(
-                              color: AppColors.primary.withAlpha(50)),
-                        ),
-                        alignment: Alignment.center,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '+$extra',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            const Text(
-                              'more',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                  Text(
+                    'Total $itemCount item${itemCount != 1 ? 's' : ''}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.onSurfaceSecondary,
                     ),
-                  const Spacer(),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '\$${order.total.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${order.items.length} item${order.items.length > 1 ? 's' : ''}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
+                  ),
+                  Text(
+                    '\$${groupTotal.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: context.onSurfaceColor,
+                    ),
                   ),
                 ],
               ),
             ),
 
-            // ── Status section ────────────────────────────────────────────────
+            // ── Delivery banner / cancelled notice ────────────────────────
             if (isCancelled)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSizes.md, 0, AppSizes.md, AppSizes.md),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.md, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: AppColors.danger.withAlpha(16),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    border: Border.all(color: AppColors.danger.withAlpha(40)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.cancel_outlined,
-                          size: 16, color: AppColors.danger),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'This order has been cancelled',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.danger,
-                          ),
+              Container(
+                margin: const EdgeInsets.fromLTRB(
+                    AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.md, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.danger.withAlpha(16),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  border: Border.all(color: AppColors.danger.withAlpha(40)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.cancel_outlined,
+                        size: 16, color: AppColors.danger),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'This order has been cancelled',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.danger,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               )
-            else ...[
-              const Divider(height: 1),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.sm),
-                child: _StatusStepper(currentStep: stepIndex),
-              ),
-              if (deliveryStr.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSizes.md, 0, AppSizes.md, AppSizes.sm),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.local_shipping_outlined,
-                          size: 13, color: AppColors.textMuted),
-                      const SizedBox(width: 5),
-                      Text(
-                        'Est. delivery: $deliveryStr',
+            else if (deliveryStr.isNotEmpty) ...[
+              // Teal delivery banner
+              Container(
+                margin: const EdgeInsets.fromLTRB(
+                    AppSizes.md, 0, AppSizes.md, AppSizes.xs),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.md, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withAlpha(18),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  border: Border.all(
+                      color: AppColors.success.withAlpha(50), width: 0.5),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.local_shipping_outlined,
+                        size: 15, color: AppColors.success),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Expected delivery: $deliveryStr',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.success,
                         ),
                       ),
-                    ],
+                    ),
+                    const Icon(Icons.chevron_right,
+                        size: 16, color: AppColors.success),
+                  ],
+                ),
+              ),
+              // Track Order button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: OutlinedButton(
+                    onPressed: () => context.push('/orders/${order.id}'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusFull),
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      'Track Order',
+                      style: TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
                   ),
-                )
-              else
-                const SizedBox(height: AppSizes.sm),
-            ],
+                ),
+              ),
+            ] else
+              const SizedBox(height: AppSizes.sm),
           ],
         ),
       ),
@@ -593,226 +525,77 @@ class _OrderCard extends StatelessWidget {
   }
 }
 
-// ── Status stepper ────────────────────────────────────────────────────────────
+// ── Item row inside order card ────────────────────────────────────────────────
 
-class _StatusStepper extends StatelessWidget {
-  final int currentStep; // 0=pending, 1=processing, 2=shipped, 3=delivered
-
-  const _StatusStepper({required this.currentStep});
-
-  static const _steps = [
-    (Icons.access_time_rounded, 'Placed'),
-    (Icons.inventory_2_outlined, 'Packed'),
-    (Icons.local_shipping_outlined, 'Shipped'),
-    (Icons.check_circle_outline_rounded, 'Delivered'),
-  ];
+class _OrderItemRow extends StatelessWidget {
+  final OrderItemEntity item;
+  const _OrderItemRow({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(_steps.length * 2 - 1, (i) {
-        if (i.isOdd) {
-          final lineIndex = i ~/ 2;
-          final done = lineIndex < currentStep;
-          return Expanded(
-            child: Container(
-              height: 2,
-              color: done ? AppColors.primary : AppColors.border,
-            ),
-          );
-        }
-
-        final stepIndex = i ~/ 2;
-        final done = stepIndex <= currentStep;
-        final active = stepIndex == currentStep;
-        final (icon, label) = _steps[stepIndex];
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: done ? AppColors.primary : AppColors.border,
-                shape: BoxShape.circle,
-                boxShadow: active
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withAlpha(60),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        )
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                icon,
-                size: 15,
-                color: done ? Colors.white : AppColors.textMuted,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                color: done ? AppColors.primary : AppColors.textMuted,
-              ),
-            ),
-          ],
-        );
-      }),
-    );
-  }
-}
-
-// ── Bottom sheet: full product list ──────────────────────────────────────────
-
-class _OrderItemsSheet extends StatelessWidget {
-  final List<OrderItemEntity> items;
-  const _OrderItemsSheet({required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.92,
-      expand: false,
-      builder: (_, scrollCtrl) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(AppSizes.radiusXl)),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 8),
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSizes.md, 4, AppSizes.md, AppSizes.sm),
-              child: Row(
-                children: [
-                  const Text(
-                    'Order Items',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.md, vertical: AppSizes.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Product image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            child: item.productImage.isNotEmpty
+                ? Image.network(
+                    item.productImage,
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (_, child, p) =>
+                        p == null ? child : const _ImagePlaceholder(size: 72),
+                    errorBuilder: (_, __, ___) =>
+                        const _ImagePlaceholder(size: 72),
+                  )
+                : const _ImagePlaceholder(size: 72),
+          ),
+          const SizedBox(width: AppSizes.sm),
+          // Name, price, qty
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.productName,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: context.onSurfaceColor,
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(26),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                    ),
-                    child: Text(
-                      '${items.length}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '\$${item.price.toStringAsFixed(2)}',
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                    color: AppColors.textSecondary,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView.separated(
-                controller: scrollCtrl,
-                padding: const EdgeInsets.symmetric(vertical: AppSizes.sm),
-                itemCount: items.length,
-                separatorBuilder: (_, __) =>
-                    const Divider(height: 1, indent: 76),
-                itemBuilder: (ctx, i) {
-                  final item = items[i];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSizes.md, vertical: AppSizes.sm),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius:
-                              BorderRadius.circular(AppSizes.radiusSm),
-                          child: item.productImage.isNotEmpty
-                              ? Image.network(
-                                  item.productImage,
-                                  width: 56,
-                                  height: 56,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      const _ImagePlaceholder(size: 56),
-                                )
-                              : const _ImagePlaceholder(size: 56),
-                        ),
-                        const SizedBox(width: AppSizes.sm),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.productName,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '\$${item.price.toStringAsFixed(2)} × ${item.quantity}',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '\$${item.total.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    Text(
+                      'x${item.quantity}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.onSurfaceSecondary,
+                      ),
                     ),
-                  );
-                },
-              ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

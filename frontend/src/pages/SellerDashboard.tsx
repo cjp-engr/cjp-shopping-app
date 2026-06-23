@@ -76,6 +76,7 @@ export const SellerDashboard: React.FC = () => {
   const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; productId: string | null; loading: boolean }>({ open: false, productId: null, loading: false });
 
   useEffect(() => {
@@ -311,8 +312,8 @@ export const SellerDashboard: React.FC = () => {
 
           {/* Product Form */}
           {showForm && (
-            <Card padding="lg" className="border-2 border-primary-200" ref={formRef}>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
+            <Card padding="lg" className="border-2 border-primary-200 dark:border-primary-800" ref={formRef}>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
               </h2>
 
@@ -325,14 +326,16 @@ export const SellerDashboard: React.FC = () => {
 
               <form onSubmit={handleFormSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input label="Product Name *" name="name" value={form.name} onChange={handleFormChange} fullWidth required />
+                  <Input label="Product Name" name="name" value={form.name} onChange={handleFormChange} fullWidth required />
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Category <span className="text-red-500">*</span>
+                    </label>
                     <select
                       name="category"
                       value={form.category}
                       onChange={handleFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       required
                     >
                       {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -342,7 +345,7 @@ export const SellerDashboard: React.FC = () => {
 
                 <div>
                   <div className="flex justify-between items-baseline mb-1">
-                    <label className="block text-sm font-medium text-gray-700">Description *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description <span className="text-red-500">*</span></label>
                     <span className={`text-xs ${form.description.length >= 200 ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
                       {form.description.length}/200
                     </span>
@@ -353,25 +356,25 @@ export const SellerDashboard: React.FC = () => {
                     onChange={handleFormChange}
                     rows={3}
                     maxLength={200}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input label="Price ($) *" name="price" type="number" value={form.price} onChange={handleFormChange} fullWidth required />
-                  <Input label="Stock *" name="stock" type="number" value={form.stock} onChange={handleFormChange} fullWidth required />
+                  <Input label="Price ($)" name="price" type="number" value={form.price} onChange={handleFormChange} fullWidth required />
+                  <Input label="Stock" name="stock" type="number" value={form.stock} onChange={handleFormChange} fullWidth required />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Product Images *</label>
-                  <div className="flex rounded-lg overflow-hidden border border-gray-300 w-fit mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product Images <span className="text-red-500">*</span></label>
+                  <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 w-fit mb-3">
                     <button type="button" onClick={() => setImageMode('url')}
-                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${imageMode === 'url' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${imageMode === 'url' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}>
                       Image URL
                     </button>
                     <button type="button" onClick={() => setImageMode('upload')}
-                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${imageMode === 'upload' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${imageMode === 'upload' ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}>
                       Upload Files
                     </button>
                   </div>
@@ -536,6 +539,44 @@ export const SellerDashboard: React.FC = () => {
             </div>
           )}
 
+          {/* Status filter tabs */}
+          {!loadingOrders && orders.length > 0 && (() => {
+            const statusTabs = [
+              { key: 'all',        label: 'All',        icon: ShoppingBag },
+              { key: 'pending',    label: 'Pending',    icon: Clock },
+              { key: 'processing', label: 'To Ship',    icon: Package },
+              { key: 'shipped',    label: 'To Receive', icon: Truck },
+              { key: 'delivered',  label: 'Delivered',  icon: CheckCircle },
+              { key: 'cancelled',  label: 'Cancelled',  icon: XCircle },
+            ].filter(t => t.key === 'all' || orders.some(o => o.status === t.key));
+
+            return (
+              <div className="flex flex-wrap gap-2">
+                {statusTabs.map(({ key, label, icon: Icon }) => {
+                  const count = key === 'all' ? orders.length : orders.filter(o => o.status === key).length;
+                  const active = orderStatusFilter === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setOrderStatusFilter(key)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                        active
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {label}
+                      <span className={`ml-0.5 text-xs px-1.5 py-0.5 rounded-full ${
+                        active ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                      }`}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
           {loadingOrders ? (
             <div className="flex justify-center py-12"><Spinner size="lg" /></div>
           ) : orders.length === 0 ? (
@@ -543,8 +584,15 @@ export const SellerDashboard: React.FC = () => {
               <Package className="w-16 h-16 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-600">No orders yet for your products.</p>
             </Card>
-          ) : (
-            orders.map(order => {
+          ) : (() => {
+            const filtered = orderStatusFilter === 'all' ? orders : orders.filter(o => o.status === orderStatusFilter);
+            if (filtered.length === 0) return (
+              <Card className="text-center py-12">
+                <Package className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-600 dark:text-gray-400">No {statusConfig(orderStatusFilter).label.toLowerCase()} orders.</p>
+              </Card>
+            );
+            return filtered.map(order => {
               const cfg = statusConfig(order.status);
               const StatusIcon = cfg.icon;
               const canToShip        = order.status === 'pending';
@@ -555,9 +603,9 @@ export const SellerDashboard: React.FC = () => {
               return (
                 <Card key={order.id} padding="none" className="overflow-hidden">
                   {/* Order header */}
-                  <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b border-gray-100">
+                  <div className="flex items-center justify-between px-5 py-3 bg-gray-50 dark:bg-gray-700/40 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-sm font-semibold text-gray-700">
+                      <span className="font-mono text-sm font-semibold text-gray-700 dark:text-gray-200">
                         #{order.id.slice(0, 8).toUpperCase()}
                       </span>
                       <Badge variant={cfg.variant} size="sm" className="flex items-center gap-1">
@@ -566,8 +614,8 @@ export const SellerDashboard: React.FC = () => {
                       </Badge>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-gray-400">{formatDate(order.createdAt)}</span>
-                      <span className="text-sm font-bold text-gray-900">{formatCurrency(order.total)}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(order.createdAt)}</span>
+                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{formatCurrency(order.total)}</span>
                     </div>
                   </div>
 
@@ -575,8 +623,8 @@ export const SellerDashboard: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       {/* Buyer */}
                       {order.buyer && (
-                        <p className="text-sm text-gray-500 mb-3">
-                          <span className="font-medium text-gray-700">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                          <span className="font-medium text-gray-700 dark:text-gray-200">
                             {order.buyer.firstName} {order.buyer.lastName}
                           </span>
                           {' · '}{order.buyer.email}
@@ -586,15 +634,15 @@ export const SellerDashboard: React.FC = () => {
                       {/* Items */}
                       <div className="space-y-2">
                         {order.items.map(({ product, quantity }) => (
-                          <div key={product.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-gray-100">
+                          <div key={product.id} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-white dark:bg-gray-700 flex-shrink-0 border border-gray-100 dark:border-gray-600">
                               <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                              <p className="text-xs text-gray-500">Qty {quantity} × {formatCurrency(product.price)}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{product.name}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Qty {quantity} × {formatCurrency(product.price)}</p>
                             </div>
-                            <p className="text-sm font-semibold text-gray-900 flex-shrink-0 tabular-nums">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0 tabular-nums">
                               {formatCurrency(product.price * quantity)}
                             </p>
                           </div>
@@ -630,8 +678,8 @@ export const SellerDashboard: React.FC = () => {
                   </div>
                 </Card>
               );
-            })
-          )}
+            });
+          })()}
         </div>
       )}
 

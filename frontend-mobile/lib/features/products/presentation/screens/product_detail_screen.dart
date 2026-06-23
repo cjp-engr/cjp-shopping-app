@@ -7,6 +7,7 @@ import '../bloc/product_state.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
 import '../../../cart/presentation/bloc/cart_event.dart';
@@ -47,7 +48,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: BlocBuilder<ProductBloc, ProductState>(
         buildWhen: (p, c) =>
             p.selectedProduct != c.selectedProduct || p.status != c.status,
@@ -86,8 +86,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               SliverAppBar(
                 expandedHeight: 340,
                 pinned: true,
-                backgroundColor: AppColors.surface,
-                foregroundColor: AppColors.textPrimary,
+                foregroundColor: null,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 leading: Padding(
@@ -240,10 +239,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           Expanded(
                             child: Text(
                               product.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
+                                color: context.onSurfaceColor,
                                 letterSpacing: -0.3,
                               ),
                             ),
@@ -254,17 +253,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             children: [
                               Text(
                                 '\$${product.price.toStringAsFixed(0)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
-                                  color: AppColors.textPrimary,
+                                  color: context.onSurfaceColor,
                                 ),
                               ),
                               Text(
                                 '\$${originalPrice.toStringAsFixed(0)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
-                                  color: AppColors.textMuted,
+                                  color: context.onSurfaceMuted,
                                   decoration: TextDecoration.lineThrough,
                                 ),
                               ),
@@ -301,8 +300,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   ),
                                   Text(
                                     '  (${product.reviews} reviews)',
-                                    style: const TextStyle(
-                                        color: AppColors.textSecondary,
+                                    style: TextStyle(
+                                        color: context.onSurfaceSecondary,
                                         fontSize: 13),
                                   ),
                                 ],
@@ -310,21 +309,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               const SizedBox(height: AppSizes.md),
                               Row(
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Quantity',
                                     style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.textPrimary),
+                                        color: context.onSurfaceColor),
                                   ),
                                   const Spacer(),
                                   Container(
                                     decoration: BoxDecoration(
-                                      color: AppColors.surfaceVariant,
+                                      color: context.surfaceVariantColor,
                                       borderRadius: BorderRadius.circular(
                                           AppSizes.radiusFull),
-                                      border:
-                                          Border.all(color: AppColors.border),
+                                      border: Border.all(color: context.borderColor),
                                     ),
                                     child: Row(
                                       children: [
@@ -363,20 +361,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       const SizedBox(height: AppSizes.md),
                       // Description
-                      const Text(
+                      Text(
                         'Description',
                         style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary),
+                            color: context.onSurfaceColor),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         product.description.length > 200
                             ? '${product.description.substring(0, 200)}…'
                             : product.description,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                        style: TextStyle(
+                          color: context.onSurfaceSecondary,
                           fontSize: 14,
                           height: 1.6,
                         ),
@@ -398,7 +396,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           );
         },
       ),
-      bottomSheet: BlocBuilder<ProductBloc, ProductState>(
+      bottomNavigationBar: BlocBuilder<ProductBloc, ProductState>(
         buildWhen: (p, c) => p.selectedProduct != c.selectedProduct,
         builder: (context, productState) {
           final product = productState.selectedProduct;
@@ -424,9 +422,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               if (isOwnProduct && !_previewMode) {
                 return Container(
                   padding: padding,
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
-                    border: Border(top: BorderSide(color: AppColors.border)),
+                  decoration: BoxDecoration(
+                    color: context.surfaceColor,
+                    border: Border(top: BorderSide(color: context.borderColor)),
                   ),
                   child: Row(
                     children: [
@@ -450,9 +448,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
               return Container(
                 padding: padding,
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  border: Border(top: BorderSide(color: AppColors.border)),
+                decoration: BoxDecoration(
+                  color: context.surfaceColor,
+                  border: Border(top: BorderSide(color: context.borderColor)),
                 ),
                 child: Row(
                   children: [
@@ -479,6 +477,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ? () {
                                 context.read<CartBloc>().add(CartItemAdded(
                                     product: product, quantity: _quantity));
+                                final router = GoRouter.of(context);
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(SnackBar(
                                   content:
@@ -486,7 +485,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   duration: const Duration(seconds: 2),
                                   action: SnackBarAction(
                                     label: 'View Cart',
-                                    onPressed: () => context.push('/cart'),
+                                    onPressed: () => router.push('/cart'),
                                   ),
                                 ));
                               }
@@ -553,9 +552,9 @@ class _SellerBtn extends StatelessWidget {
           vertical: 12,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.borderColor),
         ),
         child: Row(
           children: [
@@ -571,10 +570,10 @@ class _SellerBtn extends StatelessWidget {
                 children: [
                   Text(
                     name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: context.onSurfaceColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -589,7 +588,7 @@ class _SellerBtn extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+            Icon(Icons.chevron_right_rounded, color: context.onSurfaceMuted),
           ],
         ),
       ),

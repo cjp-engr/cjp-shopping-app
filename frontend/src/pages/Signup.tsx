@@ -75,7 +75,7 @@ export const Signup: React.FC = () => {
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-12 px-4">
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-2xl overflow-hidden shadow-xl border border-gray-100">
+      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-2xl overflow-hidden shadow-xl border border-gray-100 dark:border-gray-700">
         {/* Left Panel */}
         <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 p-10 text-white">
           <div>
@@ -106,10 +106,10 @@ export const Signup: React.FC = () => {
         </div>
 
         {/* Right Panel */}
-        <div className="bg-white p-8 md:p-10 overflow-y-auto max-h-screen">
+        <div className="bg-white dark:bg-gray-900 p-8 md:p-10 overflow-y-auto max-h-screen">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Create your account</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Create your account</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Already have an account?{' '}
               <Link to="/login" className="font-medium text-primary-600 hover:text-primary-500">
                 Sign in instead
@@ -151,7 +151,7 @@ export const Signup: React.FC = () => {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-8 text-xs text-gray-500 hover:text-gray-700 font-medium"
+                  className="absolute right-3 top-8 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium"
                   onClick={() => setShowPassword(v => !v)}
                 >
                   {showPassword ? 'Hide' : 'Show'}
@@ -160,14 +160,14 @@ export const Signup: React.FC = () => {
               {strength && (
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full transition-all duration-300 ${strength.color} ${strength.w}`} />
                     </div>
                     <span className={`text-xs font-semibold ${
                       strength.label === 'Weak' ? 'text-red-500' : strength.label === 'Medium' ? 'text-amber-500' : 'text-emerald-600'
                     }`}>{strength.label}</span>
                   </div>
-                  <p className="text-xs text-gray-400">Use 8+ characters with uppercase, lowercase, and numbers</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Use 8+ characters with uppercase, lowercase, and numbers</p>
                 </div>
               )}
             </div>
@@ -194,7 +194,7 @@ export const Signup: React.FC = () => {
                   onChange={e => { setAcceptTerms(e.target.checked); if (errors.terms) setErrors(p => ({ ...p, terms: '' })); }}
                   className="mt-0.5 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
                 />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
                   I agree to the{' '}
                   <a href="#" className="font-medium text-primary-600 hover:text-primary-500">Terms and Conditions</a>
                   {' '}and{' '}
@@ -211,7 +211,7 @@ export const Signup: React.FC = () => {
           </form>
 
           <div className="mt-6 text-center">
-            <button onClick={() => navigate('/')} className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
+            <button onClick={() => navigate('/')} className="text-sm text-gray-400 hover:text-gray-300 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">
               ← Back to Home
             </button>
           </div>

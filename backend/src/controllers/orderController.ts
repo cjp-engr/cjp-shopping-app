@@ -108,7 +108,10 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
   try {
     const orders = await Order.find({ userId: req.user?.id })
       .sort({ createdAt: -1 })
-      .populate('items.product');
+      .populate({
+        path: 'items.product',
+        populate: { path: 'sellerId', select: 'firstName lastName avatar' },
+      });
 
     res.status(200).json({
       success: true,
@@ -128,7 +131,10 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
 // @access  Private
 export const getOrder = async (req: AuthRequest, res: Response) => {
   try {
-    const order = await Order.findById(req.params.id).populate('items.product');
+    const order = await Order.findById(req.params.id).populate({
+      path: 'items.product',
+      populate: { path: 'sellerId', select: 'firstName lastName avatar' },
+    });
 
     if (!order) {
       return res.status(404).json({
