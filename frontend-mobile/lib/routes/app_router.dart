@@ -63,7 +63,9 @@ GoRouter createRouter(AuthBloc authBloc) {
       GoRoute(
         path: '/checkout',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, __) => const CheckoutScreen(),
+        builder: (_, state) => CheckoutScreen(
+          selectedIds: (state.extra as Set<String>?) ?? const {},
+        ),
       ),
       GoRoute(
         path: '/products/:id',

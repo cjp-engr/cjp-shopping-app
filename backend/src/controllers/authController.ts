@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+﻿import { Request, Response } from 'express';
 import User from '../models/User.js';
 import { generateToken } from '../utils/jwt.js';
 import { AuthRequest } from '../middleware/auth.js';
@@ -266,5 +266,70 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       success: false,
       message: error instanceof Error ? error.message : 'Server error'
     });
+  }
+};
+
+// @desc    Get saved payment methods
+// @route   GET /api/auth/payment-methods
+// @access  Private
+export const getPaymentMethods = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.user?.id).select('savedCards');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    res.json({ success: true, paymentMethods: user.savedCards });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// @desc    Add a saved payment method (stores only last4, never full card number)
+// @route   POST /api/auth/payment-methods
+// @access  Private
+export const addPaymentMethod = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.user?.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const { type, last4, cardHolder, expiryMonth, expiryYear, setAsDefault } = req.body;
+    if (!type || !last4 || !cardHolder || !expiryMonth || !expiryYear) {
+      return res.status(400).json({ success: false, message: 'Missing required card fields' });
+    }
+
+    const duplicate = user.savedCards.find(
+      c => c.last4 === last4 && c.expiryMonth === expiryMonth && c.expiryYear === expiryYear
+    );
+    if (duplicate) return res.json({ success: true, paymentMethods: user.savedCards });
+
+    if (setAsDefault) user.savedCards.forEach(c => { c.isDefault = false; });
+
+    user.savedCards.push({ type, last4, cardHolder, expiryMonth, expiryYear,
+      isDefault: setAsDefault || user.savedCards.length === 0 });
+    await user.save();
+    res.status(201).json({ success: true, paymentMethods: user.savedCards });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// @desc    Delete a saved payment method
+// @route   DELETE /api/auth/payment-methods/:id
+// @access  Private
+export const deletePaymentMethod = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.user?.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const before = user.savedCards.length;
+    user.savedCards = user.savedCards.filter(c => c._id?.toString() !== req.params.id);
+    if (user.savedCards.length === before) {
+      return res.status(404).json({ success: false, message: 'Card not found' });
+    }
+    if (user.savedCards.length > 0 && !user.savedCards.some(c => c.isDefault)) {
+      user.savedCards[0].isDefault = true;
+    }
+    await user.save();
+    res.json({ success: true, paymentMethods: user.savedCards });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };

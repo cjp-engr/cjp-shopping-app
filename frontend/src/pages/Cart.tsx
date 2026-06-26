@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -43,15 +43,36 @@ export const Cart: React.FC = () => {
   }
 
   const freeShippingThreshold = 50;
-  const remainingForFreeShipping = Math.max(0, freeShippingThreshold - cart.subtotal);
+
+  // Group items by seller for rendering
+  const sellerGroups = useMemo(() => {
+    const map = new Map<string, { sellerName: string; items: typeof cart.items; subtotal: number }>();
+    for (const cartItem of cart.items) {
+      const key = cartItem.product.sellerId ?? '__unknown__';
+      if (!map.has(key)) {
+        map.set(key, {
+          sellerName: cartItem.product.sellerName ?? 'Seller',
+          items: [],
+          subtotal: 0,
+        });
+      }
+      const group = map.get(key)!;
+      group.items.push(cartItem);
+      group.subtotal += cartItem.product.price * cartItem.quantity;
+    }
+    return Array.from(map.values());
+  }, [cart.items]);
+
+  const allFreeShipping = cart.shipping === 0 && cart.items.length > 0;
+  const anySellerNeedsMore = sellerGroups.some(g => g.subtotal < freeShippingThreshold);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Shopping Cart</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Shopping Cart</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             {cart.totalItems} {cart.totalItems === 1 ? 'item' : 'items'}
           </p>
         </div>
@@ -64,34 +85,41 @@ export const Cart: React.FC = () => {
         </button>
       </div>
 
-      {/* Free shipping progress */}
-      {remainingForFreeShipping > 0 && (
-        <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 flex items-center gap-3">
-          <Tag className="w-5 h-5 text-amber-600 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-amber-800">
-              Add <span className="font-bold">{formatCurrency(remainingForFreeShipping)}</span> more for free shipping!
-            </p>
-            <div className="mt-1.5 h-1.5 bg-amber-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-amber-500 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, (cart.subtotal / freeShippingThreshold) * 100)}%` }}
-              />
-            </div>
-          </div>
+      {/* Per-seller shipping banners */}
+      {anySellerNeedsMore && !allFreeShipping && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl p-4 flex items-center gap-3">
+          <Tag className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+            Add more items per seller to unlock free shipping for that seller (min. {formatCurrency(freeShippingThreshold)}).
+          </p>
         </div>
       )}
-      {cart.shipping === 0 && (
-        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-center gap-3">
-          <Tag className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-          <p className="text-sm font-medium text-emerald-800">You've unlocked <span className="font-bold">free shipping!</span></p>
+      {allFreeShipping && (
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-4 flex items-center gap-3">
+          <Tag className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+          <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">You've unlocked <span className="font-bold">free shipping!</span></p>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cart Items */}
-        <div className="lg:col-span-2 space-y-3">
-          {cart.items.map(({ product, quantity }) => (
+        {/* Cart Items grouped by seller */}
+        <div className="lg:col-span-2 space-y-6">
+          {sellerGroups.map((group) => (
+            <div key={group.sellerName} className="space-y-3">
+              {/* Seller header */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  🏪 {group.sellerName}
+                </span>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  group.subtotal >= freeShippingThreshold
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                }`}>
+                  {group.subtotal >= freeShippingThreshold ? 'Free Shipping' : `+${formatCurrency(freeShippingThreshold - group.subtotal)} for free shipping`}
+                </span>
+              </div>
+              {group.items.map(({ product, quantity }) => (
             <Card key={product.id} padding="none">
               <div className="flex gap-4 p-4">
                 {/* Image */}
@@ -127,22 +155,22 @@ export const Cart: React.FC = () => {
                     <Trash2 className="w-4 h-4" />
                   </button>
 
-                  <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="flex items-center border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
                     <button
                       onClick={() => handleDecrement(product.id, quantity)}
                       disabled={quantity <= 1}
-                      className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <span className="px-3 py-2 text-sm font-semibold min-w-[2.5rem] text-center bg-gray-50">
+                    <span className="px-3 py-2 text-sm font-semibold min-w-[2.5rem] text-center bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
                       {quantity}
                     </span>
                     <button
                       onClick={() => handleIncrement(product.id, quantity, product.stock)}
                       disabled={quantity >= product.stock}
-                      className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       aria-label="Increase quantity"
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -153,6 +181,8 @@ export const Cart: React.FC = () => {
                 </div>
               </div>
             </Card>
+              ))}
+            </div>
           ))}
         </div>
 

@@ -536,13 +536,14 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final defaultColor = context.onSurfaceColor;
     return ListTile(
-      leading: Icon(icon, color: color ?? AppColors.textPrimary),
+      leading: Icon(icon, color: color ?? defaultColor),
       title: Text(label,
           style: TextStyle(
-              color: color ?? AppColors.textPrimary,
+              color: color ?? defaultColor,
               fontWeight: FontWeight.w500)),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: Icon(Icons.chevron_right, color: context.onSurfaceColor.withAlpha(128)),
       onTap: onTap,
       contentPadding: EdgeInsets.zero,
     );

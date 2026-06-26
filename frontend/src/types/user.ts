@@ -6,6 +6,16 @@ export interface Address {
   country: string;
 }
 
+export interface SavedCard {
+  _id: string;
+  type: 'credit-card' | 'debit-card' | 'paypal';
+  last4: string;
+  cardHolder: string;
+  expiryMonth: string;
+  expiryYear: string;
+  isDefault: boolean;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -15,6 +25,7 @@ export interface User {
   avatar?: string;
   phone?: string;
   address?: Address;
+  savedCards?: SavedCard[];
   createdAt: string;
 }
 

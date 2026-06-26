@@ -18,6 +18,10 @@ export const API_ENDPOINTS = {
   ORDER: (id: string) => `${API_BASE_URL}/orders/${id}`,
   ORDER_STATUS: (id: string) => `${API_BASE_URL}/orders/${id}/status`,
 
+  // Payment methods
+  PAYMENT_METHODS: `${API_BASE_URL}/auth/payment-methods`,
+  PAYMENT_METHOD: (id: string) => `${API_BASE_URL}/auth/payment-methods/${id}`,
+
   // Seller
   SELLER_PRODUCTS: `${API_BASE_URL}/seller/products`,
   SELLER_PRODUCT: (id: string) => `${API_BASE_URL}/seller/products/${id}`,

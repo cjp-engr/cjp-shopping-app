@@ -84,13 +84,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            // White card
+            // Card — follows app theme (light/dark)
             Align(
               alignment: Alignment.bottomCenter,
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(AppSizes.radiusXl),
                   ),
                 ),
@@ -105,20 +105,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
+                      Text(
                         'Welcome Back',
                         style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           letterSpacing: -0.5,
                         ),
                       ),
                       const SizedBox(height: AppSizes.xs),
-                      const Text(
+                      Text(
                         'Sign in to your ShopHub account',
                         style: TextStyle(
-                            color: AppColors.textSecondary, fontSize: 14),
+                            color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                            fontSize: 14),
                       ),
                       const SizedBox(height: AppSizes.xl),
                       Form(
@@ -176,12 +177,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: TextButton(
                           onPressed: () => context.push('/signup'),
                           child: RichText(
-                            text: const TextSpan(
+                            text: TextSpan(
                               text: "Don't have an account? ",
                               style: TextStyle(
-                                  color: AppColors.textSecondary,
+                                  color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
                                   fontSize: 14),
-                              children: [
+                              children: const [
                                 TextSpan(
                                   text: 'Sign Up',
                                   style: TextStyle(

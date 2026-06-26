@@ -13,6 +13,7 @@ export interface Product {
   specifications?: Record<string, string>;
   createdAt: string;
   sellerId?: string;
+  sellerName?: string;
 }
 
 export interface ProductFilters {

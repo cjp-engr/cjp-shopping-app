@@ -1,5 +1,30 @@
 import 'package:equatable/equatable.dart';
 
+class SavedCardEntity extends Equatable {
+  final String id;
+  final String type;
+  final String last4;
+  final String cardHolder;
+  final String expiryMonth;
+  final String expiryYear;
+  final bool isDefault;
+
+  const SavedCardEntity({
+    required this.id,
+    required this.type,
+    required this.last4,
+    required this.cardHolder,
+    required this.expiryMonth,
+    required this.expiryYear,
+    required this.isDefault,
+  });
+
+  String get displayName => '${type.replaceAll('-', ' ')} •••• $last4';
+
+  @override
+  List<Object?> get props => [id, type, last4, cardHolder, expiryMonth, expiryYear, isDefault];
+}
+
 class AddressEntity extends Equatable {
   final String street;
   final String city;
@@ -28,6 +53,7 @@ class UserEntity extends Equatable {
   final String? avatar;
   final String? phone;
   final AddressEntity? address;
+  final List<SavedCardEntity> savedCards;
   final String createdAt;
 
   const UserEntity({
@@ -39,6 +65,7 @@ class UserEntity extends Equatable {
     this.avatar,
     this.phone,
     this.address,
+    this.savedCards = const [],
     required this.createdAt,
   });
 

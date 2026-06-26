@@ -1,5 +1,37 @@
 import '../../domain/entities/user_entity.dart';
 
+class SavedCardModel extends SavedCardEntity {
+  const SavedCardModel({
+    required super.id,
+    required super.type,
+    required super.last4,
+    required super.cardHolder,
+    required super.expiryMonth,
+    required super.expiryYear,
+    required super.isDefault,
+  });
+
+  factory SavedCardModel.fromJson(Map<String, dynamic> json) => SavedCardModel(
+        id: json['_id']?.toString() ?? '',
+        type: json['type'] ?? 'credit-card',
+        last4: json['last4'] ?? '',
+        cardHolder: json['cardHolder'] ?? '',
+        expiryMonth: json['expiryMonth'] ?? '',
+        expiryYear: json['expiryYear'] ?? '',
+        isDefault: json['isDefault'] == true,
+      );
+
+  Map<String, dynamic> toJson() => {
+        '_id': id,
+        'type': type,
+        'last4': last4,
+        'cardHolder': cardHolder,
+        'expiryMonth': expiryMonth,
+        'expiryYear': expiryYear,
+        'isDefault': isDefault,
+      };
+}
+
 class AddressModel extends AddressEntity {
   const AddressModel({
     required super.street,
@@ -28,6 +60,7 @@ class UserModel extends UserEntity {
     super.avatar,
     super.phone,
     super.address,
+    super.savedCards = const [],
     required super.createdAt,
   });
 
@@ -36,6 +69,11 @@ class UserModel extends UserEntity {
     if (json['address'] != null) {
       address = AddressModel.fromJson(json['address'] as Map<String, dynamic>);
     }
+    final rawCards = json['savedCards'];
+    final savedCards = rawCards is List
+        ? rawCards.map((c) => SavedCardModel.fromJson(c as Map<String, dynamic>)).toList()
+        : <SavedCardEntity>[];
+
     return UserModel(
       id: json['id']?.toString() ?? '',
       email: json['email'] ?? '',
@@ -45,6 +83,7 @@ class UserModel extends UserEntity {
       avatar: json['avatar'],
       phone: json['phone'],
       address: address,
+      savedCards: savedCards,
       createdAt: json['createdAt'] ?? '',
     );
   }

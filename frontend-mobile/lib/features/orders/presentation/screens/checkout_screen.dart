@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../bloc/order_bloc.dart';
@@ -11,13 +14,18 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../auth/domain/entities/user_entity.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
 import '../../../cart/domain/entities/cart_item_entity.dart';
 import '../../../cart/presentation/bloc/cart_event.dart';
 import '../../../cart/presentation/bloc/cart_state.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({super.key});
+  /// Product IDs of the items selected in the cart for this checkout.
+  final Set<String> selectedIds;
+
+  const CheckoutScreen({super.key, this.selectedIds = const {}});
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -31,6 +39,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _zipCtrl = TextEditingController();
   final _countryCtrl = TextEditingController(text: 'US');
   String _paymentType = 'credit-card';
+  final _paymentSectionKey = GlobalKey<_PaymentSectionState>();
 
   // Per-seller voucher codes (key = sellerId or '__unknown__')
   final Map<String, TextEditingController> _voucherCtrls = {};
@@ -73,14 +82,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     ));
   }
 
-  void _submit(CartState cart) {
+  void _submit(CartState cart, Set<String> selectedIds) {
     if (!_formKey.currentState!.validate()) return;
+    // Save payment method if user checked the box
+    _paymentSectionKey.currentState?._maybeSaveCard();
     final user = context.read<AuthBloc>().state.user;
     if (user == null) return;
-    final items = cart.items.map((i) => {
-          'productId': i.product.id,
-          'quantity': i.quantity,
-        }).toList();
+    // Only send the selected (checked) items to the order
+    final selectedItems = selectedIds.isEmpty
+        ? cart.items
+        : cart.items.where((i) => selectedIds.contains(i.product.id)).toList();
+    final items = selectedItems
+        .map((i) => {'productId': i.product.id, 'quantity': i.quantity})
+        .toList();
     final totalDiscount = _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
     final totalShipping = cart.shippingFor(sellerDiscounts: _voucherDiscounts);
     final afterDiscount = (cart.subtotal - totalDiscount).clamp(0, double.infinity);
@@ -114,7 +128,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       listenWhen: (p, c) => p.status != c.status,
       listener: (context, state) {
         if (state.status == OrderStatus.placed) {
-          context.read<CartBloc>().add(CartCleared());
+          context.read<CartBloc>().add(CartItemsCheckedOut(widget.selectedIds));
           context.go('/orders');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -140,20 +154,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
         body: BlocBuilder<CartBloc, CartState>(
           builder: (context, cart) {
-            // Group items by seller
+            // Only show the selected items in checkout
+            final selectedItems = widget.selectedIds.isEmpty
+                ? cart.items
+                : cart.items
+                    .where((i) => widget.selectedIds.contains(i.product.id))
+                    .toList();
+
+            // Group selected items by seller
             final groups = <String, List<CartItemEntity>>{};
-            for (final item in cart.items) {
+            for (final item in selectedItems) {
               final key = item.product.sellerId ?? '__unknown__';
               groups.putIfAbsent(key, () => []);
               groups[key]!.add(item);
             }
 
+            final selectedSubtotal =
+                selectedItems.fold<double>(0, (s, i) => s + i.subtotal);
             final totalDiscount =
                 _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
             final totalShipping =
                 cart.shippingFor(sellerDiscounts: _voucherDiscounts);
             final afterDiscount =
-                (cart.subtotal - totalDiscount).clamp(0, double.infinity);
+                (selectedSubtotal - totalDiscount).clamp(0, double.infinity);
             final totalTax = afterDiscount * 0.08;
             final grandTotal = afterDiscount + totalShipping + totalTax;
 
@@ -168,12 +191,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // ── Shipping address ──────────────────────────────
-                          _ShippingAddressSection(
-                            streetCtrl: _streetCtrl,
-                            cityCtrl: _cityCtrl,
-                            stateCtrl: _stateCtrl,
-                            zipCtrl: _zipCtrl,
-                            countryCtrl: _countryCtrl,
+                          BlocBuilder<AuthBloc, AuthState>(
+                            buildWhen: (p, c) => p.user?.address != c.user?.address,
+                            builder: (_, authState) => _AddressSection(
+                              savedAddress: authState.user?.address,
+                              streetCtrl: _streetCtrl,
+                              cityCtrl: _cityCtrl,
+                              stateCtrl: _stateCtrl,
+                              zipCtrl: _zipCtrl,
+                              countryCtrl: _countryCtrl,
+                            ),
                           ),
                           const SizedBox(height: 8),
 
@@ -204,17 +231,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           const SizedBox(height: 8),
 
                           // ── Payment method ────────────────────────────────
-                          _PaymentSection(
-                            selected: _paymentType,
-                            onChanged: (v) =>
-                                setState(() => _paymentType = v),
+                          BlocBuilder<AuthBloc, AuthState>(
+                            buildWhen: (p, c) => p.user?.savedCards != c.user?.savedCards,
+                            builder: (_, authState) => _PaymentSection(
+                              key: _paymentSectionKey,
+                              selected: _paymentType,
+                              onChanged: (v) => setState(() => _paymentType = v),
+                              savedCards: authState.user?.savedCards ?? const [],
+                            ),
                           ),
 
                           const SizedBox(height: 8),
 
                           // ── Order total breakdown ─────────────────────────
                           _TotalBreakdown(
-                            subtotal: cart.subtotal,
+                            subtotal: selectedSubtotal,
                             totalDiscount: totalDiscount,
                             totalShipping: totalShipping,
                             totalTax: totalTax,
@@ -234,7 +265,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             .state
                             .status ==
                         OrderStatus.placing,
-                    onPlace: () => _submit(cart),
+                    onPlace: () => _submit(cart, widget.selectedIds),
                   ),
                 ],
               ),
@@ -248,16 +279,52 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
 // ── Shipping address section ──────────────────────────────────────────────────
 
-class _ShippingAddressSection extends StatelessWidget {
+enum _AddressMode { saved, newAddress }
+
+class _AddressSection extends StatefulWidget {
+  final AddressEntity? savedAddress;
   final TextEditingController streetCtrl, cityCtrl, stateCtrl, zipCtrl,
       countryCtrl;
-  const _ShippingAddressSection({
+
+  const _AddressSection({
+    required this.savedAddress,
     required this.streetCtrl,
     required this.cityCtrl,
     required this.stateCtrl,
     required this.zipCtrl,
     required this.countryCtrl,
   });
+
+  @override
+  State<_AddressSection> createState() => _AddressSectionState();
+}
+
+class _AddressSectionState extends State<_AddressSection> {
+  late _AddressMode _mode;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default: use saved address when available
+    _mode = widget.savedAddress != null ? _AddressMode.saved : _AddressMode.newAddress;
+    if (widget.savedAddress != null) _fillSaved(widget.savedAddress!);
+  }
+
+  void _fillSaved(AddressEntity addr) {
+    widget.streetCtrl.text = addr.street;
+    widget.cityCtrl.text = addr.city;
+    widget.stateCtrl.text = addr.state;
+    widget.zipCtrl.text = addr.zipCode;
+    widget.countryCtrl.text = addr.country.isNotEmpty ? addr.country : 'US';
+  }
+
+  void _clearFields() {
+    widget.streetCtrl.clear();
+    widget.cityCtrl.clear();
+    widget.stateCtrl.clear();
+    widget.zipCtrl.clear();
+    widget.countryCtrl.text = 'US';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -283,59 +350,186 @@ class _ShippingAddressSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSizes.sm),
-          AppTextField(
-            label: 'Street Address',
-            controller: streetCtrl,
-            prefixIcon: Icons.home_outlined,
-            validator: (v) =>
-                v == null || v.trim().isEmpty ? 'Required' : null,
+
+          // ── Saved address option ──────────────────────────────────────
+          if (widget.savedAddress != null) ...[
+            _AddressOption(
+              title: 'Saved Address',
+              subtitle: _formatAddress(widget.savedAddress!),
+              icon: Icons.home_rounded,
+              selected: _mode == _AddressMode.saved,
+              onTap: () {
+                setState(() => _mode = _AddressMode.saved);
+                _fillSaved(widget.savedAddress!);
+              },
+            ),
+            const SizedBox(height: AppSizes.xs),
+          ],
+
+          // ── New address option ────────────────────────────────────────
+          _AddressOption(
+            title: 'New Address',
+            subtitle: 'Enter a different delivery address',
+            icon: Icons.add_location_alt_outlined,
+            selected: _mode == _AddressMode.newAddress,
+            onTap: () {
+              setState(() => _mode = _AddressMode.newAddress);
+              _clearFields();
+            },
           ),
-          const SizedBox(height: AppSizes.xs),
-          Row(
-            children: [
-              Expanded(
-                child: AppTextField(
-                  label: 'City',
-                  controller: cityCtrl,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
+
+          // ── Form fields (always present for validation; hidden when saved) ──
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 200),
+            crossFadeState: _mode == _AddressMode.newAddress
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: const EdgeInsets.only(top: AppSizes.sm),
+              child: Column(
+                children: [
+                  AppTextField(
+                    label: 'Street Address',
+                    controller: widget.streetCtrl,
+                    prefixIcon: Icons.home_outlined,
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: AppSizes.xs),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          label: 'City',
+                          controller: widget.cityCtrl,
+                          validator: (v) =>
+                              v == null || v.trim().isEmpty ? 'Required' : null,
+                        ),
+                      ),
+                      const SizedBox(width: AppSizes.sm),
+                      Expanded(
+                        child: AppTextField(
+                          label: 'State',
+                          controller: widget.stateCtrl,
+                          validator: (v) =>
+                              v == null || v.trim().isEmpty ? 'Required' : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSizes.xs),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          label: 'ZIP Code',
+                          controller: widget.zipCtrl,
+                          keyboardType: TextInputType.number,
+                          validator: (v) =>
+                              v == null || v.trim().isEmpty ? 'Required' : null,
+                        ),
+                      ),
+                      const SizedBox(width: AppSizes.sm),
+                      Expanded(
+                        child: AppTextField(
+                          label: 'Country',
+                          controller: widget.countryCtrl,
+                          validator: (v) =>
+                              v == null || v.trim().isEmpty ? 'Required' : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: AppSizes.sm),
-              Expanded(
-                child: AppTextField(
-                  label: 'State',
-                  controller: stateCtrl,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.xs),
-          Row(
-            children: [
-              Expanded(
-                child: AppTextField(
-                  label: 'ZIP Code',
-                  controller: zipCtrl,
-                  keyboardType: TextInputType.number,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
-              ),
-              const SizedBox(width: AppSizes.sm),
-              Expanded(
-                child: AppTextField(
-                  label: 'Country',
-                  controller: countryCtrl,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  String _formatAddress(AddressEntity a) {
+    final parts = [a.street, a.city, a.state, a.zipCode, a.country]
+        .where((s) => s.isNotEmpty)
+        .toList();
+    return parts.join(', ');
+  }
+}
+
+class _AddressOption extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _AddressOption({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.sm, vertical: AppSizes.xs + 2),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.06)
+              : context.surfaceVariantColor,
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          border: Border.all(
+            color: selected ? AppColors.primary : context.borderColor,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Radio<bool>(
+              value: true,
+              groupValue: selected,
+              onChanged: (_) => onTap(),
+              activeColor: AppColors.primary,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+            const SizedBox(width: 4),
+            Icon(icon, size: 18, color: selected ? AppColors.primary : context.onSurfaceMuted),
+            const SizedBox(width: AppSizes.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? AppColors.primary : context.onSurfaceColor,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: context.onSurfaceMuted,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -716,19 +910,102 @@ class _MessageRowState extends State<_MessageRow> {
 
 // ── Payment method ────────────────────────────────────────────────────────────
 
-class _PaymentSection extends StatelessWidget {
+enum _CardMode { saved, newCard }
+
+class _PaymentSection extends StatefulWidget {
   final String selected;
   final ValueChanged<String> onChanged;
-  const _PaymentSection(
-      {required this.selected, required this.onChanged});
+  final List<SavedCardEntity> savedCards;
+
+  const _PaymentSection({
+    super.key,
+    required this.selected,
+    required this.onChanged,
+    this.savedCards = const [],
+  });
+
+  @override
+  State<_PaymentSection> createState() => _PaymentSectionState();
+}
+
+class _PaymentSectionState extends State<_PaymentSection> {
+  late _CardMode _mode;
+  late String _selectedCardId;
+  bool _saveCard = false;
+
+  // new-card form controllers
+  final _cardNumberCtrl = TextEditingController();
+  final _cardHolderCtrl = TextEditingController();
+  String _expiryMonth = '01';
+  String _expiryYear = '2025';
+
+  @override
+  void initState() {
+    super.initState();
+    _mode = widget.savedCards.isNotEmpty ? _CardMode.saved : _CardMode.newCard;
+    final def = widget.savedCards.where((c) => c.isDefault).firstOrNull ??
+        widget.savedCards.firstOrNull;
+    _selectedCardId = def?.id ?? '';
+  }
+
+  @override
+  void dispose() {
+    _cardNumberCtrl.dispose();
+    _cardHolderCtrl.dispose();
+    super.dispose();
+  }
+
+  void _maybeSaveCard() {
+    if (_saveCard && _mode == _CardMode.newCard) {
+      _savePaymentMethod();
+    }
+  }
+
+  Future<void> _savePaymentMethod() async {
+    final num = _cardNumberCtrl.text.replaceAll(' ', '');
+    if (num.length < 4) return;
+    try {
+      await _http('POST', '/auth/payment-methods', {
+        'type': widget.selected,
+        'last4': num.substring(num.length - 4),
+        'cardHolder': _cardHolderCtrl.text.trim(),
+        'expiryMonth': _expiryMonth,
+        'expiryYear': _expiryYear,
+        'setAsDefault': widget.savedCards.isEmpty,
+      });
+    } catch (_) {/* best-effort */}
+  }
+
+  Future<void> _deleteCard(String id) async {
+    try {
+      await _http('DELETE', '/auth/payment-methods/$id', null);
+      setState(() {
+        if (_selectedCardId == id) {
+          final remaining = widget.savedCards.where((c) => c.id != id).toList();
+          _selectedCardId = remaining.firstOrNull?.id ?? '';
+          if (remaining.isEmpty) _mode = _CardMode.newCard;
+        }
+      });
+    } catch (_) {}
+  }
+
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
+  }
+
+  Future<void> _http(
+      String method, String path, Map<String, dynamic>? body) async {
+    final token = await _getToken();
+    if (token == null) return;
+    final uri = Uri.parse('http://localhost:5000/api$path');
+    final client = _SimpleHttp();
+    await client.request(method, uri, token, body);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final options = [
-      ('credit-card', 'Credit Card', Icons.credit_card),
-      ('debit-card', 'Debit Card', Icons.payment),
-      ('paypal', 'PayPal', Icons.account_balance_wallet_outlined),
-    ];
+    final hasSaved = widget.savedCards.isNotEmpty;
 
     return Container(
       color: context.surfaceColor,
@@ -745,29 +1022,294 @@ class _PaymentSection extends StatelessWidget {
               color: context.onSurfaceColor,
             ),
           ),
-          ...options.map(
-            (p) => RadioListTile<String>(
-              value: p.$1,
-              groupValue: selected,
-              title: Row(
-                children: [
-                  Icon(p.$3, size: 18, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Text(p.$2,
-                      style: TextStyle(
-                          fontSize: 13, color: context.onSurfaceColor)),
-                ],
+          const SizedBox(height: AppSizes.sm),
+
+          // ── Mode toggle (only when saved cards exist) ──
+          if (hasSaved) ...[
+            Row(children: [
+              _ModeChip(
+                label: 'Saved Card',
+                selected: _mode == _CardMode.saved,
+                onTap: () => setState(() => _mode = _CardMode.saved),
               ),
-              onChanged: (v) => onChanged(v!),
-              contentPadding: EdgeInsets.zero,
-              activeColor: AppColors.primary,
-              dense: true,
+              const SizedBox(width: 8),
+              _ModeChip(
+                label: '+ New Card',
+                selected: _mode == _CardMode.newCard,
+                onTap: () => setState(() => _mode = _CardMode.newCard),
+              ),
+            ]),
+            const SizedBox(height: AppSizes.sm),
+          ],
+
+          // ── Saved card list ──
+          if (_mode == _CardMode.saved && hasSaved) ...[
+            ...widget.savedCards.map((card) => GestureDetector(
+              onTap: () => setState(() => _selectedCardId = card.id),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _selectedCardId == card.id
+                        ? AppColors.primary
+                        : context.onSurfaceColor.withAlpha(40),
+                    width: _selectedCardId == card.id ? 2 : 1,
+                  ),
+                  color: _selectedCardId == card.id
+                      ? AppColors.primary.withAlpha(20)
+                      : context.surfaceColor,
+                ),
+                child: Row(children: [
+                  Radio<String>(
+                    value: card.id,
+                    groupValue: _selectedCardId,
+                    onChanged: (v) => setState(() => _selectedCardId = v!),
+                    activeColor: AppColors.primary,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.credit_card, size: 18, color: context.onSurfaceColor.withAlpha(180)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${card.type.replaceAll('-', ' ')} •••• ${card.last4}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: context.onSurfaceColor,
+                        ),
+                      ),
+                      Text(
+                        '${card.cardHolder} · ${card.expiryMonth}/${card.expiryYear}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: context.onSurfaceColor.withAlpha(140),
+                        ),
+                      ),
+                    ],
+                  )),
+                  IconButton(
+                    icon: Icon(Icons.delete_outline, size: 18, color: Colors.red.withAlpha(180)),
+                    onPressed: () => _deleteCard(card.id),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  ),
+                ]),
+              ),
+            )),
+          ],
+
+          // ── New card form ──
+          if (_mode == _CardMode.newCard) ...[
+            _NewCardForm(
+              paymentType: widget.selected,
+              onTypeChanged: widget.onChanged,
+              cardNumberCtrl: _cardNumberCtrl,
+              cardHolderCtrl: _cardHolderCtrl,
+              expiryMonth: _expiryMonth,
+              expiryYear: _expiryYear,
+              onMonthChanged: (v) => setState(() => _expiryMonth = v),
+              onYearChanged: (v) => setState(() => _expiryYear = v),
             ),
-          ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => setState(() => _saveCard = !_saveCard),
+              child: Row(children: [
+                Checkbox(
+                  value: _saveCard,
+                  onChanged: (v) => setState(() => _saveCard = v!),
+                  activeColor: AppColors.primary,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Save this card for future purchases',
+                  style: TextStyle(fontSize: 13, color: context.onSurfaceColor),
+                ),
+              ]),
+            ),
+          ],
         ],
       ),
     );
   }
+}
+
+class _ModeChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _ModeChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: selected ? AppColors.primary : Colors.transparent,
+          border: Border.all(
+            color: selected ? AppColors.primary : context.onSurfaceColor.withAlpha(60),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : context.onSurfaceColor,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NewCardForm extends StatelessWidget {
+  final String paymentType;
+  final ValueChanged<String> onTypeChanged;
+  final TextEditingController cardNumberCtrl;
+  final TextEditingController cardHolderCtrl;
+  final String expiryMonth;
+  final String expiryYear;
+  final ValueChanged<String> onMonthChanged;
+  final ValueChanged<String> onYearChanged;
+
+  const _NewCardForm({
+    required this.paymentType,
+    required this.onTypeChanged,
+    required this.cardNumberCtrl,
+    required this.cardHolderCtrl,
+    required this.expiryMonth,
+    required this.expiryYear,
+    required this.onMonthChanged,
+    required this.onYearChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final options = [
+      ('credit-card', 'Credit Card', Icons.credit_card),
+      ('debit-card', 'Debit Card', Icons.payment),
+      ('paypal', 'PayPal', Icons.account_balance_wallet_outlined),
+    ];
+    final months = List.generate(12, (i) => (i + 1).toString().padLeft(2, '0'));
+    final years = List.generate(10, (i) => (DateTime.now().year + i).toString());
+
+    return Column(children: [
+      ...options.map((p) => RadioListTile<String>(
+        value: p.$1,
+        groupValue: paymentType,
+        title: Row(children: [
+          Icon(p.$3, size: 18, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Text(p.$2, style: TextStyle(fontSize: 13, color: context.onSurfaceColor)),
+        ]),
+        onChanged: (v) => onTypeChanged(v!),
+        contentPadding: EdgeInsets.zero,
+        activeColor: AppColors.primary,
+        dense: true,
+      )),
+      AppTextField(
+        label: 'Card Number',
+        controller: cardNumberCtrl,
+        keyboardType: TextInputType.number,
+        prefixIcon: Icons.credit_card_outlined,
+      ),
+      const SizedBox(height: 8),
+      AppTextField(
+        label: 'Cardholder Name',
+        controller: cardHolderCtrl,
+        prefixIcon: Icons.person_outline,
+      ),
+      const SizedBox(height: 8),
+      Row(children: [
+        Expanded(child: _DropdownField(
+          label: 'Month',
+          value: expiryMonth,
+          items: months,
+          onChanged: onMonthChanged,
+        )),
+        const SizedBox(width: 8),
+        Expanded(child: _DropdownField(
+          label: 'Year',
+          value: expiryYear,
+          items: years,
+          onChanged: onYearChanged,
+        )),
+      ]),
+    ]);
+  }
+}
+
+class _DropdownField extends StatelessWidget {
+  final String label;
+  final String value;
+  final List<String> items;
+  final ValueChanged<String> onChanged;
+  const _DropdownField({
+    required this.label, required this.value,
+    required this.items, required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: TextStyle(fontSize: 12, color: context.onSurfaceColor.withAlpha(160))),
+      const SizedBox(height: 4),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: context.onSurfaceColor.withAlpha(60)),
+        ),
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          underline: const SizedBox.shrink(),
+          dropdownColor: context.surfaceColor,
+          style: TextStyle(fontSize: 13, color: context.onSurfaceColor),
+          items: items.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+          onChanged: (v) => onChanged(v!),
+        ),
+      ),
+    ]);
+  }
+}
+
+// Minimal HTTP helper (avoids importing http package just for this)
+class _SimpleHttp {
+  Future<void> request(String method, Uri uri, String token, Map<String, dynamic>? body) async {
+    // Uses dart:io HttpClient
+    final client = HttpClient();
+    try {
+      late HttpClientRequest req;
+      if (method == 'DELETE') {
+        req = await client.deleteUrl(uri);
+      } else {
+        req = await client.postUrl(uri);
+      }
+      req.headers.set('Authorization', 'Bearer $token');
+      req.headers.set('Content-Type', 'application/json');
+      if (body != null) {
+        final encoded = _encodeJson(body);
+        req.contentLength = encoded.length;
+        req.write(encoded);
+      }
+      final resp = await req.close();
+      await resp.drain<void>();
+    } finally {
+      client.close();
+    }
+  }
+
+  String _encodeJson(Map<String, dynamic> map) => jsonEncode(map);
 }
 
 // ── Order total breakdown ─────────────────────────────────────────────────────

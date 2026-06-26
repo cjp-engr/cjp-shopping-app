@@ -55,6 +55,9 @@ class ProductService {
       specifications: p.specifications,
       createdAt: p.createdAt,
       sellerId: p.sellerId?._id ?? p.sellerId ?? undefined,
+      sellerName: p.sellerId?.firstName
+        ? `${p.sellerId.firstName} ${p.sellerId.lastName ?? ''}`.trim()
+        : undefined,
     }));
   }
 
@@ -86,6 +89,9 @@ class ProductService {
         specifications: p.specifications,
         createdAt: p.createdAt,
         sellerId: p.sellerId?._id ?? p.sellerId ?? undefined,
+        sellerName: p.sellerId?.firstName
+          ? `${p.sellerId.firstName} ${p.sellerId.lastName ?? ''}`.trim()
+          : undefined,
       };
     } catch (error) {
       return null;

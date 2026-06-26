@@ -31,7 +31,18 @@ const calculateCartTotals = (items: CartItem[]): Cart => {
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const tax = subtotal * TAX_RATE;
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+
+  // Per-seller shipping: $9.99 per seller whose items total < $50
+  const sellerSubtotals = new Map<string, number>();
+  for (const item of items) {
+    const key = item.product.sellerId ?? '__unknown__';
+    sellerSubtotals.set(key, (sellerSubtotals.get(key) ?? 0) + item.product.price * item.quantity);
+  }
+  let shipping = 0;
+  for (const sellerTotal of sellerSubtotals.values()) {
+    if (sellerTotal < FREE_SHIPPING_THRESHOLD) shipping += SHIPPING_COST;
+  }
+
   const total = subtotal + tax + shipping;
 
   return {

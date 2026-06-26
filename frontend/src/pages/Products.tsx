@@ -93,7 +93,7 @@ export const Products: React.FC = () => {
           <select
             value={sortBy}
             onChange={e => setSortBy(e.target.value as SortOption)}
-            className="text-sm px-3 py-2 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-700"
+            className="text-sm px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="rating">Highest Rated</option>
             <option value="price-asc">Price: Low to High</option>
@@ -151,8 +151,8 @@ export const Products: React.FC = () => {
                     onClick={() => setSelectedCategory(cat)}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                       selectedCategory === cat
-                        ? 'bg-primary-100 text-primary-700 font-semibold'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 font-semibold'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
                     {cat}
@@ -171,8 +171,8 @@ export const Products: React.FC = () => {
                     onClick={() => setMinRating(rating)}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
                       minRating === rating
-                        ? 'bg-primary-100 text-primary-700 font-semibold'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 font-semibold'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-white'
                     }`}
                   >
                     {rating === 0 ? (

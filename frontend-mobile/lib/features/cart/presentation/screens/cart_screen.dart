@@ -240,7 +240,7 @@ class _CartScreenState extends State<CartScreen> {
                 total: total,
                 onCheckout: selectedCount == 0
                     ? null
-                    : () => context.push('/checkout'),
+                    : () => context.push('/checkout', extra: Set<String>.from(_selected)),
               ),
             ],
           );

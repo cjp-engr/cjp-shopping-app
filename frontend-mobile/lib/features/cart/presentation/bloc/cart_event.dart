@@ -38,6 +38,15 @@ final class CartItemQuantityChanged extends CartEvent {
 
 final class CartCleared extends CartEvent {}
 
+/// Remove only the given product IDs (checked-out items), keep the rest.
+final class CartItemsCheckedOut extends CartEvent {
+  final Set<String> productIds;
+  CartItemsCheckedOut(this.productIds);
+
+  @override
+  List<Object?> get props => [productIds];
+}
+
 /// Internal: replace state after a successful server sync.
 final class CartServerUpdated extends CartEvent {
   final List<CartItemEntity> items;

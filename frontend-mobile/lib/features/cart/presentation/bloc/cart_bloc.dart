@@ -13,6 +13,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<CartItemRemoved>(_onRemove);
     on<CartItemQuantityChanged>(_onQuantityChanged);
     on<CartCleared>(_onClear);
+    on<CartItemsCheckedOut>(_onCheckedOut);
     on<CartServerUpdated>(_onServerUpdated);
   }
 
@@ -75,6 +76,14 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     } catch (_) {
       // Best-effort — order flow already succeeded
     }
+  }
+
+  Future<void> _onCheckedOut(
+      CartItemsCheckedOut event, Emitter<CartState> emit) async {
+    final remaining =
+        state.items.where((i) => !event.productIds.contains(i.product.id)).toList();
+    emit(state.copyWith(items: remaining));
+    _syncInBackground(remaining);
   }
 
   void _onServerUpdated(CartServerUpdated event, Emitter<CartState> emit) {

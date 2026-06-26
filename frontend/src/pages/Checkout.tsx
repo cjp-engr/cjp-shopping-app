@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -7,7 +7,9 @@ import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { formatCurrency } from '../utils/formatters';
 import type { CheckoutData, PaymentMethod } from '../types/order';
+import type { SavedCard } from '../types/user';
 import orderService from '../services/orderService';
+import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import {
   CreditCard,
   Lock,
@@ -18,7 +20,13 @@ import {
   CheckCircle,
   AlertCircle,
   Package,
+  Home,
+  PlusCircle,
+  Trash2,
 } from 'lucide-react';
+
+type AddressMode = 'saved' | 'new';
+type PaymentMode = 'saved' | 'new';
 
 export const Checkout: React.FC = () => {
   const navigate = useNavigate();
@@ -30,6 +38,21 @@ export const Checkout: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const orderPlaced = useRef(false);
 
+  const hasSavedAddress = !!(
+    user?.address?.street && user?.address?.city
+  );
+  const [addressMode, setAddressMode] = useState<AddressMode>(
+    hasSavedAddress ? 'saved' : 'new'
+  );
+
+  const savedAddressFields = {
+    street: user?.address?.street || '',
+    city: user?.address?.city || '',
+    state: user?.address?.state || '',
+    zipCode: user?.address?.zipCode || '',
+    country: user?.address?.country || 'United States',
+  };
+
   const [shippingData, setShippingData] = useState({
     street: user?.address?.street || '',
     city: user?.address?.city || '',
@@ -39,6 +62,23 @@ export const Checkout: React.FC = () => {
     email: user?.email || '',
     phone: user?.phone || '',
   });
+
+  const handleAddressModeChange = (mode: AddressMode) => {
+    setAddressMode(mode);
+    if (mode === 'saved') {
+      setShippingData(prev => ({ ...prev, ...savedAddressFields }));
+    } else {
+      setShippingData(prev => ({
+        ...prev,
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'United States',
+      }));
+    }
+    setShippingErrors({});
+  };
 
   const [paymentData, setPaymentData] = useState({
     type: 'credit-card' as PaymentMethod['type'],
@@ -51,6 +91,33 @@ export const Checkout: React.FC = () => {
 
   const [shippingErrors, setShippingErrors] = useState<Record<string, string>>({});
   const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
+
+  // Saved cards
+  const savedCards: SavedCard[] = user?.savedCards ?? [];
+  const hasCards = savedCards.length > 0;
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>(hasCards ? 'saved' : 'new');
+  const [selectedCardId, setSelectedCardId] = useState<string>(
+    savedCards.find(c => c.isDefault)?._id ?? savedCards[0]?._id ?? ''
+  );
+  const [saveCard, setSaveCard] = useState(false);
+  const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
+
+  const FREE_SHIPPING_THRESHOLD = 50;
+
+  // Group cart items by seller for the Order Review and per-seller shipping display
+  const sellerGroups = useMemo(() => {
+    const map = new Map<string, { sellerName: string; items: typeof cart.items; subtotal: number }>();
+    for (const cartItem of cart.items) {
+      const key = cartItem.product.sellerId ?? '__unknown__';
+      if (!map.has(key)) {
+        map.set(key, { sellerName: cartItem.product.sellerName ?? 'Seller', items: [], subtotal: 0 });
+      }
+      const group = map.get(key)!;
+      group.items.push(cartItem);
+      group.subtotal += cartItem.product.price * cartItem.quantity;
+    }
+    return Array.from(map.values());
+  }, [cart.items]);
 
   const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -71,11 +138,15 @@ export const Checkout: React.FC = () => {
   const validateShipping = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!shippingData.street.trim()) errors.street = 'Street address is required';
-    if (!shippingData.city.trim()) errors.city = 'City is required';
-    if (!shippingData.state.trim()) errors.state = 'State is required';
-    if (!shippingData.zipCode.trim()) errors.zipCode = 'ZIP code is required';
-    if (!shippingData.country.trim()) errors.country = 'Country is required';
+    // Only validate address fields when entering a new address
+    if (addressMode === 'new') {
+      if (!shippingData.street.trim()) errors.street = 'Street address is required';
+      if (!shippingData.city.trim()) errors.city = 'City is required';
+      if (!shippingData.state.trim()) errors.state = 'State is required';
+      if (!shippingData.zipCode.trim()) errors.zipCode = 'ZIP code is required';
+      if (!shippingData.country.trim()) errors.country = 'Country is required';
+    }
+
     if (!shippingData.email.trim()) {
       errors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingData.email)) {
@@ -126,11 +197,54 @@ export const Checkout: React.FC = () => {
     }
   };
 
-  const handlePaymentSubmit = (e: React.FormEvent) => {
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validatePayment()) {
+    if (paymentMode === 'saved' && selectedCardId) {
       setStep('review');
       window.scrollTo(0, 0);
+      return;
+    }
+    if (!validatePayment()) return;
+
+    if (saveCard) {
+      try {
+        await fetch(API_ENDPOINTS.PAYMENT_METHODS, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            type: paymentData.type,
+            last4: paymentData.cardNumber.slice(-4),
+            cardHolder: paymentData.cardHolder,
+            expiryMonth: paymentData.expiryMonth,
+            expiryYear: paymentData.expiryYear,
+            setAsDefault: savedCards.length === 0,
+          }),
+        });
+      } catch {
+        // Non-critical: proceed even if save fails
+      }
+    }
+    setStep('review');
+    window.scrollTo(0, 0);
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
+    setDeletingCardId(cardId);
+    try {
+      await fetch(API_ENDPOINTS.PAYMENT_METHOD(cardId), {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      // If the deleted card was selected, reset selection
+      if (selectedCardId === cardId) {
+        const remaining = savedCards.filter(c => c._id !== cardId);
+        setSelectedCardId(remaining[0]?._id ?? '');
+        if (remaining.length === 0) setPaymentMode('new');
+      }
+    } catch {
+      // best-effort
+    } finally {
+      setDeletingCardId(null);
     }
   };
 
@@ -257,62 +371,141 @@ export const Checkout: React.FC = () => {
               </h2>
 
               <form onSubmit={handleShippingSubmit} className="space-y-4">
-                <Input
-                  label="Street Address"
-                  name="street"
-                  value={shippingData.street}
-                  onChange={handleShippingChange}
-                  error={shippingErrors.street}
-                  placeholder="123 Main St"
-                  fullWidth
-                  required
-                />
+                {/* ── Address mode selector ─────────────────────────────── */}
+                {hasSavedAddress && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+                    {/* Saved address card */}
+                    <button
+                      type="button"
+                      onClick={() => handleAddressModeChange('saved')}
+                      className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+                        addressMode === 'saved'
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                        addressMode === 'saved' ? 'border-primary-500' : 'border-gray-400'
+                      }`}>
+                        {addressMode === 'saved' && (
+                          <div className="w-2 h-2 rounded-full bg-primary-500" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Home className="w-4 h-4 text-primary-600 flex-shrink-0" />
+                          <span className={`text-sm font-semibold ${
+                            addressMode === 'saved' ? 'text-primary-700' : 'text-gray-800'
+                          }`}>
+                            Saved Address
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 leading-relaxed truncate">
+                          {[
+                            user?.address?.street,
+                            user?.address?.city,
+                            user?.address?.state,
+                            user?.address?.zipCode,
+                          ]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </p>
+                      </div>
+                    </button>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="City"
-                    name="city"
-                    value={shippingData.city}
-                    onChange={handleShippingChange}
-                    error={shippingErrors.city}
-                    placeholder="New York"
-                    fullWidth
-                    required
-                  />
-                  <Input
-                    label="State/Province"
-                    name="state"
-                    value={shippingData.state}
-                    onChange={handleShippingChange}
-                    error={shippingErrors.state}
-                    placeholder="NY"
-                    fullWidth
-                    required
-                  />
-                </div>
+                    {/* New address card */}
+                    <button
+                      type="button"
+                      onClick={() => handleAddressModeChange('new')}
+                      className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+                        addressMode === 'new'
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                        addressMode === 'new' ? 'border-primary-500' : 'border-gray-400'
+                      }`}>
+                        {addressMode === 'new' && (
+                          <div className="w-2 h-2 rounded-full bg-primary-500" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <PlusCircle className="w-4 h-4 text-primary-600 flex-shrink-0" />
+                          <span className={`text-sm font-semibold ${
+                            addressMode === 'new' ? 'text-primary-700' : 'text-gray-800'
+                          }`}>
+                            New Address
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">Enter a different delivery address</p>
+                      </div>
+                    </button>
+                  </div>
+                )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="ZIP/Postal Code"
-                    name="zipCode"
-                    value={shippingData.zipCode}
-                    onChange={handleShippingChange}
-                    error={shippingErrors.zipCode}
-                    placeholder="10001"
-                    fullWidth
-                    required
-                  />
-                  <Input
-                    label="Country"
-                    name="country"
-                    value={shippingData.country}
-                    onChange={handleShippingChange}
-                    error={shippingErrors.country}
-                    placeholder="United States"
-                    fullWidth
-                    required
-                  />
-                </div>
+                {/* ── Address fields (hidden when saved address is selected) ── */}
+                {addressMode === 'new' && (
+                  <>
+                    <Input
+                      label="Street Address"
+                      name="street"
+                      value={shippingData.street}
+                      onChange={handleShippingChange}
+                      error={shippingErrors.street}
+                      placeholder="123 Main St"
+                      fullWidth
+                      required
+                    />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        label="City"
+                        name="city"
+                        value={shippingData.city}
+                        onChange={handleShippingChange}
+                        error={shippingErrors.city}
+                        placeholder="New York"
+                        fullWidth
+                        required
+                      />
+                      <Input
+                        label="State/Province"
+                        name="state"
+                        value={shippingData.state}
+                        onChange={handleShippingChange}
+                        error={shippingErrors.state}
+                        placeholder="NY"
+                        fullWidth
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        label="ZIP/Postal Code"
+                        name="zipCode"
+                        value={shippingData.zipCode}
+                        onChange={handleShippingChange}
+                        error={shippingErrors.zipCode}
+                        placeholder="10001"
+                        fullWidth
+                        required
+                      />
+                      <Input
+                        label="Country"
+                        name="country"
+                        value={shippingData.country}
+                        onChange={handleShippingChange}
+                        error={shippingErrors.country}
+                        placeholder="United States"
+                        fullWidth
+                        required
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="pt-4 border-t border-gray-200">
                   <h3 className="font-semibold text-gray-900 mb-4">Contact Information</h3>
@@ -354,21 +547,110 @@ export const Checkout: React.FC = () => {
           {/* Payment Information */}
           {step === 'payment' && (
             <Card padding="lg">
-              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                 <CreditCard className="w-6 h-6" />
                 Payment Information
               </h2>
 
+              {/* ── Saved card / New card selector ── */}
+              {hasCards && (
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMode('saved')}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-colors ${
+                      paymentMode === 'saved'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                      paymentMode === 'saved' ? 'border-primary-500' : 'border-gray-400'
+                    }`}>
+                      {paymentMode === 'saved' && <span className="w-2 h-2 rounded-full bg-primary-500" />}
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Saved Card</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Use a saved card</p>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMode('new')}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-colors ${
+                      paymentMode === 'new'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                      paymentMode === 'new' ? 'border-primary-500' : 'border-gray-400'
+                    }`}>
+                      {paymentMode === 'new' && <span className="w-2 h-2 rounded-full bg-primary-500" />}
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1">
+                        <PlusCircle className="w-3.5 h-3.5" /> New Card
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Enter a different card</p>
+                    </div>
+                  </button>
+                </div>
+              )}
+
+              {/* ── Saved cards list ── */}
+              {paymentMode === 'saved' && hasCards && (
+                <div className="space-y-3 mb-5">
+                  {savedCards.map(card => (
+                    <div
+                      key={card._id}
+                      onClick={() => setSelectedCardId(card._id)}
+                      className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                        selectedCardId === card._id
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                        selectedCardId === card._id ? 'border-primary-500' : 'border-gray-400'
+                      }`}>
+                        {selectedCardId === card._id && <span className="w-2 h-2 rounded-full bg-primary-500" />}
+                      </span>
+                      <CreditCard className="w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white capitalize">
+                          {card.type.replace('-', ' ')} •••• {card.last4}
+                          {card.isDefault && <span className="ml-2 text-xs text-primary-600 dark:text-primary-400 font-normal">Default</span>}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {card.cardHolder} · Expires {card.expiryMonth}/{card.expiryYear}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); handleDeleteCard(card._id); }}
+                        disabled={deletingCardId === card._id}
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-40"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ── New card form ── */}
+              {(paymentMode === 'new' || !hasCards) && (
               <form onSubmit={handlePaymentSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Payment Method
                   </label>
                   <select
                     name="type"
                     value={paymentData.type}
                     onChange={handlePaymentChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="credit-card">Credit Card</option>
                     <option value="debit-card">Debit Card</option>
@@ -401,14 +683,14 @@ export const Checkout: React.FC = () => {
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Expiry Month <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="expiryMonth"
                       value={paymentData.expiryMonth}
                       onChange={handlePaymentChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                       required
                     >
                       <option value="">MM</option>
@@ -424,14 +706,14 @@ export const Checkout: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Expiry Year <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="expiryYear"
                       value={paymentData.expiryYear}
                       onChange={handlePaymentChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                       required
                     >
                       <option value="">YYYY</option>
@@ -461,12 +743,23 @@ export const Checkout: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center gap-2 p-4 bg-gray-50 rounded-lg">
-                  <Lock className="w-5 h-5 text-gray-600" />
-                  <p className="text-sm text-gray-700">
+                <div className="flex items-center gap-2 p-4 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
+                  <Lock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
                     Your payment information is secure and encrypted
                   </p>
                 </div>
+
+                {/* Save card checkbox */}
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300 mt-2">
+                  <input
+                    type="checkbox"
+                    checked={saveCard}
+                    onChange={e => setSaveCard(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  Save this card for future purchases
+                </label>
 
                 <div className="flex justify-between pt-4">
                   <Button
@@ -481,6 +774,21 @@ export const Checkout: React.FC = () => {
                   </Button>
                 </div>
               </form>
+              )}
+
+              {/* ── Saved card mode: Back + Continue buttons ── */}
+              {paymentMode === 'saved' && hasCards && (
+                <div className="flex justify-between pt-2">
+                  <Button variant="outline" onClick={() => setStep('shipping')}>Back</Button>
+                  <Button
+                    size="lg"
+                    disabled={!selectedCardId}
+                    onClick={() => { setStep('review'); window.scrollTo(0, 0); }}
+                  >
+                    Review Order
+                  </Button>
+                </div>
+              )}
             </Card>
           )}
 
@@ -490,25 +798,51 @@ export const Checkout: React.FC = () => {
               <Card padding="lg">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Order Review</h2>
 
-                {/* Items */}
-                <div className="space-y-4 mb-6">
-                  {cart.items.map(({ product, quantity }) => (
-                    <div key={product.id} className="flex gap-4 pb-4 border-b border-gray-200">
-                      <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
+                {/* Items grouped by seller */}
+                <div className="space-y-6 mb-6">
+                  {sellerGroups.map((group) => (
+                    <div key={group.sellerName}>
+                      {/* Seller header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                          🏪 {group.sellerName}
+                        </span>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          group.subtotal >= FREE_SHIPPING_THRESHOLD
+                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                            : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                        }`}>
+                          {group.subtotal >= FREE_SHIPPING_THRESHOLD ? 'Free Shipping' : 'Shipping: $9.99'}
+                        </span>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{product.name}</h3>
-                        <p className="text-sm text-gray-600">Quantity: {quantity}</p>
+                      <div className="space-y-3">
+                        {group.items.map(({ product, quantity }) => (
+                          <div key={product.id} className="flex gap-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+                            <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                              <img
+                                src={product.image}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900 dark:text-white">{product.name}</h3>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{product.category}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Qty: {quantity}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-gray-900 dark:text-white">
+                                {formatCurrency(product.price * quantity)}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{formatCurrency(product.price)} each</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-gray-900">
-                          {formatCurrency(product.price * quantity)}
-                        </p>
+                      {/* Seller subtotal */}
+                      <div className="flex justify-between mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span>Seller subtotal</span>
+                        <span className="font-medium">{formatCurrency(group.subtotal)}</span>
                       </div>
                     </div>
                   ))}
@@ -551,10 +885,21 @@ export const Checkout: React.FC = () => {
                     <CreditCard className="w-5 h-5" />
                     Payment Method
                   </h3>
-                  <p className="text-gray-700 capitalize">
-                    {paymentData.type.replace('-', ' ')}
-                  </p>
-                  <p className="text-gray-700">•••• •••• •••• {paymentData.cardNumber.slice(-4)}</p>
+                  {paymentMode === 'saved' && selectedCardId ? (() => {
+                    const card = savedCards.find(c => c._id === selectedCardId);
+                    return card ? (
+                      <>
+                        <p className="text-gray-700 dark:text-gray-300 capitalize">{card.type.replace('-', ' ')}</p>
+                        <p className="text-gray-700 dark:text-gray-300">•••• •••• •••• {card.last4}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{card.cardHolder} · {card.expiryMonth}/{card.expiryYear}</p>
+                      </>
+                    ) : null;
+                  })() : (
+                    <>
+                      <p className="text-gray-700 dark:text-gray-300 capitalize">{paymentData.type.replace('-', ' ')}</p>
+                      <p className="text-gray-700 dark:text-gray-300">•••• •••• •••• {paymentData.cardNumber.slice(-4)}</p>
+                    </>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -602,7 +947,7 @@ export const Checkout: React.FC = () => {
               </div>
 
               <div className="flex justify-between text-gray-700">
-                <span>Tax</span>
+                <span>Tax (8%)</span>
                 <span className="font-medium">{formatCurrency(cart.tax)}</span>
               </div>
 

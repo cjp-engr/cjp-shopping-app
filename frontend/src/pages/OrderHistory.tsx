@@ -327,8 +327,8 @@ export const OrderHistory: React.FC = () => {
       )}
 
       {filteredOrders.length > 0 && (
-        <div className="bg-gray-50 rounded-xl p-6 text-center border border-gray-100">
-          <p className="text-sm text-gray-600 mb-3">Need to shop for something new?</p>
+        <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-6 text-center border border-gray-200 dark:border-gray-700">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Need to shop for something new?</p>
           <Button variant="outline" size="sm" onClick={() => navigate('/products')}>
             Browse Products
           </Button>
