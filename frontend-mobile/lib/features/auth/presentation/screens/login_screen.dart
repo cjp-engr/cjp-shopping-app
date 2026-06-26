@@ -115,11 +115,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: AppSizes.xs),
-                      Text(
+                      const Text(
                         'Sign in to your ShopHub account',
                         style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
-                            fontSize: 14),
+                            color: AppColors.textSecondary, fontSize: 14),
                       ),
                       const SizedBox(height: AppSizes.xl),
                       Form(
@@ -163,8 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               builder: (context, state) {
                                 return AppButton(
                                   label: AppStrings.login,
-                                  loading:
-                                      state.status == AuthStatus.loading,
+                                  loading: state.status == AuthStatus.loading,
                                   onPressed: _submit,
                                 );
                               },
@@ -180,7 +178,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             text: TextSpan(
                               text: "Don't have an account? ",
                               style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withAlpha(153),
                                   fontSize: 14),
                               children: const [
                                 TextSpan(

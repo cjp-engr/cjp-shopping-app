@@ -83,7 +83,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, AppSizes.buttonHeight),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
           textStyle: const TextStyle(
             fontSize: 15,
@@ -103,7 +103,7 @@ class AppTheme {
           foregroundColor: AppColors.textPrimary,
           minimumSize: const Size(double.infinity, AppSizes.buttonHeight),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
           side: const BorderSide(color: AppColors.borderStrong, width: 1.5),
           elevation: 0,
@@ -135,15 +135,15 @@ class AppTheme {
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: const BorderSide(color: AppColors.border, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
@@ -172,7 +172,7 @@ class AppTheme {
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           side: BorderSide.none,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -293,7 +293,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, AppSizes.buttonHeight),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
           textStyle: const TextStyle(
             fontSize: 15,
@@ -311,7 +311,7 @@ class AppTheme {
           foregroundColor: darkTextPrimary,
           minimumSize: const Size(double.infinity, AppSizes.buttonHeight),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
           side: const BorderSide(color: darkBorder, width: 1.5),
           elevation: 0,
@@ -330,15 +330,15 @@ class AppTheme {
         fillColor: darkCard,
         contentPadding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: const BorderSide(color: darkBorder, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
@@ -363,7 +363,7 @@ class AppTheme {
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           side: BorderSide.none,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

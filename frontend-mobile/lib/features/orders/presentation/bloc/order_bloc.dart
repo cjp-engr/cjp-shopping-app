@@ -10,6 +10,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     on<OrdersLoadRequested>(_onLoad);
     on<OrderCreateRequested>(_onCreate);
     on<OrderCancelRequested>(_onCancel);
+    on<OrderConfirmReceivedRequested>(_onConfirmReceived);
   }
 
   Future<void> _onLoad(
@@ -44,6 +45,20 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     try {
       final updated =
           await _repository.cancelOrder(event.orderId, event.userId);
+      final orders = state.orders
+          .map((o) => o.id == updated.id ? updated : o)
+          .toList();
+      emit(state.copyWith(status: OrderStatus.success, orders: orders));
+    } catch (e) {
+      emit(state.copyWith(
+          status: OrderStatus.failure, errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onConfirmReceived(
+      OrderConfirmReceivedRequested event, Emitter<OrderState> emit) async {
+    try {
+      final updated = await _repository.confirmReceived(event.orderId);
       final orders = state.orders
           .map((o) => o.id == updated.id ? updated : o)
           .toList();

@@ -17,6 +17,8 @@ import '../../../wishlist/presentation/bloc/wishlist_state.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
+import '../../../../shared/services/storage_service.dart';
+import '../../../../core/network/api_client.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -91,19 +93,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 scrolledUnderElevation: 0,
                 leading: Padding(
                   padding: const EdgeInsets.all(8),
-                  child: GestureDetector(
-                    onTap: () => context.pop(),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withAlpha(15), blurRadius: 8)
-                        ],
+                  child: Semantics(
+                    label: 'Go back',
+                    button: true,
+                    child: InkWell(
+                      onTap: () => context.pop(),
+                      borderRadius: BorderRadius.circular(24),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withAlpha(15), blurRadius: 8)
+                          ],
+                        ),
+                        child: const Icon(Icons.arrow_back_rounded,
+                            color: AppColors.textPrimary, size: 20),
                       ),
-                      child: const Icon(Icons.arrow_back_rounded,
-                          color: AppColors.textPrimary, size: 20),
                     ),
                   ),
                 ),
@@ -116,14 +125,53 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   if (isOwnProduct)
                     Padding(
                       padding: const EdgeInsets.only(right: 4),
-                      child: GestureDetector(
-                        onTap: () =>
-                            setState(() => _previewMode = !_previewMode),
+                      child: Semantics(
+                        label: _previewMode ? 'Exit buyer preview' : 'Preview as buyer',
+                        button: true,
+                        child: InkWell(
+                          onTap: () =>
+                              setState(() => _previewMode = !_previewMode),
+                          borderRadius: BorderRadius.circular(24),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: _previewMode
+                                  ? AppColors.primary
+                                  : Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withAlpha(15),
+                                    blurRadius: 8)
+                              ],
+                            ),
+                            child: Icon(
+                              _previewMode
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: _previewMode
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Semantics(
+                      label: 'Open cart',
+                      button: true,
+                      child: InkWell(
+                        onTap: () => context.push('/cart'),
+                        borderRadius: BorderRadius.circular(24),
                         child: Container(
+                          width: 40,
+                          height: 40,
                           decoration: BoxDecoration(
-                            color: _previewMode
-                                ? AppColors.primary
-                                : Colors.white,
+                            color: Colors.white,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -131,36 +179,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   blurRadius: 8)
                             ],
                           ),
-                          padding: const EdgeInsets.all(8),
-                          child: Icon(
-                            _previewMode
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: _previewMode
-                                ? Colors.white
-                                : AppColors.textPrimary,
-                            size: 20,
-                          ),
+                          child: const Icon(Icons.shopping_bag_outlined,
+                              color: AppColors.textPrimary, size: 20),
                         ),
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: GestureDetector(
-                      onTap: () => context.push('/cart'),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withAlpha(15),
-                                blurRadius: 8)
-                          ],
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        child: const Icon(Icons.shopping_bag_outlined,
-                            color: AppColors.textPrimary, size: 20),
                       ),
                     ),
                   ),
@@ -191,30 +212,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         child: BlocBuilder<WishlistBloc, WishlistState>(
                           builder: (context, wishlist) {
                             final wishlisted = wishlist.contains(product.id);
-                            return GestureDetector(
-                              onTap: () => context
-                                  .read<WishlistBloc>()
-                                  .add(WishlistToggled(product)),
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                        color: Colors.black.withAlpha(20),
-                                        blurRadius: 8)
-                                  ],
-                                ),
-                                child: Icon(
-                                  wishlisted
-                                      ? Icons.favorite_rounded
-                                      : Icons.favorite_border_rounded,
-                                  color: wishlisted
-                                      ? AppColors.danger
-                                      : AppColors.textMuted,
-                                  size: 22,
+                            return Semantics(
+                              label: wishlisted ? 'Remove from wishlist' : 'Add to wishlist',
+                              button: true,
+                              child: InkWell(
+                                onTap: () => context
+                                    .read<WishlistBloc>()
+                                    .add(WishlistToggled(product)),
+                                borderRadius: BorderRadius.circular(22),
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                          color: Colors.black.withAlpha(20),
+                                          blurRadius: 8)
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    wishlisted
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    color: wishlisted
+                                        ? AppColors.danger
+                                        : AppColors.textMuted,
+                                    size: 22,
+                                  ),
                                 ),
                               ),
                             );
@@ -239,6 +265,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           Expanded(
                             child: Text(
                               product.name,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
@@ -387,6 +415,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           sellerAvatar: product.sellerAvatar,
                         ),
                       ],
+                      const SizedBox(height: AppSizes.lg),
+                      _ReviewsSection(productId: product.id),
                       const SizedBox(height: 100),
                     ],
                   ),
@@ -514,17 +544,21 @@ class _QtyBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 36,
-        height: 36,
-        alignment: Alignment.center,
-        child: Icon(icon,
-            size: 18,
-            color: onPressed == null
-                ? AppColors.textMuted
-                : AppColors.textPrimary),
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon,
+              size: 18,
+              color: onPressed == null
+                  ? AppColors.textMuted
+                  : AppColors.textPrimary),
+        ),
       ),
     );
   }
@@ -544,8 +578,12 @@ class _SellerBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = sellerName?.isNotEmpty == true ? sellerName! : 'Seller';
-    return GestureDetector(
+    return Semantics(
+      label: 'View seller profile',
+      button: true,
+      child: InkWell(
       onTap: () => context.push('/seller-profile/$sellerId'),
+      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSizes.md,
@@ -592,6 +630,7 @@ class _SellerBtn extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
@@ -627,6 +666,215 @@ class _ImageCarousel extends StatelessWidget {
               size: 64, color: AppColors.textMuted),
         ),
       ),
+    );
+  }
+}
+
+// ── Reviews section ───────────────────────────────────────────────────────────
+
+class _ReviewItem {
+  final String authorName;
+  final String? authorAvatar;
+  final int rating;
+  final String comment;
+  final String createdAt;
+  _ReviewItem({required this.authorName, this.authorAvatar, required this.rating, required this.comment, required this.createdAt});
+
+  factory _ReviewItem.fromJson(Map<String, dynamic> json) {
+    // userId may be a populated Map OR a raw ObjectId string — handle both
+    final userRaw = json['userId'];
+    final user = userRaw is Map
+        ? Map<String, dynamic>.from(userRaw)
+        : <String, dynamic>{};
+    final first = user['firstName']?.toString() ?? '';
+    final last  = user['lastName']?.toString()  ?? '';
+    final name  = '$first $last'.trim();
+    return _ReviewItem(
+      authorName:   name.isNotEmpty ? name : 'Buyer',
+      authorAvatar: user['avatar']?.toString(),
+      rating:       (json['rating'] as num?)?.toInt() ?? 0,
+      comment:      json['comment']?.toString() ?? '',
+      createdAt:    json['createdAt']?.toString() ?? '',
+    );
+  }
+}
+
+class _ReviewsSection extends StatefulWidget {
+  final String productId;
+  const _ReviewsSection({required this.productId});
+
+  @override
+  State<_ReviewsSection> createState() => _ReviewsSectionState();
+}
+
+class _ReviewsSectionState extends State<_ReviewsSection> {
+  List<_ReviewItem> _reviews = [];
+  bool _loading = true;
+  int _total = 0;
+  int _page = 1;
+  bool _hasMore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReviews(reset: true);
+  }
+
+  Future<void> _loadReviews({bool reset = false}) async {
+    if (reset) {
+      _loading = true;
+      _page = 1;
+    }
+    try {
+      final storage = await StorageService.init();
+      final client = ApiClient(storage);
+      final res = await client.dio.get(
+        '/reviews/product/${widget.productId}',
+        queryParameters: {'page': _page, 'limit': 5},
+      );
+      final data = res.data is Map
+          ? Map<String, dynamic>.from(res.data as Map)
+          : <String, dynamic>{};
+      final rawList = data['data'];
+      final list = (rawList is List ? rawList : <dynamic>[])
+          .whereType<Map>()
+          .map((e) {
+            try {
+              return _ReviewItem.fromJson(Map<String, dynamic>.from(e));
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<_ReviewItem>()
+          .toList();
+      if (mounted) {
+        setState(() {
+          _total = (data['total'] as num?)?.toInt() ?? 0;
+          _reviews = reset ? list : [..._reviews, ...list];
+          _hasMore = _reviews.length < _total;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String _formatDate(String iso) {
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+    } catch (_) { return ''; }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('Customer Reviews',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: context.onSurfaceColor)),
+            if (_total > 0) ...[
+              const SizedBox(width: 6),
+              Text('($_total)',
+                  style: TextStyle(fontSize: 14, color: context.onSurfaceSecondary)),
+            ],
+          ],
+        ),
+        const SizedBox(height: AppSizes.md),
+        if (_loading)
+          const Center(child: CircularProgressIndicator())
+        else if (_reviews.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(AppSizes.lg),
+            decoration: BoxDecoration(
+              color: context.surfaceVariantColor,
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            ),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.star_outline_rounded, size: 32, color: context.onSurfaceMuted),
+                  const SizedBox(height: 8),
+                  Text('No reviews yet',
+                      style: TextStyle(fontSize: 14, color: context.onSurfaceSecondary)),
+                ],
+              ),
+            ),
+          )
+        else
+          ...([
+            ..._reviews.map((r) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSizes.sm),
+              child: Container(
+                padding: const EdgeInsets.all(AppSizes.md),
+                decoration: BoxDecoration(
+                  color: context.cardColor,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundImage: r.authorAvatar != null && r.authorAvatar!.isNotEmpty
+                              ? NetworkImage(r.authorAvatar!) : null,
+                          backgroundColor: AppColors.primary.withAlpha(20),
+                          child: r.authorAvatar == null || r.authorAvatar!.isEmpty
+                              ? Text(r.authorName.isNotEmpty ? r.authorName[0].toUpperCase() : '?',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary))
+                              : null,
+                        ),
+                        const SizedBox(width: AppSizes.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(r.authorName,
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.onSurfaceColor)),
+                              Text(_formatDate(r.createdAt),
+                                  style: TextStyle(fontSize: 11, color: context.onSurfaceMuted)),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: List.generate(5, (i) => Icon(
+                            i < r.rating ? Icons.star_rounded : Icons.star_outline_rounded,
+                            size: 14,
+                            color: i < r.rating ? AppColors.warning : context.borderColor,
+                          )),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSizes.sm),
+                    Text(r.comment,
+                        style: TextStyle(fontSize: 13, color: context.onSurfaceSecondary, height: 1.5)),
+                  ],
+                ),
+              ),
+            )),
+            if (_hasMore)
+              Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    setState(() => _page++);
+                    _loadReviews();
+                  },
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
+                  label: const Text('Load more reviews'),
+                ),
+              ),
+          ]),
+      ],
     );
   }
 }

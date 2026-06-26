@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:toko_mart/shared/widgets/app_button.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 
@@ -55,7 +56,14 @@ class EmptyWidget extends StatelessWidget {
             ),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: AppSizes.md),
-              TextButton(onPressed: onAction, child: Text(actionLabel!)),
+              SizedBox(
+                width: 180,
+                height: AppSizes.buttonHeight,
+                child: AppButton(
+                  label: actionLabel!,
+                  onPressed: onAction,
+                ),
+              )
             ],
           ],
         ),

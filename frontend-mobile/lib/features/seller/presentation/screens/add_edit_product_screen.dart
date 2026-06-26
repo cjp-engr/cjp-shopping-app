@@ -326,28 +326,31 @@ class _AddTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final mutedColor = scheme.onSurface.withAlpha(100);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 100,
         height: 100,
         decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
+          color: scheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           border: Border.all(
-              color: AppColors.borderStrong,
+              color: scheme.outline.withAlpha(100),
               width: 1.5,
               strokeAlign: BorderSide.strokeAlignInside),
         ),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.add_photo_alternate_outlined,
-                size: 28, color: AppColors.textMuted),
-            SizedBox(height: 4),
+                size: 28, color: mutedColor),
+            const SizedBox(height: 4),
             Text(
               'Add Photo',
-              style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+              style: TextStyle(fontSize: 11, color: mutedColor),
             ),
           ],
         ),
@@ -450,10 +453,10 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSizes.sm),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w700,
-          color: AppColors.textSecondary,
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
           letterSpacing: 0.5,
         ),
       ),

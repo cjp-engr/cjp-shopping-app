@@ -53,6 +53,7 @@ export const signup = async (req: Request, res: Response) => {
         avatar: user.avatar,
         phone: user.phone,
         address: user.address,
+        savedCards: user.savedCards,
         createdAt: user.createdAt
       }
     });
@@ -115,6 +116,7 @@ export const login = async (req: Request, res: Response) => {
         avatar: user.avatar,
         phone: user.phone,
         address: user.address,
+        savedCards: user.savedCards,
         createdAt: user.createdAt
       }
     });
@@ -151,6 +153,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
         avatar: user.avatar,
         phone: user.phone,
         address: user.address,
+        savedCards: user.savedCards,
         createdAt: user.createdAt
       }
     });
@@ -194,6 +197,7 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
         avatar: user.avatar,
         phone: user.phone,
         address: user.address,
+        savedCards: user.savedCards,
         createdAt: user.createdAt,
       },
     });

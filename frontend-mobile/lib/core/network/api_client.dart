@@ -34,6 +34,13 @@ class ApiClient {
   }
 
   static void reset() => _instance = null;
+
+  /// Returns the singleton, initialising it from secure storage on first call.
+  static Future<ApiClient> get() async {
+    if (_instance != null) return _instance!;
+    final storage = await StorageService.init();
+    return ApiClient(storage);
+  }
 }
 
 class _AuthInterceptor extends Interceptor {

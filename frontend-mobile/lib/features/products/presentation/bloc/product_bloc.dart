@@ -24,7 +24,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       final products = await _repository.getProducts(
         search: event.search,
         category: event.category,
-        sortBy: event.sortBy,
+        sort: event.sortBy,
       );
       emit(state.copyWith(status: ProductStatus.success, products: products));
     } catch (e) {

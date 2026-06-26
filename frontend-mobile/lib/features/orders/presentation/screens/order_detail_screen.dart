@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -7,56 +8,14 @@ import '../bloc/order_state.dart';
 import '../../domain/entities/order_entity.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/theme_colors.dart';
+import '../../../../core/utils/order_utils.dart';
+import '../../../../shared/widgets/image_placeholder.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/review_bottom_sheet.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
-
-String _formatDate(String? raw) {
-  if (raw == null || raw.isEmpty) return '';
-  try {
-    final dt = DateTime.parse(raw).toLocal();
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
-  } catch (_) {
-    return raw;
-  }
-}
-
-Color _statusColor(String status) {
-  switch (status) {
-    case 'pending':    return AppColors.warning;
-    case 'processing': return AppColors.primary;
-    case 'shipped':    return AppColors.primaryLight;
-    case 'delivered':  return AppColors.success;
-    case 'cancelled':  return AppColors.danger;
-    default:           return AppColors.textMuted;
-  }
-}
-
-IconData _statusIcon(String status) {
-  switch (status) {
-    case 'pending':    return Icons.access_time_rounded;
-    case 'processing': return Icons.inventory_2_outlined;
-    case 'shipped':    return Icons.local_shipping_outlined;
-    case 'delivered':  return Icons.check_circle_outline_rounded;
-    case 'cancelled':  return Icons.cancel_outlined;
-    default:           return Icons.help_outline;
-  }
-}
-
-int _statusStep(String status) {
-  switch (status) {
-    case 'pending':    return 0;
-    case 'processing': return 1;
-    case 'shipped':    return 2;
-    case 'delivered':  return 3;
-    default:           return -1;
-  }
-}
 
 class OrderDetailScreen extends StatelessWidget {
   final String orderId;
@@ -80,9 +39,7 @@ class OrderDetailScreen extends StatelessWidget {
 
         if (order == null) {
           return Scaffold(
-            appBar: AppBar(
-              title: const Text('Order Details'),
-            ),
+            appBar: AppBar(title: const Text('Order Details')),
             body: const Center(
               child: Text(
                 'Order not found',
@@ -98,10 +55,84 @@ class OrderDetailScreen extends StatelessWidget {
   }
 }
 
-class _OrderDetailView extends StatelessWidget {
+class _OrderDetailView extends StatefulWidget {
   final OrderEntity order;
   final String? sellerKey;
   const _OrderDetailView({required this.order, this.sellerKey});
+
+  @override
+  State<_OrderDetailView> createState() => _OrderDetailViewState();
+}
+
+class _OrderDetailViewState extends State<_OrderDetailView> {
+  // productId → { rating, comment, _id, ... }
+  final Map<String, Map<String, dynamic>> _reviews = {};
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.order.status == 'delivered') {
+      _fetchReviews();
+    }
+  }
+
+  Future<void> _fetchReviews() async {
+    try {
+      final client = await ApiClient.get();
+      final items = widget.sellerKey != null
+          ? widget.order.items
+              .where((i) => (i.sellerId ?? '__unknown__') == widget.sellerKey)
+              .toList()
+          : widget.order.items;
+      for (final item in items) {
+        try {
+          final res = await client.dio.get('/reviews/check/${item.productId}');
+          final data = res.data as Map<String, dynamic>;
+          if (data['hasReviewed'] == true &&
+              data['review'] != null &&
+              mounted) {
+            setState(
+              () => _reviews[item.productId] =
+                  data['review'] as Map<String, dynamic>,
+            );
+          }
+        } catch (e, st) {
+          dev.log('Review fetch failed for ${item.productId}',
+              error: e, stackTrace: st);
+        }
+      }
+    } catch (e, st) {
+      dev.log('ApiClient init failed in _fetchReviews',
+          error: e, stackTrace: st);
+    }
+  }
+
+  Future<void> _showConfirmReceivedDialog(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Confirm Receipt'),
+        content: Text(
+            'Have you received order #${widget.order.shortId}? This will mark the order as complete.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('Not Yet'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.success),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text('Yes, Received'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && context.mounted) {
+      context
+          .read<OrderBloc>()
+          .add(OrderConfirmReceivedRequested(widget.order.id));
+    }
+  }
 
   Future<void> _showCancelDialog(BuildContext context) async {
     final confirm = await showDialog<bool>(
@@ -109,7 +140,7 @@ class _OrderDetailView extends StatelessWidget {
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Cancel Order'),
         content: Text(
-            'Cancel order #${order.shortId}?\nThis action cannot be undone.'),
+            'Cancel order #${widget.order.shortId}?\nThis action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(false),
@@ -128,27 +159,30 @@ class _OrderDetailView extends StatelessWidget {
       if (user != null) {
         context
             .read<OrderBloc>()
-            .add(OrderCancelRequested(order.id, user.id));
+            .add(OrderCancelRequested(widget.order.id, user.id));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = _statusColor(order.status);
-    final icon = _statusIcon(order.status);
-    final stepIndex = _statusStep(order.status);
+    final order = widget.order;
+    final sellerKey = widget.sellerKey;
+    final color = orderStatusColor(order.status);
+    final icon = orderStatusIcon(order.status);
+    final stepIndex = orderStatusStep(order.status);
     final isCancelled = order.status == 'cancelled';
-    final dateStr = _formatDate(order.createdAt);
-    final deliveryStr = _formatDate(order.estimatedDelivery);
+    final dateStr = formatOrderDate(order.createdAt);
+    final deliveryStr = formatOrderDate(order.estimatedDelivery);
     final statusLabel = order.status.isNotEmpty
         ? order.status[0].toUpperCase() + order.status.substring(1)
         : '';
     final addr = order.shippingAddress;
 
-    // Filter items to the specific seller when navigated from a seller card
     final filteredItems = sellerKey != null
-        ? order.items.where((i) => (i.sellerId ?? '__unknown__') == sellerKey).toList()
+        ? order.items
+            .where((i) => (i.sellerId ?? '__unknown__') == sellerKey)
+            .toList()
         : order.items;
     final sellerName = sellerKey != null && filteredItems.isNotEmpty
         ? (filteredItems.first.sellerName?.isNotEmpty == true
@@ -156,11 +190,15 @@ class _OrderDetailView extends StatelessWidget {
             : 'Store')
         : null;
 
-    // Derive per-seller (or full-order) financials from filteredItems
-    final displaySubtotal = filteredItems.fold<double>(0, (s, i) => s + i.total);
+    final displaySubtotal =
+        filteredItems.fold<double>(0, (s, i) => s + i.total);
     final displayTax = displaySubtotal * 0.08;
     final displayShipping = displaySubtotal >= 50 ? 0.0 : 9.99;
     final displayTotal = displaySubtotal + displayTax + displayShipping;
+
+    // Group filtered items by seller — computed once per build, not in a closure
+    final groups = groupItemsBySeller(filteredItems, (i) => i.sellerId);
+    final groupEntries = groups.entries.toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -172,7 +210,7 @@ class _OrderDetailView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Order header ──────────────────────────────────────────────
+            // ── Order header ────────────────────────────────────────────
             _SectionCard(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,8 +245,7 @@ class _OrderDetailView extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: color.withAlpha(20),
-                      borderRadius:
-                          BorderRadius.circular(AppSizes.radiusFull),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -232,7 +269,7 @@ class _OrderDetailView extends StatelessWidget {
 
             const SizedBox(height: AppSizes.sm),
 
-            // ── Status section ────────────────────────────────────────────
+            // ── Status section ──────────────────────────────────────────
             _SectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,10 +282,9 @@ class _OrderDetailView extends StatelessWidget {
                           horizontal: AppSizes.md, vertical: 12),
                       decoration: BoxDecoration(
                         color: AppColors.danger.withAlpha(16),
-                        borderRadius:
-                            BorderRadius.circular(AppSizes.radiusMd),
-                        border: Border.all(
-                            color: AppColors.danger.withAlpha(40)),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                        border:
+                            Border.all(color: AppColors.danger.withAlpha(40)),
                       ),
                       child: const Row(
                         children: [
@@ -274,7 +310,7 @@ class _OrderDetailView extends StatelessWidget {
               ),
             ),
 
-            // ── Estimated delivery ────────────────────────────────────────
+            // ── Estimated delivery ──────────────────────────────────────
             if (!isCancelled && deliveryStr.isNotEmpty) ...[
               const SizedBox(height: AppSizes.sm),
               _SectionCard(
@@ -323,7 +359,7 @@ class _OrderDetailView extends StatelessWidget {
 
             const SizedBox(height: AppSizes.sm),
 
-            // ── Delivery information ──────────────────────────────────────
+            // ── Delivery information ────────────────────────────────────
             _SectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,7 +390,7 @@ class _OrderDetailView extends StatelessWidget {
 
             const SizedBox(height: AppSizes.sm),
 
-            // ── Order items grouped by seller ─────────────────────────────
+            // ── Order items grouped by seller ───────────────────────────
             _SectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,107 +419,104 @@ class _OrderDetailView extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: AppSizes.sm),
-                  // Group items by seller (scoped to filteredItems)
-                  ...() {
-                    final groups = <String, List<OrderItemEntity>>{};
-                    for (final item in filteredItems) {
-                      final key = item.sellerId ?? '__unknown__';
-                      groups.putIfAbsent(key, () => []);
-                      groups[key]!.add(item);
-                    }
-                    final groupEntries = groups.entries.toList();
-                    return [
-                      for (var g = 0; g < groupEntries.length; g++) ...[
-                        // Seller header
-                        _DetailSellerHeader(
-                          sellerName: groupEntries[g].value.first.sellerName,
-                        ),
-                        const SizedBox(height: AppSizes.xs),
-                        // Items in group
-                        ...groupEntries[g].value.asMap().entries.map((e) {
-                          final isLastItem =
-                              e.key == groupEntries[g].value.length - 1;
-                          return Column(
-                            children: [
-                              _OrderItemRow(item: e.value),
-                              if (!isLastItem)
-                                const Divider(height: AppSizes.md),
-                            ],
-                          );
-                        }),
-                        // Message to seller (if set)
-                        Builder(builder: (ctx) {
-                          final sellerKey = groupEntries[g].key;
-                          final msg = order.sellerMessages[sellerKey] ?? '';
-                          if (msg.isEmpty) return const SizedBox.shrink();
-                          return Padding(
-                            padding: const EdgeInsets.only(top: AppSizes.sm),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSizes.sm, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: ctx.surfaceVariantColor,
-                                borderRadius:
-                                    BorderRadius.circular(AppSizes.radiusMd),
-                                border: Border.all(
-                                    color: ctx.borderColor, width: 0.5),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(Icons.chat_bubble_outline_rounded,
-                                      size: 14, color: ctx.onSurfaceMuted),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Message to Seller',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                            color: ctx.onSurfaceMuted,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          msg,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: ctx.onSurfaceColor,
-                                            height: 1.4,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                  for (var g = 0; g < groupEntries.length; g++) ...[
+                    _DetailSellerHeader(
+                      sellerName: groupEntries[g].value.first.sellerName,
+                    ),
+                    const SizedBox(height: AppSizes.xs),
+                    ...groupEntries[g].value.asMap().entries.map((e) {
+                      final isLastItem =
+                          e.key == groupEntries[g].value.length - 1;
+                      final review = _reviews[e.value.productId];
+                      final item = e.value;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _OrderItemRow(item: item),
+                          if (review != null)
+                            _ReviewCard(
+                              review: review,
+                              productId: item.productId,
+                              productName: item.productName,
+                              productImage: item.productImage,
+                              orderId: order.id,
+                              onUpdated: (updated) => setState(
+                                () => _reviews[item.productId] = updated,
                               ),
                             ),
-                          );
-                        }),
-                        // Divider between seller groups
-                        if (g < groupEntries.length - 1)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: AppSizes.sm),
-                            child: Divider(
-                                height: 1,
-                                color: AppColors.primary.withAlpha(100),
-                                thickness: 0.4),
+                          if (!isLastItem) const Divider(height: AppSizes.md),
+                        ],
+                      );
+                    }),
+                    // Message to seller
+                    Builder(builder: (ctx) {
+                      final key = groupEntries[g].key;
+                      final msg = order.sellerMessages[key] ?? '';
+                      if (msg.isEmpty) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: AppSizes.sm),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.sm, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: ctx.surfaceVariantColor,
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusMd),
+                            border:
+                                Border.all(color: ctx.borderColor, width: 0.5),
                           ),
-                      ],
-                    ];
-                  }(),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.chat_bubble_outline_rounded,
+                                  size: 14, color: ctx.onSurfaceMuted),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Message to Seller',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: ctx.onSurfaceMuted,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      msg,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: ctx.onSurfaceColor,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    if (g < groupEntries.length - 1)
+                      Padding(
+                        padding:
+                            const EdgeInsets.symmetric(vertical: AppSizes.sm),
+                        child: Divider(
+                            height: 1,
+                            color: AppColors.primary.withAlpha(100),
+                            thickness: 0.4),
+                      ),
+                  ],
                 ],
               ),
             ),
 
             const SizedBox(height: AppSizes.sm),
 
-            // ── Order details (payment summary) ───────────────────────────
+            // ── Order summary ───────────────────────────────────────────
             _SectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -519,7 +552,71 @@ class _OrderDetailView extends StatelessWidget {
               ),
             ),
 
-            // ── Cancel order ──────────────────────────────────────────────
+            // ── Confirm received (buyer, shipped orders only) ───────────
+            if (order.status == 'shipped') ...[
+              const SizedBox(height: AppSizes.md),
+              Container(
+                padding: const EdgeInsets.all(AppSizes.md),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(12),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  border: Border.all(color: AppColors.primary.withAlpha(40)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.local_shipping_outlined,
+                            size: 16, color: AppColors.primary),
+                        SizedBox(width: 6),
+                        Text(
+                          'Your order is on the way!',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Once you receive your items, tap below to confirm receipt and complete the order.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.onSurfaceSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.sm),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusMd),
+                          ),
+                        ),
+                        icon: const Icon(Icons.check_circle_outline, size: 18),
+                        label: const Text(
+                          'Order Received',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 14),
+                        ),
+                        onPressed: () => _showConfirmReceivedDialog(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // ── Cancel order ────────────────────────────────────────────
             if (order.status == 'pending') ...[
               const SizedBox(height: AppSizes.md),
               SizedBox(
@@ -529,15 +626,13 @@ class _OrderDetailView extends StatelessWidget {
                     foregroundColor: AppColors.danger,
                     side: const BorderSide(color: AppColors.danger),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSizes.radiusMd),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                     ),
                   ),
                   icon: const Icon(Icons.cancel_outlined, size: 18),
                   label: const Text(
                     'Cancel Order',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 15),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                   ),
                   onPressed: () => _showCancelDialog(context),
                 ),
@@ -552,7 +647,7 @@ class _OrderDetailView extends StatelessWidget {
   }
 }
 
-// ── Section card ──────────────────────────────────────────────────────────────
+// ── Seller header ─────────────────────────────────────────────────────────────
 
 class _DetailSellerHeader extends StatelessWidget {
   final String? sellerName;
@@ -562,8 +657,7 @@ class _DetailSellerHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = sellerName?.isNotEmpty == true ? sellerName! : 'Store';
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.sm, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.sm, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.primary.withAlpha(12),
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -589,6 +683,8 @@ class _DetailSellerHeader extends StatelessWidget {
     );
   }
 }
+
+// ── Section card ──────────────────────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
   final Widget child;
@@ -698,7 +794,8 @@ class _SummaryRow extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: isTotal ? 15 : 13,
-            color: isTotal ? context.onSurfaceColor : context.onSurfaceSecondary,
+            color:
+                isTotal ? context.onSurfaceColor : context.onSurfaceSecondary,
             fontWeight: isTotal ? FontWeight.w800 : FontWeight.w400,
           ),
         ),
@@ -742,9 +839,9 @@ class _OrderItemRow extends StatelessWidget {
                       height: 60,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) =>
-                          const _ImagePlaceholder(size: 60),
+                          const ImagePlaceholder(size: 60),
                     )
-                  : const _ImagePlaceholder(size: 60),
+                  : const ImagePlaceholder(size: 60),
             ),
             const SizedBox(width: AppSizes.sm),
             Expanded(
@@ -870,23 +967,135 @@ class _StatusStepper extends StatelessWidget {
   }
 }
 
-// ── Image placeholder ─────────────────────────────────────────────────────────
+// ── Review card ───────────────────────────────────────────────────────────────
 
-class _ImagePlaceholder extends StatelessWidget {
-  final double size;
-  const _ImagePlaceholder({required this.size});
+class _ReviewCard extends StatelessWidget {
+  final Map<String, dynamic> review;
+  final String productId;
+  final String productName;
+  final String productImage;
+  final String orderId;
+  final void Function(Map<String, dynamic> updated) onUpdated;
+
+  const _ReviewCard({
+    required this.review,
+    required this.productId,
+    required this.productName,
+    required this.productImage,
+    required this.orderId,
+    required this.onUpdated,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final rating = (review['rating'] as num?)?.toInt() ?? 0;
+    final comment = review['comment']?.toString() ?? '';
+    final reviewId = review['_id']?.toString() ?? '';
+
     return Container(
-      width: size,
-      height: size,
+      margin: const EdgeInsets.only(top: AppSizes.sm),
+      padding: const EdgeInsets.all(AppSizes.sm),
       decoration: BoxDecoration(
-        color: AppColors.shimmerBase,
-        borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+        color: AppColors.warning.withAlpha(12),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        border: Border.all(color: AppColors.warning.withAlpha(50), width: 0.5),
       ),
-      child: Icon(Icons.image_outlined,
-          size: size * 0.4, color: AppColors.textMuted),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.star_rounded,
+                  size: 13, color: AppColors.warning),
+              const SizedBox(width: 4),
+              const Text(
+                'Your Review',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.warning,
+                ),
+              ),
+              const Spacer(),
+              Row(
+                children: List.generate(
+                  5,
+                  (i) => Icon(
+                    i < rating
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    size: 12,
+                    color: i < rating ? AppColors.warning : context.borderColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              InkWell(
+                onTap: () => ReviewBottomSheet.show(
+                  context,
+                  productId: productId,
+                  orderId: orderId,
+                  productName: productName,
+                  productImage: productImage,
+                  reviewId: reviewId,
+                  initialRating: rating,
+                  initialComment: comment,
+                  onSubmitted: () async {
+                    try {
+                      final client = await ApiClient.get();
+                      final res =
+                          await client.dio.get('/reviews/check/$productId');
+                      final data = res.data as Map<String, dynamic>;
+                      if (data['review'] != null) {
+                        onUpdated(data['review'] as Map<String, dynamic>);
+                      }
+                    } catch (e, st) {
+                      dev.log('Review re-fetch failed after edit',
+                          error: e, stackTrace: st);
+                    }
+                  },
+                ),
+                borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(18),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.edit_rounded,
+                          size: 11, color: AppColors.primary),
+                      SizedBox(width: 3),
+                      Text(
+                        'Edit',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (comment.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              comment,
+              style: TextStyle(
+                fontSize: 12,
+                color: context.onSurfaceSecondary,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

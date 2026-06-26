@@ -210,11 +210,11 @@ export const SellerDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Store className="w-8 h-8 text-primary-600" />
             Seller Dashboard
           </h1>
-          <p className="text-gray-600 mt-1">Manage your products and orders</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your products and orders</p>
         </div>
         <Button variant="outline" onClick={() => navigate('/profile')}>
           Back to Profile
@@ -224,45 +224,45 @@ export const SellerDashboard: React.FC = () => {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card padding="lg" className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
-            <ShoppingBag className="w-6 h-6 text-primary-600" />
+          <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
+            <ShoppingBag className="w-6 h-6 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-gray-900">{products.length}</p>
-            <p className="text-sm text-gray-500 mt-0.5">Products</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{products.length}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Products</p>
           </div>
         </Card>
         <Card padding="lg" className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-yellow-100 flex items-center justify-center flex-shrink-0">
-            <Package className="w-6 h-6 text-yellow-600" />
+          <div className="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center flex-shrink-0">
+            <Package className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {orders.filter(o => !['delivered', 'cancelled'].includes(o.status)).length}
             </p>
-            <p className="text-sm text-gray-500 mt-0.5">Active Orders</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Active Orders</p>
           </div>
         </Card>
         <Card padding="lg" className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
-            <Truck className="w-6 h-6 text-orange-600" />
+          <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
+            <Truck className="w-6 h-6 text-orange-600 dark:text-orange-400" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {orders.filter(o => o.status === 'pending').length}
             </p>
-            <p className="text-sm text-gray-500 mt-0.5">To Ship</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">To Ship</p>
           </div>
         </Card>
         <Card padding="lg" className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
-            <DollarSign className="w-6 h-6 text-green-600" />
+          <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+            <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {formatCurrency(orders.filter(o => o.status === 'delivered').reduce((s, o) => s + o.total, 0))}
             </p>
-            <p className="text-sm text-gray-500 mt-0.5">Revenue</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Revenue</p>
           </div>
         </Card>
       </div>
@@ -271,7 +271,7 @@ export const SellerDashboard: React.FC = () => {
       {(() => {
         const actionableCount = orders.filter(o => ['pending', 'processing', 'shipped'].includes(o.status)).length;
         return (
-          <div className="border-b border-gray-200">
+          <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="-mb-px flex gap-1">
               {([
                 { key: 'products', label: 'My Products', Icon: ShoppingBag, badge: null },
@@ -283,7 +283,7 @@ export const SellerDashboard: React.FC = () => {
                   className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
                     tab === key
                       ? 'border-primary-600 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -486,7 +486,7 @@ export const SellerDashboard: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {products.map(product => (
                 <Card key={product.id} padding="none" className="flex flex-col overflow-hidden">
-                  <div className="aspect-square bg-gray-100 relative">
+                  <div className="aspect-square bg-gray-100 dark:bg-gray-700 relative">
                     <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
                     <span className={`absolute top-2 right-2 text-xs font-semibold px-2 py-1 rounded-full ${
                       product.stock === 0
@@ -500,10 +500,10 @@ export const SellerDashboard: React.FC = () => {
                   </div>
                   <div className="flex flex-col flex-1 p-4">
                     <Badge variant="gray" size="sm" className="mb-2 w-fit">{product.category}</Badge>
-                    <h3 className="font-semibold text-gray-900 line-clamp-1 mb-1">{product.name}</h3>
-                    <p className="text-sm text-gray-500 line-clamp-2 flex-1">{product.description}</p>
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                      <span className="text-lg font-bold text-gray-900">{formatCurrency(product.price)}</span>
+                    <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1 mb-1">{product.name}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 flex-1">{product.description}</p>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(product.price)}</span>
                       <div className="flex gap-1.5">
                         <button
                           onClick={() => openEdit(product)}
@@ -595,10 +595,9 @@ export const SellerDashboard: React.FC = () => {
             return filtered.map(order => {
               const cfg = statusConfig(order.status);
               const StatusIcon = cfg.icon;
-              const canToShip        = order.status === 'pending';
-              const canToReceive     = order.status === 'processing';
-              const canMarkDelivered = order.status === 'shipped';
-              const canCancel        = order.status === 'pending' || order.status === 'processing' || order.status === 'shipped';
+              const canToShip    = order.status === 'pending';
+              const canToReceive = order.status === 'processing';
+              const canCancel    = order.status === 'pending' || order.status === 'processing' || order.status === 'shipped';
 
               return (
                 <Card key={order.id} padding="none" className="overflow-hidden">
@@ -651,7 +650,7 @@ export const SellerDashboard: React.FC = () => {
                     </div>
 
                     {/* Actions */}
-                    {(canToShip || canToReceive || canMarkDelivered || canCancel) && (
+                    {(canToShip || canToReceive || canCancel) && (
                       <div className="flex sm:flex-col gap-2 sm:min-w-[148px]">
                         {canToShip && (
                           <Button size="sm" fullWidth onClick={() => handleStatusUpdate(order.id, 'processing')}>
@@ -661,11 +660,6 @@ export const SellerDashboard: React.FC = () => {
                         {canToReceive && (
                           <Button size="sm" fullWidth onClick={() => handleStatusUpdate(order.id, 'shipped')}>
                             <Truck className="w-4 h-4 mr-1" /> Mark Shipped
-                          </Button>
-                        )}
-                        {canMarkDelivered && (
-                          <Button size="sm" fullWidth variant="success" onClick={() => handleStatusUpdate(order.id, 'delivered')}>
-                            <CheckCircle className="w-4 h-4 mr-1" /> Mark Delivered
                           </Button>
                         )}
                         {canCancel && (

@@ -12,8 +12,7 @@ class ProductRemoteDataSource {
     String? category,
     double? minPrice,
     double? maxPrice,
-    String? sortBy,
-    String? sortOrder,
+    String? sort,
     int page = 1,
     int limit = 20,
   }) async {
@@ -25,8 +24,7 @@ class ProductRemoteDataSource {
         if (category != null && category.isNotEmpty) 'category': category,
         if (minPrice != null) 'minPrice': minPrice,
         if (maxPrice != null) 'maxPrice': maxPrice,
-        if (sortBy != null) 'sortBy': sortBy,
-        if (sortOrder != null) 'sortOrder': sortOrder,
+        if (sort != null) 'sort': sort,
       };
       final response = await _dio.get('/products', queryParameters: params);
       final data = response.data;

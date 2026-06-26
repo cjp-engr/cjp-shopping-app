@@ -17,10 +17,17 @@ export const API_ENDPOINTS = {
   ORDERS: `${API_BASE_URL}/orders`,
   ORDER: (id: string) => `${API_BASE_URL}/orders/${id}`,
   ORDER_STATUS: (id: string) => `${API_BASE_URL}/orders/${id}/status`,
+  ORDER_CONFIRM_RECEIVED: (id: string) => `${API_BASE_URL}/orders/${id}/confirm-received`,
 
   // Payment methods
   PAYMENT_METHODS: `${API_BASE_URL}/auth/payment-methods`,
   PAYMENT_METHOD: (id: string) => `${API_BASE_URL}/auth/payment-methods/${id}`,
+
+  // Reviews
+  REVIEWS: `${API_BASE_URL}/reviews`,
+  REVIEW: (id: string) => `${API_BASE_URL}/reviews/${id}`,
+  PRODUCT_REVIEWS: (productId: string) => `${API_BASE_URL}/reviews/product/${productId}`,
+  CHECK_REVIEW: (productId: string) => `${API_BASE_URL}/reviews/check/${productId}`,
 
   // Seller
   SELLER_PRODUCTS: `${API_BASE_URL}/seller/products`,

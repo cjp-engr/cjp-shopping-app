@@ -155,8 +155,8 @@ export const Profile: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Profile</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             Manage your account settings and preferences
           </p>
         </div>
@@ -236,16 +236,16 @@ export const Profile: React.FC = () => {
                   {uploadingAvatar ? 'Uploading to Cloudinary…' : 'Click the camera to upload (max 2 MB)'}
                 </p>
               )}
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 {user.firstName} {user.lastName}
               </h2>
-              <p className="text-gray-600 mt-1">{user.email}</p>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-gray-600 dark:text-gray-400 mt-1">{user.email}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
                 Member since {formatDate(user.createdAt)}
               </p>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-gray-200 space-y-2">
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-2">
               <Button
                 fullWidth
                 variant={isEditing ? 'secondary' : 'primary'}

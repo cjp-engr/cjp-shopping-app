@@ -1,13 +1,11 @@
-import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -53,8 +51,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _stateCtrl.dispose();
     _zipCtrl.dispose();
     _countryCtrl.dispose();
-    for (final c in _voucherCtrls.values) { c.dispose(); }
-    for (final c in _messageCtrls.values) { c.dispose(); }
+    for (final c in _voucherCtrls.values) {
+      c.dispose();
+    }
+    for (final c in _messageCtrls.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -95,9 +97,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final items = selectedItems
         .map((i) => {'productId': i.product.id, 'quantity': i.quantity})
         .toList();
-    final totalDiscount = _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
+    final totalDiscount =
+        _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
     final totalShipping = cart.shippingFor(sellerDiscounts: _voucherDiscounts);
-    final afterDiscount = (cart.subtotal - totalDiscount).clamp(0, double.infinity);
+    final afterDiscount =
+        (cart.subtotal - totalDiscount).clamp(0, double.infinity);
     final totalTax = afterDiscount * 0.08;
     context.read<OrderBloc>().add(OrderCreateRequested({
           'userId': user.id,
@@ -192,7 +196,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         children: [
                           // ── Shipping address ──────────────────────────────
                           BlocBuilder<AuthBloc, AuthState>(
-                            buildWhen: (p, c) => p.user?.address != c.user?.address,
+                            buildWhen: (p, c) =>
+                                p.user?.address != c.user?.address,
                             builder: (_, authState) => _AddressSection(
                               savedAddress: authState.user?.address,
                               streetCtrl: _streetCtrl,
@@ -208,12 +213,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ...groups.entries.map((entry) {
                             final sellerKey = entry.key;
                             final items = entry.value;
-                            final sellerName =
-                                items.first.product.sellerName;
-                            final groupSubtotal = items.fold<double>(
-                                0, (s, i) => s + i.subtotal);
-                            final discount =
-                                _voucherDiscounts[sellerKey] ?? 0;
+                            final sellerName = items.first.product.sellerName;
+                            final groupSubtotal =
+                                items.fold<double>(0, (s, i) => s + i.subtotal);
+                            final discount = _voucherDiscounts[sellerKey] ?? 0;
                             final storeTotal = groupSubtotal - discount;
 
                             return _SellerCard(
@@ -232,12 +235,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                           // ── Payment method ────────────────────────────────
                           BlocBuilder<AuthBloc, AuthState>(
-                            buildWhen: (p, c) => p.user?.savedCards != c.user?.savedCards,
+                            buildWhen: (p, c) =>
+                                p.user?.savedCards != c.user?.savedCards,
                             builder: (_, authState) => _PaymentSection(
                               key: _paymentSectionKey,
                               selected: _paymentType,
-                              onChanged: (v) => setState(() => _paymentType = v),
-                              savedCards: authState.user?.savedCards ?? const [],
+                              onChanged: (v) =>
+                                  setState(() => _paymentType = v),
+                              savedCards:
+                                  authState.user?.savedCards ?? const [],
                             ),
                           ),
 
@@ -260,10 +266,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   _BottomBar(
                     total: grandTotal,
                     saved: totalDiscount,
-                    loading: context
-                            .watch<OrderBloc>()
-                            .state
-                            .status ==
+                    loading: context.watch<OrderBloc>().state.status ==
                         OrderStatus.placing,
                     onPlace: () => _submit(cart, widget.selectedIds),
                   ),
@@ -283,7 +286,10 @@ enum _AddressMode { saved, newAddress }
 
 class _AddressSection extends StatefulWidget {
   final AddressEntity? savedAddress;
-  final TextEditingController streetCtrl, cityCtrl, stateCtrl, zipCtrl,
+  final TextEditingController streetCtrl,
+      cityCtrl,
+      stateCtrl,
+      zipCtrl,
       countryCtrl;
 
   const _AddressSection({
@@ -306,7 +312,9 @@ class _AddressSectionState extends State<_AddressSection> {
   void initState() {
     super.initState();
     // Default: use saved address when available
-    _mode = widget.savedAddress != null ? _AddressMode.saved : _AddressMode.newAddress;
+    _mode = widget.savedAddress != null
+        ? _AddressMode.saved
+        : _AddressMode.newAddress;
     if (widget.savedAddress != null) _fillSaved(widget.savedAddress!);
   }
 
@@ -393,6 +401,8 @@ class _AddressSectionState extends State<_AddressSection> {
                     label: 'Street Address',
                     controller: widget.streetCtrl,
                     prefixIcon: Icons.home_outlined,
+                    keyboardType: TextInputType.streetAddress,
+                    textInputAction: TextInputAction.next,
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Required' : null,
                   ),
@@ -403,6 +413,8 @@ class _AddressSectionState extends State<_AddressSection> {
                         child: AppTextField(
                           label: 'City',
                           controller: widget.cityCtrl,
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.next,
                           validator: (v) =>
                               v == null || v.trim().isEmpty ? 'Required' : null,
                         ),
@@ -412,6 +424,8 @@ class _AddressSectionState extends State<_AddressSection> {
                         child: AppTextField(
                           label: 'State',
                           controller: widget.stateCtrl,
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.next,
                           validator: (v) =>
                               v == null || v.trim().isEmpty ? 'Required' : null,
                         ),
@@ -426,6 +440,7 @@ class _AddressSectionState extends State<_AddressSection> {
                           label: 'ZIP Code',
                           controller: widget.zipCtrl,
                           keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.next,
                           validator: (v) =>
                               v == null || v.trim().isEmpty ? 'Required' : null,
                         ),
@@ -435,6 +450,8 @@ class _AddressSectionState extends State<_AddressSection> {
                         child: AppTextField(
                           label: 'Country',
                           controller: widget.countryCtrl,
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.done,
                           validator: (v) =>
                               v == null || v.trim().isEmpty ? 'Required' : null,
                         ),
@@ -491,44 +508,50 @@ class _AddressOption extends StatelessWidget {
             width: selected ? 1.5 : 1,
           ),
         ),
-        child: Row(
-          children: [
-            Radio<bool>(
-              value: true,
-              groupValue: selected,
-              onChanged: (_) => onTap(),
-              activeColor: AppColors.primary,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
-            ),
-            const SizedBox(width: 4),
-            Icon(icon, size: 18, color: selected ? AppColors.primary : context.onSurfaceMuted),
-            const SizedBox(width: AppSizes.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: selected ? AppColors.primary : context.onSurfaceColor,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: context.onSurfaceMuted,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+        child: RadioGroup<bool>(
+          groupValue: selected,
+          onChanged: (_) => onTap(),
+          child: Row(
+            children: [
+              const Radio<bool>(
+                value: true,
+                fillColor: WidgetStatePropertyAll(AppColors.primary),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
               ),
-            ),
-          ],
+              const SizedBox(width: 4),
+              Icon(icon,
+                  size: 18,
+                  color: selected ? AppColors.primary : context.onSurfaceMuted),
+              const SizedBox(width: AppSizes.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: selected
+                            ? AppColors.primary
+                            : context.onSurfaceColor,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: context.onSurfaceMuted,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -763,8 +786,8 @@ class _VoucherRowState extends State<_VoucherRow> {
                 else
                   Text(
                     'Select or enter code',
-                    style: TextStyle(
-                        fontSize: 13, color: context.onSurfaceMuted),
+                    style:
+                        TextStyle(fontSize: 13, color: context.onSurfaceMuted),
                   ),
                 const SizedBox(width: 4),
                 Icon(
@@ -796,15 +819,14 @@ class _VoucherRowState extends State<_VoucherRow> {
                       filled: true,
                       fillColor: context.surfaceVariantColor,
                       border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppSizes.radiusMd),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                         borderSide: BorderSide.none,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 10),
                     ),
-                    style: TextStyle(
-                        fontSize: 13, color: context.onSurfaceColor),
+                    style:
+                        TextStyle(fontSize: 13, color: context.onSurfaceColor),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -854,15 +876,14 @@ class _MessageRowState extends State<_MessageRow> {
                     size: 16, color: context.onSurfaceMuted),
                 const SizedBox(width: 8),
                 Text('Message for Seller',
-                    style: TextStyle(
-                        fontSize: 13, color: context.onSurfaceColor)),
+                    style:
+                        TextStyle(fontSize: 13, color: context.onSurfaceColor)),
                 const Spacer(),
                 Text(
                   widget.controller.text.isEmpty
                       ? 'Please leave a message'
                       : widget.controller.text,
-                  style: TextStyle(
-                      fontSize: 13, color: context.onSurfaceMuted),
+                  style: TextStyle(fontSize: 13, color: context.onSurfaceMuted),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -885,6 +906,8 @@ class _MessageRowState extends State<_MessageRow> {
             child: TextField(
               controller: widget.controller,
               maxLines: 3,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 hintText: 'Leave a message for the seller...',
@@ -894,8 +917,7 @@ class _MessageRowState extends State<_MessageRow> {
                 filled: true,
                 fillColor: context.surfaceVariantColor,
                 border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppSizes.radiusMd),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                   borderSide: BorderSide.none,
                 ),
                 contentPadding: const EdgeInsets.all(12),
@@ -937,7 +959,7 @@ class _PaymentSectionState extends State<_PaymentSection> {
   final _cardNumberCtrl = TextEditingController();
   final _cardHolderCtrl = TextEditingController();
   String _expiryMonth = '01';
-  String _expiryYear = '2025';
+  String _expiryYear = DateTime.now().year.toString();
 
   @override
   void initState() {
@@ -989,18 +1011,14 @@ class _PaymentSectionState extends State<_PaymentSection> {
     } catch (_) {}
   }
 
-  Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
-  }
-
   Future<void> _http(
       String method, String path, Map<String, dynamic>? body) async {
-    final token = await _getToken();
-    if (token == null) return;
-    final uri = Uri.parse('http://localhost:5000/api$path');
-    final client = _SimpleHttp();
-    await client.request(method, uri, token, body);
+    final client = await ApiClient.get();
+    if (method == 'DELETE') {
+      await client.dio.delete(path);
+    } else {
+      await client.dio.post(path, data: body);
+    }
   }
 
   @override
@@ -1043,65 +1061,84 @@ class _PaymentSectionState extends State<_PaymentSection> {
           ],
 
           // ── Saved card list ──
-          if (_mode == _CardMode.saved && hasSaved) ...[
-            ...widget.savedCards.map((card) => GestureDetector(
-              onTap: () => setState(() => _selectedCardId = card.id),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _selectedCardId == card.id
-                        ? AppColors.primary
-                        : context.onSurfaceColor.withAlpha(40),
-                    width: _selectedCardId == card.id ? 2 : 1,
-                  ),
-                  color: _selectedCardId == card.id
-                      ? AppColors.primary.withAlpha(20)
-                      : context.surfaceColor,
-                ),
-                child: Row(children: [
-                  Radio<String>(
-                    value: card.id,
-                    groupValue: _selectedCardId,
-                    onChanged: (v) => setState(() => _selectedCardId = v!),
-                    activeColor: AppColors.primary,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.credit_card, size: 18, color: context.onSurfaceColor.withAlpha(180)),
-                  const SizedBox(width: 8),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${card.type.replaceAll('-', ' ')} •••• ${card.last4}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: context.onSurfaceColor,
-                        ),
-                      ),
-                      Text(
-                        '${card.cardHolder} · ${card.expiryMonth}/${card.expiryYear}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: context.onSurfaceColor.withAlpha(140),
-                        ),
-                      ),
-                    ],
-                  )),
-                  IconButton(
-                    icon: Icon(Icons.delete_outline, size: 18, color: Colors.red.withAlpha(180)),
-                    onPressed: () => _deleteCard(card.id),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  ),
-                ]),
+          if (_mode == _CardMode.saved && hasSaved)
+            RadioGroup<String>(
+              groupValue: _selectedCardId,
+              onChanged: (v) => setState(() => _selectedCardId = v!),
+              child: Column(
+                children: widget.savedCards
+                    .map((card) => GestureDetector(
+                          onTap: () =>
+                              setState(() => _selectedCardId = card.id),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _selectedCardId == card.id
+                                    ? AppColors.primary
+                                    : context.onSurfaceColor.withAlpha(40),
+                                width: _selectedCardId == card.id ? 2 : 1,
+                              ),
+                              color: _selectedCardId == card.id
+                                  ? AppColors.primary.withAlpha(20)
+                                  : context.surfaceColor,
+                            ),
+                            child: Row(children: [
+                              Radio<String>(
+                                value: card.id,
+                                fillColor: const WidgetStatePropertyAll(
+                                    AppColors.primary),
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.credit_card,
+                                  size: 18,
+                                  color: context.onSurfaceColor.withAlpha(180)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                  child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${card.type.replaceAll('-', ' ')} •••• ${card.last4}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: context.onSurfaceColor,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${card.cardHolder} · ${card.expiryMonth}/${card.expiryYear}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color:
+                                          context.onSurfaceColor.withAlpha(140),
+                                    ),
+                                  ),
+                                ],
+                              )),
+                              Semantics(
+                                label: 'Delete saved card',
+                                button: true,
+                                child: IconButton(
+                                  icon: Icon(Icons.delete_outline,
+                                      size: 20,
+                                      color: Colors.red.withAlpha(200)),
+                                  onPressed: () => _deleteCard(card.id),
+                                  padding: const EdgeInsets.all(8),
+                                  constraints: const BoxConstraints(
+                                      minWidth: 44, minHeight: 44),
+                                ),
+                              ),
+                            ]),
+                          ),
+                        ))
+                    .toList(),
               ),
-            )),
-          ],
+            ),
 
           // ── New card form ──
           if (_mode == _CardMode.newCard) ...[
@@ -1122,7 +1159,11 @@ class _PaymentSectionState extends State<_PaymentSection> {
                 Checkbox(
                   value: _saveCard,
                   onChanged: (v) => setState(() => _saveCard = v!),
-                  activeColor: AppColors.primary,
+                  fillColor: WidgetStateProperty.resolveWith(
+                    (states) => states.contains(WidgetState.selected)
+                        ? AppColors.primary
+                        : null,
+                  ),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 const SizedBox(width: 4),
@@ -1143,7 +1184,8 @@ class _ModeChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _ModeChip({required this.label, required this.selected, required this.onTap});
+  const _ModeChip(
+      {required this.label, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1155,7 +1197,9 @@ class _ModeChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           color: selected ? AppColors.primary : Colors.transparent,
           border: Border.all(
-            color: selected ? AppColors.primary : context.onSurfaceColor.withAlpha(60),
+            color: selected
+                ? AppColors.primary
+                : context.onSurfaceColor.withAlpha(60),
           ),
         ),
         child: Text(
@@ -1200,22 +1244,31 @@ class _NewCardForm extends StatelessWidget {
       ('paypal', 'PayPal', Icons.account_balance_wallet_outlined),
     ];
     final months = List.generate(12, (i) => (i + 1).toString().padLeft(2, '0'));
-    final years = List.generate(10, (i) => (DateTime.now().year + i).toString());
+    final years =
+        List.generate(10, (i) => (DateTime.now().year + i).toString());
 
     return Column(children: [
-      ...options.map((p) => RadioListTile<String>(
-        value: p.$1,
+      RadioGroup<String>(
         groupValue: paymentType,
-        title: Row(children: [
-          Icon(p.$3, size: 18, color: AppColors.primary),
-          const SizedBox(width: 8),
-          Text(p.$2, style: TextStyle(fontSize: 13, color: context.onSurfaceColor)),
-        ]),
         onChanged: (v) => onTypeChanged(v!),
-        contentPadding: EdgeInsets.zero,
-        activeColor: AppColors.primary,
-        dense: true,
-      )),
+        child: Column(
+          children: options
+              .map((p) => RadioListTile<String>(
+                    value: p.$1,
+                    title: Row(children: [
+                      Icon(p.$3, size: 18, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Text(p.$2,
+                          style: TextStyle(
+                              fontSize: 13, color: context.onSurfaceColor)),
+                    ]),
+                    fillColor: const WidgetStatePropertyAll(AppColors.primary),
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ))
+              .toList(),
+        ),
+      ),
       AppTextField(
         label: 'Card Number',
         controller: cardNumberCtrl,
@@ -1227,17 +1280,21 @@ class _NewCardForm extends StatelessWidget {
         label: 'Cardholder Name',
         controller: cardHolderCtrl,
         prefixIcon: Icons.person_outline,
+        keyboardType: TextInputType.name,
+        textInputAction: TextInputAction.next,
       ),
       const SizedBox(height: 8),
       Row(children: [
-        Expanded(child: _DropdownField(
+        Expanded(
+            child: _DropdownField(
           label: 'Month',
           value: expiryMonth,
           items: months,
           onChanged: onMonthChanged,
         )),
         const SizedBox(width: 8),
-        Expanded(child: _DropdownField(
+        Expanded(
+            child: _DropdownField(
           label: 'Year',
           value: expiryYear,
           items: years,
@@ -1254,14 +1311,18 @@ class _DropdownField extends StatelessWidget {
   final List<String> items;
   final ValueChanged<String> onChanged;
   const _DropdownField({
-    required this.label, required this.value,
-    required this.items, required this.onChanged,
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: TextStyle(fontSize: 12, color: context.onSurfaceColor.withAlpha(160))),
+      Text(label,
+          style: TextStyle(
+              fontSize: 12, color: context.onSurfaceColor.withAlpha(160))),
       const SizedBox(height: 4),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1275,41 +1336,14 @@ class _DropdownField extends StatelessWidget {
           underline: const SizedBox.shrink(),
           dropdownColor: context.surfaceColor,
           style: TextStyle(fontSize: 13, color: context.onSurfaceColor),
-          items: items.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+          items: items
+              .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+              .toList(),
           onChanged: (v) => onChanged(v!),
         ),
       ),
     ]);
   }
-}
-
-// Minimal HTTP helper (avoids importing http package just for this)
-class _SimpleHttp {
-  Future<void> request(String method, Uri uri, String token, Map<String, dynamic>? body) async {
-    // Uses dart:io HttpClient
-    final client = HttpClient();
-    try {
-      late HttpClientRequest req;
-      if (method == 'DELETE') {
-        req = await client.deleteUrl(uri);
-      } else {
-        req = await client.postUrl(uri);
-      }
-      req.headers.set('Authorization', 'Bearer $token');
-      req.headers.set('Content-Type', 'application/json');
-      if (body != null) {
-        final encoded = _encodeJson(body);
-        req.contentLength = encoded.length;
-        req.write(encoded);
-      }
-      final resp = await req.close();
-      await resp.drain<void>();
-    } finally {
-      client.close();
-    }
-  }
-
-  String _encodeJson(Map<String, dynamic> map) => jsonEncode(map);
 }
 
 // ── Order total breakdown ─────────────────────────────────────────────────────
@@ -1395,8 +1429,8 @@ class _TotalBreakdown extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: TextStyle(
-                  fontSize: 13, color: context.onSurfaceSecondary)),
+              style:
+                  TextStyle(fontSize: 13, color: context.onSurfaceSecondary)),
           Text(value,
               style: TextStyle(
                 fontSize: 13,
@@ -1428,8 +1462,7 @@ class _BottomBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        border: Border(
-            top: BorderSide(color: context.borderColor, width: 0.5)),
+        border: Border(top: BorderSide(color: context.borderColor, width: 0.5)),
       ),
       padding: EdgeInsets.fromLTRB(
         AppSizes.md,
@@ -1447,8 +1480,7 @@ class _BottomBar extends StatelessWidget {
                 children: [
                   Text('Total  ',
                       style: TextStyle(
-                          fontSize: 12,
-                          color: context.onSurfaceSecondary)),
+                          fontSize: 12, color: context.onSurfaceSecondary)),
                   Text(
                     '\$${total.toStringAsFixed(2)}',
                     style: const TextStyle(

@@ -80,6 +80,19 @@ class OrderService {
     return this.updateOrderStatus(orderId, userId, 'cancelled');
   }
 
+  async confirmReceived(orderId: string): Promise<Order> {
+    const response = await fetch(API_ENDPOINTS.ORDER_CONFIRM_RECEIVED(orderId), {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to confirm receipt');
+    }
+    const data = await response.json();
+    return this.adaptOrder(data.order);
+  }
+
   getOrderSummary(_userId: string): { totalOrders: number; totalSpent: number } {
     // This will need to be implemented with async/await
     // For now, return defaults

@@ -47,6 +47,8 @@ class AppStrings {
   static const String editProfile = 'Edit Profile';
   static const String saveChanges = 'Save Changes';
 
+  static const String browseProducts = 'Browse Products';
+
   // Errors
   static const String genericError = 'Something went wrong. Please try again.';
   static const String networkError = 'No internet connection.';

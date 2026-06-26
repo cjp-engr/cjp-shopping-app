@@ -380,12 +380,12 @@ export const Checkout: React.FC = () => {
                       onClick={() => handleAddressModeChange('saved')}
                       className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
                         addressMode === 'saved'
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-200 bg-white hover:border-gray-300'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30'
+                          : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700/50 hover:border-gray-300 dark:hover:border-gray-500'
                       }`}
                     >
                       <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                        addressMode === 'saved' ? 'border-primary-500' : 'border-gray-400'
+                        addressMode === 'saved' ? 'border-primary-500' : 'border-gray-400 dark:border-gray-500'
                       }`}>
                         {addressMode === 'saved' && (
                           <div className="w-2 h-2 rounded-full bg-primary-500" />
@@ -395,12 +395,12 @@ export const Checkout: React.FC = () => {
                         <div className="flex items-center gap-1.5 mb-1">
                           <Home className="w-4 h-4 text-primary-600 flex-shrink-0" />
                           <span className={`text-sm font-semibold ${
-                            addressMode === 'saved' ? 'text-primary-700' : 'text-gray-800'
+                            addressMode === 'saved' ? 'text-primary-700 dark:text-primary-300' : 'text-gray-800 dark:text-gray-200'
                           }`}>
                             Saved Address
                           </span>
                         </div>
-                        <p className="text-xs text-gray-500 leading-relaxed truncate">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed truncate">
                           {[
                             user?.address?.street,
                             user?.address?.city,
@@ -419,12 +419,12 @@ export const Checkout: React.FC = () => {
                       onClick={() => handleAddressModeChange('new')}
                       className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
                         addressMode === 'new'
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-200 bg-white hover:border-gray-300'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30'
+                          : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700/50 hover:border-gray-300 dark:hover:border-gray-500'
                       }`}
                     >
                       <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                        addressMode === 'new' ? 'border-primary-500' : 'border-gray-400'
+                        addressMode === 'new' ? 'border-primary-500' : 'border-gray-400 dark:border-gray-500'
                       }`}>
                         {addressMode === 'new' && (
                           <div className="w-2 h-2 rounded-full bg-primary-500" />
@@ -434,12 +434,12 @@ export const Checkout: React.FC = () => {
                         <div className="flex items-center gap-1.5 mb-1">
                           <PlusCircle className="w-4 h-4 text-primary-600 flex-shrink-0" />
                           <span className={`text-sm font-semibold ${
-                            addressMode === 'new' ? 'text-primary-700' : 'text-gray-800'
+                            addressMode === 'new' ? 'text-primary-700 dark:text-primary-300' : 'text-gray-800 dark:text-gray-200'
                           }`}>
                             New Address
                           </span>
                         </div>
-                        <p className="text-xs text-gray-500">Enter a different delivery address</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Enter a different delivery address</p>
                       </div>
                     </button>
                   </div>
@@ -560,17 +560,17 @@ export const Checkout: React.FC = () => {
                     onClick={() => setPaymentMode('saved')}
                     className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-colors ${
                       paymentMode === 'saved'
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30'
+                        : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700/50 hover:border-gray-300 dark:hover:border-gray-500'
                     }`}
                   >
                     <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                      paymentMode === 'saved' ? 'border-primary-500' : 'border-gray-400'
+                      paymentMode === 'saved' ? 'border-primary-500' : 'border-gray-400 dark:border-gray-500'
                     }`}>
                       {paymentMode === 'saved' && <span className="w-2 h-2 rounded-full bg-primary-500" />}
                     </span>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Saved Card</p>
+                      <p className={`text-sm font-semibold ${paymentMode === 'saved' ? 'text-primary-700 dark:text-primary-300' : 'text-gray-900 dark:text-gray-200'}`}>Saved Card</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Use a saved card</p>
                     </div>
                   </button>
@@ -579,17 +579,17 @@ export const Checkout: React.FC = () => {
                     onClick={() => setPaymentMode('new')}
                     className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-colors ${
                       paymentMode === 'new'
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30'
+                        : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700/50 hover:border-gray-300 dark:hover:border-gray-500'
                     }`}
                   >
                     <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                      paymentMode === 'new' ? 'border-primary-500' : 'border-gray-400'
+                      paymentMode === 'new' ? 'border-primary-500' : 'border-gray-400 dark:border-gray-500'
                     }`}>
                       {paymentMode === 'new' && <span className="w-2 h-2 rounded-full bg-primary-500" />}
                     </span>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1">
+                      <p className={`text-sm font-semibold flex items-center gap-1 ${paymentMode === 'new' ? 'text-primary-700 dark:text-primary-300' : 'text-gray-900 dark:text-gray-200'}`}>
                         <PlusCircle className="w-3.5 h-3.5" /> New Card
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Enter a different card</p>
@@ -607,12 +607,12 @@ export const Checkout: React.FC = () => {
                       onClick={() => setSelectedCardId(card._id)}
                       className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
                         selectedCardId === card._id
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30'
+                          : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700/50 hover:border-gray-300 dark:hover:border-gray-500'
                       }`}
                     >
                       <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                        selectedCardId === card._id ? 'border-primary-500' : 'border-gray-400'
+                        selectedCardId === card._id ? 'border-primary-500' : 'border-gray-400 dark:border-gray-500'
                       }`}>
                         {selectedCardId === card._id && <span className="w-2 h-2 rounded-full bg-primary-500" />}
                       </span>

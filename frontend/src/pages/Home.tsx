@@ -98,8 +98,8 @@ export const Home: React.FC = () => {
               <Icon className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-gray-900 mb-1">{title}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">{title}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{desc}</p>
             </div>
           </Card>
         ))}
@@ -109,8 +109,8 @@ export const Home: React.FC = () => {
       <section>
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Featured Products</h2>
-            <p className="text-sm text-gray-500 mt-1">Handpicked products just for you</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Featured Products</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Handpicked products just for you</p>
           </div>
           <Button variant="outline" onClick={() => navigate('/products')} size="sm">
             View All
@@ -132,7 +132,7 @@ export const Home: React.FC = () => {
                 className="flex flex-col overflow-hidden"
                 onClick={() => navigate(`/products/${product.id}`)}
               >
-                <div className="aspect-square overflow-hidden bg-gray-50">
+                <div className="aspect-square overflow-hidden bg-gray-50 dark:bg-gray-700">
                   <img
                     src={product.image}
                     alt={product.name}
@@ -145,13 +145,13 @@ export const Home: React.FC = () => {
                   <Badge variant="primary" size="sm" className="self-start mb-2">
                     {product.category}
                   </Badge>
-                  <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 text-sm leading-snug flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1 line-clamp-2 text-sm leading-snug flex-1">
                     {product.name}
                   </h3>
                   <div className="flex items-center gap-1 mb-3">
                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <span className="text-xs font-medium text-gray-700">{product.rating}</span>
-                    <span className="text-xs text-gray-400">({product.reviews})</span>
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{product.rating}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">({product.reviews})</span>
                   </div>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-lg font-bold text-primary-600">

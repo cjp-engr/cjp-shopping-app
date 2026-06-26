@@ -12,6 +12,7 @@ import { Signup } from './pages/Signup';
 import { Profile } from './pages/Profile';
 import { Checkout } from './pages/Checkout';
 import { OrderHistory } from './pages/OrderHistory';
+import { OrderDetail } from './pages/OrderDetail';
 import { SellerDashboard } from './pages/SellerDashboard';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
@@ -50,6 +51,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <OrderHistory />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="orders/:id"
+                  element={
+                    <ProtectedRoute>
+                      <OrderDetail />
                     </ProtectedRoute>
                   }
                 />

@@ -13,8 +13,7 @@ class ProductRepositoryImpl implements ProductRepository {
     String? category,
     double? minPrice,
     double? maxPrice,
-    String? sortBy,
-    String? sortOrder,
+    String? sort,
     int page = 1,
     int limit = 20,
   }) =>
@@ -23,8 +22,7 @@ class ProductRepositoryImpl implements ProductRepository {
         category: category,
         minPrice: minPrice,
         maxPrice: maxPrice,
-        sortBy: sortBy,
-        sortOrder: sortOrder,
+        sort: sort,
         page: page,
         limit: limit,
       );

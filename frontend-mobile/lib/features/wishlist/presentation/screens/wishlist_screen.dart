@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:toko_mart/core/constants/app_strings.dart';
+import 'package:toko_mart/shared/widgets/app_button.dart';
 import '../bloc/wishlist_bloc.dart';
 import '../bloc/wishlist_event.dart';
 import '../bloc/wishlist_state.dart';
@@ -55,7 +57,7 @@ class WishlistScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSizes.lg),
                   Text(
-                    'No favourites yet',
+                    'No favorites yet',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
@@ -69,20 +71,13 @@ class WishlistScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 14, color: onSurfaceSec),
                   ),
                   const SizedBox(height: AppSizes.xl),
-                  ElevatedButton(
-                    onPressed: () => context.go('/'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 32, vertical: 14),
-                      minimumSize: Size.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppSizes.radiusFull),
-                      ),
+                  SizedBox(
+                    width: 180,
+                    height: AppSizes.buttonHeight,
+                    child: AppButton(
+                      label: AppStrings.browseProducts,
+                      onPressed: () => context.go('/'),
                     ),
-                    child: const Text('Browse Products',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 15)),
                   ),
                 ],
               ),

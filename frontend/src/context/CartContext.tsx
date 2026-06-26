@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { Cart, CartItem } from '../types/cart';
 import type { Product } from '../types/product';
 import { STORAGE_KEYS, TAX_RATE, SHIPPING_COST, FREE_SHIPPING_THRESHOLD } from '../utils/constants';
 import storageService from '../services/storageService';
+import { API_ENDPOINTS, getHeaders } from '../config/api';
 
 interface CartContextType {
   cart: Cart;
@@ -11,6 +12,7 @@ interface CartContextType {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   getItemQuantity: (productId: string) => number;
+  validateCart: () => Promise<number>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -128,6 +130,36 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     return item ? item.quantity : 0;
   };
 
+  // Check each cart item against the API and remove any whose product no longer exists.
+  // Returns the number of stale items removed.
+  const validateCart = useCallback(async (): Promise<number> => {
+    const items = storageService.get<CartItem[]>(STORAGE_KEYS.CART_DATA) ?? [];
+    if (items.length === 0) return 0;
+
+    const results = await Promise.allSettled(
+      items.map(item =>
+        fetch(API_ENDPOINTS.PRODUCT(item.product.id), { headers: getHeaders() })
+          .then(r => ({ id: item.product.id, ok: r.ok }))
+          .catch(() => ({ id: item.product.id, ok: false }))
+      )
+    );
+
+    const deletedIds = new Set(
+      results
+        .filter(r => r.status === 'fulfilled' && !r.value.ok)
+        .map(r => (r as PromiseFulfilledResult<{ id: string; ok: boolean }>).value.id)
+    );
+
+    if (deletedIds.size === 0) return 0;
+
+    setCart(prev => {
+      const newItems = prev.items.filter(item => !deletedIds.has(item.product.id));
+      return calculateCartTotals(newItems);
+    });
+
+    return deletedIds.size;
+  }, []);
+
   return (
     <CartContext.Provider
       value={{
@@ -136,7 +168,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         removeFromCart,
         updateQuantity,
         clearCart,
-        getItemQuantity
+        getItemQuantity,
+        validateCart,
       }}
     >
       {children}

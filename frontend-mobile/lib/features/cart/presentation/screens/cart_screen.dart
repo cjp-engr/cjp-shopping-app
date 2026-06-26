@@ -139,7 +139,7 @@ class _CartScreenState extends State<CartScreen> {
             return EmptyWidget(
               message: AppStrings.emptyCart,
               icon: Icons.shopping_cart_outlined,
-              actionLabel: 'Browse Products',
+              actionLabel: AppStrings.browseProducts,
               onAction: () => context.go('/'),
             );
           }
@@ -165,7 +165,8 @@ class _CartScreenState extends State<CartScreen> {
 
           final selectedSubtotal = _selectedSubtotal(state.items);
           final totalDiscount = _totalDiscount(sellerGroups);
-          final afterDiscount = (selectedSubtotal - totalDiscount).clamp(0, double.infinity);
+          final afterDiscount =
+              (selectedSubtotal - totalDiscount).clamp(0, double.infinity);
 
           // Shipping is calculated per seller: free if that seller's selected
           // subtotal (after proportional discount) >= $50, otherwise $9.99
@@ -240,7 +241,8 @@ class _CartScreenState extends State<CartScreen> {
                 total: total,
                 onCheckout: selectedCount == 0
                     ? null
-                    : () => context.push('/checkout', extra: Set<String>.from(_selected)),
+                    : () => context.push('/checkout',
+                        extra: Set<String>.from(_selected)),
               ),
             ],
           );
@@ -402,19 +404,18 @@ class _SellerPromoRow extends StatelessWidget {
                       filled: true,
                       fillColor: Colors.transparent,
                     ),
-                    style: TextStyle(
-                        fontSize: 13, color: context.onSurfaceColor),
+                    style:
+                        TextStyle(fontSize: 13, color: context.onSurfaceColor),
                     onSubmitted: (_) => onApply(),
                   ),
                 ),
                 if (discount > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.success.withAlpha(20),
-                      borderRadius:
-                          BorderRadius.circular(AppSizes.radiusFull),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                     ),
                     child: Text(
                       '-\$${discount.toStringAsFixed(2)}',
@@ -445,8 +446,7 @@ class _SellerPromoRow extends StatelessWidget {
               padding: const EdgeInsets.only(top: 4, left: 4),
               child: Text(
                 error!,
-                style: const TextStyle(
-                    fontSize: 11, color: AppColors.danger),
+                style: const TextStyle(fontSize: 11, color: AppColors.danger),
               ),
             ),
         ],
@@ -581,11 +581,9 @@ class _CheckoutBar extends StatelessWidget {
                     : AppColors.textMuted,
               ),
               child: Text(
-                onCheckout != null
-                    ? AppStrings.checkout
-                    : 'Select items',
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w700),
+                onCheckout != null ? AppStrings.checkout : 'Select items',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
             ),
           ),

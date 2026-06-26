@@ -46,6 +46,17 @@ class OrderRemoteDataSource {
     }
   }
 
+  Future<OrderModel> confirmReceived(String id) async {
+    try {
+      final response = await _dio.put('/orders/$id/confirm-received');
+      final data = response.data;
+      final result = data is Map && data['order'] != null ? data['order'] : data;
+      return OrderModel.fromJson(result as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
   Future<OrderModel> cancelOrder(String id, String userId) async {
     try {
       final response = await _dio.put('/orders/$id/status',

@@ -7,8 +7,7 @@ abstract class ProductRepository {
     String? category,
     double? minPrice,
     double? maxPrice,
-    String? sortBy,
-    String? sortOrder,
+    String? sort,
     int page = 1,
     int limit = 20,
   });

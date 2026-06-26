@@ -28,7 +28,8 @@ class AppButton extends StatelessWidget {
         ? const SizedBox(
             height: 20,
             width: 20,
-            child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+            child: CircularProgressIndicator(
+                strokeWidth: 2.5, color: Colors.white),
           )
         : Row(
             mainAxisSize: MainAxisSize.min,
@@ -53,7 +54,7 @@ class AppButton extends StatelessWidget {
             foregroundColor: AppColors.textPrimary,
             side: const BorderSide(color: AppColors.borderStrong, width: 1.5),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
             ),
             textStyle: const TextStyle(
               fontSize: 15,
@@ -82,7 +83,7 @@ class AppButton extends StatelessWidget {
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
           textStyle: const TextStyle(
             fontSize: 15,

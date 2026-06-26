@@ -53,8 +53,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   if (!open) return null;
 
-  const iconBg = variant === 'danger' ? 'bg-red-100' : 'bg-amber-100';
-  const iconColor = variant === 'danger' ? 'text-red-600' : 'text-amber-600';
+  const iconBg = variant === 'danger' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-amber-100 dark:bg-amber-900/30';
+  const iconColor = variant === 'danger' ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400';
 
   return createPortal(
     <div
@@ -72,11 +72,11 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       />
 
       {/* Panel */}
-      <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-[dialog-in_0.18s_ease-out]">
+      <div className="relative w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-[dialog-in_0.18s_ease-out]">
         {/* Close button */}
         <button
           onClick={onCancel}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
           aria-label="Close dialog"
         >
           <X className="w-4 h-4" />
@@ -91,13 +91,13 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           {/* Content */}
           <h2
             id="confirm-dialog-title"
-            className="text-lg font-bold text-gray-900 mb-2"
+            className="text-lg font-bold text-gray-900 dark:text-white mb-2"
           >
             {title}
           </h2>
           <p
             id="confirm-dialog-desc"
-            className="text-sm text-gray-500 leading-relaxed"
+            className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed"
           >
             {message}
           </p>

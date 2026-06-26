@@ -13,6 +13,8 @@ class AppTextField extends StatefulWidget {
   final bool readOnly;
   final int? maxLines;
   final int? maxLength;
+  final TextInputAction? textInputAction;
+  final TextCapitalization textCapitalization;
 
   const AppTextField({
     super.key,
@@ -28,6 +30,8 @@ class AppTextField extends StatefulWidget {
     this.readOnly = false,
     this.maxLines = 1,
     this.maxLength,
+    this.textInputAction,
+    this.textCapitalization = TextCapitalization.none,
   });
 
   @override
@@ -49,6 +53,8 @@ class _AppTextFieldState extends State<AppTextField> {
       controller: widget.controller,
       obscureText: _obscured,
       keyboardType: widget.keyboardType,
+      textInputAction: widget.textInputAction,
+      textCapitalization: widget.textCapitalization,
       validator: widget.validator,
       onChanged: widget.onChanged,
       readOnly: widget.readOnly,

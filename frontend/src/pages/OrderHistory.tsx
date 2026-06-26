@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import type { Order, OrderStatus } from '../types/order';
 import orderService from '../services/orderService';
@@ -8,16 +8,20 @@ import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { Spinner } from '../components/common/Spinner';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { getStatusConfig } from '../utils/orderUtils';
+import { fetchReviewStatuses, fetchSingleReview } from '../utils/reviewUtils';
+import type { ReviewData } from '../utils/reviewUtils';
 import {
   Package,
   Truck,
   CheckCircle,
   XCircle,
-  Clock,
-  ArrowLeft,
   Store,
+  Star,
+  Pencil,
 } from 'lucide-react';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { ReviewModal } from '../components/common/ReviewModal';
 
 type TabKey = 'all' | 'pending' | 'to-ship' | 'to-receive' | 'complete' | 'cancelled';
 
@@ -30,6 +34,16 @@ const TABS: { key: TabKey; label: string; statuses: OrderStatus[] }[] = [
   { key: 'cancelled',  label: 'Cancelled',  statuses: ['cancelled'] },
 ];
 
+type ReviewModalState = {
+  productId: string;
+  orderId: string;
+  productName: string;
+  productImage: string;
+  reviewId?: string;
+  initialRating?: number;
+  initialComment?: string;
+};
+
 export const OrderHistory: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -37,20 +51,32 @@ export const OrderHistory: React.FC = () => {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmingIds, setConfirmingIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
-  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; orderId: string | null; loading: boolean }>({ open: false, orderId: null, loading: false });
+  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; orderId: string | null; loading: boolean }>({
+    open: false, orderId: null, loading: false,
+  });
+  const [reviewModal, setReviewModal] = useState<ReviewModalState | null>(null);
+  const [reviewMap, setReviewMap] = useState<Map<string, ReviewData>>(new Map());
 
   useEffect(() => {
-    const loadOrders = async () => {
-      if (!user) return;
+    if (!user) return;
+    let cancelled = false;
 
+    (async () => {
       try {
         setLoading(true);
         const userOrders = await orderService.getOrders(user.id);
+        if (cancelled) return;
         setOrders(userOrders);
 
-        // Check for success parameter in URL
+        const deliveredProductIds = userOrders
+          .filter(o => o.status === 'delivered')
+          .flatMap(o => o.items.map(i => i.product.id));
+        const map = await fetchReviewStatuses(deliveredProductIds);
+        if (!cancelled) setReviewMap(map);
+
         const successId = searchParams.get('success');
         if (successId) {
           setSuccessOrderId(successId);
@@ -59,11 +85,11 @@ export const OrderHistory: React.FC = () => {
       } catch (error) {
         console.error('Failed to load orders:', error);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    };
+    })();
 
-    loadOrders();
+    return () => { cancelled = true; };
   }, [user, searchParams]);
 
   const handleCancelOrder = (orderId: string) => {
@@ -84,31 +110,24 @@ export const OrderHistory: React.FC = () => {
     }
   };
 
+  const handleConfirmReceived = async (orderId: string) => {
+    setConfirmingIds(prev => new Set(prev).add(orderId));
+    try {
+      await orderService.confirmReceived(orderId);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'delivered' } : o));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setConfirmingIds(prev => { const s = new Set(prev); s.delete(orderId); return s; });
+    }
+  };
+
   const filteredOrders = activeTab === 'all'
     ? orders
     : orders.filter(o => TABS.find(t => t.key === activeTab)!.statuses.includes(o.status));
 
   const tabCount = (tab: typeof TABS[number]) =>
     tab.key === 'all' ? orders.length : orders.filter(o => tab.statuses.includes(o.status)).length;
-
-  const getStatusConfig = (
-    status: OrderStatus
-  ): { icon: React.ElementType; variant: 'primary' | 'success' | 'warning' | 'danger' | 'gray'; label: string } => {
-    switch (status) {
-      case 'pending':
-        return { icon: Clock, variant: 'warning', label: 'Pending' };
-      case 'processing':
-        return { icon: Package, variant: 'primary', label: 'Processing' };
-      case 'shipped':
-        return { icon: Truck, variant: 'primary', label: 'Shipped' };
-      case 'delivered':
-        return { icon: CheckCircle, variant: 'success', label: 'Delivered' };
-      case 'cancelled':
-        return { icon: XCircle, variant: 'danger', label: 'Cancelled' };
-      default:
-        return { icon: Package, variant: 'gray', label: status };
-    }
-  };
 
   if (loading) {
     return (
@@ -132,12 +151,11 @@ export const OrderHistory: React.FC = () => {
           onClick={() => navigate('/profile')}
           className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" />
           Back to Profile
         </button>
       </div>
 
-      {/* Success Message */}
+      {/* Success banner */}
       {successOrderId && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
           <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" aria-hidden />
@@ -152,7 +170,7 @@ export const OrderHistory: React.FC = () => {
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex gap-0 overflow-x-auto scrollbar-none">
+        <nav className="-mb-px flex gap-0 overflow-x-auto scrollbar-none" aria-label="Order status tabs">
           {TABS.map((tab) => {
             const count = tabCount(tab);
             const isActive = activeTab === tab.key;
@@ -160,6 +178,7 @@ export const OrderHistory: React.FC = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
+                aria-selected={isActive}
                 className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                   isActive
                     ? 'border-primary-600 text-primary-600'
@@ -180,7 +199,7 @@ export const OrderHistory: React.FC = () => {
         </nav>
       </div>
 
-      {/* Orders List */}
+      {/* Orders list */}
       {filteredOrders.length === 0 ? (
         <Card className="text-center py-16">
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
@@ -207,7 +226,6 @@ export const OrderHistory: React.FC = () => {
             const StatusIcon = statusConfig.icon;
             const isCancelled = order.status === 'cancelled';
 
-            // Build seller groups
             const groups = new Map<string, typeof order.items>();
             order.items.forEach(item => {
               const key = item.sellerId ?? '__unknown__';
@@ -223,60 +241,110 @@ export const OrderHistory: React.FC = () => {
 
               return (
                 <Card key={cardKey} padding="none" className={`overflow-hidden ${successOrderId === order.id ? 'ring-2 ring-green-500' : ''}`}>
-                  {/* Seller + status header */}
-                  <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-700">
+                  {/* Seller header — navigates to order detail */}
+                  <Link
+                    to={`/orders/${order.id}`}
+                    className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors"
+                  >
                     <div className="flex items-center gap-2">
                       <Store className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                      <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                        {sellerName}
-                      </span>
+                      <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{sellerName}</span>
                     </div>
                     <Badge variant={statusConfig.variant} className="flex items-center gap-1">
                       <StatusIcon className="w-3.5 h-3.5" />
                       {statusConfig.label}
                     </Badge>
-                  </div>
+                  </Link>
 
-                  {/* Order meta */}
-                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 px-5 py-2 text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                  {/* Order meta — navigates to order detail */}
+                  <Link
+                    to={`/orders/${order.id}`}
+                    className="flex flex-wrap gap-x-4 gap-y-0.5 px-5 py-2 text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                  >
                     <span>Order #{order.id.slice(0, 8).toUpperCase()}</span>
                     <span>·</span>
                     <span>{formatDate(order.createdAt)}</span>
-                  </div>
+                  </Link>
 
                   {/* Items */}
                   <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {sellerItems.map(({ product, quantity }) => (
-                      <div
-                        key={product.id}
-                        className="flex gap-4 px-5 py-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
-                        onClick={() => navigate(`/products/${product.id}`)}
-                      >
-                        <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                          />
+                    {sellerItems.map(({ product, quantity }) => {
+                      const existingReview = reviewMap.get(product.id);
+                      return (
+                        <div key={product.id} className="px-5 py-4">
+                          <Link
+                            to={`/products/${product.id}`}
+                            className="flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-lg transition-colors -mx-2 px-2"
+                          >
+                            <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2">
+                                {product.name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">x{quantity}</p>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-sm font-semibold text-primary-600">
+                                {formatCurrency(product.price * quantity)}
+                              </p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                {formatCurrency(product.price)} each
+                              </p>
+                            </div>
+                          </Link>
+
+                          {order.status === 'delivered' && (
+                            <div className="mt-2 flex items-center justify-between gap-3">
+                              {existingReview ? (
+                                <div className="flex items-center gap-3 flex-1">
+                                  <div className="flex items-center gap-0.5">
+                                    {[1, 2, 3, 4, 5].map(s => (
+                                      <Star
+                                        key={s}
+                                        className={`w-3 h-3 ${s <= existingReview.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600'}`}
+                                      />
+                                    ))}
+                                  </div>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 flex-1">
+                                    {existingReview.comment}
+                                  </p>
+                                  <button
+                                    onClick={() => setReviewModal({
+                                      productId: product.id,
+                                      orderId: order.id,
+                                      productName: product.name,
+                                      productImage: product.image,
+                                      reviewId: existingReview.reviewId,
+                                      initialRating: existingReview.rating,
+                                      initialComment: existingReview.comment,
+                                    })}
+                                    className="flex-shrink-0 flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                    Edit
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setReviewModal({
+                                    productId: product.id,
+                                    orderId: order.id,
+                                    productName: product.name,
+                                    productImage: product.image,
+                                  })}
+                                  className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                                >
+                                  <Star className="w-3.5 h-3.5" />
+                                  Write a Review
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2">
-                            {product.name}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            x{quantity}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-semibold text-primary-600">
-                            {formatCurrency(product.price * quantity)}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                            {formatCurrency(product.price)} each
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Seller subtotal */}
@@ -289,7 +357,7 @@ export const OrderHistory: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Delivery banner */}
+                  {/* Delivery / cancelled banners */}
                   {!isCancelled && order.estimatedDelivery && (
                     <div className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 border-t border-emerald-100 dark:border-emerald-800">
                       <Truck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
@@ -313,6 +381,17 @@ export const OrderHistory: React.FC = () => {
                     {order.status === 'pending' && (
                       <Button variant="danger" size="sm" onClick={() => handleCancelOrder(order.id)}>
                         Cancel Order
+                      </Button>
+                    )}
+                    {order.status === 'shipped' && (
+                      <Button
+                        variant="success"
+                        size="sm"
+                        loading={confirmingIds.has(order.id)}
+                        onClick={() => handleConfirmReceived(order.id)}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1.5" />
+                        Order Received
                       </Button>
                     )}
                     <Button variant="outline" size="sm" onClick={() => navigate('/products')}>
@@ -346,6 +425,26 @@ export const OrderHistory: React.FC = () => {
         onConfirm={confirmCancelOrder}
         onCancel={() => setCancelDialog({ open: false, orderId: null, loading: false })}
       />
+
+      {reviewModal && (
+        <ReviewModal
+          productId={reviewModal.productId}
+          orderId={reviewModal.orderId}
+          productName={reviewModal.productName}
+          productImage={reviewModal.productImage}
+          reviewId={reviewModal.reviewId}
+          initialRating={reviewModal.initialRating}
+          initialComment={reviewModal.initialComment}
+          onClose={() => setReviewModal(null)}
+          onSubmitted={async () => {
+            const pid = reviewModal.productId; // capture before any await
+            const updated = await fetchSingleReview(pid);
+            if (updated) {
+              setReviewMap(prev => new Map(prev).set(pid, updated));
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

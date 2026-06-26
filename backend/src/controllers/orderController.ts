@@ -155,37 +155,32 @@ export const getOrder = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// @desc    Update order status
+// @desc    Update order status (seller: pending→processing→shipped; buyer: pending→cancelled)
 // @route   PUT /api/orders/:id/status
-// @access  Private (should be Admin only in production)
+// @access  Private
 export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.body;
 
-    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid order status'
-      });
+    // Sellers may not set delivered — that belongs to the buyer via confirm-received
+    const sellerAllowed = ['pending', 'processing', 'shipped', 'cancelled'];
+    const buyerAllowed  = ['cancelled'];
+
+    if (!sellerAllowed.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid order status' });
     }
 
     const order = await Order.findById(req.params.id);
-
     if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
+      return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // Only allow users to cancel their own pending orders
-    if (order.userId.toString() === req.user?.id) {
-      if (status !== 'cancelled' || order.status !== 'pending') {
-        return res.status(403).json({
-          success: false,
-          message: 'You can only cancel pending orders'
-        });
+    const isBuyer = order.userId.toString() === req.user?.id;
+
+    if (isBuyer) {
+      // Buyer can only cancel pending orders via this endpoint
+      if (!buyerAllowed.includes(status) || order.status !== 'pending') {
+        return res.status(403).json({ success: false, message: 'You can only cancel pending orders' });
       }
     }
 
@@ -203,10 +198,35 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
     order.status = status;
     await order.save();
 
-    res.status(200).json({
-      success: true,
-      order
+    res.status(200).json({ success: true, order });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Server error'
     });
+  }
+};
+
+// @desc    Buyer confirms order received → status: delivered
+// @route   PUT /api/orders/:id/confirm-received
+// @access  Private (buyer only)
+export const confirmOrderReceived = async (req: AuthRequest, res: Response) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+    if (order.userId.toString() !== req.user?.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+    if (order.status !== 'shipped') {
+      return res.status(400).json({ success: false, message: 'Order must be shipped before confirming receipt' });
+    }
+
+    order.status = 'delivered';
+    await order.save();
+
+    res.status(200).json({ success: true, order });
   } catch (error) {
     res.status(500).json({
       success: false,

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -9,8 +9,14 @@ import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ShoppingBag, Lock, Tag } 
 
 export const Cart: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, removeFromCart, updateQuantity } = useCart();
+  const { cart, removeFromCart, updateQuantity, validateCart } = useCart();
   const { isAuthenticated } = useAuth();
+  const [removedCount, setRemovedCount] = useState(0);
+
+  // On mount, verify all cart items still exist in the DB and remove stale ones
+  useEffect(() => {
+    validateCart().then(n => { if (n > 0) setRemovedCount(n); });
+  }, [validateCart]);
 
   const handleCheckout = () => {
     navigate(isAuthenticated ? '/checkout' : '/login?redirect=/checkout');
@@ -68,6 +74,15 @@ export const Cart: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Stale-item notice */}
+      {removedCount > 0 && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm">
+          <span>
+            {removedCount} {removedCount === 1 ? 'item was' : 'items were'} removed from your cart because {removedCount === 1 ? 'it is' : 'they are'} no longer available.
+          </span>
+          <button onClick={() => setRemovedCount(0)} className="flex-shrink-0 font-semibold hover:underline">Dismiss</button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

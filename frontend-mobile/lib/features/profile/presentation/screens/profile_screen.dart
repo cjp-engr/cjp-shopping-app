@@ -237,8 +237,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 Text(
                   user.email,
-                  style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 14),
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                      fontSize: 14),
                 ),
                 Container(
                   margin: const EdgeInsets.only(top: AppSizes.xs),
@@ -364,14 +365,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: AppSizes.sm),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSizes.sm),
                         child: Text(
                           'Personal Information',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -436,7 +437,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             trailing: Switch(
                               value: isDark,
-                              activeColor: AppColors.primary,
+                              thumbColor: WidgetStateProperty.resolveWith(
+                                (states) => states.contains(WidgetState.selected)
+                                    ? AppColors.primary
+                                    : null,
+                              ),
+                              trackColor: WidgetStateProperty.resolveWith(
+                                (states) => states.contains(WidgetState.selected)
+                                    ? AppColors.primary.withAlpha(80)
+                                    : null,
+                              ),
                               onChanged: (_) =>
                                   context.read<ThemeCubit>().toggle(),
                             ),
@@ -491,10 +501,10 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSizes.sm),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w700,
-          color: AppColors.textSecondary,
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
           letterSpacing: 0.5,
         ),
       ),
@@ -514,8 +524,9 @@ class _InfoTile extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon, color: AppColors.primary),
       title: Text(label,
-          style: const TextStyle(
-              fontSize: 12, color: AppColors.textSecondary)),
+          style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(153))),
       subtitle: Text(value,
           style: const TextStyle(
               fontSize: 15, fontWeight: FontWeight.w500)),

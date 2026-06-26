@@ -1,6 +1,8 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:toko_mart/shared/widgets/app_button.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
@@ -8,8 +10,12 @@ import '../../domain/entities/order_entity.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/theme_colors.dart';
+import '../../../../core/utils/order_utils.dart';
+import '../../../../shared/widgets/image_placeholder.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/review_bottom_sheet.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 
@@ -30,47 +36,6 @@ const _kTabs = [
   _TabDef('Complete', ['delivered']),
   _TabDef('Cancelled', ['cancelled']),
 ];
-
-Color _statusColor(String status) {
-  switch (status) {
-    case 'pending':
-      return AppColors.warning;
-    case 'processing':
-      return AppColors.primary;
-    case 'shipped':
-      return AppColors.primaryLight;
-    case 'delivered':
-      return AppColors.success;
-    case 'cancelled':
-      return AppColors.danger;
-    default:
-      return AppColors.textMuted;
-  }
-}
-
-String _formatDate(String? raw) {
-  if (raw == null || raw.isEmpty) return '';
-  try {
-    final dt = DateTime.parse(raw).toLocal();
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
-  } catch (_) {
-    return raw;
-  }
-}
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -111,47 +76,47 @@ class _OrdersScreenState extends State<OrdersScreen>
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(48),
               child: TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  labelColor: AppColors.primary,
-                  unselectedLabelColor: context.onSurfaceSecondary,
-                  indicatorColor: AppColors.primary,
-                  indicatorWeight: 2.5,
-                  dividerColor: context.borderColor,
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  tabs: _kTabs.map((tab) {
-                    final count = tab.filter(orders).length;
-                    return Tab(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(tab.label,
-                              style: const TextStyle(
-                                  fontSize: 13, fontWeight: FontWeight.w600)),
-                          if (count > 0) ...[
-                            const SizedBox(width: 5),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withAlpha(26),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '$count',
-                                style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary),
-                              ),
+                controller: _tabController,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: context.onSurfaceSecondary,
+                indicatorColor: AppColors.primary,
+                indicatorWeight: 2.5,
+                dividerColor: context.borderColor,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+                tabs: _kTabs.map((tab) {
+                  final count = tab.filter(orders).length;
+                  return Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(tab.label,
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600)),
+                        if (count > 0) ...[
+                          const SizedBox(width: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withAlpha(26),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                          ],
+                            child: Text(
+                              '$count',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary),
+                            ),
+                          ),
                         ],
-                      ),
-                    );
-                  }).toList(),
-                ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
           body: state.status == OrderStatus.loading
@@ -274,9 +239,9 @@ class _EmptyOrdersState extends StatelessWidget {
             SizedBox(
               width: 180,
               height: AppSizes.buttonHeight,
-              child: ElevatedButton(
+              child: AppButton(
+                label: AppStrings.browseProducts,
                 onPressed: () => context.go('/'),
-                child: const Text('Browse Products'),
               ),
             ),
           ],
@@ -294,13 +259,7 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Group items by seller
-    final groups = <String, List<OrderItemEntity>>{};
-    for (final item in order.items) {
-      final key = item.sellerId ?? '__unknown__';
-      groups.putIfAbsent(key, () => []);
-      groups[key]!.add(item);
-    }
+    final groups = groupItemsBySeller(order.items, (i) => i.sellerId);
 
     return Column(
       children: groups.entries
@@ -319,7 +278,7 @@ class _OrderCard extends StatelessWidget {
 
 // ── Single seller order card ──────────────────────────────────────────────────
 
-class _SellerOrderCard extends StatelessWidget {
+class _SellerOrderCard extends StatefulWidget {
   final OrderEntity order;
   final String sellerKey;
   final List<OrderItemEntity> items;
@@ -331,22 +290,90 @@ class _SellerOrderCard extends StatelessWidget {
   });
 
   @override
+  State<_SellerOrderCard> createState() => _SellerOrderCardState();
+}
+
+class _SellerOrderCardState extends State<_SellerOrderCard> {
+  final Set<String> _reviewedProductIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.order.status == 'delivered') {
+      _fetchReviewStatuses();
+    }
+  }
+
+  Future<void> _showConfirmReceivedDialog(
+    BuildContext context,
+    OrderEntity order,
+  ) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Confirm Receipt'),
+        content: const Text(
+            'Have you received your order? This will mark the order as complete.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('Not Yet'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.success),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text('Yes, Received'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && context.mounted) {
+      context.read<OrderBloc>().add(OrderConfirmReceivedRequested(order.id));
+    }
+  }
+
+  Future<void> _fetchReviewStatuses() async {
+    try {
+      final client = await ApiClient.get();
+      for (final item in widget.items) {
+        try {
+          final res = await client.dio.get('/reviews/check/${item.productId}');
+          final data = res.data as Map<String, dynamic>;
+          if (data['hasReviewed'] == true && mounted) {
+            setState(() => _reviewedProductIds.add(item.productId));
+          }
+        } catch (e, st) {
+          dev.log('Review status fetch failed for ${item.productId}',
+              error: e, stackTrace: st);
+        }
+      }
+    } catch (e, st) {
+      dev.log('ApiClient init failed in _fetchReviewStatuses',
+          error: e, stackTrace: st);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final order = widget.order;
+    final sellerKey = widget.sellerKey;
+    final items = widget.items;
     final sellerName = items.first.sellerName?.isNotEmpty == true
         ? items.first.sellerName!
         : 'Store';
-    final statusColor = _statusColor(order.status);
+    final statusColor = orderStatusColor(order.status);
     final statusLabel = order.status.isNotEmpty
         ? order.status[0].toUpperCase() + order.status.substring(1)
         : '';
-    final deliveryStr = _formatDate(order.estimatedDelivery);
+    final deliveryStr = formatOrderDate(order.estimatedDelivery);
     final isCancelled = order.status == 'cancelled';
-    final groupTotal =
-        items.fold<double>(0, (s, i) => s + i.total);
+    final groupTotal = items.fold<double>(0, (s, i) => s + i.total);
     final itemCount = items.fold<int>(0, (s, i) => s + i.quantity);
 
-    return GestureDetector(
-      onTap: () => context.push('/orders/${order.id}?seller=${Uri.encodeComponent(sellerKey)}'),
+    return InkWell(
+      onTap: () => context
+          .push('/orders/${order.id}?seller=${Uri.encodeComponent(sellerKey)}'),
+      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
       child: Container(
         decoration: BoxDecoration(
           color: context.cardColor,
@@ -362,7 +389,7 @@ class _SellerOrderCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Seller + status header ────────────────────────────────────
+            // ── Seller + status header ──────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(
                   AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.sm),
@@ -394,12 +421,72 @@ class _SellerOrderCard extends StatelessWidget {
 
             const Divider(height: 1),
 
-            // ── Items ─────────────────────────────────────────────────────
-            ...items.map((item) => _OrderItemRow(item: item)),
+            // ── Items ───────────────────────────────────────────────────
+            ...items.map((item) => Column(
+                  children: [
+                    _OrderItemRow(item: item),
+                    if (order.status == 'delivered')
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                            AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: _reviewedProductIds.contains(item.productId)
+                              ? const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                     Icon(Icons.check_circle_rounded,
+                                        size: 14, color: AppColors.success),
+                                     SizedBox(width: 4),
+                                    Text('Reviewed',
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.success)),
+                                  ],
+                                )
+                              : InkWell(
+                                  onTap: () => ReviewBottomSheet.show(
+                                    context,
+                                    productId: item.productId,
+                                    orderId: order.id,
+                                    productName: item.productName,
+                                    productImage: item.productImage,
+                                    onSubmitted: () async {
+                                      if (mounted) {
+                                        setState(() => _reviewedProductIds
+                                            .add(item.productId));
+                                      }
+                                    },
+                                  ),
+                                  borderRadius:
+                                      BorderRadius.circular(AppSizes.radiusSm),
+                                  child: const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 4, vertical: 2),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.star_rounded,
+                                            size: 14, color: AppColors.warning),
+                                        SizedBox(width: 4),
+                                        Text('Write a Review',
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.warning)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      ),
+                  ],
+                )),
 
             const Divider(height: 1),
 
-            // ── Store total ───────────────────────────────────────────────
+            // ── Store total ─────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSizes.md, vertical: 10),
@@ -425,7 +512,7 @@ class _SellerOrderCard extends StatelessWidget {
               ),
             ),
 
-            // ── Delivery banner / cancelled notice ────────────────────────
+            // ── Delivery banner / cancelled notice ──────────────────────
             if (isCancelled)
               Container(
                 margin: const EdgeInsets.fromLTRB(
@@ -456,7 +543,6 @@ class _SellerOrderCard extends StatelessWidget {
                 ),
               )
             else if (deliveryStr.isNotEmpty) ...[
-              // Teal delivery banner
               Container(
                 margin: const EdgeInsets.fromLTRB(
                     AppSizes.md, 0, AppSizes.md, AppSizes.xs),
@@ -488,32 +574,60 @@ class _SellerOrderCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Track Order button
+              // Action buttons
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                     AppSizes.md, 0, AppSizes.md, AppSizes.sm),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: OutlinedButton(
-                    onPressed: () => context.push('/orders/${order.id}?seller=${Uri.encodeComponent(sellerKey)}'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppSizes.radiusFull),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    OutlinedButton(
+                      onPressed: () => context.push(
+                          '/orders/${order.id}?seller=${Uri.encodeComponent(sellerKey)}'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radiusFull),
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      child: const Text(
+                        'Track Order',
+                        style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
                     ),
-                    child: const Text(
-                      'Track Order',
-                      style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w600),
-                    ),
-                  ),
+                    if (order.status == 'shipped') ...[
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: () =>
+                            _showConfirmReceivedDialog(context, order),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusFull),
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        icon: const Icon(Icons.check_circle_outline, size: 15),
+                        label: const Text(
+                          'Order Received',
+                          style: TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ] else
@@ -539,7 +653,6 @@ class _OrderItemRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product image
           ClipRRect(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
             child: item.productImage.isNotEmpty
@@ -549,14 +662,13 @@ class _OrderItemRow extends StatelessWidget {
                     height: 72,
                     fit: BoxFit.cover,
                     loadingBuilder: (_, child, p) =>
-                        p == null ? child : const _ImagePlaceholder(size: 72),
+                        p == null ? child : const ImagePlaceholder(size: 72),
                     errorBuilder: (_, __, ___) =>
-                        const _ImagePlaceholder(size: 72),
+                        const ImagePlaceholder(size: 72),
                   )
-                : const _ImagePlaceholder(size: 72),
+                : const ImagePlaceholder(size: 72),
           ),
           const SizedBox(width: AppSizes.sm),
-          // Name, price, qty
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -597,27 +709,6 @@ class _OrderItemRow extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ── Image placeholder ─────────────────────────────────────────────────────────
-
-class _ImagePlaceholder extends StatelessWidget {
-  final double size;
-  const _ImagePlaceholder({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: AppColors.shimmerBase,
-        borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-      ),
-      child: Icon(Icons.image_outlined,
-          size: size * 0.4, color: AppColors.textMuted),
     );
   }
 }

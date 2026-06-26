@@ -113,25 +113,33 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   ],
                 ),
               ),
-              IconButton(
-                onPressed: () {},
-                icon: Icon(Icons.notifications_outlined,
-                    color: onSurface, size: 24),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              Semantics(
+                label: 'Notifications',
+                button: true,
+                child: IconButton(
+                  onPressed: () {},
+                  icon: Icon(Icons.notifications_outlined,
+                      color: onSurface, size: 24),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                ),
               ),
               BlocBuilder<CartBloc, CartState>(
                 builder: (context, state) {
                   final count = state.totalQuantity;
                   return Stack(
                     children: [
-                      IconButton(
-                        icon: Icon(Icons.shopping_bag_outlined,
-                            color: onSurface, size: 24),
-                        onPressed: () => context.push('/cart'),
-                        padding: EdgeInsets.zero,
-                        constraints:
-                            const BoxConstraints(minWidth: 40, minHeight: 40),
+                      Semantics(
+                        label: 'Open cart',
+                        button: true,
+                        child: IconButton(
+                          icon: Icon(Icons.shopping_bag_outlined,
+                              color: onSurface, size: 24),
+                          onPressed: () => context.push('/cart'),
+                          padding: const EdgeInsets.all(8),
+                          constraints:
+                              const BoxConstraints(minWidth: 44, minHeight: 44),
+                        ),
                       ),
                       if (count > 0)
                         Positioned(
@@ -185,6 +193,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
               child: TextField(
                 controller: _searchCtrl,
                 style: TextStyle(color: onSurface),
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
                   hintText: AppStrings.search,
                   hintStyle: TextStyle(color: muted, fontSize: 14),
@@ -204,7 +214,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  contentPadding: EdgeInsets.zero,
+                  isCollapsed: true,
                 ),
                 onChanged: (v) {
                   setState(() => _searchActive = v.isNotEmpty);
