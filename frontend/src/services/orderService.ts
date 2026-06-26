@@ -3,7 +3,7 @@ import type { Cart } from '../types/cart';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 
 class OrderService {
-  async createOrder(checkoutData: CheckoutData, cart: Cart, _userId: string): Promise<Order> {
+  async createOrder(checkoutData: CheckoutData, cart: Cart, _userId: string): Promise<Order[]> {
     const items = cart.items.map(item => ({
       productId: item.product.id,
       quantity: item.quantity
@@ -25,7 +25,9 @@ class OrderService {
     }
 
     const data = await response.json();
-    return this.adaptOrder(data.order);
+    // Backend now returns { orders: [...] } — one per seller
+    const raw: any[] = data.orders ?? (data.order ? [data.order] : []);
+    return raw.map((o: any) => this.adaptOrder(o));
   }
 
   async getOrders(_userId: string): Promise<Order[]> {

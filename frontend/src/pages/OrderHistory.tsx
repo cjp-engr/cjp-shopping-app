@@ -14,10 +14,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  ChevronDown,
-  ChevronUp,
-  MapPin,
-  CreditCard,
   ArrowLeft,
   Store,
 } from 'lucide-react';
@@ -42,7 +38,6 @@ export const OrderHistory: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('all');
-  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; orderId: string | null; loading: boolean }>({ open: false, orderId: null, loading: false });
 
@@ -59,7 +54,6 @@ export const OrderHistory: React.FC = () => {
         const successId = searchParams.get('success');
         if (successId) {
           setSuccessOrderId(successId);
-          setExpandedOrders(new Set([successId]));
           setTimeout(() => setSuccessOrderId(null), 5000);
         }
       } catch (error) {
@@ -71,18 +65,6 @@ export const OrderHistory: React.FC = () => {
 
     loadOrders();
   }, [user, searchParams]);
-
-  const toggleOrderExpansion = (orderId: string) => {
-    setExpandedOrders((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(orderId)) {
-        newSet.delete(orderId);
-      } else {
-        newSet.add(orderId);
-      }
-      return newSet;
-    });
-  };
 
   const handleCancelOrder = (orderId: string) => {
     setCancelDialog({ open: true, orderId, loading: false });
@@ -220,249 +202,126 @@ export const OrderHistory: React.FC = () => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredOrders.map((order) => {
+          {filteredOrders.flatMap((order) => {
             const statusConfig = getStatusConfig(order.status);
-            const isExpanded = expandedOrders.has(order.id);
             const StatusIcon = statusConfig.icon;
+            const isCancelled = order.status === 'cancelled';
 
-            return (
-              <Card key={order.id} padding="lg" className={successOrderId === order.id ? 'ring-2 ring-green-500' : ''}>
-                {/* Order Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-gray-900">
-                        Order #{order.id.slice(0, 8).toUpperCase()}
-                      </h3>
-                      <Badge variant={statusConfig.variant} className="flex items-center gap-1">
-                        <StatusIcon className="w-4 h-4" />
-                        {statusConfig.label}
-                      </Badge>
-                    </div>
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                      <span>Placed: {formatDate(order.createdAt)}</span>
-                      <span>•</span>
-                      <span>{order.items.length} {order.items.length === 1 ? 'item' : 'items'}</span>
-                      <span>•</span>
-                      <span className="font-semibold text-gray-900">
-                        Total: {formatCurrency(order.total)}
+            // Build seller groups
+            const groups = new Map<string, typeof order.items>();
+            order.items.forEach(item => {
+              const key = item.sellerId ?? '__unknown__';
+              if (!groups.has(key)) groups.set(key, []);
+              groups.get(key)!.push(item);
+            });
+
+            return [...groups.entries()].map(([sellerKey, sellerItems]) => {
+              const sellerName = sellerItems[0].sellerName ?? 'Store';
+              const groupTotal = sellerItems.reduce((s, i) => s + i.product.price * i.quantity, 0);
+              const itemCount = sellerItems.reduce((s, i) => s + i.quantity, 0);
+              const cardKey = `${order.id}-${sellerKey}`;
+
+              return (
+                <Card key={cardKey} padding="none" className={`overflow-hidden ${successOrderId === order.id ? 'ring-2 ring-green-500' : ''}`}>
+                  {/* Seller + status header */}
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-2">
+                      <Store className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                      <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        {sellerName}
                       </span>
                     </div>
-                    {order.estimatedDelivery && order.status !== 'delivered' && order.status !== 'cancelled' && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        <Truck className="w-4 h-4 inline mr-1" />
-                        Estimated delivery: {formatDate(order.estimatedDelivery)}
-                      </p>
-                    )}
+                    <Badge variant={statusConfig.variant} className="flex items-center gap-1">
+                      <StatusIcon className="w-3.5 h-3.5" />
+                      {statusConfig.label}
+                    </Badge>
                   </div>
 
-                  <button
-                    onClick={() => toggleOrderExpansion(order.id)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    {isExpanded ? (
-                      <ChevronUp className="w-5 h-5 text-gray-600" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-600" />
-                    )}
-                  </button>
-                </div>
+                  {/* Order meta */}
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 px-5 py-2 text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                    <span>Order #{order.id.slice(0, 8).toUpperCase()}</span>
+                    <span>·</span>
+                    <span>{formatDate(order.createdAt)}</span>
+                  </div>
 
-                {/* Order Items Preview — grouped by seller */}
-                {(() => {
-                  const groups = new Map<string, typeof order.items>();
-                  order.items.forEach(item => {
-                    const key = item.sellerId ?? '__unknown__';
-                    if (!groups.has(key)) groups.set(key, []);
-                    groups.get(key)!.push(item);
-                  });
-                  return (
-                    <div className="space-y-3 mb-4">
-                      {[...groups.entries()].map(([key, items]) => {
-                        const sellerName = items[0].sellerName ?? 'Store';
-                        const MAX_PREVIEW = 3;
-                        const preview = items.slice(0, MAX_PREVIEW);
-                        const extra = items.length - MAX_PREVIEW;
-                        return (
-                          <div key={key}>
-                            {/* Seller label */}
-                            <div className="flex items-center gap-1.5 mb-1.5">
-                              <Store className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                                {sellerName}
-                              </span>
-                            </div>
-                            {/* Image strip */}
-                            <div className="flex gap-2">
-                              {preview.map(({ product }) => (
-                                <div
-                                  key={product.id}
-                                  className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 cursor-pointer"
-                                  onClick={() => navigate(`/products/${product.id}`)}
-                                >
-                                  <img
-                                    src={product.image}
-                                    alt={product.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                              ))}
-                              {extra > 0 && (
-                                <div className="w-14 h-14 flex-shrink-0 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800 flex items-center justify-center text-xs font-semibold text-primary-600 dark:text-primary-400">
-                                  +{extra}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-
-                {/* Expanded Order Details */}
-                {isExpanded && (
-                  <div className="pt-4 border-t border-gray-200 space-y-4">
-                    {/* Order Items — grouped by seller */}
-                    <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Order Items</h4>
-                      {(() => {
-                        // Group items by sellerId
-                        const groups = new Map<string, typeof order.items>();
-                        order.items.forEach(item => {
-                          const key = item.sellerId ?? '__unknown__';
-                          if (!groups.has(key)) groups.set(key, []);
-                          groups.get(key)!.push(item);
-                        });
-                        return [...groups.entries()].map(([key, items]) => {
-                          const sellerName = items[0].sellerName ?? 'Store';
-                          const groupTotal = items.reduce((s, i) => s + i.product.price * i.quantity, 0);
-                          return (
-                            <div key={key} className="mb-4">
-                              {/* Seller header */}
-                              <div className="flex items-center gap-2 mb-2 px-1">
-                                <Store className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                                  {sellerName}
-                                </span>
-                              </div>
-                              <div className="space-y-2">
-                                {items.map(({ product, quantity }) => (
-                                  <div
-                                    key={product.id}
-                                    className="flex gap-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
-                                  >
-                                    <div
-                                      className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-white cursor-pointer"
-                                      onClick={() => navigate(`/products/${product.id}`)}
-                                    >
-                                      <img
-                                        src={product.image}
-                                        alt={product.name}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    </div>
-                                    <div className="flex-1">
-                                      <h5 className="font-medium text-gray-900 dark:text-gray-100">{product.name}</h5>
-                                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        Quantity: {quantity} × {formatCurrency(product.price)}
-                                      </p>
-                                    </div>
-                                    <div className="text-right">
-                                      <p className="font-semibold text-gray-900 dark:text-gray-100">
-                                        {formatCurrency(product.price * quantity)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                              {/* Per-seller subtotal */}
-                              <div className="flex justify-between items-center text-sm mt-2 px-1 pt-2 border-t border-gray-100 dark:border-gray-600">
-                                <span className="text-gray-500 dark:text-gray-400">
-                                  {items.reduce((s, i) => s + i.quantity, 0)} item{items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : ''} from {sellerName}
-                                </span>
-                                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                                  {formatCurrency(groupTotal)}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-
-                    {/* Order Summary */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Shipping Address */}
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
-                          Shipping Address
-                        </h4>
-                        <p className="text-sm text-gray-700">{order.shippingAddress.street}</p>
-                        <p className="text-sm text-gray-700">
-                          {order.shippingAddress.city}, {order.shippingAddress.state}{' '}
-                          {order.shippingAddress.zipCode}
-                        </p>
-                        <p className="text-sm text-gray-700">{order.shippingAddress.country}</p>
-                      </div>
-
-                      {/* Payment & Totals */}
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                          <CreditCard className="w-4 h-4" />
-                          Payment Method
-                        </h4>
-                        <p className="text-sm text-gray-700 capitalize mb-3">
-                          {order.paymentMethod.type.replace('-', ' ')}
-                        </p>
-
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Subtotal</span>
-                            <span className="text-gray-900">{formatCurrency(order.subtotal)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Shipping</span>
-                            <span className="text-gray-900">
-                              {order.shipping === 0 ? 'FREE' : formatCurrency(order.shipping)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Tax</span>
-                            <span className="text-gray-900">{formatCurrency(order.tax)}</span>
-                          </div>
-                          <div className="flex justify-between font-semibold pt-2 border-t border-gray-300">
-                            <span className="text-gray-900">Total</span>
-                            <span className="text-primary-600">{formatCurrency(order.total)}</span>
-                          </div>
+                  {/* Items */}
+                  <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {sellerItems.map(({ product, quantity }) => (
+                      <div
+                        key={product.id}
+                        className="flex gap-4 px-5 py-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                        onClick={() => navigate(`/products/${product.id}`)}
+                      >
+                        <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2">
+                            {product.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            x{quantity}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-semibold text-primary-600">
+                            {formatCurrency(product.price * quantity)}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            {formatCurrency(product.price)} each
+                          </p>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                      {order.status === 'pending' && (
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleCancelOrder(order.id)}
-                        >
-                          Cancel Order
-                        </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate('/products')}
-                      >
-                        Order Again
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                )}
-              </Card>
-            );
+
+                  {/* Seller subtotal */}
+                  <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {itemCount} item{itemCount !== 1 ? 's' : ''}
+                    </span>
+                    <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                      {formatCurrency(groupTotal)}
+                    </span>
+                  </div>
+
+                  {/* Delivery banner */}
+                  {!isCancelled && order.estimatedDelivery && (
+                    <div className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 border-t border-emerald-100 dark:border-emerald-800">
+                      <Truck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 flex-1">
+                        Expected delivery: {formatDate(order.estimatedDelivery)}
+                      </span>
+                    </div>
+                  )}
+
+                  {isCancelled && (
+                    <div className="flex items-center gap-2 px-5 py-2.5 bg-red-50 dark:bg-red-900/20 border-t border-red-100 dark:border-red-800">
+                      <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                      <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                        This order has been cancelled
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100 dark:border-gray-700">
+                    {order.status === 'pending' && (
+                      <Button variant="danger" size="sm" onClick={() => handleCancelOrder(order.id)}>
+                        Cancel Order
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" onClick={() => navigate('/products')}>
+                      Order Again
+                    </Button>
+                  </div>
+                </Card>
+              );
+            });
           })}
         </div>
       )}

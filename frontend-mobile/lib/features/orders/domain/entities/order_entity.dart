@@ -51,6 +51,7 @@ class OrderEntity extends Equatable {
   final String status;
   final String createdAt;
   final String? estimatedDelivery;
+  final Map<String, String> sellerMessages;
 
   const OrderEntity({
     required this.id,
@@ -65,6 +66,7 @@ class OrderEntity extends Equatable {
     required this.status,
     required this.createdAt,
     this.estimatedDelivery,
+    this.sellerMessages = const {},
   });
 
   String get shortId =>

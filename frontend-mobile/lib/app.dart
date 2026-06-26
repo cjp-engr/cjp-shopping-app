@@ -11,6 +11,7 @@ import 'features/auth/data/datasources/auth_remote_datasource.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
+import 'features/auth/presentation/bloc/auth_state.dart';
 
 // Features - Products
 import 'features/products/data/datasources/product_remote_datasource.dart';
@@ -18,7 +19,9 @@ import 'features/products/data/repositories/product_repository_impl.dart';
 import 'features/products/presentation/bloc/product_bloc.dart';
 
 // Features - Cart
+import 'features/cart/data/cart_remote_datasource.dart';
 import 'features/cart/presentation/bloc/cart_bloc.dart';
+import 'features/cart/presentation/bloc/cart_event.dart';
 
 // Features - Orders
 import 'features/orders/data/datasources/order_remote_datasource.dart';
@@ -77,17 +80,21 @@ class _TokoMartState extends State<TokoMart> {
     final sellerDs = SellerRemoteDataSource(_apiClient.dio);
     final sellerRepo = SellerRepositoryImpl(sellerDs);
 
+    // Cart
+    final cartDs = CartRemoteDataSource(_apiClient.dio);
+    final cartBloc = CartBloc(cartDs);
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => ThemeCubit()),
         BlocProvider.value(value: _authBloc),
         BlocProvider(create: (_) => ProductBloc(productRepo)),
-        BlocProvider(create: (_) => CartBloc()),
+        BlocProvider.value(value: cartBloc),
         BlocProvider(create: (_) => WishlistBloc()),
         BlocProvider(create: (_) => OrderBloc(orderRepo)),
         BlocProvider(create: (_) => SellerBloc(sellerRepo)),
       ],
-      child: _RouterWrapper(authBloc: _authBloc),
+      child: _RouterWrapper(authBloc: _authBloc, cartBloc: cartBloc),
     );
   }
 }
@@ -101,7 +108,8 @@ class _NoStretchScrollBehavior extends MaterialScrollBehavior {
 
 class _RouterWrapper extends StatefulWidget {
   final AuthBloc authBloc;
-  const _RouterWrapper({required this.authBloc});
+  final CartBloc cartBloc;
+  const _RouterWrapper({required this.authBloc, required this.cartBloc});
 
   @override
   State<_RouterWrapper> createState() => _RouterWrapperState();
@@ -112,18 +120,28 @@ class _RouterWrapperState extends State<_RouterWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ThemeCubit, ThemeMode>(
-      builder: (context, themeMode) {
-        return MaterialApp.router(
-          title: 'TokoMart',
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
-          themeMode: themeMode,
-          routerConfig: router,
-          debugShowCheckedModeBanner: false,
-          scrollBehavior: const _NoStretchScrollBehavior(),
-        );
+    return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (p, c) => p.status != c.status,
+      listener: (_, authState) {
+        if (authState.status == AuthStatus.authenticated) {
+          widget.cartBloc.add(CartLoadRequested());
+        } else if (authState.status == AuthStatus.unauthenticated) {
+          widget.cartBloc.add(CartCleared());
+        }
       },
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, themeMode) {
+          return MaterialApp.router(
+            title: 'TokoMart',
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: themeMode,
+            routerConfig: router,
+            debugShowCheckedModeBanner: false,
+            scrollBehavior: const _NoStretchScrollBehavior(),
+          );
+        },
+      ),
     );
   }
 }

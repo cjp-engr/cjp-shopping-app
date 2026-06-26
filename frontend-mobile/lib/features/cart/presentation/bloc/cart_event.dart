@@ -1,10 +1,14 @@
 import 'package:equatable/equatable.dart';
 import '../../../products/domain/entities/product_entity.dart';
+import '../../domain/entities/cart_item_entity.dart';
 
 sealed class CartEvent extends Equatable {
   @override
   List<Object?> get props => [];
 }
+
+/// Load cart from the remote server (on login / app start).
+final class CartLoadRequested extends CartEvent {}
 
 final class CartItemAdded extends CartEvent {
   final ProductEntity product;
@@ -33,3 +37,12 @@ final class CartItemQuantityChanged extends CartEvent {
 }
 
 final class CartCleared extends CartEvent {}
+
+/// Internal: replace state after a successful server sync.
+final class CartServerUpdated extends CartEvent {
+  final List<CartItemEntity> items;
+  CartServerUpdated(this.items);
+
+  @override
+  List<Object?> get props => [items];
+}

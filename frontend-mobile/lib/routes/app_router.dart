@@ -74,8 +74,10 @@ GoRouter createRouter(AuthBloc authBloc) {
       GoRoute(
         path: '/orders/:id',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, state) =>
-            OrderDetailScreen(orderId: state.pathParameters['id']!),
+        builder: (_, state) => OrderDetailScreen(
+          orderId: state.pathParameters['id']!,
+          sellerKey: state.uri.queryParameters['seller'],
+        ),
       ),
       GoRoute(
         path: '/seller-profile/:sellerId',

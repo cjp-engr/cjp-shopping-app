@@ -6,30 +6,30 @@ enum OrderStatus { initial, loading, success, placing, placed, failure }
 class OrderState extends Equatable {
   final OrderStatus status;
   final List<OrderEntity> orders;
-  final OrderEntity? placedOrder;
+  final List<OrderEntity> placedOrders;
   final String? errorMessage;
 
   const OrderState({
     this.status = OrderStatus.initial,
     this.orders = const [],
-    this.placedOrder,
+    this.placedOrders = const [],
     this.errorMessage,
   });
 
   OrderState copyWith({
     OrderStatus? status,
     List<OrderEntity>? orders,
-    OrderEntity? placedOrder,
+    List<OrderEntity>? placedOrders,
     String? errorMessage,
   }) {
     return OrderState(
       status: status ?? this.status,
       orders: orders ?? this.orders,
-      placedOrder: placedOrder ?? this.placedOrder,
+      placedOrders: placedOrders ?? this.placedOrders,
       errorMessage: errorMessage,
     );
   }
 
   @override
-  List<Object?> get props => [status, orders, placedOrder, errorMessage];
+  List<Object?> get props => [status, orders, placedOrders, errorMessage];
 }

@@ -8,90 +8,82 @@ import { AuthRequest } from '../middleware/auth.js';
 // @access  Private
 export const createOrder = async (req: AuthRequest, res: Response) => {
   try {
-    const { items, shippingAddress, paymentMethod } = req.body;
+    const { items, shippingAddress, paymentMethod, sellerMessages } = req.body;
 
     if (!items || items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No order items provided'
-      });
+      return res.status(400).json({ success: false, message: 'No order items provided' });
     }
-
     if (!shippingAddress) {
-      return res.status(400).json({
-        success: false,
-        message: 'Shipping address is required'
-      });
+      return res.status(400).json({ success: false, message: 'Shipping address is required' });
     }
-
     if (!paymentMethod) {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment method is required'
-      });
+      return res.status(400).json({ success: false, message: 'Payment method is required' });
     }
 
-    // Validate products and stock
-    const orderItems = [];
-    let subtotal = 0;
+    // Validate all products first, group by seller
+    const sellerGroups = new Map<string, { productDoc: any; quantity: number }[]>();
 
     for (const item of items) {
       const product = await Product.findById(item.productId);
-
       if (!product) {
-        return res.status(404).json({
-          success: false,
-          message: `Product not found: ${item.productId}`
-        });
+        return res.status(404).json({ success: false, message: `Product not found: ${item.productId}` });
       }
-
       if (product.stock < item.quantity) {
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient stock for product: ${product.name}`
-        });
+        return res.status(400).json({ success: false, message: `Insufficient stock for: ${product.name}` });
       }
-
-      orderItems.push({
-        product: product._id,
-        productName: product.name,
-        productPrice: product.price,
-        productImage: product.image,
-        quantity: item.quantity
-      });
-
-      subtotal += product.price * item.quantity;
-
-      // Decrease product stock
-      product.stock -= item.quantity;
-      await product.save();
+      const sellerKey = product.sellerId?.toString() ?? '__unknown__';
+      if (!sellerGroups.has(sellerKey)) sellerGroups.set(sellerKey, []);
+      sellerGroups.get(sellerKey)!.push({ productDoc: product, quantity: item.quantity });
     }
 
-    // Calculate totals
-    const tax = subtotal * 0.08; // 8% tax
-    const shipping = subtotal >= 50 ? 0 : 9.99; // Free shipping over $50
-    const total = subtotal + tax + shipping;
-
-    // Calculate estimated delivery (5-7 business days)
+    // Deduct stock and create one order per seller
     const estimatedDelivery = new Date();
     estimatedDelivery.setDate(estimatedDelivery.getDate() + 7);
 
-    // Create order
-    const order = await Order.create({
-      userId: req.user?.id,
-      items: orderItems,
-      shippingAddress,
-      paymentMethod,
-      subtotal,
-      tax,
-      shipping,
-      total,
-      estimatedDelivery
-    });
+    const createdOrders = [];
+
+    for (const [sellerKey, groupItems] of sellerGroups) {
+      const orderItems = [];
+      let subtotal = 0;
+
+      for (const { productDoc, quantity } of groupItems) {
+        orderItems.push({
+          product: productDoc._id,
+          productName: productDoc.name,
+          productPrice: productDoc.price,
+          productImage: productDoc.image,
+          quantity,
+        });
+        subtotal += productDoc.price * quantity;
+        productDoc.stock -= quantity;
+        await productDoc.save();
+      }
+
+      const tax = subtotal * 0.08;
+      const shipping = subtotal >= 50 ? 0 : 9.99;
+      const total = subtotal + tax + shipping;
+
+      const sellerMessage = (sellerMessages && sellerMessages[sellerKey]) ?? '';
+
+      const order = await Order.create({
+        userId: req.user?.id,
+        items: orderItems,
+        shippingAddress,
+        paymentMethod,
+        subtotal,
+        tax,
+        shipping,
+        total,
+        estimatedDelivery,
+        sellerMessages: sellerMessage ? { [sellerKey]: sellerMessage } : {},
+      });
+
+      createdOrders.push(order);
+    }
 
     res.status(201).json({
       success: true,
-      order
+      orders: createdOrders,
     });
   } catch (error) {
     res.status(500).json({

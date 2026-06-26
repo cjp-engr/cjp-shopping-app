@@ -82,6 +82,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'quantity': i.quantity,
         }).toList();
     final totalDiscount = _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
+    final totalShipping = cart.shippingFor(sellerDiscounts: _voucherDiscounts);
+    final afterDiscount = (cart.subtotal - totalDiscount).clamp(0, double.infinity);
+    final totalTax = afterDiscount * 0.08;
     context.read<OrderBloc>().add(OrderCreateRequested({
           'userId': user.id,
           'items': items,
@@ -93,11 +96,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             'country': _countryCtrl.text.trim(),
           },
           'paymentMethod': {'type': _paymentType},
+          'sellerMessages': {
+            for (final e in _messageCtrls.entries)
+              if (e.value.text.trim().isNotEmpty) e.key: e.value.text.trim(),
+          },
           'contactEmail': user.email,
-          'subtotal': cart.subtotal - totalDiscount,
-          'tax': cart.tax,
-          'shipping': cart.shipping,
-          'total': cart.total - totalDiscount,
+          'subtotal': afterDiscount,
+          'tax': totalTax,
+          'shipping': totalShipping,
+          'total': afterDiscount + totalShipping + totalTax,
         }));
   }
 
@@ -143,7 +150,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
             final totalDiscount =
                 _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
-            final grandTotal = cart.total - totalDiscount;
+            final totalShipping =
+                cart.shippingFor(sellerDiscounts: _voucherDiscounts);
+            final afterDiscount =
+                (cart.subtotal - totalDiscount).clamp(0, double.infinity);
+            final totalTax = afterDiscount * 0.08;
+            final grandTotal = afterDiscount + totalShipping + totalTax;
 
             return Form(
               key: _formKey,
@@ -202,8 +214,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                           // ── Order total breakdown ─────────────────────────
                           _TotalBreakdown(
-                            cart: cart,
+                            subtotal: cart.subtotal,
                             totalDiscount: totalDiscount,
+                            totalShipping: totalShipping,
+                            totalTax: totalTax,
                             grandTotal: grandTotal,
                           ),
                         ],
@@ -759,12 +773,16 @@ class _PaymentSection extends StatelessWidget {
 // ── Order total breakdown ─────────────────────────────────────────────────────
 
 class _TotalBreakdown extends StatelessWidget {
-  final CartState cart;
+  final double subtotal;
   final double totalDiscount;
+  final double totalShipping;
+  final double totalTax;
   final double grandTotal;
   const _TotalBreakdown({
-    required this.cart,
+    required this.subtotal,
     required this.totalDiscount,
+    required this.totalShipping,
+    required this.totalTax,
     required this.grandTotal,
   });
 
@@ -786,20 +804,20 @@ class _TotalBreakdown extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.sm),
           _summaryRow('Merchandise Subtotal',
-              '\$${cart.subtotal.toStringAsFixed(2)}', context),
+              '\$${subtotal.toStringAsFixed(2)}', context),
           if (totalDiscount > 0)
             _summaryRow('Voucher Savings',
                 '-\$${totalDiscount.toStringAsFixed(2)}', context,
                 valueColor: AppColors.success),
           _summaryRow(
             'Shipping Fee',
-            cart.freeShipping
+            totalShipping == 0
                 ? 'FREE'
-                : '\$${cart.shipping.toStringAsFixed(2)}',
+                : '\$${totalShipping.toStringAsFixed(2)}',
             context,
-            valueColor: cart.freeShipping ? AppColors.success : null,
+            valueColor: totalShipping == 0 ? AppColors.success : null,
           ),
-          _summaryRow('Tax', '\$${cart.tax.toStringAsFixed(2)}', context),
+          _summaryRow('Tax (8%)', '\$${totalTax.toStringAsFixed(2)}', context),
           const Divider(height: AppSizes.lg),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

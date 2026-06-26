@@ -28,11 +28,11 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       OrderCreateRequested event, Emitter<OrderState> emit) async {
     emit(state.copyWith(status: OrderStatus.placing));
     try {
-      final order = await _repository.createOrder(event.orderData);
+      final newOrders = await _repository.createOrder(event.orderData);
       emit(state.copyWith(
           status: OrderStatus.placed,
-          placedOrder: order,
-          orders: [order, ...state.orders]));
+          placedOrders: newOrders,
+          orders: [...newOrders, ...state.orders]));
     } catch (e) {
       emit(state.copyWith(
           status: OrderStatus.failure, errorMessage: e.toString()));

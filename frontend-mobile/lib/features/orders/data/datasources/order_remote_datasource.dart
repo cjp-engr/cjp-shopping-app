@@ -32,13 +32,15 @@ class OrderRemoteDataSource {
     }
   }
 
-  Future<OrderModel> createOrder(Map<String, dynamic> orderData) async {
+  Future<List<OrderModel>> createOrder(Map<String, dynamic> orderData) async {
     try {
       final response = await _dio.post('/orders', data: orderData);
       final data = response.data;
-      final result =
-          data is Map && data['order'] != null ? data['order'] : data;
-      return OrderModel.fromJson(result as Map<String, dynamic>);
+      // Backend now returns { orders: [...] }
+      final List raw = data is Map ? (data['orders'] ?? []) : [];
+      return raw
+          .map((e) => OrderModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } on DioException catch (e) {
       throw mapDioError(e);
     }

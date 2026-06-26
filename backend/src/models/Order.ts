@@ -30,6 +30,7 @@ export interface IOrder extends Document {
   estimatedDelivery?: Date;
   shippedAt?: Date;
   refundRequestedAt?: Date;
+  sellerMessages?: Record<string, string>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -96,6 +97,11 @@ const OrderSchema = new Schema<IOrder>({
   shippingAddress: {
     type: AddressSchema,
     required: true
+  },
+  sellerMessages: {
+    type: Map,
+    of: String,
+    default: {}
   },
   paymentMethod: {
     type: PaymentMethodSchema,

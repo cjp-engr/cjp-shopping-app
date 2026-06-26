@@ -158,10 +158,10 @@ export const Checkout: React.FC = () => {
         contactPhone: shippingData.phone,
       };
 
-      const order = await orderService.createOrder(checkoutData, cart, user.id);
+      const orders = await orderService.createOrder(checkoutData, cart, user.id);
       orderPlaced.current = true;
       clearCart();
-      navigate(`/orders?success=${order.id}`);
+      navigate(`/orders?success=${orders[0]?.id ?? ''}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to place order');
     } finally {

@@ -14,7 +14,7 @@ class OrderRepositoryImpl implements OrderRepository {
   Future<OrderEntity> getOrder(String id) => _remote.getOrder(id);
 
   @override
-  Future<OrderEntity> createOrder(Map<String, dynamic> orderData) =>
+  Future<List<OrderEntity>> createOrder(Map<String, dynamic> orderData) =>
       _remote.createOrder(orderData);
 
   @override

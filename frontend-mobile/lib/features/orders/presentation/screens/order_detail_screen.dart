@@ -7,6 +7,7 @@ import '../bloc/order_state.dart';
 import '../../domain/entities/order_entity.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -59,7 +60,8 @@ int _statusStep(String status) {
 
 class OrderDetailScreen extends StatelessWidget {
   final String orderId;
-  const OrderDetailScreen({super.key, required this.orderId});
+  final String? sellerKey;
+  const OrderDetailScreen({super.key, required this.orderId, this.sellerKey});
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +92,7 @@ class OrderDetailScreen extends StatelessWidget {
           );
         }
 
-        return _OrderDetailView(order: order);
+        return _OrderDetailView(order: order, sellerKey: sellerKey);
       },
     );
   }
@@ -98,7 +100,8 @@ class OrderDetailScreen extends StatelessWidget {
 
 class _OrderDetailView extends StatelessWidget {
   final OrderEntity order;
-  const _OrderDetailView({required this.order});
+  final String? sellerKey;
+  const _OrderDetailView({required this.order, this.sellerKey});
 
   Future<void> _showCancelDialog(BuildContext context) async {
     final confirm = await showDialog<bool>(
@@ -143,9 +146,25 @@ class _OrderDetailView extends StatelessWidget {
         : '';
     final addr = order.shippingAddress;
 
+    // Filter items to the specific seller when navigated from a seller card
+    final filteredItems = sellerKey != null
+        ? order.items.where((i) => (i.sellerId ?? '__unknown__') == sellerKey).toList()
+        : order.items;
+    final sellerName = sellerKey != null && filteredItems.isNotEmpty
+        ? (filteredItems.first.sellerName?.isNotEmpty == true
+            ? filteredItems.first.sellerName!
+            : 'Store')
+        : null;
+
+    // Derive per-seller (or full-order) financials from filteredItems
+    final displaySubtotal = filteredItems.fold<double>(0, (s, i) => s + i.total);
+    final displayTax = displaySubtotal * 0.08;
+    final displayShipping = displaySubtotal >= 50 ? 0.0 : 9.99;
+    final displayTotal = displaySubtotal + displayTax + displayShipping;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Order Details'),
+        title: Text(sellerName ?? 'Order Details'),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -164,19 +183,19 @@ class _OrderDetailView extends StatelessWidget {
                       children: [
                         Text(
                           'Order #${order.shortId}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 18,
-                            color: AppColors.textPrimary,
+                            color: context.onSurfaceColor,
                           ),
                         ),
                         if (dateStr.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
                             'Placed on $dateStr',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.textMuted,
+                              color: context.onSurfaceMuted,
                             ),
                           ),
                         ],
@@ -278,21 +297,21 @@ class _OrderDetailView extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Estimated Delivery',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textMuted,
+                            color: context.onSurfaceMuted,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           deliveryStr,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                            color: context.onSurfaceColor,
                           ),
                         ),
                       ],
@@ -353,7 +372,7 @@ class _OrderDetailView extends StatelessWidget {
                               BorderRadius.circular(AppSizes.radiusFull),
                         ),
                         child: Text(
-                          '${order.items.length}',
+                          '${filteredItems.length}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -364,10 +383,10 @@ class _OrderDetailView extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: AppSizes.sm),
-                  // Group items by seller
+                  // Group items by seller (scoped to filteredItems)
                   ...() {
                     final groups = <String, List<OrderItemEntity>>{};
-                    for (final item in order.items) {
+                    for (final item in filteredItems) {
                       final key = item.sellerId ?? '__unknown__';
                       groups.putIfAbsent(key, () => []);
                       groups[key]!.add(item);
@@ -392,14 +411,67 @@ class _OrderDetailView extends StatelessWidget {
                             ],
                           );
                         }),
+                        // Message to seller (if set)
+                        Builder(builder: (ctx) {
+                          final sellerKey = groupEntries[g].key;
+                          final msg = order.sellerMessages[sellerKey] ?? '';
+                          if (msg.isEmpty) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(top: AppSizes.sm),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSizes.sm, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: ctx.surfaceVariantColor,
+                                borderRadius:
+                                    BorderRadius.circular(AppSizes.radiusMd),
+                                border: Border.all(
+                                    color: ctx.borderColor, width: 0.5),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(Icons.chat_bubble_outline_rounded,
+                                      size: 14, color: ctx.onSurfaceMuted),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Message to Seller',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: ctx.onSurfaceMuted,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          msg,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: ctx.onSurfaceColor,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
                         // Divider between seller groups
                         if (g < groupEntries.length - 1)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
                                 vertical: AppSizes.sm),
                             child: Divider(
                                 height: 1,
-                                color: AppColors.primary,
+                                color: AppColors.primary.withAlpha(100),
                                 thickness: 0.4),
                           ),
                       ],
@@ -420,19 +492,19 @@ class _OrderDetailView extends StatelessWidget {
                   const SizedBox(height: AppSizes.md),
                   _SummaryRow(
                     label: 'Subtotal',
-                    value: '\$${order.subtotal.toStringAsFixed(2)}',
+                    value: '\$${displaySubtotal.toStringAsFixed(2)}',
                   ),
                   const SizedBox(height: 8),
                   _SummaryRow(
-                    label: 'Tax',
-                    value: '\$${order.tax.toStringAsFixed(2)}',
+                    label: 'Tax (8%)',
+                    value: '\$${displayTax.toStringAsFixed(2)}',
                   ),
                   const SizedBox(height: 8),
                   _SummaryRow(
                     label: 'Shipping',
-                    value: order.shipping == 0
+                    value: displayShipping == 0
                         ? 'Free'
-                        : '\$${order.shipping.toStringAsFixed(2)}',
+                        : '\$${displayShipping.toStringAsFixed(2)}',
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: AppSizes.sm),
@@ -440,7 +512,7 @@ class _OrderDetailView extends StatelessWidget {
                   ),
                   _SummaryRow(
                     label: 'Total',
-                    value: '\$${order.total.toStringAsFixed(2)}',
+                    value: '\$${displayTotal.toStringAsFixed(2)}',
                     isTotal: true,
                   ),
                 ],
@@ -528,7 +600,7 @@ class _SectionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSizes.md),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusLg),
         boxShadow: [
           BoxShadow(
@@ -553,10 +625,10 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w800,
-        color: AppColors.textPrimary,
+        color: context.onSurfaceColor,
       ),
     );
   }
@@ -576,7 +648,7 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: AppColors.textMuted),
+        Icon(icon, size: 16, color: context.onSurfaceMuted),
         const SizedBox(width: AppSizes.sm),
         Expanded(
           child: Column(
@@ -584,18 +656,18 @@ class _InfoRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.textMuted,
+                  color: context.onSurfaceMuted,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: AppColors.textPrimary,
+                  color: context.onSurfaceColor,
                   fontWeight: FontWeight.w500,
                   height: 1.4,
                 ),
@@ -626,7 +698,7 @@ class _SummaryRow extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: isTotal ? 15 : 13,
-            color: isTotal ? AppColors.textPrimary : AppColors.textSecondary,
+            color: isTotal ? context.onSurfaceColor : context.onSurfaceSecondary,
             fontWeight: isTotal ? FontWeight.w800 : FontWeight.w400,
           ),
         ),
@@ -634,7 +706,7 @@ class _SummaryRow extends StatelessWidget {
           value,
           style: TextStyle(
             fontSize: isTotal ? 16 : 13,
-            color: isTotal ? AppColors.primary : AppColors.textPrimary,
+            color: isTotal ? AppColors.primary : context.onSurfaceColor,
             fontWeight: isTotal ? FontWeight.w900 : FontWeight.w500,
           ),
         ),
@@ -681,10 +753,10 @@ class _OrderItemRow extends StatelessWidget {
                 children: [
                   Text(
                     item.productName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: context.onSurfaceColor,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -692,9 +764,9 @@ class _OrderItemRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '\$${item.price.toStringAsFixed(2)} × ${item.quantity}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: context.onSurfaceSecondary,
                     ),
                   ),
                 ],

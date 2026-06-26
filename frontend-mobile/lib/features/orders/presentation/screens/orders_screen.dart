@@ -346,7 +346,7 @@ class _SellerOrderCard extends StatelessWidget {
     final itemCount = items.fold<int>(0, (s, i) => s + i.quantity);
 
     return GestureDetector(
-      onTap: () => context.push('/orders/${order.id}'),
+      onTap: () => context.push('/orders/${order.id}?seller=${Uri.encodeComponent(sellerKey)}'),
       child: Container(
         decoration: BoxDecoration(
           color: context.cardColor,
@@ -495,7 +495,7 @@ class _SellerOrderCard extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.centerRight,
                   child: OutlinedButton(
-                    onPressed: () => context.push('/orders/${order.id}'),
+                    onPressed: () => context.push('/orders/${order.id}?seller=${Uri.encodeComponent(sellerKey)}'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary),

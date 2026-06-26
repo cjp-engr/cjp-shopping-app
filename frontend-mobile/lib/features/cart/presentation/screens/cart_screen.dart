@@ -166,11 +166,25 @@ class _CartScreenState extends State<CartScreen> {
           final selectedSubtotal = _selectedSubtotal(state.items);
           final totalDiscount = _totalDiscount(sellerGroups);
           final afterDiscount = (selectedSubtotal - totalDiscount).clamp(0, double.infinity);
-          final shipping = selectedSubtotal == 0
-              ? 0.0
-              : afterDiscount >= 50
-                  ? 0.0
-                  : 9.99;
+
+          // Shipping is calculated per seller: free if that seller's selected
+          // subtotal (after proportional discount) >= $50, otherwise $9.99
+          double shipping = 0;
+          if (selectedSubtotal > 0) {
+            for (final entry in sellerGroups.entries) {
+              final sellerSelected = entry.value
+                  .where((i) => _selected.contains(i.product.id))
+                  .toList();
+              if (sellerSelected.isEmpty) continue;
+              final sellerSubtotal =
+                  sellerSelected.fold<double>(0, (s, i) => s + i.subtotal);
+              final sellerDiscount = _sellerDiscounts[entry.key] ?? 0;
+              final sellerAfterDiscount =
+                  (sellerSubtotal - sellerDiscount).clamp(0, double.infinity);
+              if (sellerAfterDiscount < 50) shipping += 9.99;
+            }
+          }
+
           final tax = afterDiscount * 0.08;
           final total = afterDiscount + shipping + tax;
           final selectedCount =

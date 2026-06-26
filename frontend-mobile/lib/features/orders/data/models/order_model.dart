@@ -100,6 +100,7 @@ class OrderModel extends OrderEntity {
     required super.status,
     required super.createdAt,
     super.estimatedDelivery,
+    super.sellerMessages = const {},
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -108,6 +109,18 @@ class OrderModel extends OrderEntity {
             .toList() ??
         [];
     final payment = json['paymentMethod'] as Map<String, dynamic>? ?? {};
+
+    // sellerMessages stored as Mongoose Map — comes as plain object
+    final rawMessages = json['sellerMessages'];
+    final Map<String, String> sellerMessages = {};
+    if (rawMessages is Map) {
+      rawMessages.forEach((k, v) {
+        if (v is String && v.isNotEmpty) {
+          sellerMessages[k.toString()] = v;
+        }
+      });
+    }
+
     return OrderModel(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       userId: json['user']?.toString() ?? json['userId']?.toString() ?? '',
@@ -122,6 +135,7 @@ class OrderModel extends OrderEntity {
       status: json['status'] ?? 'pending',
       createdAt: json['createdAt'] ?? '',
       estimatedDelivery: json['estimatedDelivery'],
+      sellerMessages: sellerMessages,
     );
   }
 }
