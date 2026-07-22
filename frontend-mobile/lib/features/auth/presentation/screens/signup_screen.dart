@@ -62,6 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
               SnackBar(
                 content: Text(state.errorMessage ?? AppStrings.genericError),
                 backgroundColor: AppColors.danger,
+                duration: const Duration(seconds: 2),
               ),
             );
           }

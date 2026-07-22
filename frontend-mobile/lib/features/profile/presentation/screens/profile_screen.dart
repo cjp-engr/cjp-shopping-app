@@ -75,7 +75,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not pick image')),
+          const SnackBar(
+            content: Text('Could not pick image'),
+            duration: Duration(seconds: 2),
+          ),
         );
         setState(() => _uploadingPhoto = false);
       }
@@ -174,6 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 content:
                     Text(state.errorMessage ?? AppStrings.genericError),
                 backgroundColor: AppColors.danger,
+                duration: const Duration(seconds: 2),
               ),
             );
           }

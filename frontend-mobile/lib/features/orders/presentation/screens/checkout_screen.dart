@@ -138,6 +138,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SnackBar(
               content: Text('Order placed successfully!'),
               backgroundColor: AppColors.success,
+              duration: Duration(seconds: 2),
             ),
           );
         }
@@ -145,6 +146,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(state.errorMessage ?? 'Failed to place order'),
             backgroundColor: AppColors.danger,
+            duration: const Duration(seconds: 2),
           ));
         }
       },
@@ -177,11 +179,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 selectedItems.fold<double>(0, (s, i) => s + i.subtotal);
             final totalDiscount =
                 _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
-            final totalShipping =
-                cart.shippingFor(sellerDiscounts: _voucherDiscounts);
+            double totalShipping = 0;
+            double totalTax = 0;
+            for (final entry in groups.entries) {
+              final disc = _voucherDiscounts[entry.key] ?? 0;
+              final sub =
+                  entry.value.fold<double>(0, (s, i) => s + i.subtotal);
+              final after = (sub - disc).clamp(0.0, double.infinity);
+              totalShipping += after < 50 ? 9.99 : 0.0;
+              totalTax += after * 0.08;
+            }
             final afterDiscount =
-                (selectedSubtotal - totalDiscount).clamp(0, double.infinity);
-            final totalTax = afterDiscount * 0.08;
+                (selectedSubtotal - totalDiscount).clamp(0.0, double.infinity);
             final grandTotal = afterDiscount + totalShipping + totalTax;
 
             return Form(
@@ -217,7 +226,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             final groupSubtotal =
                                 items.fold<double>(0, (s, i) => s + i.subtotal);
                             final discount = _voucherDiscounts[sellerKey] ?? 0;
-                            final storeTotal = groupSubtotal - discount;
+                            final afterDiscount =
+                                (groupSubtotal - discount).clamp(0.0, double.infinity);
+                            final sellerShipping = afterDiscount < 50 ? 9.99 : 0.0;
+                            final sellerTax = afterDiscount * 0.08;
+                            final storeTotal =
+                                afterDiscount + sellerShipping + sellerTax;
 
                             return _SellerCard(
                               sellerName: sellerName,
@@ -225,6 +239,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               voucherCtrl: _voucherCtrl(sellerKey),
                               messageCtrl: _messageCtrl(sellerKey),
                               discount: discount,
+                              sellerShipping: sellerShipping,
+                              sellerTax: sellerTax,
                               storeTotal: storeTotal,
                               onApplyVoucher: () =>
                                   _applyVoucher(sellerKey, items),
@@ -566,6 +582,8 @@ class _SellerCard extends StatelessWidget {
   final TextEditingController voucherCtrl;
   final TextEditingController messageCtrl;
   final double discount;
+  final double sellerShipping;
+  final double sellerTax;
   final double storeTotal;
   final VoidCallback onApplyVoucher;
 
@@ -575,6 +593,8 @@ class _SellerCard extends StatelessWidget {
     required this.voucherCtrl,
     required this.messageCtrl,
     required this.discount,
+    required this.sellerShipping,
+    required this.sellerTax,
     required this.storeTotal,
     required this.onApplyVoucher,
   });
@@ -631,31 +651,13 @@ class _SellerCard extends StatelessWidget {
 
           const Divider(height: 1),
 
-          // Store total
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.md, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Total $itemCount Item${itemCount != 1 ? 's' : ''}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: context.onSurfaceSecondary,
-                  ),
-                ),
-                Text(
-                  '\$${storeTotal.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: context.onSurfaceColor,
-                  ),
-                ),
-              ],
-            ),
+          // Per-seller order breakdown
+          _SellerBreakdown(
+            itemCount: itemCount,
+            discount: discount,
+            shipping: sellerShipping,
+            tax: sellerTax,
+            total: storeTotal,
           ),
         ],
       ),
@@ -1439,6 +1441,77 @@ class _TotalBreakdown extends StatelessWidget {
               )),
         ],
       ),
+    );
+  }
+}
+
+// ── Per-seller order breakdown (inside seller card) ──────────────────────────
+
+class _SellerBreakdown extends StatelessWidget {
+  final int itemCount;
+  final double discount;
+  final double shipping;
+  final double tax;
+  final double total;
+
+  const _SellerBreakdown({
+    required this.itemCount,
+    required this.discount,
+    required this.shipping,
+    required this.tax,
+    required this.total,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.md, vertical: AppSizes.sm),
+      child: Column(
+        children: [
+          if (discount > 0) ...[
+            _row('Voucher Savings', '-\$${discount.toStringAsFixed(2)}',
+                context, valueColor: AppColors.success),
+            const SizedBox(height: 4),
+          ],
+          _row(
+            'Shipping ($itemCount item${itemCount != 1 ? 's' : ''})',
+            shipping == 0 ? 'FREE' : '\$${shipping.toStringAsFixed(2)}',
+            context,
+            valueColor: shipping == 0 ? AppColors.success : null,
+          ),
+          const SizedBox(height: 4),
+          _row('Tax (8%)', '\$${tax.toStringAsFixed(2)}', context),
+          const Divider(height: 16),
+          _row('Store Total', '\$${total.toStringAsFixed(2)}', context,
+              bold: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String label, String value, BuildContext context,
+      {Color? valueColor, bool bold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            color: context.onSurfaceSecondary,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: bold ? 15 : 13,
+            fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+            color: valueColor ?? context.onSurfaceColor,
+          ),
+        ),
+      ],
     );
   }
 }

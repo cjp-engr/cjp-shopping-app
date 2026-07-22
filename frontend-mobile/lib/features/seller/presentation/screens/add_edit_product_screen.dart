@@ -154,6 +154,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               SnackBar(
                 content: Text(state.errorMessage ?? 'Something went wrong'),
                 backgroundColor: AppColors.danger,
+                duration: const Duration(seconds: 2),
               ),
             );
           }

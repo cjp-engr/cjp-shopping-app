@@ -106,15 +106,20 @@ export const Checkout: React.FC = () => {
 
   // Group cart items by seller for the Order Review and per-seller shipping display
   const sellerGroups = useMemo(() => {
-    const map = new Map<string, { sellerName: string; items: typeof cart.items; subtotal: number }>();
+    const map = new Map<string, { sellerName: string; items: typeof cart.items; subtotal: number; shipping: number; tax: number; storeTotal: number }>();
     for (const cartItem of cart.items) {
       const key = cartItem.product.sellerId ?? '__unknown__';
       if (!map.has(key)) {
-        map.set(key, { sellerName: cartItem.product.sellerName ?? 'Seller', items: [], subtotal: 0 });
+        map.set(key, { sellerName: cartItem.product.sellerName ?? 'Seller', items: [], subtotal: 0, shipping: 0, tax: 0, storeTotal: 0 });
       }
       const group = map.get(key)!;
       group.items.push(cartItem);
       group.subtotal += cartItem.product.price * cartItem.quantity;
+    }
+    for (const group of map.values()) {
+      group.shipping = group.subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 9.99;
+      group.tax = group.subtotal * 0.08;
+      group.storeTotal = group.subtotal + group.shipping + group.tax;
     }
     return Array.from(map.values());
   }, [cart.items]);
@@ -839,10 +844,26 @@ export const Checkout: React.FC = () => {
                           </div>
                         ))}
                       </div>
-                      {/* Seller subtotal */}
-                      <div className="flex justify-between mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span>Seller subtotal</span>
-                        <span className="font-medium">{formatCurrency(group.subtotal)}</span>
+                      {/* Per-seller cost breakdown */}
+                      <div className="mt-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 px-4 py-3 space-y-1.5 text-sm">
+                        <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                          <span>Order Amount</span>
+                          <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.subtotal)}</span>
+                        </div>
+                        <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                          <span>Shipping</span>
+                          <span className={`font-medium ${group.shipping === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                            {group.shipping === 0 ? 'FREE' : formatCurrency(group.shipping)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                          <span>Tax (8%)</span>
+                          <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.tax)}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-gray-200 dark:border-gray-600 pt-1.5 font-semibold">
+                          <span className="text-gray-800 dark:text-gray-200">Store Total</span>
+                          <span className="text-primary-600 dark:text-primary-400">{formatCurrency(group.storeTotal)}</span>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -929,31 +950,36 @@ export const Checkout: React.FC = () => {
           <Card padding="lg" className="sticky top-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
 
-            <div className="space-y-3 mb-6">
-              <div className="flex justify-between text-gray-700">
-                <span>Subtotal ({cart.totalItems} items)</span>
-                <span className="font-medium">{formatCurrency(cart.subtotal)}</span>
-              </div>
+            <div className="space-y-4 mb-6">
+              {sellerGroups.map((group) => (
+                <div key={group.sellerName} className="space-y-1.5">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 {group.sellerName}</p>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span>Order Amount</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span>Shipping</span>
+                      <span className={`font-medium ${group.shipping === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                        {group.shipping === 0 ? 'FREE' : formatCurrency(group.shipping)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span>Tax (8%)</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.tax)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-gray-800 dark:text-gray-200 pt-0.5">
+                      <span>Store Total</span>
+                      <span className="text-primary-600 dark:text-primary-400">{formatCurrency(group.storeTotal)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
 
-              <div className="flex justify-between text-gray-700">
-                <span>Shipping</span>
-                <span className="font-medium">
-                  {cart.shipping === 0 ? (
-                    <span className="text-green-600">FREE</span>
-                  ) : (
-                    formatCurrency(cart.shipping)
-                  )}
-                </span>
-              </div>
-
-              <div className="flex justify-between text-gray-700">
-                <span>Tax (8%)</span>
-                <span className="font-medium">{formatCurrency(cart.tax)}</span>
-              </div>
-
-              <div className="border-t border-gray-200 pt-3">
-                <div className="flex justify-between text-lg font-bold text-gray-900">
-                  <span>Total</span>
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
+                  <span>Total ({cart.totalItems} items)</span>
                   <span className="text-primary-600">{formatCurrency(cart.total)}</span>
                 </div>
               </div>

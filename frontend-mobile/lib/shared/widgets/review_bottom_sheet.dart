@@ -125,6 +125,7 @@ class _ReviewBottomSheetState extends State<ReviewBottomSheet> {
                 ? 'Review updated successfully.'
                 : 'Review submitted! Thank you.'),
             backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 2),
           ),
         );
       }

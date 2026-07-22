@@ -217,8 +217,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                  isCollapsed: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onChanged: (v) {
                   setState(() => _searchActive = v.isNotEmpty);

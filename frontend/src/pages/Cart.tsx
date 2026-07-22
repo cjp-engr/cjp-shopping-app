@@ -52,7 +52,7 @@ export const Cart: React.FC = () => {
 
   // Group items by seller for rendering
   const sellerGroups = useMemo(() => {
-    const map = new Map<string, { sellerName: string; items: typeof cart.items; subtotal: number }>();
+    const map = new Map<string, { sellerName: string; items: typeof cart.items; subtotal: number; shipping: number; tax: number; storeTotal: number }>();
     for (const cartItem of cart.items) {
       const key = cartItem.product.sellerId ?? '__unknown__';
       if (!map.has(key)) {
@@ -60,11 +60,19 @@ export const Cart: React.FC = () => {
           sellerName: cartItem.product.sellerName ?? 'Seller',
           items: [],
           subtotal: 0,
+          shipping: 0,
+          tax: 0,
+          storeTotal: 0,
         });
       }
       const group = map.get(key)!;
       group.items.push(cartItem);
       group.subtotal += cartItem.product.price * cartItem.quantity;
+    }
+    for (const group of map.values()) {
+      group.shipping = group.subtotal >= 50 ? 0 : 9.99;
+      group.tax = group.subtotal * 0.08;
+      group.storeTotal = group.subtotal + group.shipping + group.tax;
     }
     return Array.from(map.values());
   }, [cart.items]);
@@ -197,6 +205,27 @@ export const Cart: React.FC = () => {
               </div>
             </Card>
               ))}
+              {/* Per-seller cost breakdown */}
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 px-4 py-3 space-y-1.5 text-sm">
+                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                  <span>Order Amount</span>
+                  <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                  <span>Shipping</span>
+                  <span className={`font-medium ${group.shipping === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                    {group.shipping === 0 ? 'FREE' : formatCurrency(group.shipping)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                  <span>Tax (8%)</span>
+                  <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.tax)}</span>
+                </div>
+                <div className="flex justify-between border-t border-gray-200 dark:border-gray-600 pt-1.5 font-semibold">
+                  <span className="text-gray-800 dark:text-gray-200">Store Total</span>
+                  <span className="text-primary-600 dark:text-primary-400">{formatCurrency(group.storeTotal)}</span>
+                </div>
+              </div>
             </div>
           ))}
         </div>

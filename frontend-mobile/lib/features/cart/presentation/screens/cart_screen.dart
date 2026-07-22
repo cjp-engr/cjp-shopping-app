@@ -168,8 +168,9 @@ class _CartScreenState extends State<CartScreen> {
           final afterDiscount =
               (selectedSubtotal - totalDiscount).clamp(0, double.infinity);
 
-          // Shipping is calculated per seller: free if that seller's selected
-          // subtotal (after proportional discount) >= $50, otherwise $9.99
+          // Per-seller shipping, tax, and summary data (selected items only)
+          final sellerSummaries =
+              <String, ({double subtotal, double discount, double shipping, double tax})>{};
           double shipping = 0;
           if (selectedSubtotal > 0) {
             for (final entry in sellerGroups.entries) {
@@ -177,12 +178,19 @@ class _CartScreenState extends State<CartScreen> {
                   .where((i) => _selected.contains(i.product.id))
                   .toList();
               if (sellerSelected.isEmpty) continue;
-              final sellerSubtotal =
+              final sub =
                   sellerSelected.fold<double>(0, (s, i) => s + i.subtotal);
-              final sellerDiscount = _sellerDiscounts[entry.key] ?? 0;
-              final sellerAfterDiscount =
-                  (sellerSubtotal - sellerDiscount).clamp(0, double.infinity);
-              if (sellerAfterDiscount < 50) shipping += 9.99;
+              final disc = _sellerDiscounts[entry.key] ?? 0;
+              final after = (sub - disc).clamp(0.0, double.infinity);
+              final ship = after < 50 ? 9.99 : 0.0;
+              final sellerTax = after * 0.08;
+              shipping += ship;
+              sellerSummaries[entry.key] = (
+                subtotal: sub,
+                discount: disc,
+                shipping: ship,
+                tax: sellerTax,
+              );
             }
           }
 
@@ -220,6 +228,13 @@ class _CartScreenState extends State<CartScreen> {
                         error: _promoErrors[entry.key],
                         onApply: () => _applyPromo(entry.key, entry.value),
                       ),
+                      if (sellerSummaries.containsKey(entry.key))
+                        _SellerSummaryCard(
+                          subtotal: sellerSummaries[entry.key]!.subtotal,
+                          discount: sellerSummaries[entry.key]!.discount,
+                          shipping: sellerSummaries[entry.key]!.shipping,
+                          tax: sellerSummaries[entry.key]!.tax,
+                        ),
                       const SizedBox(height: AppSizes.sm),
                     ],
                     const SizedBox(height: AppSizes.xs),
@@ -588,6 +603,67 @@ class _CheckoutBar extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Per-seller summary card ───────────────────────────────────────────────────
+
+class _SellerSummaryCard extends StatelessWidget {
+  final double subtotal;
+  final double discount;
+  final double shipping;
+  final double tax;
+
+  const _SellerSummaryCard({
+    required this.subtotal,
+    required this.discount,
+    required this.shipping,
+    required this.tax,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final afterDiscount = (subtotal - discount).clamp(0.0, double.infinity);
+    final storeTotal = afterDiscount + shipping + tax;
+    return Padding(
+      padding: const EdgeInsets.only(left: 30, bottom: AppSizes.xs),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.md, vertical: AppSizes.sm),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          border: Border.all(color: context.borderColor),
+        ),
+        child: Column(
+          children: [
+            _SummaryRow('Order Amount', '\$${subtotal.toStringAsFixed(2)}'),
+            if (discount > 0) ...[
+              const SizedBox(height: 4),
+              _SummaryRow(
+                'Discount',
+                '-\$${discount.toStringAsFixed(2)}',
+                valueColor: AppColors.success,
+              ),
+            ],
+            const SizedBox(height: 4),
+            _SummaryRow(
+              'Shipping',
+              shipping == 0 ? 'FREE' : '\$${shipping.toStringAsFixed(2)}',
+              valueColor: shipping == 0 ? AppColors.success : null,
+            ),
+            const SizedBox(height: 4),
+            _SummaryRow('Tax (8%)', '\$${tax.toStringAsFixed(2)}'),
+            const Divider(height: 12),
+            _SummaryRow(
+              'Store Total',
+              '\$${storeTotal.toStringAsFixed(2)}',
+              bold: true,
+            ),
+          ],
+        ),
       ),
     );
   }

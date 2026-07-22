@@ -9,16 +9,18 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, fullWidth = false, className, ...props }, ref) => {
+    const inputId = props.id ?? props.name;
     return (
       <div className={clsx('flex flex-col', fullWidth && 'w-full')}>
         {label && (
-          <label className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label htmlFor={inputId} className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
             {label}
             {props.required && <span className="text-red-500 ml-1">*</span>}
           </label>
         )}
         <input
           ref={ref}
+          id={inputId}
           className={clsx(
             'px-4 py-2 border rounded-lg transition-colors duration-200',
             'text-gray-900 bg-white placeholder-gray-400',

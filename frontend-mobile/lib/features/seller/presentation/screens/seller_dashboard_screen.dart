@@ -74,6 +74,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               SnackBar(
                 content: Text(state.errorMessage ?? 'Something went wrong'),
                 backgroundColor: AppColors.danger,
+                duration: const Duration(seconds: 2),
               ),
             );
           }

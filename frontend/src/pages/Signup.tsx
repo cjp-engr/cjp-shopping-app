@@ -117,7 +117,7 @@ export const Signup: React.FC = () => {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" data-testid="signup-form">
             {apiError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3" role="alert">
                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" aria-hidden />
@@ -151,6 +151,8 @@ export const Signup: React.FC = () => {
                 />
                 <button
                   type="button"
+                  data-testid="toggle-password-visibility"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   className="absolute right-3 top-8 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium"
                   onClick={() => setShowPassword(v => !v)}
                 >
@@ -186,10 +188,11 @@ export const Signup: React.FC = () => {
             />
 
             <div>
-              <label className="flex items-start gap-3 cursor-pointer">
+              <label htmlFor="terms" className="flex items-start gap-3 cursor-pointer">
                 <input
                   id="terms"
                   type="checkbox"
+                  data-testid="terms-checkbox"
                   checked={acceptTerms}
                   onChange={e => { setAcceptTerms(e.target.checked); if (errors.terms) setErrors(p => ({ ...p, terms: '' })); }}
                   className="mt-0.5 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
