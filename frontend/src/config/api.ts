@@ -29,6 +29,9 @@ export const API_ENDPOINTS = {
   PRODUCT_REVIEWS: (productId: string) => `${API_BASE_URL}/reviews/product/${productId}`,
   CHECK_REVIEW: (productId: string) => `${API_BASE_URL}/reviews/check/${productId}`,
 
+  // Cart
+  CART: `${API_BASE_URL}/cart`,
+
   // Seller
   SELLER_PRODUCTS: `${API_BASE_URL}/seller/products`,
   SELLER_PRODUCT: (id: string) => `${API_BASE_URL}/seller/products/${id}`,

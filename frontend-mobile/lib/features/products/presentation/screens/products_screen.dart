@@ -123,7 +123,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   icon: Icon(Icons.notifications_outlined,
                       color: onSurface, size: 24),
                   padding: const EdgeInsets.all(8),
-                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                  constraints:
+                      const BoxConstraints(minWidth: 44, minHeight: 44),
                 ),
               ),
               BlocBuilder<CartBloc, CartState>(
@@ -217,7 +218,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
                 ),
                 onChanged: (v) {
                   setState(() => _searchActive = v.isNotEmpty);

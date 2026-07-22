@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User, LoginCredentials, SignupData, AuthState } from '../types/user';
 import authService from '../services/authService';
+import { STORAGE_KEYS } from '../utils/constants';
+import storageService from '../services/storageService';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -55,6 +57,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuth();
   }, []);
 
+  const clearCartStorage = useCallback(() => {
+    storageService.remove(STORAGE_KEYS.CART_DATA);
+    window.dispatchEvent(new Event('cart:clear'));
+  }, []);
+
   const login = async (credentials: LoginCredentials) => {
     try {
       const { user, token } = await authService.login(credentials);
@@ -64,6 +71,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isAuthenticated: true,
         isLoading: false
       });
+      // Token is now in localStorage — tell CartContext to load this user's cart
+      window.dispatchEvent(new Event('cart:load'));
     } catch (error) {
       throw error;
     }
@@ -78,12 +87,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isAuthenticated: true,
         isLoading: false
       });
+      window.dispatchEvent(new Event('cart:load'));
     } catch (error) {
       throw error;
     }
   };
 
   const logout = () => {
+    clearCartStorage();
     authService.logout();
     setAuthState({
       user: null,

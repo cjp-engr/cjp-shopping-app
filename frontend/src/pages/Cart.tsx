@@ -30,24 +30,6 @@ export const Cart: React.FC = () => {
     if (currentQuantity > 1) updateQuantity(productId, currentQuantity - 1);
   };
 
-  if (cart.items.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-        <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-6">
-          <ShoppingCart className="w-12 h-12 text-gray-300" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
-        <p className="text-gray-500 mb-8 max-w-sm text-sm">
-          Looks like you haven't added anything yet. Explore our products and find something you love!
-        </p>
-        <Button size="lg" onClick={() => navigate('/products')}>
-          <ShoppingBag className="w-5 h-5 mr-2" />
-          Start Shopping
-        </Button>
-      </div>
-    );
-  }
-
   const freeShippingThreshold = 50;
 
   // Group items by seller for rendering
@@ -79,6 +61,24 @@ export const Cart: React.FC = () => {
 
   const allFreeShipping = cart.shipping === 0 && cart.items.length > 0;
   const anySellerNeedsMore = sellerGroups.some(g => g.subtotal < freeShippingThreshold);
+
+  if (cart.items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-6">
+          <ShoppingCart className="w-12 h-12 text-gray-300" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
+        <p className="text-gray-500 mb-8 max-w-sm text-sm">
+          Looks like you haven't added anything yet. Explore our products and find something you love!
+        </p>
+        <Button size="lg" onClick={() => navigate('/products')}>
+          <ShoppingBag className="w-5 h-5 mr-2" />
+          Start Shopping
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
