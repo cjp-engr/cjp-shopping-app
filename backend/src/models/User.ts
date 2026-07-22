@@ -19,6 +19,17 @@ export interface ISavedCard {
   isDefault: boolean;
 }
 
+export interface ISavedAddress {
+  _id?: mongoose.Types.ObjectId;
+  label: string;          // e.g. "Home", "Office"
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  isDefault: boolean;
+}
+
 export interface IUser extends Document {
   email: string;
   password: string;
@@ -29,6 +40,7 @@ export interface IUser extends Document {
   phone?: string;
   address?: IAddress;
   savedCards: ISavedCard[];
+  savedAddresses: ISavedAddress[];
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -48,6 +60,16 @@ const SavedCardSchema = new Schema<ISavedCard>({
   cardHolder: { type: String, required: true },
   expiryMonth: { type: String, required: true },
   expiryYear: { type: String, required: true },
+  isDefault: { type: Boolean, default: false },
+});
+
+const SavedAddressSchema = new Schema<ISavedAddress>({
+  label: { type: String, default: 'Home' },
+  street: { type: String, default: '' },
+  city: { type: String, default: '' },
+  state: { type: String, default: '' },
+  zipCode: { type: String, default: '' },
+  country: { type: String, default: '' },
   isDefault: { type: Boolean, default: false },
 });
 
@@ -91,6 +113,10 @@ const UserSchema = new Schema<IUser>({
   },
   savedCards: {
     type: [SavedCardSchema],
+    default: []
+  },
+  savedAddresses: {
+    type: [SavedAddressSchema],
     default: []
   }
 }, {

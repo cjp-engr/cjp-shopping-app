@@ -54,6 +54,7 @@ export const signup = async (req: Request, res: Response) => {
         phone: user.phone,
         address: user.address,
         savedCards: user.savedCards,
+        savedAddresses: user.savedAddresses,
         createdAt: user.createdAt
       }
     });
@@ -117,6 +118,7 @@ export const login = async (req: Request, res: Response) => {
         phone: user.phone,
         address: user.address,
         savedCards: user.savedCards,
+        savedAddresses: user.savedAddresses,
         createdAt: user.createdAt
       }
     });
@@ -154,6 +156,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
         phone: user.phone,
         address: user.address,
         savedCards: user.savedCards,
+        savedAddresses: user.savedAddresses,
         createdAt: user.createdAt
       }
     });
@@ -198,6 +201,7 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
         phone: user.phone,
         address: user.address,
         savedCards: user.savedCards,
+        savedAddresses: user.savedAddresses,
         createdAt: user.createdAt,
       },
     });
@@ -262,6 +266,8 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         avatar: updatedUser.avatar,
         phone: updatedUser.phone,
         address: updatedUser.address,
+        savedCards: updatedUser.savedCards,
+        savedAddresses: updatedUser.savedAddresses,
         createdAt: updatedUser.createdAt
       }
     });
@@ -336,4 +342,62 @@ export const deletePaymentMethod = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
+};
+
+// @desc    Get saved addresses
+// @route   GET /api/auth/saved-addresses
+// @access  Private
+export const getSavedAddresses = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.user?.id).select('savedAddresses');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    res.json({ success: true, savedAddresses: user.savedAddresses });
+  } catch { res.status(500).json({ success: false, message: 'Server error' }); }
+};
+
+// @desc    Add a saved address
+// @route   POST /api/auth/saved-addresses
+// @access  Private
+export const addSavedAddress = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.user?.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    const { label, street, city, state, zipCode, country, setAsDefault } = req.body;
+    if (!street || !city) return res.status(400).json({ success: false, message: 'street and city are required' });
+    if (setAsDefault) user.savedAddresses.forEach(a => { a.isDefault = false; });
+    user.savedAddresses.push({ label: label || 'Home', street, city, state: state || '', zipCode: zipCode || '', country: country || '', isDefault: setAsDefault || user.savedAddresses.length === 0 });
+    await user.save();
+    res.status(201).json({ success: true, savedAddresses: user.savedAddresses });
+  } catch { res.status(500).json({ success: false, message: 'Server error' }); }
+};
+
+// @desc    Delete a saved address
+// @route   DELETE /api/auth/saved-addresses/:id
+// @access  Private
+export const deleteSavedAddress = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.user?.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    const before = user.savedAddresses.length;
+    user.savedAddresses = user.savedAddresses.filter(a => a._id?.toString() !== req.params.id);
+    if (user.savedAddresses.length === before) return res.status(404).json({ success: false, message: 'Address not found' });
+    if (user.savedAddresses.length > 0 && !user.savedAddresses.some(a => a.isDefault)) {
+      user.savedAddresses[0].isDefault = true;
+    }
+    await user.save();
+    res.json({ success: true, savedAddresses: user.savedAddresses });
+  } catch { res.status(500).json({ success: false, message: 'Server error' }); }
+};
+
+// @desc    Set default address
+// @route   PUT /api/auth/saved-addresses/:id/default
+// @access  Private
+export const setDefaultAddress = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.user?.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    user.savedAddresses.forEach(a => { a.isDefault = a._id?.toString() === req.params.id; });
+    await user.save();
+    res.json({ success: true, savedAddresses: user.savedAddresses });
+  } catch { res.status(500).json({ success: false, message: 'Server error' }); }
 };

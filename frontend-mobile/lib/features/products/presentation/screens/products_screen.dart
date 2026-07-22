@@ -15,7 +15,6 @@ import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
-import '../../../cart/presentation/bloc/cart_event.dart';
 import '../../../cart/presentation/bloc/cart_state.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -30,6 +29,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
   String? _selectedCategory;
   String _sortBy = 'newest';
   bool _searchActive = false;
+  bool _showMyProducts = false;
+  String _myProductsCategory = 'All';
 
   @override
   void initState() {
@@ -64,9 +65,22 @@ class _ProductsScreenState extends State<ProductsScreen> {
             _buildHeader(context),
             _buildSearchBar(context),
             const SizedBox(height: AppSizes.sm),
-            _buildCategoryChips(context),
-            const SizedBox(height: AppSizes.sm),
-            Expanded(child: _buildBody(context)),
+            BlocBuilder<AuthBloc, AuthState>(
+              buildWhen: (p, c) => p.user?.role != c.user?.role,
+              builder: (context, authState) {
+                if (authState.user?.isSeller != true)
+                  return const SizedBox.shrink();
+                return _buildViewTabs(context);
+              },
+            ),
+            if (!_showMyProducts) ...[
+              _buildCategoryChips(context),
+              const SizedBox(height: AppSizes.sm),
+            ],
+            Expanded(
+                child: _showMyProducts
+                    ? _buildMyProductsBody(context)
+                    : _buildBody(context)),
           ],
         ),
       ),
@@ -220,6 +234,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   focusedBorder: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 8),
                 ),
+                onTapOutside: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
                 onChanged: (v) {
                   setState(() => _searchActive = v.isNotEmpty);
                   if (v.length >= 2 || v.isEmpty) _load();
@@ -367,66 +383,239 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           color: onSurface,
                         ),
                       ),
-                      TextButton(
-                        onPressed: () {},
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text('See All',
-                            style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary)),
-                      ),
                     ],
                   ),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSizes.sm)),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.62,
-                    crossAxisSpacing: AppSizes.sm,
-                    mainAxisSpacing: AppSizes.sm,
+              Builder(builder: (context) {
+                final currentUserId = context.read<AuthBloc>().state.user?.id;
+                final visibleProducts = state.products
+                    .where((p) =>
+                        currentUserId == null || p.sellerId != currentUserId)
+                    .toList();
+                return SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                  sliver: SliverGrid(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.62,
+                      crossAxisSpacing: AppSizes.sm,
+                      mainAxisSpacing: AppSizes.sm,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (_, i) => ProductCard(
+                        product: visibleProducts[i],
+                        onTap: () =>
+                            context.push('/products/${visibleProducts[i].id}'),
+                      ),
+                      childCount: visibleProducts.length,
+                    ),
                   ),
-                  delegate: SliverChildBuilderDelegate(
-                    (_, i) {
-                      final product = state.products[i];
-                      final currentUserId =
-                          context.read<AuthBloc>().state.user?.id;
-                      final isOwn = currentUserId != null &&
-                          product.sellerId == currentUserId;
-                      return ProductCard(
-                        product: product,
-                        onTap: () => context.push('/products/${product.id}'),
-                        onAddToCart: product.inStock && !isOwn
-                            ? () {
-                                context
-                                    .read<CartBloc>()
-                                    .add(CartItemAdded(product: product));
-                                ScaffoldMessenger.of(context)
-                                  ..hideCurrentSnackBar()
-                                  ..showSnackBar(SnackBar(
-                                    content:
-                                        Text('${product.name} added to cart'),
-                                    duration: const Duration(seconds: 2),
-                                  ));
-                              }
-                            : null,
-                      );
-                    },
-                    childCount: state.products.length,
-                  ),
-                ),
-              ),
+                );
+              }),
               const SliverToBoxAdapter(child: SizedBox(height: AppSizes.xl)),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildViewTabs(BuildContext context) {
+    final surfaceVariant = context.surfaceVariantColor;
+    return Padding(
+      padding:
+          const EdgeInsets.fromLTRB(AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+      child: Container(
+        height: 40,
+        decoration: BoxDecoration(
+          color: surfaceVariant,
+          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+        ),
+        child: Stack(
+          children: [
+            // Single sliding pill — no per-tab animation, no splash artifact
+            AnimatedAlign(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              alignment: _showMyProducts
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: 0.5,
+                child: Container(
+                  margin: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(20),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Labels sit on top of the pill
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _showMyProducts = false),
+                    behavior: HitTestBehavior.opaque,
+                    child: Center(
+                      child: Text(
+                        'All Products',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: !_showMyProducts
+                              ? AppColors.primary
+                              : context.onSurfaceSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() {
+                      _showMyProducts = true;
+                      _myProductsCategory = 'All';
+                    }),
+                    behavior: HitTestBehavior.opaque,
+                    child: Center(
+                      child: Text(
+                        'My Products',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: _showMyProducts
+                              ? AppColors.primary
+                              : context.onSurfaceSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMyProductsBody(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        final currentUserId = authState.user?.id;
+        return BlocBuilder<ProductBloc, ProductState>(
+          builder: (context, state) {
+            if (state.status == ProductStatus.loading) {
+              return const LoadingWidget();
+            }
+            final myProducts = state.products
+                .where((p) => p.sellerId == currentUserId)
+                .toList();
+            if (myProducts.isEmpty) {
+              return const EmptyWidget(
+                icon: Icons.storefront_outlined,
+                message:
+                    'You have no products listed yet.\nGo to your seller dashboard to add products.',
+              );
+            }
+
+            final categories = [
+              'All',
+              ...{for (final p in myProducts) p.category},
+            ];
+            final filtered = _myProductsCategory == 'All'
+                ? myProducts
+                : myProducts
+                    .where((p) => p.category == _myProductsCategory)
+                    .toList();
+
+            return Column(
+              children: [
+                // Category chips — same style as All Products chips
+                SizedBox(
+                  height: 38,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                    itemCount: categories.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (_, i) {
+                      final cat = categories[i];
+                      final isActive = cat == _myProductsCategory;
+                      return GestureDetector(
+                        onTap: () => setState(() => _myProductsCategory = cat),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? AppColors.primary
+                                : context.surfaceVariantColor,
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusFull),
+                          ),
+                          child: Text(
+                            cat,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isActive
+                                  ? Colors.white
+                                  : context.onSurfaceSecondary,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSizes.sm),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No products in this category.',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                        )
+                      : RefreshIndicator(
+                          color: AppColors.primary,
+                          onRefresh: () async => _load(refresh: true),
+                          child: GridView.builder(
+                            padding: const EdgeInsets.all(AppSizes.md),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.62,
+                              crossAxisSpacing: AppSizes.sm,
+                              mainAxisSpacing: AppSizes.sm,
+                            ),
+                            itemCount: filtered.length,
+                            itemBuilder: (_, i) => ProductCard(
+                              product: filtered[i],
+                              onTap: () =>
+                                  context.push('/products/${filtered[i].id}'),
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -437,7 +626,8 @@ class _PromoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 160,
+      height: 168,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [AppColors.bannerStart, AppColors.bannerEnd],
@@ -445,64 +635,121 @@ class _PromoBanner extends StatelessWidget {
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.bannerEnd.withAlpha(80),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.all(AppSizes.md),
-      child: Row(
+      child: Stack(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+          // Decorative circles
+          Positioned(
+            right: -24,
+            top: -36,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withAlpha(20),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 40,
+            bottom: -50,
+            child: Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withAlpha(13),
+              ),
+            ),
+          ),
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(AppSizes.md),
+            child: Row(
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(30),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                  ),
-                  child: const Text(
-                    'Opulent Savings',
-                    style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Exclusive 50%\nLuxury Sale',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.darkButton,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                    ),
-                    child: const Text(
-                      'Shop Now',
-                      style: TextStyle(
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(40),
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radiusFull),
+                        ),
+                        child: const Text(
+                          'Opulent Savings',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Exclusive 50%\nLuxury Sale',
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700),
-                    ),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          height: 1.15,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 13),
+                      GestureDetector(
+                        onTap: () {},
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusFull),
+                          ),
+                          child: const Text(
+                            'Shop Now',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSizes.radiusMd),
+                // Visible icon in a soft circle
+                Container(
+                  width: 84,
+                  height: 84,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withAlpha(30),
+                  ),
+                  child: const Icon(
+                    Icons.shopping_bag_rounded,
+                    color: Colors.white,
+                    size: 48,
                   ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.shopping_bag_rounded,
-              color: Colors.white24, size: 90),
         ],
       ),
     );

@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { User, LoginCredentials, SignupData, AuthState } from '../types/user';
+import type { User, LoginCredentials, SignupData, AuthState, SavedAddress } from '../types/user';
 import authService from '../services/authService';
 import { STORAGE_KEYS } from '../utils/constants';
 import storageService from '../services/storageService';
+import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -10,6 +11,9 @@ interface AuthContextType extends AuthState {
   logout: () => void;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   uploadAvatar: (file: File) => Promise<void>;
+  addAddress: (addr: Omit<SavedAddress, '_id' | 'isDefault'> & { setAsDefault?: boolean }) => Promise<void>;
+  deleteAddress: (id: string) => Promise<void>;
+  setDefaultAddress: (id: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -125,8 +129,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthState(prev => ({ ...prev, user: updatedUser }));
   };
 
+  const addAddress = async (addr: Omit<SavedAddress, '_id' | 'isDefault'> & { setAsDefault?: boolean }) => {
+    if (!authState.user) throw new Error('No user logged in');
+    const res = await fetch(API_ENDPOINTS.SAVED_ADDRESSES, {
+      method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(addr),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+    setAuthState(prev => ({ ...prev, user: prev.user ? { ...prev.user, savedAddresses: data.savedAddresses } : prev.user }));
+  };
+
+  const deleteAddress = async (id: string) => {
+    if (!authState.user) throw new Error('No user logged in');
+    const res = await fetch(API_ENDPOINTS.SAVED_ADDRESS(id), { method: 'DELETE', headers: getAuthHeaders() });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+    setAuthState(prev => ({ ...prev, user: prev.user ? { ...prev.user, savedAddresses: data.savedAddresses } : prev.user }));
+  };
+
+  const setDefaultAddress = async (id: string) => {
+    if (!authState.user) throw new Error('No user logged in');
+    const res = await fetch(API_ENDPOINTS.SAVED_ADDRESS_DEFAULT(id), { method: 'PUT', headers: getAuthHeaders() });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+    setAuthState(prev => ({ ...prev, user: prev.user ? { ...prev.user, savedAddresses: data.savedAddresses } : prev.user }));
+  };
+
   return (
-    <AuthContext.Provider value={{ ...authState, login, signup, logout, updateProfile, uploadAvatar }}>
+    <AuthContext.Provider value={{ ...authState, login, signup, logout, updateProfile, uploadAvatar, addAddress, deleteAddress, setDefaultAddress }}>
       {children}
     </AuthContext.Provider>
   );

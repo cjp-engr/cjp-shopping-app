@@ -17,6 +17,7 @@ class ProductEntity extends Equatable {
   final String? sellerId;
   final String? sellerName;
   final String? sellerAvatar;
+  final int soldCount;
 
   const ProductEntity({
     required this.id,
@@ -29,6 +30,7 @@ class ProductEntity extends Equatable {
     required this.stock,
     required this.rating,
     required this.reviews,
+    this.soldCount = 0,
     this.tags = const [],
     this.specifications = const {},
     required this.createdAt,

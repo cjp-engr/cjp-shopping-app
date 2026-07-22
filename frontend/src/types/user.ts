@@ -16,6 +16,17 @@ export interface SavedCard {
   isDefault: boolean;
 }
 
+export interface SavedAddress {
+  _id: string;
+  label: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  isDefault: boolean;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -26,6 +37,7 @@ export interface User {
   phone?: string;
   address?: Address;
   savedCards?: SavedCard[];
+  savedAddresses?: SavedAddress[];
   createdAt: string;
 }
 

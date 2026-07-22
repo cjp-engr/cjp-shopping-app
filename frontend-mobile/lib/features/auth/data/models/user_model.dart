@@ -32,6 +32,30 @@ class SavedCardModel extends SavedCardEntity {
       };
 }
 
+class SavedAddressModel extends SavedAddressEntity {
+  const SavedAddressModel({
+    required super.id,
+    required super.label,
+    required super.street,
+    required super.city,
+    required super.state,
+    required super.zipCode,
+    required super.country,
+    required super.isDefault,
+  });
+
+  factory SavedAddressModel.fromJson(Map<String, dynamic> json) => SavedAddressModel(
+    id: json['_id']?.toString() ?? '',
+    label: json['label'] ?? 'Home',
+    street: json['street'] ?? '',
+    city: json['city'] ?? '',
+    state: json['state'] ?? '',
+    zipCode: json['zipCode'] ?? '',
+    country: json['country'] ?? '',
+    isDefault: json['isDefault'] == true,
+  );
+}
+
 class AddressModel extends AddressEntity {
   const AddressModel({
     required super.street,
@@ -61,6 +85,7 @@ class UserModel extends UserEntity {
     super.phone,
     super.address,
     super.savedCards = const [],
+    super.savedAddresses = const [],
     required super.createdAt,
   });
 
@@ -74,6 +99,11 @@ class UserModel extends UserEntity {
         ? rawCards.map((c) => SavedCardModel.fromJson(c as Map<String, dynamic>)).toList()
         : <SavedCardEntity>[];
 
+    final rawAddrs = json['savedAddresses'];
+    final savedAddresses = rawAddrs is List
+        ? rawAddrs.map((a) => SavedAddressModel.fromJson(a as Map<String, dynamic>)).toList()
+        : <SavedAddressEntity>[];
+
     return UserModel(
       id: json['id']?.toString() ?? '',
       email: json['email'] ?? '',
@@ -84,6 +114,7 @@ class UserModel extends UserEntity {
       phone: json['phone'],
       address: address,
       savedCards: savedCards,
+      savedAddresses: savedAddresses,
       createdAt: json['createdAt'] ?? '',
     );
   }

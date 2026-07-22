@@ -15,6 +15,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLogoutRequested>(_onLogout);
     on<AuthProfileUpdateRequested>(_onProfileUpdate);
     on<AuthAvatarUploadRequested>(_onAvatarUpload);
+    on<AuthAddressAddRequested>(_onAddressAdd);
+    on<AuthAddressDeleteRequested>(_onAddressDelete);
+    on<AuthAddressSetDefaultRequested>(_onAddressSetDefault);
   }
 
   Future<void> _onCheck(
@@ -92,6 +95,37 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(state.copyWith(
           status: AuthStatus.failure, errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onAddressAdd(AuthAddressAddRequested event, Emitter<AuthState> emit) async {
+    emit(state.copyWith(status: AuthStatus.loading));
+    try {
+      final addresses = await _repository.addSavedAddress(event.data);
+      final updatedUser = state.user!.copyWith(savedAddresses: addresses);
+      emit(state.copyWith(status: AuthStatus.authenticated, user: updatedUser));
+    } catch (e) {
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onAddressDelete(AuthAddressDeleteRequested event, Emitter<AuthState> emit) async {
+    try {
+      final addresses = await _repository.deleteSavedAddress(event.addressId);
+      final updatedUser = state.user!.copyWith(savedAddresses: addresses);
+      emit(state.copyWith(status: AuthStatus.authenticated, user: updatedUser));
+    } catch (e) {
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onAddressSetDefault(AuthAddressSetDefaultRequested event, Emitter<AuthState> emit) async {
+    try {
+      final addresses = await _repository.setDefaultAddress(event.addressId);
+      final updatedUser = state.user!.copyWith(savedAddresses: addresses);
+      emit(state.copyWith(status: AuthStatus.authenticated, user: updatedUser));
+    } catch (e) {
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: e.toString()));
     }
   }
 }

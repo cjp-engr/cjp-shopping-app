@@ -51,4 +51,16 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> logout() async {
     await _storage.clear();
   }
+
+  @override
+  Future<List<SavedAddressEntity>> addSavedAddress(Map<String, dynamic> data) =>
+      _remote.addSavedAddress(data);
+
+  @override
+  Future<List<SavedAddressEntity>> deleteSavedAddress(String id) =>
+      _remote.deleteSavedAddress(id);
+
+  @override
+  Future<List<SavedAddressEntity>> setDefaultAddress(String id) =>
+      _remote.setDefaultAddress(id);
 }

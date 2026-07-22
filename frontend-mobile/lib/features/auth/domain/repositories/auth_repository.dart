@@ -12,4 +12,7 @@ abstract class AuthRepository {
   Future<UserEntity> updateProfile(Map<String, dynamic> data);
   Future<UserEntity> uploadAvatar(String filePath);
   Future<void> logout();
+  Future<List<SavedAddressEntity>> addSavedAddress(Map<String, dynamic> data);
+  Future<List<SavedAddressEntity>> deleteSavedAddress(String id);
+  Future<List<SavedAddressEntity>> setDefaultAddress(String id);
 }

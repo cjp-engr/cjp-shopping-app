@@ -13,6 +13,7 @@ export const getProducts = async (req: Request, res: Response) => {
       minPrice,
       maxPrice,
       rating,
+      minReviews,
       search,
       sort = 'createdAt',
       page = '1',
@@ -34,6 +35,10 @@ export const getProducts = async (req: Request, res: Response) => {
 
     if (rating) {
       query.rating = { $gte: Number(rating) };
+    }
+
+    if (minReviews) {
+      query.reviews = { $gte: Number(minReviews) };
     }
 
     if (search) {

@@ -1,10 +1,11 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/theme_colors.dart';
 import '../../../products/domain/entities/product_entity.dart';
 import '../../../products/presentation/bloc/product_bloc.dart';
 import '../../../products/presentation/bloc/product_event.dart';
@@ -47,7 +48,6 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         text: p != null ? p.price.toStringAsFixed(2) : '');
     _stockCtrl = TextEditingController(text: p != null ? '${p.stock}' : '');
     _selectedCategory = (p?.category.isNotEmpty == true) ? p!.category : null;
-    // Seed existing images: prefer the full list, fall back to primary image.
     final imgs = p?.images ?? [];
     _existingImageUrls = imgs.isNotEmpty
         ? List<String>.from(imgs)
@@ -72,37 +72,197 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   }
 
   Future<void> _pickFromCamera() async {
-    final file = await _picker.pickImage(
-        source: ImageSource.camera, imageQuality: 85);
+    final file =
+        await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
     if (file != null) {
       setState(() => _pickedFiles.add(file));
     }
   }
 
+  IconData _categoryIcon(String category) {
+    final lower = category.toLowerCase();
+    if (lower.contains('book') || lower.contains('read')) {
+      return Icons.menu_book_outlined;
+    }
+    if (lower.contains('cloth') || lower.contains('fashion') ||
+        lower.contains('wear')) {
+      return Icons.checkroom_outlined;
+    }
+    if (lower.contains('sport') || lower.contains('outdoor') ||
+        lower.contains('fitness')) {
+      return Icons.sports_basketball_outlined;
+    }
+    if (lower.contains('electron') || lower.contains('tech') ||
+        lower.contains('gadget')) {
+      return Icons.devices_outlined;
+    }
+    if (lower.contains('food') || lower.contains('grocery') ||
+        lower.contains('snack')) {
+      return Icons.lunch_dining_outlined;
+    }
+    if (lower.contains('beauty') || lower.contains('cosmetic') ||
+        lower.contains('skin')) {
+      return Icons.face_retouching_natural_outlined;
+    }
+    if (lower.contains('home') || lower.contains('furniture') ||
+        lower.contains('decor')) {
+      return Icons.chair_outlined;
+    }
+    if (lower.contains('toy') || lower.contains('game') ||
+        lower.contains('kids')) {
+      return Icons.toys_outlined;
+    }
+    if (lower.contains('health') || lower.contains('pharma') ||
+        lower.contains('medical')) {
+      return Icons.health_and_safety_outlined;
+    }
+    if (lower.contains('auto') || lower.contains('car') ||
+        lower.contains('vehicle')) {
+      return Icons.directions_car_outlined;
+    }
+    return Icons.label_outlined;
+  }
+
+  void _showCategorySheet(BuildContext context, List<String> categories) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(
+                    top: AppSizes.sm, bottom: AppSizes.xs),
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSizes.md, AppSizes.xs, AppSizes.md, AppSizes.sm),
+                child: Text(
+                  'Select Category',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: context.onSurfaceColor,
+                  ),
+                ),
+              ),
+              for (final cat in categories)
+                ListTile(
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _selectedCategory == cat
+                          ? AppColors.primary.withAlpha(20)
+                          : context.surfaceVariantColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      _categoryIcon(cat),
+                      color: _selectedCategory == cat
+                          ? AppColors.primary
+                          : context.onSurfaceMuted,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    cat,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: _selectedCategory == cat
+                          ? AppColors.primary
+                          : context.onSurfaceColor,
+                    ),
+                  ),
+                  trailing: _selectedCategory == cat
+                      ? const Icon(Icons.check_circle_rounded,
+                          color: AppColors.primary, size: 20)
+                      : null,
+                  onTap: () {
+                    setState(() => _selectedCategory = cat);
+                    Navigator.pop(ctx);
+                  },
+                ),
+              const SizedBox(height: AppSizes.sm),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showImageSourceSheet() {
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose from Gallery'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickFromGallery();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('Take a Photo'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickFromCamera();
-              },
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.sm),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: AppSizes.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(18),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.photo_library_outlined,
+                      color: AppColors.primary, size: 20),
+                ),
+                title: const Text('Choose from Gallery',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickFromGallery();
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(18),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.camera_alt_outlined,
+                      color: AppColors.primary, size: 20),
+                ),
+                title: const Text('Take a Photo',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickFromCamera();
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -160,105 +320,178 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           }
         },
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSizes.lg),
+          padding: const EdgeInsets.all(AppSizes.md),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SectionLabel('Product Details'),
-                AppTextField(
-                  label: 'Product Name',
-                  controller: _nameCtrl,
-                  prefixIcon: Icons.inventory_2_outlined,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: AppSizes.sm),
-                AppTextField(
-                  label: 'Description',
-                  controller: _descCtrl,
-                  maxLines: 3,
-                  maxLength: 200,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: AppSizes.sm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppTextField(
-                        label: 'Price (\$)',
-                        controller: _priceCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        prefixIcon: Icons.attach_money,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Required';
-                          if (double.tryParse(v.trim()) == null) {
-                            return 'Invalid price';
+                // ── Product Details card ─────────────────────────────────────
+                _SectionLabel('Product Details'),
+                const SizedBox(height: AppSizes.xs),
+                _FormCard(
+                  child: Column(
+                    children: [
+                      AppTextField(
+                        label: 'Product Name',
+                        controller: _nameCtrl,
+                        prefixIcon: Icons.inventory_2_outlined,
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: AppSizes.sm),
+                      AppTextField(
+                        label: 'Description',
+                        controller: _descCtrl,
+                        maxLines: 3,
+                        maxLength: 200,
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: AppSizes.sm),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Price (\$)',
+                              controller: _priceCtrl,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              prefixIcon: Icons.attach_money,
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Required';
+                                }
+                                if (double.tryParse(v.trim()) == null) {
+                                  return 'Invalid price';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: AppSizes.sm),
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Stock',
+                              controller: _stockCtrl,
+                              keyboardType: TextInputType.number,
+                              prefixIcon: Icons.warehouse_outlined,
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Required';
+                                }
+                                if (int.tryParse(v.trim()) == null) {
+                                  return 'Invalid number';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSizes.sm),
+                      BlocBuilder<ProductBloc, ProductState>(
+                        buildWhen: (p, c) => p.categories != c.categories,
+                        builder: (context, state) {
+                          final categories = state.categories;
+                          if (!categories.contains(_selectedCategory)) {
+                            _selectedCategory = null;
                           }
-                          return null;
+                          return FormField<String>(
+                            initialValue: _selectedCategory,
+                            validator: (_) =>
+                                _selectedCategory == null ? 'Required' : null,
+                            builder: (field) => Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                GestureDetector(
+                                  onTap: () =>
+                                      _showCategorySheet(context, categories),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 14),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: field.hasError
+                                            ? AppColors.danger
+                                            : context.borderColor,
+                                      ),
+                                      borderRadius: BorderRadius.circular(
+                                          AppSizes.radiusMd),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          _selectedCategory != null
+                                              ? _categoryIcon(_selectedCategory!)
+                                              : Icons.category_outlined,
+                                          color: _selectedCategory != null
+                                              ? AppColors.primary
+                                              : context.onSurfaceMuted,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            _selectedCategory ??
+                                                'Select a category',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: _selectedCategory != null
+                                                  ? context.onSurfaceColor
+                                                  : context.onSurfaceMuted,
+                                            ),
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          color: context.onSurfaceMuted,
+                                          size: 22,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (field.hasError)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        top: 6, left: 12),
+                                    child: Text(
+                                      field.errorText!,
+                                      style: const TextStyle(
+                                          color: AppColors.danger,
+                                          fontSize: 12),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
                         },
                       ),
-                    ),
-                    const SizedBox(width: AppSizes.sm),
-                    Expanded(
-                      child: AppTextField(
-                        label: 'Stock',
-                        controller: _stockCtrl,
-                        keyboardType: TextInputType.number,
-                        prefixIcon: Icons.warehouse_outlined,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Required';
-                          if (int.tryParse(v.trim()) == null) {
-                            return 'Invalid number';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: AppSizes.sm),
-                BlocBuilder<ProductBloc, ProductState>(
-                  buildWhen: (p, c) => p.categories != c.categories,
-                  builder: (context, state) {
-                    final categories = state.categories;
-                    final validValue = categories.contains(_selectedCategory)
-                        ? _selectedCategory
-                        : null;
-                    return DropdownButtonFormField<String>(
-                      key: ValueKey(categories.join(',')),
-                      initialValue: validValue,
-                      decoration: const InputDecoration(
-                        labelText: 'Category',
-                        prefixIcon: Icon(Icons.category_outlined),
-                      ),
-                      hint: const Text('Select a category'),
-                      items: categories
-                          .map((cat) => DropdownMenuItem(
-                                value: cat,
-                                child: Text(cat),
-                              ))
-                          .toList(),
-                      onChanged: (v) => setState(() => _selectedCategory = v),
-                      validator: (_) =>
-                          _selectedCategory == null ? 'Required' : null,
-                    );
-                  },
-                ),
+
                 const SizedBox(height: AppSizes.md),
-                const _SectionLabel('Product Images'),
-                _MultiImagePicker(
-                  existingUrls: _existingImageUrls,
-                  files: _pickedFiles,
-                  onAdd: _showImageSourceSheet,
-                  onRemoveExisting: (i) =>
-                      setState(() => _existingImageUrls.removeAt(i)),
-                  onRemove: _removeImage,
+
+                // ── Product Images card ──────────────────────────────────────
+                _SectionLabel('Product Images'),
+                const SizedBox(height: AppSizes.xs),
+                _FormCard(
+                  child: _MultiImagePicker(
+                    existingUrls: _existingImageUrls,
+                    files: _pickedFiles,
+                    onAdd: _showImageSourceSheet,
+                    onRemoveExisting: (i) =>
+                        setState(() => _existingImageUrls.removeAt(i)),
+                    onRemove: _removeImage,
+                  ),
                 ),
-                const SizedBox(height: AppSizes.xl),
+
+                const SizedBox(height: AppSizes.lg),
+
+                // ── Submit ───────────────────────────────────────────────────
                 BlocBuilder<SellerBloc, SellerState>(
                   buildWhen: (p, c) => p.status != c.status,
                   builder: (context, state) => AppButton(
@@ -267,6 +500,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     onPressed: _submit,
                   ),
                 ),
+                const SizedBox(height: AppSizes.md),
               ],
             ),
           ),
@@ -275,6 +509,68 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     );
   }
 }
+
+// ── Section label ─────────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 16,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: context.onSurfaceColor,
+            letterSpacing: 0.1,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Form card container ───────────────────────────────────────────────────────
+
+class _FormCard extends StatelessWidget {
+  final Widget child;
+  const _FormCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.md),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+// ── Multi-image picker ────────────────────────────────────────────────────────
 
 class _MultiImagePicker extends StatelessWidget {
   final List<String> existingUrls;
@@ -295,7 +591,7 @@ class _MultiImagePicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = existingUrls.length + files.length + 1;
     return SizedBox(
-      height: 100,
+      height: 96,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: total,
@@ -321,37 +617,43 @@ class _MultiImagePicker extends StatelessWidget {
   }
 }
 
+// ── Add tile ──────────────────────────────────────────────────────────────────
+
 class _AddTile extends StatelessWidget {
   final VoidCallback onTap;
   const _AddTile({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final mutedColor = scheme.onSurface.withAlpha(100);
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 100,
-        height: 100,
+        width: 96,
+        height: 96,
         decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest,
+          color: AppColors.primary.withAlpha(12),
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           border: Border.all(
-              color: scheme.outline.withAlpha(100),
-              width: 1.5,
-              strokeAlign: BorderSide.strokeAlignInside),
+            color: AppColors.primary.withAlpha(70),
+            width: 1.5,
+          ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_photo_alternate_outlined,
-                size: 28, color: mutedColor),
-            const SizedBox(height: 4),
+            Icon(
+              Icons.add_photo_alternate_outlined,
+              size: 28,
+              color: AppColors.primary.withAlpha(200),
+            ),
+            const SizedBox(height: 5),
             Text(
               'Add Photo',
-              style: TextStyle(fontSize: 11, color: mutedColor),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary.withAlpha(180),
+              ),
             ),
           ],
         ),
@@ -359,6 +661,8 @@ class _AddTile extends StatelessWidget {
     );
   }
 }
+
+// ── Network image tile ────────────────────────────────────────────────────────
 
 class _NetworkImageTile extends StatelessWidget {
   final String url;
@@ -373,12 +677,12 @@ class _NetworkImageTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           child: Image.network(
             url,
-            width: 100,
-            height: 100,
+            width: 96,
+            height: 96,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
-              width: 100,
-              height: 100,
+              width: 96,
+              height: 96,
               color: AppColors.surfaceVariant,
               child: const Icon(Icons.broken_image_outlined,
                   color: AppColors.textMuted),
@@ -386,47 +690,8 @@ class _NetworkImageTile extends StatelessWidget {
           ),
         ),
         Positioned(
-          top: 4,
-          right: 4,
-          child: GestureDetector(
-            onTap: onRemove,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(3),
-              child:
-                  const Icon(Icons.close, color: Colors.white, size: 14),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ImageTile extends StatelessWidget {
-  final XFile file;
-  final VoidCallback onRemove;
-  const _ImageTile({required this.file, required this.onRemove});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          child: Image.file(
-            File(file.path),
-            width: 100,
-            height: 100,
-            fit: BoxFit.cover,
-          ),
-        ),
-        Positioned(
-          top: 4,
-          right: 4,
+          top: 5,
+          right: 5,
           child: GestureDetector(
             onTap: onRemove,
             child: Container(
@@ -444,23 +709,42 @@ class _ImageTile extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
+// ── Local file image tile ─────────────────────────────────────────────────────
+
+class _ImageTile extends StatelessWidget {
+  final XFile file;
+  final VoidCallback onRemove;
+  const _ImageTile({required this.file, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSizes.sm),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
-          letterSpacing: 0.5,
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          child: Image.file(
+            File(file.path),
+            width: 96,
+            height: 96,
+            fit: BoxFit.cover,
+          ),
         ),
-      ),
+        Positioned(
+          top: 5,
+          right: 5,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(3),
+              child: const Icon(Icons.close, color: Colors.white, size: 14),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

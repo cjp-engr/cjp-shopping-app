@@ -56,6 +56,7 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
         });
         subtotal += productDoc.price * quantity;
         productDoc.stock -= quantity;
+        productDoc.soldCount = (productDoc.soldCount ?? 0) + quantity;
         await productDoc.save();
       }
 

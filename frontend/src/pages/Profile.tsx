@@ -18,12 +18,16 @@ import {
   CheckCircle,
   Store,
   Camera,
+  Trash2,
+  PlusCircle,
+  Star,
 } from 'lucide-react';
 import orderService from '../services/orderService';
+import type { SavedAddress } from '../types/user';
 
 export const Profile: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout, updateProfile, uploadAvatar } = useAuth();
+  const { user, logout, updateProfile, uploadAvatar, addAddress, deleteAddress, setDefaultAddress } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -43,7 +47,6 @@ export const Profile: React.FC = () => {
     city: user?.address?.city || '',
     state: user?.address?.state || '',
     zipCode: user?.address?.zipCode || '',
-    country: user?.address?.country || '',
   });
 
   useEffect(() => {
@@ -102,7 +105,6 @@ export const Profile: React.FC = () => {
       city: user?.address?.city || '',
       state: user?.address?.state || '',
       zipCode: user?.address?.zipCode || '',
-      country: user?.address?.country || '',
     });
     setAvatarPreview(user?.avatar || null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -128,7 +130,6 @@ export const Profile: React.FC = () => {
           city: formData.city,
           state: formData.state,
           zipCode: formData.zipCode,
-          country: formData.country,
         },
       } as any);
       setIsEditing(false);
@@ -327,7 +328,13 @@ export const Profile: React.FC = () => {
         </div>
 
         {/* Profile Details Form */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
+          <SavedAddressesCard
+            addresses={user.savedAddresses ?? []}
+            onAdd={addAddress}
+            onDelete={deleteAddress}
+            onSetDefault={setDefaultAddress}
+          />
           <Card padding="lg">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">
@@ -392,16 +399,25 @@ export const Profile: React.FC = () => {
                     fullWidth
                     required
                   />
-                  <Input
-                    label="Phone Number"
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    placeholder="+1 (555) 123-4567"
-                    fullWidth
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Phone Number
+                    </label>
+                    <div className="flex">
+                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-medium select-none">
+                        +63
+                      </span>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        placeholder="9XX XXX XXXX"
+                        className="flex-1 min-w-0 block w-full px-3 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 text-sm"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -441,26 +457,15 @@ export const Profile: React.FC = () => {
                       fullWidth
                     />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input
-                      label="ZIP/Postal Code"
-                      name="zipCode"
-                      value={formData.zipCode}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      placeholder="10001"
-                      fullWidth
-                    />
-                    <Input
-                      label="Country"
-                      name="country"
-                      value={formData.country}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      placeholder="United States"
-                      fullWidth
-                    />
-                  </div>
+                  <Input
+                    label="ZIP/Postal Code"
+                    name="zipCode"
+                    value={formData.zipCode}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    placeholder="1000"
+                    fullWidth
+                  />
                 </div>
               </div>
 
@@ -485,5 +490,137 @@ export const Profile: React.FC = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+// ── Saved Addresses Card ──────────────────────────────────────────────────────
+
+interface SavedAddressesCardProps {
+  addresses: SavedAddress[];
+  onAdd: (addr: Omit<SavedAddress, '_id' | 'isDefault'> & { setAsDefault?: boolean }) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  onSetDefault: (id: string) => Promise<void>;
+}
+
+const SavedAddressesCard: React.FC<SavedAddressesCardProps> = ({ addresses, onAdd, onDelete, onSetDefault }) => {
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [form, setForm] = useState({ label: 'Home', street: '', city: '', state: '', zipCode: '' });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormError(null);
+  };
+
+  const handleSave = async () => {
+    if (!form.street.trim() || !form.city.trim()) {
+      setFormError('Street and City are required');
+      return;
+    }
+    setSaving(true);
+    setFormError(null);
+    try {
+      await onAdd({ label: form.label || 'Home', street: form.street.trim(), city: form.city.trim(), state: form.state.trim(), zipCode: form.zipCode.trim(), country: '' });
+      setForm({ label: 'Home', street: '', city: '', state: '', zipCode: '' });
+      setShowForm(false);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Failed to add address');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try { await onDelete(id); } catch { /* ignore */ } finally { setDeletingId(null); }
+  };
+
+  const handleSetDefault = async (id: string) => {
+    setSettingDefaultId(id);
+    try { await onSetDefault(id); } catch { /* ignore */ } finally { setSettingDefaultId(null); }
+  };
+
+  return (
+    <Card padding="lg">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <MapPin className="w-5 h-5" />
+          Saved Addresses
+        </h2>
+        <Button size="sm" variant="outline" onClick={() => setShowForm(v => !v)}>
+          <PlusCircle className="w-4 h-4 mr-1" />
+          {showForm ? 'Cancel' : 'Add Address'}
+        </Button>
+      </div>
+
+      {/* Address list */}
+      {addresses.length === 0 && !showForm && (
+        <p className="text-sm text-gray-500 dark:text-gray-400">No saved addresses yet.</p>
+      )}
+      <div className="space-y-3 mb-4">
+        {addresses.map(addr => (
+          <div key={addr._id} className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <MapPin className="w-4 h-4 text-primary-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">{addr.label}</span>
+                {addr.isDefault && (
+                  <span className="text-xs bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 px-2 py-0.5 rounded-full font-medium">Default</span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {[addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean).join(', ')}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {!addr.isDefault && (
+                <button
+                  onClick={() => handleSetDefault(addr._id)}
+                  disabled={settingDefaultId === addr._id}
+                  title="Set as default"
+                  className="p-1.5 text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors disabled:opacity-40"
+                >
+                  <Star className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={() => handleDelete(addr._id)}
+                disabled={deletingId === addr._id}
+                title="Delete address"
+                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-40"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add form */}
+      {showForm && (
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
+          {formError && (
+            <p className="text-sm text-red-600 dark:text-red-400">{formError}</p>
+          )}
+          <Input label="Label" name="label" value={form.label} onChange={handleChange} placeholder='e.g. Home, Office' fullWidth />
+          <Input label="Street Address" name="street" value={form.street} onChange={handleChange} placeholder="123 Main St" fullWidth required />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input label="City" name="city" value={form.city} onChange={handleChange} placeholder="Manila" fullWidth required />
+            <Input label="State/Province" name="state" value={form.state} onChange={handleChange} placeholder="Metro Manila" fullWidth />
+          </div>
+          <Input label="ZIP Code" name="zipCode" value={form.zipCode} onChange={handleChange} placeholder="1000" fullWidth />
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={() => { setShowForm(false); setFormError(null); }}>Cancel</Button>
+            <Button size="sm" loading={saving} onClick={handleSave}>
+              <Save className="w-4 h-4 mr-1" />
+              Save Address
+            </Button>
+          </div>
+        </div>
+      )}
+    </Card>
   );
 };

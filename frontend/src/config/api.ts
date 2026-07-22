@@ -23,6 +23,11 @@ export const API_ENDPOINTS = {
   PAYMENT_METHODS: `${API_BASE_URL}/auth/payment-methods`,
   PAYMENT_METHOD: (id: string) => `${API_BASE_URL}/auth/payment-methods/${id}`,
 
+  // Saved addresses
+  SAVED_ADDRESSES: `${API_BASE_URL}/auth/saved-addresses`,
+  SAVED_ADDRESS: (id: string) => `${API_BASE_URL}/auth/saved-addresses/${id}`,
+  SAVED_ADDRESS_DEFAULT: (id: string) => `${API_BASE_URL}/auth/saved-addresses/${id}/default`,
+
   // Reviews
   REVIEWS: `${API_BASE_URL}/reviews`,
   REVIEW: (id: string) => `${API_BASE_URL}/reviews/${id}`,

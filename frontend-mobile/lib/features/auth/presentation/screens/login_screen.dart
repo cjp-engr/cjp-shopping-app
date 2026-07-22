@@ -108,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Welcome Back',
+                        AppStrings.welcomeBack,
                         style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w900,
@@ -118,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: AppSizes.xs),
                       const Text(
-                        'Sign in to your ShopHub account',
+                        AppStrings.signInToAccount,
                         style: TextStyle(
                             color: AppColors.textSecondary, fontSize: 14),
                       ),

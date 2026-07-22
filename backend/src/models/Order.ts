@@ -65,7 +65,7 @@ const AddressSchema = new Schema<IAddress>({
   city: { type: String, required: true },
   state: { type: String, required: true },
   zipCode: { type: String, required: true },
-  country: { type: String, required: true }
+  country: { type: String, default: 'PH' }
 });
 
 const PaymentMethodSchema = new Schema<IPaymentMethod>({

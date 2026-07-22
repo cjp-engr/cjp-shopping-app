@@ -10,6 +10,7 @@ export interface IProduct extends Document {
   stock: number;
   rating: number;
   reviews: number;
+  soldCount: number;
   tags?: string[];
   specifications?: Map<string, string>;
   sellerId?: mongoose.Types.ObjectId;
@@ -31,6 +32,7 @@ const ProductSchema = new Schema<IProduct>({
   stock: { type: Number, required: true, min: 0, default: 0 },
   rating: { type: Number, default: 0, min: 0, max: 5 },
   reviews: { type: Number, default: 0, min: 0 },
+  soldCount: { type: Number, default: 0, min: 0 },
   tags: [{ type: String }],
   specifications: { type: Map, of: String },
   sellerId: { type: Schema.Types.ObjectId, ref: 'User', default: null },

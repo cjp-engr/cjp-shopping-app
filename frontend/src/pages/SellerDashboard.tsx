@@ -77,6 +77,7 @@ export const SellerDashboard: React.FC = () => {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
+  const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; productId: string | null; loading: boolean }>({ open: false, productId: null, loading: false });
 
   useEffect(() => {
@@ -303,7 +304,36 @@ export const SellerDashboard: React.FC = () => {
       {/* ── Products Tab ── */}
       {tab === 'products' && (
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            {/* Category filter chips */}
+            {!loadingProducts && products.length > 0 && (() => {
+              const usedCategories = Array.from(new Set(products.map(p => p.category)));
+              const tabs = [{ key: 'all', label: 'All' }, ...usedCategories.map(c => ({ key: c, label: c }))];
+              return (
+                <div className="flex flex-wrap gap-2">
+                  {tabs.map(({ key, label }) => {
+                    const count = key === 'all' ? products.length : products.filter(p => p.category === key).length;
+                    const active = productCategoryFilter === key;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setProductCategoryFilter(key)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                          active
+                            ? 'bg-primary-600 text-white border-primary-600'
+                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400'
+                        }`}
+                      >
+                        {label}
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                          active ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                        }`}>{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
             <Button onClick={openCreate}>
               <Plus className="w-4 h-4 mr-2" />
               Add Product
@@ -482,9 +512,19 @@ export const SellerDashboard: React.FC = () => {
               <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-600">No products yet. Add your first product!</p>
             </Card>
-          ) : (
+          ) : (() => {
+            const filtered = productCategoryFilter === 'all'
+              ? products
+              : products.filter(p => p.category === productCategoryFilter);
+            if (filtered.length === 0) return (
+              <Card className="text-center py-12">
+                <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-600 dark:text-gray-400">No products in this category.</p>
+              </Card>
+            );
+            return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products.map(product => (
+              {filtered.map(product => (
                 <Card key={product.id} padding="none" className="flex flex-col overflow-hidden">
                   <div className="aspect-square bg-gray-100 dark:bg-gray-700 relative">
                     <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
@@ -525,7 +565,8 @@ export const SellerDashboard: React.FC = () => {
                 </Card>
               ))}
             </div>
-          )}
+            );
+          })()}
         </div>
       )}
 

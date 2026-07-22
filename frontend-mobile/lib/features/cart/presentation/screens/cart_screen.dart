@@ -20,11 +20,9 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  // Selected product IDs (initialised to all on first build)
   final Set<String> _selected = {};
   bool _initialised = false;
 
-  // Per-seller promo: key = sellerId key, value = applied discount amount
   final Map<String, TextEditingController> _promoCtrls = {};
   final Map<String, double> _sellerDiscounts = {};
   final Map<String, String?> _promoErrors = {};
@@ -96,14 +94,12 @@ class _CartScreenState extends State<CartScreen> {
     });
   }
 
-  // Subtotal of selected items only
   double _selectedSubtotal(List<CartItemEntity> all) =>
       all.where((i) => _selected.contains(i.product.id)).fold(
             0,
             (s, i) => s + i.subtotal,
           );
 
-  // Total discount across all sellers (only for selected items)
   double _totalDiscount(Map<String, List<CartItemEntity>> groups) {
     double total = 0;
     for (final entry in groups.entries) {
@@ -111,7 +107,6 @@ class _CartScreenState extends State<CartScreen> {
           entry.value.where((i) => _selected.contains(i.product.id)).toList();
       if (selectedInGroup.isEmpty) continue;
       final discount = _sellerDiscounts[entry.key] ?? 0;
-      // Scale discount proportionally to selected items if partial selection
       final groupSubtotal =
           entry.value.fold<double>(0, (s, i) => s + i.subtotal);
       final selectedGroupSubtotal =
@@ -144,13 +139,11 @@ class _CartScreenState extends State<CartScreen> {
             );
           }
 
-          // Init all selected on first build
           if (!_initialised) {
             _selected.addAll(state.items.map((i) => i.product.id));
             _initialised = true;
           }
 
-          // Group items by seller
           final sellerGroups = <String, List<CartItemEntity>>{};
           for (final item in state.items) {
             final key = item.product.sellerId ?? '__unknown__';
@@ -168,9 +161,13 @@ class _CartScreenState extends State<CartScreen> {
           final afterDiscount =
               (selectedSubtotal - totalDiscount).clamp(0, double.infinity);
 
-          // Per-seller shipping, tax, and summary data (selected items only)
-          final sellerSummaries =
-              <String, ({double subtotal, double discount, double shipping, double tax})>{};
+          final sellerSummaries = <String,
+              ({
+            double subtotal,
+            double discount,
+            double shipping,
+            double tax
+          })>{};
           double shipping = 0;
           if (selectedSubtotal > 0) {
             for (final entry in sellerGroups.entries) {
@@ -198,12 +195,14 @@ class _CartScreenState extends State<CartScreen> {
           final total = afterDiscount + shipping + tax;
           final selectedCount =
               state.items.where((i) => _selected.contains(i.product.id)).length;
+          final multiSeller = sellerGroups.length > 1;
 
           return Column(
             children: [
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.all(AppSizes.md),
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.md),
                   children: [
                     for (final entry in sellerGroups.entries) ...[
                       _SellerGroupHeader(
@@ -214,6 +213,7 @@ class _CartScreenState extends State<CartScreen> {
                         onToggleAll: () =>
                             _toggleSeller(entry.key, entry.value),
                       ),
+                      const SizedBox(height: AppSizes.xs),
                       ...entry.value.map(
                         (item) => _SelectableItemTile(
                           item: item,
@@ -228,8 +228,9 @@ class _CartScreenState extends State<CartScreen> {
                         error: _promoErrors[entry.key],
                         onApply: () => _applyPromo(entry.key, entry.value),
                       ),
-                      if (sellerSummaries.containsKey(entry.key))
+                      if (multiSeller && sellerSummaries.containsKey(entry.key))
                         _SellerSummaryCard(
+                          sellerName: sellerNames[entry.key] ?? 'Store',
                           subtotal: sellerSummaries[entry.key]!.subtotal,
                           discount: sellerSummaries[entry.key]!.discount,
                           shipping: sellerSummaries[entry.key]!.shipping,
@@ -238,7 +239,6 @@ class _CartScreenState extends State<CartScreen> {
                       const SizedBox(height: AppSizes.sm),
                     ],
                     const SizedBox(height: AppSizes.xs),
-                    // Order summary
                     _OrderSummary(
                       subtotal: selectedSubtotal,
                       discount: totalDiscount,
@@ -250,7 +250,6 @@ class _CartScreenState extends State<CartScreen> {
                   ],
                 ),
               ),
-              // Checkout bar
               _CheckoutBar(
                 selectedCount: selectedCount,
                 total: total,
@@ -267,7 +266,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 }
 
-// ── Seller group header with "select all" checkbox ────────────────────────────
+// ── Seller group header ───────────────────────────────────────────────────────
 
 class _SellerGroupHeader extends StatelessWidget {
   final String sellerKey;
@@ -290,9 +289,15 @@ class _SellerGroupHeader extends StatelessWidget {
     final allSelected = items.every((i) => selected.contains(i.product.id));
     final someSelected =
         !allSelected && items.any((i) => selected.contains(i.product.id));
+    final itemCount = items.fold<int>(0, (s, i) => s + i.quantity);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSizes.xs),
+    return Container(
+      padding: const EdgeInsets.only(
+          right: AppSizes.md, top: AppSizes.sm, bottom: AppSizes.sm),
+      decoration: BoxDecoration(
+        color: context.surfaceVariantColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      ),
       child: Row(
         children: [
           SizedBox(
@@ -307,26 +312,42 @@ class _SellerGroupHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          SellerAvatar(name: name, size: 20),
-          const SizedBox(width: 6),
-          Text(
-            name,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: context.onSurfaceColor,
+          SellerAvatar(name: name, size: 22),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              name,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: context.onSurfaceColor,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 4),
-          Icon(Icons.storefront_outlined,
-              size: 14, color: context.onSurfaceMuted),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha(18),
+              borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+            ),
+            child: Text(
+              '$itemCount item${itemCount != 1 ? 's' : ''}',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-// ── Selectable item tile (checkbox + CartItemTile) ────────────────────────────
+// ── Selectable item tile ──────────────────────────────────────────────────────
 
 class _SelectableItemTile extends StatelessWidget {
   final CartItemEntity item;
@@ -386,13 +407,13 @@ class _SellerPromoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 30, bottom: AppSizes.xs),
+      padding: const EdgeInsets.only(bottom: AppSizes.xs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.md, vertical: 6),
+                horizontal: AppSizes.md, vertical: 12),
             decoration: BoxDecoration(
               color: context.cardColor,
               borderRadius: BorderRadius.circular(AppSizes.radiusLg),
@@ -427,10 +448,10 @@ class _SellerPromoRow extends StatelessWidget {
                 if (discount > 0)
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                     decoration: BoxDecoration(
                       color: AppColors.success.withAlpha(20),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                     ),
                     child: Text(
                       '-\$${discount.toStringAsFixed(2)}',
@@ -470,6 +491,86 @@ class _SellerPromoRow extends StatelessWidget {
   }
 }
 
+// ── Per-seller summary (only shown for multi-seller carts) ────────────────────
+
+class _SellerSummaryCard extends StatelessWidget {
+  final String sellerName;
+  final double subtotal;
+  final double discount;
+  final double shipping;
+  final double tax;
+
+  const _SellerSummaryCard({
+    required this.sellerName,
+    required this.subtotal,
+    required this.discount,
+    required this.shipping,
+    required this.tax,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final afterDiscount = (subtotal - discount).clamp(0.0, double.infinity);
+    final storeTotal = afterDiscount + shipping + tax;
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.xs),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.md, vertical: AppSizes.sm),
+      decoration: BoxDecoration(
+        color: context.surfaceVariantColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.storefront_outlined,
+                  size: 14, color: context.onSurfaceMuted),
+              const SizedBox(width: 6),
+              Text(
+                sellerName,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: context.onSurfaceSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _SummaryRow('Order Amount', '\$${subtotal.toStringAsFixed(2)}'),
+          if (discount > 0) ...[
+            const SizedBox(height: 4),
+            _SummaryRow(
+              'Discount',
+              '-\$${discount.toStringAsFixed(2)}',
+              valueColor: AppColors.success,
+            ),
+          ],
+          const SizedBox(height: 4),
+          _SummaryRow(
+            'Shipping',
+            shipping == 0 ? 'FREE' : '\$${shipping.toStringAsFixed(2)}',
+            valueColor: shipping == 0 ? AppColors.success : null,
+          ),
+          const SizedBox(height: 4),
+          _SummaryRow('Tax (8%)', '\$${tax.toStringAsFixed(2)}'),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 6),
+            child: Divider(height: 1),
+          ),
+          _SummaryRow(
+            'Store Total',
+            '\$${storeTotal.toStringAsFixed(2)}',
+            bold: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Order summary card ────────────────────────────────────────────────────────
 
 class _OrderSummary extends StatelessWidget {
@@ -496,13 +597,36 @@ class _OrderSummary extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSizes.radiusLg),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withAlpha(6),
-              blurRadius: 10,
-              offset: const Offset(0, 2))
+              color: Colors.black.withAlpha(8),
+              blurRadius: 12,
+              offset: const Offset(0, 2)),
+          BoxShadow(
+              color: Colors.black.withAlpha(4),
+              blurRadius: 4,
+              offset: const Offset(0, 1)),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              const Icon(Icons.receipt_long_outlined,
+                  size: 17, color: AppColors.primary),
+              const SizedBox(width: 7),
+              Text(
+                'Order Summary',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: context.onSurfaceColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.sm),
+          const Divider(height: 1),
+          const SizedBox(height: AppSizes.sm),
           _SummaryRow('Order Amount', '\$${subtotal.toStringAsFixed(2)}'),
           if (discount > 0) ...[
             const SizedBox(height: AppSizes.sm),
@@ -529,6 +653,7 @@ class _OrderSummary extends StatelessWidget {
             'Total Payment',
             '\$${total.toStringAsFixed(2)}',
             bold: true,
+            valueColor: AppColors.primary,
           ),
         ],
       ),
@@ -552,7 +677,16 @@ class _CheckoutBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: context.surfaceColor,
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(12),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
       padding: EdgeInsets.fromLTRB(
         AppSizes.md,
         AppSizes.sm,
@@ -568,14 +702,15 @@ class _CheckoutBar extends StatelessWidget {
               Text(
                 '$selectedCount item${selectedCount != 1 ? 's' : ''} selected',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   color: context.onSurfaceSecondary,
                 ),
               ),
+              const SizedBox(height: 1),
               Text(
                 '\$${total.toStringAsFixed(2)}',
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: context.onSurfaceColor,
                 ),
@@ -595,10 +730,20 @@ class _CheckoutBar extends StatelessWidget {
                     ? AppColors.darkButton
                     : AppColors.textMuted,
               ),
-              child: Text(
-                onCheckout != null ? AppStrings.checkout : 'Select items',
-                style:
-                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    onCheckout != null ? AppStrings.checkout : 'Select items',
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                  if (onCheckout != null) ...[
+                    const SizedBox(width: 6),
+                    const Icon(Icons.arrow_forward_rounded, size: 16),
+                  ],
+                ],
               ),
             ),
           ),
@@ -609,65 +754,6 @@ class _CheckoutBar extends StatelessWidget {
 }
 
 // ── Per-seller summary card ───────────────────────────────────────────────────
-
-class _SellerSummaryCard extends StatelessWidget {
-  final double subtotal;
-  final double discount;
-  final double shipping;
-  final double tax;
-
-  const _SellerSummaryCard({
-    required this.subtotal,
-    required this.discount,
-    required this.shipping,
-    required this.tax,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final afterDiscount = (subtotal - discount).clamp(0.0, double.infinity);
-    final storeTotal = afterDiscount + shipping + tax;
-    return Padding(
-      padding: const EdgeInsets.only(left: 30, bottom: AppSizes.xs),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.md, vertical: AppSizes.sm),
-        decoration: BoxDecoration(
-          color: context.cardColor,
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: Column(
-          children: [
-            _SummaryRow('Order Amount', '\$${subtotal.toStringAsFixed(2)}'),
-            if (discount > 0) ...[
-              const SizedBox(height: 4),
-              _SummaryRow(
-                'Discount',
-                '-\$${discount.toStringAsFixed(2)}',
-                valueColor: AppColors.success,
-              ),
-            ],
-            const SizedBox(height: 4),
-            _SummaryRow(
-              'Shipping',
-              shipping == 0 ? 'FREE' : '\$${shipping.toStringAsFixed(2)}',
-              valueColor: shipping == 0 ? AppColors.success : null,
-            ),
-            const SizedBox(height: 4),
-            _SummaryRow('Tax (8%)', '\$${tax.toStringAsFixed(2)}'),
-            const Divider(height: 12),
-            _SummaryRow(
-              'Store Total',
-              '\$${storeTotal.toStringAsFixed(2)}',
-              bold: true,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ── Summary row ───────────────────────────────────────────────────────────────
 
@@ -688,9 +774,9 @@ class _SummaryRow extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: context.onSurfaceSecondary,
+            color: bold ? context.onSurfaceColor : context.onSurfaceSecondary,
             fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-            fontSize: bold ? 15 : 14,
+            fontSize: bold ? 15 : 13,
           ),
         ),
         Text(
@@ -698,7 +784,7 @@ class _SummaryRow extends StatelessWidget {
           style: TextStyle(
             color: valueColor ?? context.onSurfaceColor,
             fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-            fontSize: bold ? 16 : 14,
+            fontSize: bold ? 16 : 13,
           ),
         ),
       ],

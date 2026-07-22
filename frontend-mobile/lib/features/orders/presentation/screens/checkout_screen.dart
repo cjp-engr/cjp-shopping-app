@@ -35,7 +35,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _cityCtrl = TextEditingController();
   final _stateCtrl = TextEditingController();
   final _zipCtrl = TextEditingController();
-  final _countryCtrl = TextEditingController(text: 'US');
   String _paymentType = 'credit-card';
   final _paymentSectionKey = GlobalKey<_PaymentSectionState>();
 
@@ -50,7 +49,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _cityCtrl.dispose();
     _stateCtrl.dispose();
     _zipCtrl.dispose();
-    _countryCtrl.dispose();
     for (final c in _voucherCtrls.values) {
       c.dispose();
     }
@@ -111,7 +109,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             'city': _cityCtrl.text.trim(),
             'state': _stateCtrl.text.trim(),
             'zipCode': _zipCtrl.text.trim(),
-            'country': _countryCtrl.text.trim(),
+            'country': 'PH',
           },
           'paymentMethod': {'type': _paymentType},
           'sellerMessages': {
@@ -206,14 +204,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           // ── Shipping address ──────────────────────────────
                           BlocBuilder<AuthBloc, AuthState>(
                             buildWhen: (p, c) =>
-                                p.user?.address != c.user?.address,
+                                p.user?.savedAddresses != c.user?.savedAddresses,
                             builder: (_, authState) => _AddressSection(
-                              savedAddress: authState.user?.address,
+                              savedAddresses: authState.user?.savedAddresses ?? const [],
                               streetCtrl: _streetCtrl,
                               cityCtrl: _cityCtrl,
                               stateCtrl: _stateCtrl,
                               zipCtrl: _zipCtrl,
-                              countryCtrl: _countryCtrl,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -298,23 +295,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
 // ── Shipping address section ──────────────────────────────────────────────────
 
-enum _AddressMode { saved, newAddress }
-
 class _AddressSection extends StatefulWidget {
-  final AddressEntity? savedAddress;
-  final TextEditingController streetCtrl,
-      cityCtrl,
-      stateCtrl,
-      zipCtrl,
-      countryCtrl;
+  final List<SavedAddressEntity> savedAddresses;
+  final TextEditingController streetCtrl, cityCtrl, stateCtrl, zipCtrl;
 
   const _AddressSection({
-    required this.savedAddress,
+    required this.savedAddresses,
     required this.streetCtrl,
     required this.cityCtrl,
     required this.stateCtrl,
     required this.zipCtrl,
-    required this.countryCtrl,
   });
 
   @override
@@ -322,24 +312,26 @@ class _AddressSection extends StatefulWidget {
 }
 
 class _AddressSectionState extends State<_AddressSection> {
-  late _AddressMode _mode;
+  late String _selectedId;
 
   @override
   void initState() {
     super.initState();
-    // Default: use saved address when available
-    _mode = widget.savedAddress != null
-        ? _AddressMode.saved
-        : _AddressMode.newAddress;
-    if (widget.savedAddress != null) _fillSaved(widget.savedAddress!);
+    if (widget.savedAddresses.isNotEmpty) {
+      final def = widget.savedAddresses.where((a) => a.isDefault).firstOrNull ??
+          widget.savedAddresses.first;
+      _selectedId = def.id;
+      _fillFromAddress(def);
+    } else {
+      _selectedId = 'new';
+    }
   }
 
-  void _fillSaved(AddressEntity addr) {
+  void _fillFromAddress(SavedAddressEntity addr) {
     widget.streetCtrl.text = addr.street;
     widget.cityCtrl.text = addr.city;
     widget.stateCtrl.text = addr.state;
     widget.zipCtrl.text = addr.zipCode;
-    widget.countryCtrl.text = addr.country.isNotEmpty ? addr.country : 'US';
   }
 
   void _clearFields() {
@@ -347,70 +339,86 @@ class _AddressSectionState extends State<_AddressSection> {
     widget.cityCtrl.clear();
     widget.stateCtrl.clear();
     widget.zipCtrl.clear();
-    widget.countryCtrl.text = 'US';
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: context.surfaceColor,
-      padding: const EdgeInsets.all(AppSizes.md),
+      padding: const EdgeInsets.fromLTRB(
+          AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Section header ────────────────────────────────────────────
           Row(
             children: [
-              const Icon(Icons.location_on_outlined,
-                  size: 16, color: AppColors.primary),
-              const SizedBox(width: 6),
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.location_on_rounded,
+                    size: 15, color: AppColors.primary),
+              ),
+              const SizedBox(width: 8),
               Text(
                 'Delivery Address',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: context.onSurfaceColor,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.sm),
+          const SizedBox(height: 12),
 
-          // ── Saved address option ──────────────────────────────────────
-          if (widget.savedAddress != null) ...[
-            _AddressOption(
-              title: 'Saved Address',
-              subtitle: _formatAddress(widget.savedAddress!),
-              icon: Icons.home_rounded,
-              selected: _mode == _AddressMode.saved,
-              onTap: () {
-                setState(() => _mode = _AddressMode.saved);
-                _fillSaved(widget.savedAddress!);
-              },
-            ),
-            const SizedBox(height: AppSizes.xs),
-          ],
+          // ── Saved address cards ───────────────────────────────────────
+          ...widget.savedAddresses.map((addr) {
+            final subtitle = [addr.street, addr.city, addr.state, addr.zipCode]
+                .where((s) => s.isNotEmpty)
+                .join(', ');
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _AddressOption(
+                label: addr.label,
+                subtitle: subtitle.isNotEmpty ? subtitle : 'No address details',
+                icon: Icons.home_rounded,
+                isDefault: addr.isDefault,
+                selected: _selectedId == addr.id,
+                onTap: () {
+                  setState(() => _selectedId = addr.id);
+                  _fillFromAddress(addr);
+                },
+              ),
+            );
+          }),
 
           // ── New address option ────────────────────────────────────────
           _AddressOption(
-            title: 'New Address',
+            label: 'New Address',
             subtitle: 'Enter a different delivery address',
-            icon: Icons.add_location_alt_outlined,
-            selected: _mode == _AddressMode.newAddress,
+            icon: Icons.add_location_alt_rounded,
+            isDefault: false,
+            selected: _selectedId == 'new',
             onTap: () {
-              setState(() => _mode = _AddressMode.newAddress);
+              setState(() => _selectedId = 'new');
               _clearFields();
             },
           ),
 
-          // ── Form fields (always present for validation; hidden when saved) ──
+          // ── New address form ──────────────────────────────────────────
           AnimatedCrossFade(
-            duration: const Duration(milliseconds: 200),
-            crossFadeState: _mode == _AddressMode.newAddress
+            duration: const Duration(milliseconds: 220),
+            crossFadeState: _selectedId == 'new'
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
             firstChild: const SizedBox.shrink(),
             secondChild: Padding(
-              padding: const EdgeInsets.only(top: AppSizes.sm),
+              padding: const EdgeInsets.only(top: 12),
               child: Column(
                 children: [
                   AppTextField(
@@ -422,7 +430,7 @@ class _AddressSectionState extends State<_AddressSection> {
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Required' : null,
                   ),
-                  const SizedBox(height: AppSizes.xs),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
@@ -435,10 +443,10 @@ class _AddressSectionState extends State<_AddressSection> {
                               v == null || v.trim().isEmpty ? 'Required' : null,
                         ),
                       ),
-                      const SizedBox(width: AppSizes.sm),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: AppTextField(
-                          label: 'State',
+                          label: 'State / Province',
                           controller: widget.stateCtrl,
                           keyboardType: TextInputType.text,
                           textInputAction: TextInputAction.next,
@@ -448,31 +456,14 @@ class _AddressSectionState extends State<_AddressSection> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSizes.xs),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppTextField(
-                          label: 'ZIP Code',
-                          controller: widget.zipCtrl,
-                          keyboardType: TextInputType.number,
-                          textInputAction: TextInputAction.next,
-                          validator: (v) =>
-                              v == null || v.trim().isEmpty ? 'Required' : null,
-                        ),
-                      ),
-                      const SizedBox(width: AppSizes.sm),
-                      Expanded(
-                        child: AppTextField(
-                          label: 'Country',
-                          controller: widget.countryCtrl,
-                          keyboardType: TextInputType.text,
-                          textInputAction: TextInputAction.done,
-                          validator: (v) =>
-                              v == null || v.trim().isEmpty ? 'Required' : null,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 10),
+                  AppTextField(
+                    label: 'ZIP Code',
+                    controller: widget.zipCtrl,
+                    keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.done,
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Required' : null,
                   ),
                 ],
               ),
@@ -482,82 +473,137 @@ class _AddressSectionState extends State<_AddressSection> {
       ),
     );
   }
-
-  String _formatAddress(AddressEntity a) {
-    final parts = [a.street, a.city, a.state, a.zipCode, a.country]
-        .where((s) => s.isNotEmpty)
-        .toList();
-    return parts.join(', ');
-  }
 }
 
 class _AddressOption extends StatelessWidget {
-  final String title;
+  final String label;
   final String subtitle;
   final IconData icon;
+  final bool isDefault;
   final bool selected;
   final VoidCallback onTap;
 
   const _AddressOption({
-    required this.title,
+    required this.label,
     required this.subtitle,
     required this.icon,
+    required this.isDefault,
     required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.sm, vertical: AppSizes.xs + 2),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.primary.withValues(alpha: 0.06)
-              : context.surfaceVariantColor,
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          border: Border.all(
-            color: selected ? AppColors.primary : context.borderColor,
-            width: selected ? 1.5 : 1,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.06)
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.04)
+                    : Colors.grey.shade50),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            border: Border.all(
+              color: selected
+                  ? AppColors.primary
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.grey.shade200),
+              width: selected ? 1.5 : 1,
+            ),
           ),
-        ),
-        child: RadioGroup<bool>(
-          groupValue: selected,
-          onChanged: (_) => onTap(),
           child: Row(
             children: [
-              const Radio<bool>(
-                value: true,
-                fillColor: WidgetStatePropertyAll(AppColors.primary),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
+              // Radio indicator
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: selected ? AppColors.primary : Colors.grey.shade400,
+                    width: selected ? 5.5 : 1.5,
+                  ),
+                  color: Colors.white,
+                ),
               ),
-              const SizedBox(width: 4),
-              Icon(icon,
-                  size: 18,
-                  color: selected ? AppColors.primary : context.onSurfaceMuted),
-              const SizedBox(width: AppSizes.sm),
+              const SizedBox(width: 10),
+              // Address icon
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.primary.withValues(alpha: 0.12)
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.grey.shade100),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(
+                  icon,
+                  size: 17,
+                  color: selected ? AppColors.primary : context.onSurfaceMuted,
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Text
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: selected
-                            ? AppColors.primary
-                            : context.onSurfaceColor,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: selected
+                                  ? AppColors.primary
+                                  : context.onSurfaceColor,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isDefault) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color:
+                                  AppColors.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Default',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: TextStyle(
                         fontSize: 11,
+                        height: 1.4,
                         color: context.onSurfaceMuted,
                       ),
                       maxLines: 2,
@@ -1026,120 +1072,187 @@ class _PaymentSectionState extends State<_PaymentSection> {
   @override
   Widget build(BuildContext context) {
     final hasSaved = widget.savedCards.isNotEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       color: context.surfaceColor,
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.md, vertical: AppSizes.sm),
+      padding: const EdgeInsets.fromLTRB(
+          AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Payment Method',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: context.onSurfaceColor,
-            ),
+          // ── Section header ────────────────────────────────────────────
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.payment_rounded,
+                    size: 15, color: AppColors.primary),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Payment Method',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: context.onSurfaceColor,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: AppSizes.sm),
+          const SizedBox(height: 12),
 
           // ── Mode toggle (only when saved cards exist) ──
           if (hasSaved) ...[
-            Row(children: [
-              _ModeChip(
-                label: 'Saved Card',
-                selected: _mode == _CardMode.saved,
-                onTap: () => setState(() => _mode = _CardMode.saved),
+            Container(
+              height: 38,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(width: 8),
-              _ModeChip(
-                label: '+ New Card',
-                selected: _mode == _CardMode.newCard,
-                onTap: () => setState(() => _mode = _CardMode.newCard),
-              ),
-            ]),
-            const SizedBox(height: AppSizes.sm),
+              child: Row(children: [
+                _ModeChip(
+                  label: 'Saved Card',
+                  selected: _mode == _CardMode.saved,
+                  onTap: () => setState(() => _mode = _CardMode.saved),
+                ),
+                _ModeChip(
+                  label: '+ New Card',
+                  selected: _mode == _CardMode.newCard,
+                  onTap: () => setState(() => _mode = _CardMode.newCard),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 12),
           ],
 
           // ── Saved card list ──
           if (_mode == _CardMode.saved && hasSaved)
-            RadioGroup<String>(
-              groupValue: _selectedCardId,
-              onChanged: (v) => setState(() => _selectedCardId = v!),
-              child: Column(
-                children: widget.savedCards
-                    .map((card) => GestureDetector(
-                          onTap: () =>
-                              setState(() => _selectedCardId = card.id),
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: _selectedCardId == card.id
-                                    ? AppColors.primary
-                                    : context.onSurfaceColor.withAlpha(40),
-                                width: _selectedCardId == card.id ? 2 : 1,
-                              ),
-                              color: _selectedCardId == card.id
-                                  ? AppColors.primary.withAlpha(20)
-                                  : context.surfaceColor,
-                            ),
-                            child: Row(children: [
-                              Radio<String>(
-                                value: card.id,
-                                fillColor: const WidgetStatePropertyAll(
-                                    AppColors.primary),
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(Icons.credit_card,
-                                  size: 18,
-                                  color: context.onSurfaceColor.withAlpha(180)),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                  child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${card.type.replaceAll('-', ' ')} •••• ${card.last4}',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: context.onSurfaceColor,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${card.cardHolder} · ${card.expiryMonth}/${card.expiryYear}',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color:
-                                          context.onSurfaceColor.withAlpha(140),
-                                    ),
-                                  ),
-                                ],
-                              )),
-                              Semantics(
-                                label: 'Delete saved card',
-                                button: true,
-                                child: IconButton(
-                                  icon: Icon(Icons.delete_outline,
-                                      size: 20,
-                                      color: Colors.red.withAlpha(200)),
-                                  onPressed: () => _deleteCard(card.id),
-                                  padding: const EdgeInsets.all(8),
-                                  constraints: const BoxConstraints(
-                                      minWidth: 44, minHeight: 44),
-                                ),
-                              ),
-                            ]),
+            Column(
+              children: widget.savedCards.map((card) {
+                final selected = _selectedCardId == card.id;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => setState(() => _selectedCardId = card.id),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOut,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 11),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? AppColors.primary.withValues(
+                                  alpha: isDark ? 0.15 : 0.06)
+                              : (isDark
+                                  ? Colors.white.withValues(alpha: 0.04)
+                                  : Colors.grey.shade50),
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radiusMd),
+                          border: Border.all(
+                            color: selected
+                                ? AppColors.primary
+                                : (isDark
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.grey.shade200),
+                            width: selected ? 1.5 : 1,
                           ),
-                        ))
-                    .toList(),
-              ),
+                        ),
+                        child: Row(children: [
+                          // Radio dot
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: selected
+                                    ? AppColors.primary
+                                    : Colors.grey.shade400,
+                                width: selected ? 5.5 : 1.5,
+                              ),
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          // Card icon box
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? AppColors.primary.withValues(alpha: 0.12)
+                                  : (isDark
+                                      ? Colors.white.withValues(alpha: 0.06)
+                                      : Colors.grey.shade100),
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                            child: Icon(
+                              Icons.credit_card_rounded,
+                              size: 17,
+                              color: selected
+                                  ? AppColors.primary
+                                  : context.onSurfaceMuted,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${_capitalize(card.type.replaceAll('-', ' '))} •••• ${card.last4}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: selected
+                                        ? AppColors.primary
+                                        : context.onSurfaceColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${card.cardHolder} · ${card.expiryMonth}/${card.expiryYear}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    height: 1.4,
+                                    color: context.onSurfaceMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Semantics(
+                            label: 'Delete saved card',
+                            button: true,
+                            child: InkWell(
+                              onTap: () => _deleteCard(card.id),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Icon(Icons.delete_outline_rounded,
+                                    size: 18,
+                                    color: Colors.red.withValues(alpha: 0.8)),
+                              ),
+                            ),
+                          ),
+                        ]),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
 
           // ── New card form ──
@@ -1154,32 +1267,53 @@ class _PaymentSectionState extends State<_PaymentSection> {
               onMonthChanged: (v) => setState(() => _expiryMonth = v),
               onYearChanged: (v) => setState(() => _expiryYear = v),
             ),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => setState(() => _saveCard = !_saveCard),
-              child: Row(children: [
-                Checkbox(
-                  value: _saveCard,
-                  onChanged: (v) => setState(() => _saveCard = v!),
-                  fillColor: WidgetStateProperty.resolveWith(
-                    (states) => states.contains(WidgetState.selected)
-                        ? AppColors.primary
-                        : null,
-                  ),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            const SizedBox(height: 10),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => setState(() => _saveCard = !_saveCard),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  child: Row(children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: _saveCard ? AppColors.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(5),
+                        border: Border.all(
+                          color: _saveCard
+                              ? AppColors.primary
+                              : Colors.grey.shade400,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: _saveCard
+                          ? const Icon(Icons.check_rounded,
+                              size: 14, color: Colors.white)
+                          : null,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Save this card for future purchases',
+                      style: TextStyle(
+                          fontSize: 13, color: context.onSurfaceColor),
+                    ),
+                  ]),
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  'Save this card for future purchases',
-                  style: TextStyle(fontSize: 13, color: context.onSurfaceColor),
-                ),
-              ]),
+              ),
             ),
           ],
         ],
       ),
     );
   }
+
+  String _capitalize(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }
 
 class _ModeChip extends StatelessWidget {
@@ -1191,25 +1325,35 @@ class _ModeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: selected ? AppColors.primary : Colors.transparent,
-          border: Border.all(
-            color: selected
-                ? AppColors.primary
-                : context.onSurfaceColor.withAlpha(60),
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          margin: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : null,
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : context.onSurfaceColor,
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: selected
+                  ? Colors.white
+                  : context.onSurfaceColor.withValues(alpha: 0.6),
+            ),
           ),
         ),
       ),
@@ -1241,110 +1385,359 @@ class _NewCardForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final options = [
-      ('credit-card', 'Credit Card', Icons.credit_card),
-      ('debit-card', 'Debit Card', Icons.payment),
-      ('paypal', 'PayPal', Icons.account_balance_wallet_outlined),
+      ('credit-card', 'Credit Card', Icons.credit_card_rounded),
+      ('debit-card', 'Debit Card', Icons.payment_rounded),
+      ('paypal', 'PayPal', Icons.account_balance_wallet_rounded),
+      ('cash-on-delivery', 'Cash on Delivery', Icons.payments_rounded),
     ];
     final months = List.generate(12, (i) => (i + 1).toString().padLeft(2, '0'));
     final years =
         List.generate(10, (i) => (DateTime.now().year + i).toString());
+    final isCod = paymentType == 'cash-on-delivery';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Column(children: [
-      RadioGroup<String>(
-        groupValue: paymentType,
-        onChanged: (v) => onTypeChanged(v!),
-        child: Column(
-          children: options
-              .map((p) => RadioListTile<String>(
-                    value: p.$1,
-                    title: Row(children: [
-                      Icon(p.$3, size: 18, color: AppColors.primary),
-                      const SizedBox(width: 8),
-                      Text(p.$2,
-                          style: TextStyle(
-                              fontSize: 13, color: context.onSurfaceColor)),
-                    ]),
-                    fillColor: const WidgetStatePropertyAll(AppColors.primary),
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ))
-              .toList(),
-        ),
-      ),
-      AppTextField(
-        label: 'Card Number',
-        controller: cardNumberCtrl,
-        keyboardType: TextInputType.number,
-        prefixIcon: Icons.credit_card_outlined,
-      ),
-      const SizedBox(height: 8),
-      AppTextField(
-        label: 'Cardholder Name',
-        controller: cardHolderCtrl,
-        prefixIcon: Icons.person_outline,
-        keyboardType: TextInputType.name,
-        textInputAction: TextInputAction.next,
-      ),
-      const SizedBox(height: 8),
-      Row(children: [
-        Expanded(
-            child: _DropdownField(
-          label: 'Month',
-          value: expiryMonth,
-          items: months,
-          onChanged: onMonthChanged,
-        )),
-        const SizedBox(width: 8),
-        Expanded(
-            child: _DropdownField(
-          label: 'Year',
-          value: expiryYear,
-          items: years,
-          onChanged: onYearChanged,
-        )),
-      ]),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Payment type options
+        ...options.map((p) {
+          final selected = paymentType == p.$1;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onTypeChanged(p.$1),
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.primary.withValues(
+                            alpha: isDark ? 0.15 : 0.06)
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.04)
+                            : Colors.grey.shade50),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    border: Border.all(
+                      color: selected
+                          ? AppColors.primary
+                          : (isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.grey.shade200),
+                      width: selected ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected
+                              ? AppColors.primary
+                              : Colors.grey.shade400,
+                          width: selected ? 5.5 : 1.5,
+                        ),
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? AppColors.primary.withValues(alpha: 0.12)
+                            : (isDark
+                                ? Colors.white.withValues(alpha: 0.06)
+                                : Colors.grey.shade100),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Icon(p.$3,
+                          size: 17,
+                          color: selected
+                              ? AppColors.primary
+                              : context.onSurfaceMuted),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      p.$2,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            selected ? AppColors.primary : context.onSurfaceColor,
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+          );
+        }),
+        // Card detail fields
+        if (!isCod) ...[
+          const SizedBox(height: 4),
+          AppTextField(
+            label: 'Card Number',
+            controller: cardNumberCtrl,
+            keyboardType: TextInputType.number,
+            prefixIcon: Icons.credit_card_outlined,
+          ),
+          const SizedBox(height: 10),
+          AppTextField(
+            label: 'Cardholder Name',
+            controller: cardHolderCtrl,
+            prefixIcon: Icons.person_outline,
+            keyboardType: TextInputType.name,
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(
+                child: _ExpiryPickerField(
+              label: 'Expiry Month',
+              value: expiryMonth,
+              items: months,
+              onChanged: onMonthChanged,
+            )),
+            const SizedBox(width: 10),
+            Expanded(
+                child: _ExpiryPickerField(
+              label: 'Expiry Year',
+              value: expiryYear,
+              items: years,
+              onChanged: onYearChanged,
+            )),
+          ]),
+        ],
+      ],
+    );
   }
 }
 
-class _DropdownField extends StatelessWidget {
+class _ExpiryPickerField extends StatelessWidget {
   final String label;
   final String value;
   final List<String> items;
   final ValueChanged<String> onChanged;
-  const _DropdownField({
+  const _ExpiryPickerField({
     required this.label,
     required this.value,
     required this.items,
     required this.onChanged,
   });
 
+  void _showPicker(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final initialIndex = items.indexOf(value).clamp(0, items.length - 1);
+    final controller = FixedExtentScrollController(initialItem: initialIndex);
+    final sheetBg = isDark ? const Color(0xFF1C1C2E) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF111827);
+    final mutedColor = isDark
+        ? Colors.white.withValues(alpha: 0.28)
+        : Colors.black.withValues(alpha: 0.3);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          int tempIndex = controller.hasClients
+              ? controller.selectedItem
+              : initialIndex;
+          return Container(
+            decoration: BoxDecoration(
+              color: sheetBg,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle
+                Container(
+                  margin: const EdgeInsets.only(top: 10),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: mutedColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 8, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(sheetCtx).pop(),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: mutedColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          onChanged(
+                              items[controller.hasClients
+                                  ? controller.selectedItem
+                                  : initialIndex]);
+                          Navigator.of(sheetCtx).pop();
+                        },
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Wheel with highlight band
+                SizedBox(
+                  height: 240,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Selection highlight band
+                      Positioned(
+                        top: (240 - 52) / 2,
+                        left: 24,
+                        right: 24,
+                        child: Container(
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color:
+                                AppColors.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.2),
+                            ),
+                          ),
+                        ),
+                      ),
+                      ListWheelScrollView.useDelegate(
+                        controller: controller,
+                        itemExtent: 52,
+                        perspective: 0.002,
+                        diameterRatio: 2.2,
+                        physics: const FixedExtentScrollPhysics(),
+                        onSelectedItemChanged: (i) {
+                          setModalState(() => tempIndex = i);
+                        },
+                        childDelegate: ListWheelChildBuilderDelegate(
+                          childCount: items.length,
+                          builder: (_, i) {
+                            final isSelected = i == tempIndex;
+                            return Center(
+                              child: Text(
+                                items[i],
+                                style: TextStyle(
+                                  fontSize: isSelected ? 22 : 16,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : mutedColor,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                    height: MediaQuery.of(ctx).padding.bottom + 16),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label,
-          style: TextStyle(
-              fontSize: 12, color: context.onSurfaceColor.withAlpha(160))),
-      const SizedBox(height: 4),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: context.onSurfaceColor.withAlpha(60)),
-        ),
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          underline: const SizedBox.shrink(),
-          dropdownColor: context.surfaceColor,
-          style: TextStyle(fontSize: 13, color: context.onSurfaceColor),
-          items: items
-              .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-              .toList(),
-          onChanged: (v) => onChanged(v!),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showPicker(context),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.04)
+                : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.grey.shade200,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: context.onSurfaceMuted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: context.onSurfaceColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.expand_more_rounded,
+                  size: 20, color: context.onSurfaceMuted),
+            ],
+          ),
         ),
       ),
-    ]);
+    );
   }
 }
 
@@ -1372,13 +1765,28 @@ class _TotalBreakdown extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Order Summary',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: context.onSurfaceColor,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.receipt_long_rounded,
+                    size: 15, color: AppColors.primary),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Order Summary',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: context.onSurfaceColor,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppSizes.sm),
           _summaryRow('Merchandise Subtotal',

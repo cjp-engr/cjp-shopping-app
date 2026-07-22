@@ -16,6 +16,8 @@ class AppStrings {
   static const String noAccount = "Don't have an account? Sign up";
   static const String hasAccount = 'Already have an account? Sign in';
   static const String logout = 'Sign Out';
+  static const String welcomeBack = 'Welcome Back';
+  static const String signInToAccount = 'Sign in to your TokoMart account';
 
   // Products
   static const String products = 'Products';
@@ -41,6 +43,8 @@ class AppStrings {
   static const String orders = 'My Orders';
   static const String noOrders = 'No orders yet';
   static const String orderPlaced = 'Order Placed Successfully!';
+  static const String trackOrder = 'Track Order';
+  static const String orderReceived = 'Order Received';
 
   // Profile
   static const String profile = 'Profile';

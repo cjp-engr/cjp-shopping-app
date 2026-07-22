@@ -380,9 +380,14 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
           borderRadius: BorderRadius.circular(AppSizes.radiusLg),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(8),
-              blurRadius: 12,
-              offset: const Offset(0, 2),
+              color: Colors.black.withAlpha(18),
+              blurRadius: 16,
+              offset: const Offset(0, 3),
+            ),
+            BoxShadow(
+              color: Colors.black.withAlpha(6),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
             ),
           ],
         ),
@@ -392,7 +397,7 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
             // ── Seller + status header ──────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.sm),
+                  AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.sm),
               child: Row(
                 children: [
                   SellerAvatar(name: sellerName, size: 20),
@@ -407,12 +412,21 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                       ),
                     ),
                   ),
-                  Text(
-                    statusLabel,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: statusColor,
+                  // Status pill badge
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withAlpha(24),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: statusColor,
+                      ),
                     ),
                   ),
                 ],
@@ -435,9 +449,9 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                               ? const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                     Icon(Icons.check_circle_rounded,
+                                    Icon(Icons.check_circle_rounded,
                                         size: 14, color: AppColors.success),
-                                     SizedBox(width: 4),
+                                    SizedBox(width: 4),
                                     Text('Reviewed',
                                         style: TextStyle(
                                             fontSize: 12,
@@ -489,24 +503,35 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
             // ── Store total ─────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.md, vertical: 10),
+                  horizontal: AppSizes.md, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Total $itemCount item${itemCount != 1 ? 's' : ''}',
+                    '$itemCount item${itemCount != 1 ? 's' : ''}',
                     style: TextStyle(
                       fontSize: 13,
                       color: context.onSurfaceSecondary,
                     ),
                   ),
-                  Text(
-                    '\$${groupTotal.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: context.onSurfaceColor,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        'Total  ',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: context.onSurfaceSecondary,
+                        ),
+                      ),
+                      Text(
+                        '\$${groupTotal.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: context.onSurfaceColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -516,7 +541,7 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
             if (isCancelled)
               Container(
                 margin: const EdgeInsets.fromLTRB(
-                    AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+                    AppSizes.md, 0, AppSizes.md, AppSizes.md),
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSizes.md, vertical: 10),
                 decoration: BoxDecoration(
@@ -545,14 +570,12 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
             else if (deliveryStr.isNotEmpty) ...[
               Container(
                 margin: const EdgeInsets.fromLTRB(
-                    AppSizes.md, 0, AppSizes.md, AppSizes.xs),
+                    AppSizes.md, 0, AppSizes.md, AppSizes.sm),
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSizes.md, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppColors.success.withAlpha(18),
                   borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  border: Border.all(
-                      color: AppColors.success.withAlpha(50), width: 0.5),
                 ),
                 child: Row(
                   children: [
@@ -569,61 +592,55 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                         ),
                       ),
                     ),
-                    const Icon(Icons.chevron_right,
-                        size: 16, color: AppColors.success),
                   ],
                 ),
               ),
-              // Action buttons
+              // Action buttons — full-width row
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                    AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+                    AppSizes.md, AppSizes.xs, AppSizes.md, AppSizes.md),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    OutlinedButton(
-                      onPressed: () => context.push(
-                          '/orders/${order.id}?seller=${Uri.encodeComponent(sellerKey)}'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppSizes.radiusFull),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.push(
+                            '/orders/${order.id}?seller=${Uri.encodeComponent(sellerKey)}'),
+                        icon:
+                            const Icon(Icons.local_shipping_outlined, size: 16),
+                        label: const Text(AppStrings.trackOrder),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusSm),
+                          ),
+                          textStyle: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600),
                         ),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text(
-                        'Track Order',
-                        style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                     ),
                     if (order.status == 'shipped') ...[
                       const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        onPressed: () =>
-                            _showConfirmReceivedDialog(context, order),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.success,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppSizes.radiusFull),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () =>
+                              _showConfirmReceivedDialog(context, order),
+                          icon: const Icon(Icons.check_circle_outline_rounded,
+                              size: 16),
+                          label: const Text(AppStrings.orderReceived),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppSizes.radiusSm),
+                            ),
+                            textStyle: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600),
                           ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        icon: const Icon(Icons.check_circle_outline, size: 15),
-                        label: const Text(
-                          'Order Received',
-                          style: TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
@@ -658,15 +675,15 @@ class _OrderItemRow extends StatelessWidget {
             child: item.productImage.isNotEmpty
                 ? Image.network(
                     item.productImage,
-                    width: 72,
-                    height: 72,
+                    width: 80,
+                    height: 80,
                     fit: BoxFit.cover,
                     loadingBuilder: (_, child, p) =>
-                        p == null ? child : const ImagePlaceholder(size: 72),
+                        p == null ? child : const ImagePlaceholder(size: 80),
                     errorBuilder: (_, __, ___) =>
-                        const ImagePlaceholder(size: 72),
+                        const ImagePlaceholder(size: 80),
                   )
-                : const ImagePlaceholder(size: 72),
+                : const ImagePlaceholder(size: 80),
           ),
           const SizedBox(width: AppSizes.sm),
           Expanded(

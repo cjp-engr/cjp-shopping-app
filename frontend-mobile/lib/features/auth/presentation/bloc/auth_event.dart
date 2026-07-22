@@ -51,3 +51,24 @@ final class AuthAvatarUploadRequested extends AuthEvent {
   @override
   List<Object?> get props => [filePath];
 }
+
+final class AuthAddressAddRequested extends AuthEvent {
+  final Map<String, dynamic> data;
+  AuthAddressAddRequested(this.data);
+  @override
+  List<Object?> get props => [data];
+}
+
+final class AuthAddressDeleteRequested extends AuthEvent {
+  final String addressId;
+  AuthAddressDeleteRequested(this.addressId);
+  @override
+  List<Object?> get props => [addressId];
+}
+
+final class AuthAddressSetDefaultRequested extends AuthEvent {
+  final String addressId;
+  AuthAddressSetDefaultRequested(this.addressId);
+  @override
+  List<Object?> get props => [addressId];
+}

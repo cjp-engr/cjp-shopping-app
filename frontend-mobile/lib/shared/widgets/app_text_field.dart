@@ -9,6 +9,7 @@ class AppTextField extends StatefulWidget {
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
   final IconData? prefixIcon;
+  final String? prefix;
   final Widget? suffixWidget;
   final bool readOnly;
   final int? maxLines;
@@ -26,6 +27,7 @@ class AppTextField extends StatefulWidget {
     this.validator,
     this.onChanged,
     this.prefixIcon,
+    this.prefix,
     this.suffixWidget,
     this.readOnly = false,
     this.maxLines = 1,
@@ -60,13 +62,19 @@ class _AppTextFieldState extends State<AppTextField> {
       readOnly: widget.readOnly,
       maxLines: widget.maxLines,
       maxLength: widget.maxLength,
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hint,
         prefixIcon: widget.prefixIcon != null ? Icon(widget.prefixIcon) : null,
+        prefixText: widget.prefix,
         suffixIcon: widget.obscure
             ? IconButton(
-                icon: Icon(_obscured ? Icons.visibility_off : Icons.visibility),
+                icon: Icon(
+                  _obscured
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                ),
                 onPressed: () => setState(() => _obscured = !_obscured),
               )
             : widget.suffixWidget,

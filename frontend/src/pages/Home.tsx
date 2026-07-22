@@ -7,6 +7,7 @@ import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { Spinner } from '../components/common/Spinner';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
 import { ShoppingCart, Star, Zap, ShieldCheck, BadgePercent, ArrowRight } from 'lucide-react';
 
@@ -15,6 +16,7 @@ export const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { user } = useAuth();
 
   useEffect(() => {
     const loadFeaturedProducts = async () => {
@@ -124,7 +126,7 @@ export const Home: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {featuredProducts.map((product) => (
+            {featuredProducts.filter(p => p.sellerId !== user?.id).map((product) => (
               <Card
                 key={product.id}
                 hover
@@ -169,10 +171,14 @@ export const Home: React.FC = () => {
                       e.stopPropagation();
                       addToCart(product, 1);
                     }}
-                    disabled={product.stock === 0}
+                    disabled={product.stock === 0 || product.sellerId === user?.id}
                   >
                     <ShoppingCart className="w-4 h-4 mr-1.5" />
-                    {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                    {product.stock === 0
+                      ? 'Out of Stock'
+                      : product.sellerId === user?.id
+                      ? 'Your Product'
+                      : 'Add to Cart'}
                   </Button>
                 </div>
               </Card>

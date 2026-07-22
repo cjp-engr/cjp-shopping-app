@@ -77,4 +77,34 @@ class AuthRemoteDataSource {
       throw mapDioError(e);
     }
   }
+
+  Future<List<SavedAddressModel>> addSavedAddress(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/auth/saved-addresses', data: data);
+      final raw = response.data['savedAddresses'] as List;
+      return raw.map((a) => SavedAddressModel.fromJson(a as Map<String, dynamic>)).toList();
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  Future<List<SavedAddressModel>> deleteSavedAddress(String id) async {
+    try {
+      final response = await _dio.delete('/auth/saved-addresses/$id');
+      final raw = response.data['savedAddresses'] as List;
+      return raw.map((a) => SavedAddressModel.fromJson(a as Map<String, dynamic>)).toList();
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  Future<List<SavedAddressModel>> setDefaultAddress(String id) async {
+    try {
+      final response = await _dio.put('/auth/saved-addresses/$id/default');
+      final raw = response.data['savedAddresses'] as List;
+      return raw.map((a) => SavedAddressModel.fromJson(a as Map<String, dynamic>)).toList();
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
 }

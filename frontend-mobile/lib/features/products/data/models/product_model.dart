@@ -12,6 +12,7 @@ class ProductModel extends ProductEntity {
     required super.stock,
     required super.rating,
     required super.reviews,
+    super.soldCount,
     super.tags,
     super.specifications,
     required super.createdAt,
@@ -45,6 +46,7 @@ class ProductModel extends ProductEntity {
       stock: (json['stock'] as num?)?.toInt() ?? 0,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       reviews: (json['reviews'] as num?)?.toInt() ?? 0,
+      soldCount: (json['soldCount'] as num?)?.toInt() ?? 0,
       tags: (json['tags'] as List?)?.map((e) => e.toString()).toList() ?? [],
       specifications: json['specifications'] != null
           ? Map<String, String>.from(json['specifications'] as Map)

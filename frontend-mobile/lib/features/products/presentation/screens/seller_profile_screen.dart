@@ -5,8 +5,6 @@ import '../bloc/product_bloc.dart';
 import '../bloc/product_event.dart';
 import '../bloc/product_state.dart';
 import '../widgets/product_card.dart';
-import '../../../cart/presentation/bloc/cart_bloc.dart';
-import '../../../cart/presentation/bloc/cart_event.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/theme_colors.dart';
@@ -141,23 +139,8 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                           return ProductCard(
                             key: ValueKey(product.id),
                             product: product,
-                            onTap: () => context.push('/products/${product.id}'),
-                            onAddToCart: product.inStock
-                                ? () {
-                                    context.read<CartBloc>().add(
-                                        CartItemAdded(product: product, quantity: 1));
-                                    final router = GoRouter.of(context);
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(
-                                      content: Text('Added: ${product.name}'),
-                                      duration: const Duration(seconds: 2),
-                                      action: SnackBarAction(
-                                        label: 'View Cart',
-                                        onPressed: () => router.push('/cart'),
-                                      ),
-                                    ));
-                                  }
-                                : null,
+                            onTap: () =>
+                                context.push('/products/${product.id}'),
                           );
                         },
                         childCount: products.length,
@@ -228,8 +211,7 @@ class _SellerHeader extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Member since $joinYear',
-              style: TextStyle(
-                  fontSize: 13, color: context.onSurfaceSecondary),
+              style: TextStyle(fontSize: 13, color: context.onSurfaceSecondary),
             ),
           ],
           const SizedBox(height: AppSizes.md),

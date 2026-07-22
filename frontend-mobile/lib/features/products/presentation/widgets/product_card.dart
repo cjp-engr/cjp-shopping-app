@@ -11,13 +11,11 @@ import '../../../wishlist/presentation/bloc/wishlist_state.dart';
 class ProductCard extends StatelessWidget {
   final ProductEntity product;
   final VoidCallback onTap;
-  final VoidCallback? onAddToCart;
 
   const ProductCard({
     super.key,
     required this.product,
     required this.onTap,
-    this.onAddToCart,
   });
 
   double get _originalPrice => product.price * 1.4;
@@ -176,16 +174,17 @@ class ProductCard extends StatelessWidget {
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               '\$${product.price.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                fontSize: 14,
+                              style: const TextStyle(
+                                fontSize: 15,
                                 fontWeight: FontWeight.w800,
-                                color: onSurface,
+                                color: AppColors.primary,
                               ),
                             ),
                             Text(
@@ -199,29 +198,23 @@ class ProductCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        if (onAddToCart != null && product.inStock)
-                          GestureDetector(
-                            onTap: onAddToCart,
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: AppColors.darkButton,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withAlpha(25),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  )
-                                ],
-                              ),
-                              child: const Icon(
-                                  Icons.add_shopping_cart_rounded,
-                                  color: Colors.white,
-                                  size: 14),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withAlpha(14),
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusFull),
+                          ),
+                          child: Text(
+                            '${product.soldCount} sold',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
                             ),
                           ),
+                        ),
                       ],
                     ),
                   ],

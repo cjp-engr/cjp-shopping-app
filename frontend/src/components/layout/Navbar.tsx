@@ -1,6 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ShoppingCart, User, LogOut, Package, Store, Menu, X, ChevronDown, Sun, Moon } from 'lucide-react';
+
+const AppIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+    <rect width="64" height="64" rx="14" fill="#3B3BF9"/>
+    <path d="M20 26h24l-3 18H23L20 26z" fill="white" opacity="0.95"/>
+    <path d="M27 26c0-2.76 2.24-5 5-5s5 2.24 5 5" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+    <rect x="25" y="30" width="14" height="10" rx="2" fill="#3B3BF9" opacity="0.5"/>
+    <circle cx="46" cy="18" r="7" fill="#F97316"/>
+  </svg>
+);
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -36,9 +46,9 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 text-2xl font-extrabold text-primary-600 hover:text-primary-700 transition-colors tracking-tight">
-            <ShoppingCart className="w-6 h-6" />
-            TokoMart
+          <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+            <AppIcon />
+            <span className="text-2xl font-extrabold text-primary-600 tracking-tight">TokoMart</span>
           </Link>
 
           {/* Desktop Nav Links */}
@@ -63,6 +73,18 @@ const Navbar = () => {
             >
               Products
             </Link>
+            {user?.role === 'seller' && (
+              <Link
+                to="/my-products"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/my-products')
+                    ? 'bg-primary-50 dark:bg-gray-700 text-primary-700 dark:text-primary-400'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-800'
+                }`}
+              >
+                My Products
+              </Link>
+            )}
           </div>
 
           {/* Right Side */}
@@ -196,6 +218,18 @@ const Navbar = () => {
           >
             Products
           </Link>
+          {user?.role === 'seller' && (
+            <Link
+              to="/my-products"
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/my-products')
+                  ? 'bg-primary-50 dark:bg-gray-700 text-primary-700 dark:text-primary-400'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+            >
+              My Products
+            </Link>
+          )}
           {isAuthenticated && (
             <>
               <Link to="/profile" className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">

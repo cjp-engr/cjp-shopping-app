@@ -2,7 +2,7 @@ import type { Product, ProductFilters, SortOption } from '../types/product';
 import { API_ENDPOINTS, getHeaders } from '../config/api';
 
 class ProductService {
-  async getProducts(filters?: ProductFilters, sortBy?: SortOption): Promise<Product[]> {
+  async getProducts(filters?: ProductFilters, sortBy?: SortOption, minReviews?: number): Promise<Product[]> {
     const params = new URLSearchParams();
 
     if (filters?.category && filters.category !== 'All') {
@@ -24,6 +24,10 @@ class ProductService {
 
     if (sortBy) {
       params.append('sort', sortBy);
+    }
+
+    if (minReviews !== undefined) {
+      params.append('minReviews', minReviews.toString());
     }
 
     params.append('limit', '100');
@@ -114,7 +118,9 @@ class ProductService {
   }
 
   async getFeaturedProductsAsync(count: number = 8): Promise<Product[]> {
-    const products = await this.getProducts(undefined, 'rating');
+    // minReviews=1 is enforced server-side so sellers cannot game the
+    // Featured section by listing new products with zero reviews.
+    const products = await this.getProducts(undefined, 'rating', 1);
     return products.slice(0, count);
   }
 

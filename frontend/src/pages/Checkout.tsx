@@ -7,7 +7,7 @@ import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { formatCurrency } from '../utils/formatters';
 import type { CheckoutData, PaymentMethod } from '../types/order';
-import type { SavedCard } from '../types/user';
+import type { SavedCard, SavedAddress } from '../types/user';
 import orderService from '../services/orderService';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import {
@@ -25,7 +25,6 @@ import {
   Trash2,
 } from 'lucide-react';
 
-type AddressMode = 'saved' | 'new';
 type PaymentMode = 'saved' | 'new';
 
 export const Checkout: React.FC = () => {
@@ -38,47 +37,21 @@ export const Checkout: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const orderPlaced = useRef(false);
 
-  const hasSavedAddress = !!(
-    user?.address?.street && user?.address?.city
+  const savedAddresses: SavedAddress[] = user?.savedAddresses ?? [];
+  const defaultAddr = savedAddresses.find(a => a.isDefault) ?? savedAddresses[0];
+  const [selectedAddressId, setSelectedAddressId] = useState<string>(
+    defaultAddr?._id ?? 'new'
   );
-  const [addressMode, setAddressMode] = useState<AddressMode>(
-    hasSavedAddress ? 'saved' : 'new'
-  );
-
-  const savedAddressFields = {
-    street: user?.address?.street || '',
-    city: user?.address?.city || '',
-    state: user?.address?.state || '',
-    zipCode: user?.address?.zipCode || '',
-    country: user?.address?.country || 'United States',
-  };
 
   const [shippingData, setShippingData] = useState({
-    street: user?.address?.street || '',
-    city: user?.address?.city || '',
-    state: user?.address?.state || '',
-    zipCode: user?.address?.zipCode || '',
-    country: user?.address?.country || 'United States',
+    street: defaultAddr?.street || '',
+    city: defaultAddr?.city || '',
+    state: defaultAddr?.state || '',
+    zipCode: defaultAddr?.zipCode || '',
+    country: defaultAddr?.country || '',
     email: user?.email || '',
     phone: user?.phone || '',
   });
-
-  const handleAddressModeChange = (mode: AddressMode) => {
-    setAddressMode(mode);
-    if (mode === 'saved') {
-      setShippingData(prev => ({ ...prev, ...savedAddressFields }));
-    } else {
-      setShippingData(prev => ({
-        ...prev,
-        street: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: 'United States',
-      }));
-    }
-    setShippingErrors({});
-  };
 
   const [paymentData, setPaymentData] = useState({
     type: 'credit-card' as PaymentMethod['type'],
@@ -144,12 +117,11 @@ export const Checkout: React.FC = () => {
     const errors: Record<string, string> = {};
 
     // Only validate address fields when entering a new address
-    if (addressMode === 'new') {
+    if (selectedAddressId === 'new') {
       if (!shippingData.street.trim()) errors.street = 'Street address is required';
       if (!shippingData.city.trim()) errors.city = 'City is required';
       if (!shippingData.state.trim()) errors.state = 'State is required';
       if (!shippingData.zipCode.trim()) errors.zipCode = 'ZIP code is required';
-      if (!shippingData.country.trim()) errors.country = 'Country is required';
     }
 
     if (!shippingData.email.trim()) {
@@ -266,7 +238,7 @@ export const Checkout: React.FC = () => {
           city: shippingData.city,
           state: shippingData.state,
           zipCode: shippingData.zipCode,
-          country: shippingData.country,
+          country: shippingData.country || 'PH',
         },
         paymentMethod: {
           type: paymentData.type,
@@ -376,82 +348,53 @@ export const Checkout: React.FC = () => {
               </h2>
 
               <form onSubmit={handleShippingSubmit} className="space-y-4">
-                {/* ── Address mode selector ─────────────────────────────── */}
-                {hasSavedAddress && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
-                    {/* Saved address card */}
-                    <button
-                      type="button"
-                      onClick={() => handleAddressModeChange('saved')}
-                      className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-                        addressMode === 'saved'
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30'
-                          : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700/50 hover:border-gray-300 dark:hover:border-gray-500'
-                      }`}
+                {/* ── Address selector ── */}
+                <div className="space-y-2 mb-2">
+                  {savedAddresses.map(addr => (
+                    <button key={addr._id} type="button"
+                      onClick={() => {
+                        setSelectedAddressId(addr._id);
+                        setShippingData(prev => ({ ...prev, street: addr.street, city: addr.city, state: addr.state, zipCode: addr.zipCode, country: addr.country }));
+                        setShippingErrors({});
+                      }}
+                      className={`w-full flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${selectedAddressId === addr._id ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'}`}
                     >
-                      <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                        addressMode === 'saved' ? 'border-primary-500' : 'border-gray-400 dark:border-gray-500'
-                      }`}>
-                        {addressMode === 'saved' && (
-                          <div className="w-2 h-2 rounded-full bg-primary-500" />
-                        )}
+                      <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedAddressId === addr._id ? 'border-primary-500' : 'border-gray-400'}`}>
+                        {selectedAddressId === addr._id && <div className="w-2 h-2 rounded-full bg-primary-500" />}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 mb-1">
                           <Home className="w-4 h-4 text-primary-600 flex-shrink-0" />
-                          <span className={`text-sm font-semibold ${
-                            addressMode === 'saved' ? 'text-primary-700 dark:text-primary-300' : 'text-gray-800 dark:text-gray-200'
-                          }`}>
-                            Saved Address
-                          </span>
+                          <span className="text-sm font-semibold">{addr.label}{addr.isDefault && <span className="ml-2 text-xs font-normal text-primary-500">Default</span>}</span>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed truncate">
-                          {[
-                            user?.address?.street,
-                            user?.address?.city,
-                            user?.address?.state,
-                            user?.address?.zipCode,
-                          ]
-                            .filter(Boolean)
-                            .join(', ')}
-                        </p>
+                        <p className="text-xs text-gray-500 truncate">{[addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean).join(', ')}</p>
                       </div>
                     </button>
-
-                    {/* New address card */}
-                    <button
-                      type="button"
-                      onClick={() => handleAddressModeChange('new')}
-                      className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-                        addressMode === 'new'
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30'
-                          : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700/50 hover:border-gray-300 dark:hover:border-gray-500'
-                      }`}
-                    >
-                      <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                        addressMode === 'new' ? 'border-primary-500' : 'border-gray-400 dark:border-gray-500'
-                      }`}>
-                        {addressMode === 'new' && (
-                          <div className="w-2 h-2 rounded-full bg-primary-500" />
-                        )}
+                  ))}
+                  {/* New address option */}
+                  <button type="button"
+                    onClick={() => {
+                      setSelectedAddressId('new');
+                      setShippingData(prev => ({ ...prev, street: '', city: '', state: '', zipCode: '', country: '' }));
+                      setShippingErrors({});
+                    }}
+                    className={`w-full flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${selectedAddressId === 'new' ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'}`}
+                  >
+                    <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedAddressId === 'new' ? 'border-primary-500' : 'border-gray-400'}`}>
+                      {selectedAddressId === 'new' && <div className="w-2 h-2 rounded-full bg-primary-500" />}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <PlusCircle className="w-4 h-4 text-primary-600 flex-shrink-0" />
+                        <span className="text-sm font-semibold">New Address</span>
                       </div>
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <PlusCircle className="w-4 h-4 text-primary-600 flex-shrink-0" />
-                          <span className={`text-sm font-semibold ${
-                            addressMode === 'new' ? 'text-primary-700 dark:text-primary-300' : 'text-gray-800 dark:text-gray-200'
-                          }`}>
-                            New Address
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Enter a different delivery address</p>
-                      </div>
-                    </button>
-                  </div>
-                )}
+                      <p className="text-xs text-gray-500">Enter a different delivery address</p>
+                    </div>
+                  </button>
+                </div>
 
-                {/* ── Address fields (hidden when saved address is selected) ── */}
-                {addressMode === 'new' && (
+                {/* ── Address fields (only when 'new') ── */}
+                {selectedAddressId === 'new' && (
                   <>
                     <Input
                       label="Street Address"
@@ -495,16 +438,6 @@ export const Checkout: React.FC = () => {
                         onChange={handleShippingChange}
                         error={shippingErrors.zipCode}
                         placeholder="10001"
-                        fullWidth
-                        required
-                      />
-                      <Input
-                        label="Country"
-                        name="country"
-                        value={shippingData.country}
-                        onChange={handleShippingChange}
-                        error={shippingErrors.country}
-                        placeholder="United States"
                         fullWidth
                         required
                       />
@@ -660,9 +593,11 @@ export const Checkout: React.FC = () => {
                     <option value="credit-card">Credit Card</option>
                     <option value="debit-card">Debit Card</option>
                     <option value="paypal">PayPal</option>
+                    <option value="cash-on-delivery">Cash on Delivery</option>
                   </select>
                 </div>
 
+                {paymentData.type !== 'cash-on-delivery' && (<>
                 <Input
                   label="Card Number"
                   name="cardNumber"
@@ -748,14 +683,19 @@ export const Checkout: React.FC = () => {
                   />
                 </div>
 
+                </>)}
+
+                {paymentData.type !== 'cash-on-delivery' && (
                 <div className="flex items-center gap-2 p-4 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
                   <Lock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                   <p className="text-sm text-gray-700 dark:text-gray-300">
                     Your payment information is secure and encrypted
                   </p>
                 </div>
+                )}
 
                 {/* Save card checkbox */}
+                {paymentData.type !== 'cash-on-delivery' && (
                 <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300 mt-2">
                   <input
                     type="checkbox"
@@ -765,6 +705,7 @@ export const Checkout: React.FC = () => {
                   />
                   Save this card for future purchases
                 </label>
+                )}
 
                 <div className="flex justify-between pt-4">
                   <Button
