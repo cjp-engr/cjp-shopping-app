@@ -9,6 +9,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../../../test_keys.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -126,6 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Column(
                           children: [
                             AppTextField(
+                              key: AppKeys.loginEmailField,
                               label: AppStrings.email,
                               controller: _emailCtrl,
                               keyboardType: TextInputType.emailAddress,
@@ -142,6 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: AppSizes.md),
                             AppTextField(
+                              key: AppKeys.loginPasswordField,
                               label: AppStrings.password,
                               controller: _passwordCtrl,
                               obscure: true,
@@ -161,6 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               buildWhen: (p, c) => p.status != c.status,
                               builder: (context, state) {
                                 return AppButton(
+                                  key: AppKeys.loginButton,
                                   label: AppStrings.login,
                                   loading: state.status == AuthStatus.loading,
                                   onPressed: _submit,

@@ -1,0 +1,4 @@
+app_name: TokoMart
+app_id: com.example.TokoMart
+android:
+  package_name: com.example.TokoMart

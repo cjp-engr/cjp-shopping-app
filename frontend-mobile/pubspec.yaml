@@ -38,8 +38,19 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   bloc_test: ^9.1.7
   mocktail: ^1.0.4
+  patrol: ^4.7.1
+  patrol_mcp: ^0.1.4
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
+
+patrol:
+  app_name: TokoMart
+  android:
+    package_name: com.example.TokoMart
+  ios:
+    bundle_id: com.example.TokoMart
+  macos:
+    bundle_id: com.example.macos.TokoMart

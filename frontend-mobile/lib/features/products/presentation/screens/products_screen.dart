@@ -10,6 +10,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../test_keys.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -56,6 +57,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: AppKeys.homeScreen,
       body: SafeArea(
         child: Column(
           children: [
@@ -191,6 +193,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 border: Border.all(color: border),
               ),
               child: TextField(
+                key: AppKeys.homeSearchField,
                 controller: _searchCtrl,
                 style: TextStyle(color: onSurface),
                 keyboardType: TextInputType.text,
