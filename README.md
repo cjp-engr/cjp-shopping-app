@@ -1,393 +1,307 @@
 # TokoMart - Full-Stack E-Commerce Application
 
-A full-featured e-commerce shopping application with React frontend and Node.js backend, built with TypeScript, Tailwind CSS, Express, and MongoDB.
+A full-featured multi-seller e-commerce application with a React web frontend, Flutter mobile app, and Node.js/MongoDB backend, built with TypeScript, Tailwind CSS, Express, and Dart.
 
 ## Features
 
-### Core Functionality
-- **Product Browsing**: Browse 40+ products across 5 categories (Electronics, Clothing, Home & Garden, Books, Sports & Outdoors)
-- **Search & Filters**: Real-time product search with category, price range, and rating filters
-- **Shopping Cart**: Add/remove items, update quantities, persistent cart storage
-- **User Authentication**: Login/signup with mock JWT authentication
-- **Checkout Process**: Multi-step checkout flow with shipping and payment information
-- **Order History**: View past orders with detailed information
-- **User Profile**: Edit personal information and view order statistics
+### Shopping
+- **Product Browsing**: Browse products across multiple categories with real-time search, category, price range, and rating filters
+- **Multi-Seller Support**: Products are grouped by seller; each seller has an independent shipping and tax calculation
+- **Shopping Cart**: Add/remove items, update quantities — cart persists to MongoDB and is restored on re-login
+- **Per-Seller Order Computation**: Each seller's subtotal, shipping ($9.99 or free over $50), and tax (8%) are shown separately
+- **Checkout Flow**: Multi-step checkout (shipping → payment → review) with saved addresses and saved cards
+- **Order History**: View past orders with status tracking and per-item detail
+- **Product Reviews**: Leave a star rating and written review after receiving an order
 
-### Technical Features
-- **TypeScript**: Fully typed codebase for type safety
-- **React Context API**: Global state management for auth and cart
-- **React Router v6**: Client-side routing with protected routes
-- **Tailwind CSS**: Modern, responsive UI design
-- **LocalStorage Persistence**: Cart and user session persistence
-- **Mock Backend**: Simulated API calls with realistic delays
-- **Responsive Design**: Mobile-first approach, works on all screen sizes
+### Users & Accounts
+- **Authentication**: JWT-based login and signup (bcryptjs-hashed passwords)
+- **User Profile**: Edit personal info, upload avatar, manage saved addresses and payment cards
+- **Seller Dashboard**: Sellers can list, edit, and delete their own products
+
+### Technical
+- **Cart Persistence**: Cart is synced to MongoDB on every change and restored from the server on login — survives logout/re-login
+- **Cross-Account Isolation**: Cart is cleared locally on logout; each user loads only their own cart on login
+- **Dark Mode**: System-preference-aware theme with manual toggle
+- **Responsive Design**: Mobile-first layout that works on all screen sizes
+- **Flutter Mobile App**: Full-featured Android/iOS app with Patrol E2E tests
 
 ## Tech Stack
 
-### Frontend
-- **Framework**: React 18+ with TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS
-- **Routing**: React Router v6
-- **Icons**: Lucide React
-- **State Management**: React Context API
-- **Data Storage**: Browser LocalStorage (can be connected to backend API)
+### Web Frontend (`frontend/`)
+| Layer | Technology |
+|---|---|
+| Framework | React 18 + TypeScript |
+| Build | Vite |
+| Styling | Tailwind CSS |
+| Routing | React Router v6 |
+| State | React Context API |
+| Icons | Lucide React |
 
-### Backend
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Language**: TypeScript
-- **Database**: MongoDB with Mongoose ODM
-- **Authentication**: JWT (JSON Web Tokens)
-- **Security**: bcryptjs, Helmet, CORS
+### Mobile App (`frontend-mobile/`)
+| Layer | Technology |
+|---|---|
+| Framework | Flutter 3 + Dart |
+| State | Bloc / Cubit |
+| Navigation | GoRouter |
+| E2E Tests | Patrol |
+
+### Backend (`backend/`)
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js + TypeScript |
+| Framework | Express.js |
+| Database | MongoDB + Mongoose |
+| Auth | JWT + bcryptjs |
+| Security | Helmet, CORS |
 
 ## Project Structure
 
 ```
 shopping-app-automation/
-├── src/                     # Frontend source code
-│   ├── components/
-│   │   ├── common/          # Reusable UI components
-│   │   ├── layout/          # Layout components (Navbar, Layout)
-│   │   ├── auth/            # Authentication components
-│   ├── pages/               # Page components
-│   ├── context/             # React Context providers
-│   ├── hooks/               # Custom React hooks
-│   ├── services/            # Business logic and API simulation
-│   ├── types/               # TypeScript type definitions
-│   ├── data/                # Mock data (products, users)
-│   ├── utils/               # Utility functions
-│   ├── App.tsx             # Main app component
-│   ├── main.tsx            # App entry point
-│   └── index.css           # Global styles
-├── backend/                 # Backend API
+├── frontend/                   # React web app
 │   ├── src/
-│   │   ├── config/          # Configuration files
-│   │   ├── controllers/     # Route controllers
-│   │   ├── middleware/      # Express middleware
-│   │   ├── models/          # Mongoose models
-│   │   ├── routes/          # API routes
-│   │   ├── utils/           # Utility functions
-│   │   └── server.ts        # Express app setup
-│   ├── .env                 # Environment variables
+│   │   ├── components/
+│   │   │   ├── common/         # Button, Card, Input, Badge, Spinner
+│   │   │   └── layout/         # Navbar, Layout
+│   │   ├── pages/              # Cart, Checkout, Home, Login, Signup,
+│   │   │                       # Products, ProductDetails, OrderHistory,
+│   │   │                       # OrderDetail, Profile, SellerDashboard
+│   │   ├── context/            # AuthContext, CartContext, ThemeContext
+│   │   ├── services/           # authService, cartService, orderService,
+│   │   │                       # productService, sellerService, storageService
+│   │   ├── types/              # TypeScript interfaces (cart, product, order, user)
+│   │   ├── utils/              # constants, formatters
+│   │   └── config/             # API endpoint definitions
+│   ├── index.html
+│   ├── vite.config.ts
 │   └── package.json
-├── public/                  # Static assets
-├── BACKEND_INTEGRATION.md   # Backend integration guide
-├── package.json
-├── tsconfig.json
-├── tailwind.config.js
-└── vite.config.ts
+│
+├── frontend-mobile/            # Flutter mobile app
+│   ├── lib/
+│   │   ├── core/               # Theme, constants, routing
+│   │   └── features/
+│   │       ├── auth/           # Login, Signup screens + Bloc
+│   │       ├── products/       # Product list + detail screens
+│   │       ├── cart/           # Cart screen + Bloc
+│   │       ├── orders/         # Checkout + order history + Bloc
+│   │       ├── profile/        # Profile screen
+│   │       ├── seller/         # Seller dashboard
+│   │       └── wishlist/       # Wishlist feature
+│   ├── patrol_test/            # Patrol E2E tests
+│   └── pubspec.yaml
+│
+├── backend/                    # Express API
+│   ├── src/
+│   │   ├── config/             # Database connection
+│   │   ├── controllers/        # auth, cart, order, product, review, seller
+│   │   ├── middleware/         # JWT auth guard
+│   │   ├── models/             # User, Product, Order, Cart, Review
+│   │   ├── routes/             # Route definitions
+│   │   └── server.ts
+│   ├── .env
+│   └── package.json
+│
+└── README.md
 ```
 
 ## Getting Started
 
 ### Prerequisites
-
-- Node.js (v16 or higher)
+- Node.js v18+
 - npm or yarn
-- MongoDB (local installation or MongoDB Atlas account)
+- MongoDB (local or [MongoDB Atlas](https://www.mongodb.com/atlas))
+- Flutter SDK 3.x (mobile app only)
 
-### Frontend-Only Setup (Mock Data)
+### 1. Backend Setup
 
-1. Navigate to the project directory:
-```bash
-cd shopping-app-automation
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Start the development server:
-```bash
-npm run dev
-```
-
-4. Open your browser and navigate to:
-```
-http://localhost:5173
-```
-
-### Full-Stack Setup (with Backend API)
-
-1. **Install Frontend Dependencies**:
-```bash
-npm install
-```
-
-2. **Install Backend Dependencies**:
 ```bash
 cd backend
 npm install
 ```
 
-3. **Start MongoDB**:
-```bash
-# On macOS (with Homebrew)
-brew services start mongodb-community
-
-# On Windows (if installed as a service)
-net start MongoDB
-
-# On Linux
-sudo systemctl start mongod
-
-# Or use Docker
-docker run -d -p 27017:27017 --name mongodb mongo:latest
+Create `backend/.env`:
+```
+MONGODB_URI=mongodb://localhost:27017/tokomart
+JWT_SECRET=your_secret_key_here
+PORT=5000
 ```
 
-4. **Seed the Database**:
+Start MongoDB, then seed the database:
 ```bash
+# Start MongoDB (Windows service)
+net start MongoDB
+
+# Or with Docker
+docker run -d -p 27017:27017 --name mongodb mongo:latest
+
+# Seed products and a test user
 cd backend
 npm run seed
 ```
 
-This creates 40 products and a test user (test@example.com / password123)
-
-5. **Start the Backend Server**:
+Start the backend:
 ```bash
 cd backend
 npm run dev
 ```
 
-Backend runs at `http://localhost:5000`
+Backend runs at `http://localhost:5000`.
 
-6. **Start the Frontend** (in a new terminal):
+### 2. Web Frontend Setup
+
 ```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-Frontend runs at `http://localhost:5173`
+Frontend runs at `http://localhost:5173`.
 
-For detailed backend integration instructions, see [BACKEND_INTEGRATION.md](./BACKEND_INTEGRATION.md)
+### 3. Mobile App Setup
+
+```bash
+cd frontend-mobile
+flutter pub get
+flutter run
+```
+
+Run Patrol E2E tests:
+```bash
+cd frontend-mobile
+patrol test
+```
 
 ### Available Scripts
 
-#### Frontend
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
+#### Web Frontend
+```bash
+cd frontend
+npm run dev       # Start dev server
+npm run build     # Production build
+npm run preview   # Preview production build
+npm run lint      # ESLint
+```
 
 #### Backend
-- `cd backend && npm run dev` - Start backend in development mode
-- `cd backend && npm run build` - Build backend for production
-- `cd backend && npm start` - Start backend in production mode
-- `cd backend && npm run seed` - Seed database with initial data
+```bash
+cd backend
+npm run dev       # Start with hot-reload
+npm run build     # Compile TypeScript
+npm start         # Run compiled build
+npm run seed      # Seed database
+```
 
-## Usage
+#### Mobile
+```bash
+cd frontend-mobile
+flutter run           # Run on connected device/emulator
+flutter build apk     # Build Android APK
+patrol test           # Run E2E tests
+```
 
-### Test Credentials
+## Test Credentials
 
-**Pre-configured Test Account:**
-- Email: `test@example.com`
-- Password: `password123`
+| Field | Value |
+|---|---|
+| Email | `test@example.com` |
+| Password | `password123` |
 
-**Or create a new account:**
-- Click "Sign Up" and register with any email
-- All new accounts use the password `password123` for demo purposes
+Or register a new account via the Sign Up page.
 
-### User Flows
+## API Reference
 
-#### 1. Browse and Shop
-1. Visit the homepage to see featured products
-2. Navigate to "Products" to browse all items
-3. Use filters to narrow down products by category, price, or rating
-4. Click on a product to view detailed information
-5. Add items to your cart with the "Add to Cart" button
+All protected endpoints require `Authorization: Bearer <token>`.
 
-#### 2. Shopping Cart
-1. Click the cart icon in the navbar to view your cart
-2. Adjust quantities or remove items as needed
-3. See real-time price calculations including tax and shipping
-4. Orders over $50 qualify for free shipping
+### Auth
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/signup` | Register |
+| POST | `/api/auth/login` | Login |
+| GET | `/api/auth/me` | Current user |
+| PUT | `/api/auth/profile` | Update profile |
+| POST | `/api/auth/avatar` | Upload avatar |
+| GET | `/api/auth/payment-methods` | List saved cards |
+| POST | `/api/auth/payment-methods` | Save a card |
+| DELETE | `/api/auth/payment-methods/:id` | Delete a card |
 
-#### 3. Checkout
-1. Click "Proceed to Checkout" (requires login)
-2. Fill in shipping information
-3. Enter payment details (mock payment, any valid card format)
-4. Review your order
-5. Place order and view confirmation
+### Products
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/products` | List with filters (`search`, `category`, `sortBy`, `page`) |
+| GET | `/api/products/:id` | Single product |
+| GET | `/api/products/categories/all` | All categories |
 
-#### 4. Order Management
-1. View order history from your profile dropdown
-2. See order status, items, and tracking information
-3. Cancel pending orders if needed
+### Cart (Protected)
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/cart` | Get current user's cart |
+| PUT | `/api/cart` | Sync cart (`{ items: [{ productId, quantity }] }`) |
+| DELETE | `/api/cart` | Clear cart |
 
-## Features Deep Dive
+### Orders (Protected)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/orders` | Place order |
+| GET | `/api/orders` | Order history |
+| GET | `/api/orders/:id` | Order detail |
+| PUT | `/api/orders/:id/status` | Update status |
+| PUT | `/api/orders/:id/confirm-received` | Confirm delivery |
 
-### Product Management
-- **40 Products** across 5 categories
-- High-quality product images from Unsplash
-- Ratings and reviews
-- Stock availability tracking
-- Related products suggestions
+### Reviews (Protected)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/reviews` | Submit review |
+| GET | `/api/reviews/product/:productId` | Product reviews |
+| GET | `/api/reviews/check/:productId` | Check if reviewed |
 
-### Shopping Cart
-- Persistent cart (survives page refresh)
-- Real-time total calculations
-- Stock validation
-- Tax calculation (8%)
-- Shipping cost ($9.99, free over $50)
+### Seller (Protected — seller role)
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/seller/products` | Seller's products |
+| POST | `/api/seller/products` | Create product |
+| PUT | `/api/seller/products/:id` | Update product |
+| DELETE | `/api/seller/products/:id` | Delete product |
+| GET | `/api/seller/orders` | Seller's orders |
+| PUT | `/api/seller/orders/:id/status` | Update order status |
 
-### Authentication
-- Mock JWT token generation
-- Secure password validation
-- Auto-login from saved session
-- Protected routes for checkout and profile
-- Profile editing capabilities
+## Cart Behaviour
 
-### Responsive Design
-- Mobile-first approach
-- Breakpoints: sm (640px), md (768px), lg (1024px)
-- Touch-friendly buttons and controls
-- Optimized for all screen sizes
+- Items are synced to MongoDB 600 ms after any change (debounced)
+- On login, the user's cart is loaded from MongoDB — items added in a previous session are restored
+- On logout, only the local (in-memory + localStorage) cart is cleared; the server-side cart is preserved
+- Different users always see their own cart because the backend scopes carts by `userId`
 
-## Data Storage
+## Shipping & Tax Rules
 
-All data is stored in browser LocalStorage:
-
-- `shopping_app_auth_token` - Authentication token
-- `shopping_app_user_data` - User profile information
-- `shopping_app_cart_data` - Shopping cart items
-- `shopping_app_orders_{userId}` - User order history
-
-## Code Highlights
-
-### Type Safety
-Every component, service, and utility function is fully typed with TypeScript interfaces.
-
-### Reusable Components
-- **Button**: Multiple variants (primary, secondary, outline, danger)
-- **Input**: Form inputs with validation and error states
-- **Card**: Flexible container with hover effects
-- **Badge**: Status indicators and labels
-- **Spinner**: Loading indicators
-
-### Custom Hooks
-- `useAuth` - Authentication state and methods
-- `useCart` - Shopping cart management
-- `useProducts` - Product filtering and sorting
-- `useDebounce` - Debounced values for search
-- `useLocalStorage` - LocalStorage synchronization
-
-### Services
-- **authService**: User authentication and session management
-- **productService**: Product data and filtering
-- **orderService**: Order creation and history
-- **storageService**: LocalStorage abstraction
-
-## Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-
-## Performance
-
-- Lazy route loading
-- Optimized re-renders with React hooks
-- Debounced search input
-- Efficient filtering and sorting algorithms
-
-## Security Notes
-
-### Frontend-Only Mode (Mock Data)
-This is a **demo application** with mock authentication:
-- Passwords are not actually encrypted
-- JWT tokens are base64-encoded (not secure)
-- All data is stored client-side
-- **Do not use in production without proper backend**
-
-### Full-Stack Mode (with Backend)
-The backend includes proper security measures:
-- Passwords are hashed with bcryptjs
-- JWT tokens are properly signed and verified
-- CORS protection
-- Helmet security headers
-- Input validation with Mongoose schemas
-- Protected routes requiring authentication
-
-## Backend API Documentation
-
-The backend API provides the following endpoints:
-
-### Authentication Endpoints
-- `POST /api/auth/signup` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user (protected)
-- `PUT /api/auth/profile` - Update user profile (protected)
-
-### Product Endpoints
-- `GET /api/products` - Get all products with filters
-- `GET /api/products/:id` - Get single product
-- `POST /api/products` - Create product
-- `PUT /api/products/:id` - Update product
-- `DELETE /api/products/:id` - Delete product
-- `GET /api/products/categories/all` - Get all categories
-
-### Order Endpoints (Protected)
-- `POST /api/orders` - Create new order
-- `GET /api/orders` - Get user orders
-- `GET /api/orders/:id` - Get single order
-- `PUT /api/orders/:id/status` - Update order status
-
-For detailed API documentation, see [backend/README.md](./backend/README.md)
-
-## Future Enhancements
-
-Potential features for future development:
-- Product reviews and ratings system
-- Wishlist functionality
-- Product comparison
-- Dark mode theme
-- Social sharing
-- Discount codes and coupons
-- Multiple payment methods
-- Order tracking timeline
-- Email notifications
-- Advanced search with autocomplete
+- Shipping: **$9.99 per seller** whose items total less than $50; free otherwise
+- Tax: **8%** of the order subtotal, calculated per seller
+- Both are shown as a per-seller breakdown in the cart and checkout screens
 
 ## Troubleshooting
 
-### Port Already in Use
-If port 5173 is already in use:
+**Port already in use**
 ```bash
-npm run dev -- --port 3000
+cd frontend && npm run dev -- --port 3000
 ```
 
-### Build Errors
-Clear node_modules and reinstall:
-```bash
-rm -rf node_modules
-npm install
-```
+**MongoDB not connecting**
+- Check that `MONGODB_URI` in `backend/.env` is correct
+- Confirm MongoDB is running: `mongosh --eval "db.runCommand({ ping: 1 })"`
 
-### LocalStorage Issues
-Clear browser LocalStorage if experiencing issues:
-- Open DevTools (F12)
-- Go to Application > LocalStorage
-- Delete all `shopping_app_*` keys
+**Cart not loading after login**
+- Open DevTools → Network tab and check `GET /api/cart` returns 200
+- Verify the backend is running and `VITE_API_BASE_URL` points to it
 
-## Contributing
-
-This is a demonstration project. Feel free to fork and customize for your own needs.
+**Clear local session**
+- DevTools → Application → Local Storage → delete all `shopping_app_*` keys
 
 ## License
 
-This project is open source and available for educational purposes.
+Open source — available for educational and demonstration purposes.
 
 ## Acknowledgments
 
-- Product images from [Unsplash](https://unsplash.com)
-- Icons from [Lucide](https://lucide.dev)
-- UI components styled with [Tailwind CSS](https://tailwindcss.com)
-- Built with [Vite](https://vitejs.dev) and [React](https://react.dev)
-
----
-
-**Built with React + TypeScript + Tailwind CSS**
-
-For questions or issues, please check the code comments or create an issue in the repository.
+- Icons: [Lucide](https://lucide.dev)
+- Styling: [Tailwind CSS](https://tailwindcss.com)
+- Build: [Vite](https://vitejs.dev) + [React](https://react.dev)
+- Mobile: [Flutter](https://flutter.dev)
