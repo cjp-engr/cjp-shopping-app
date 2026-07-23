@@ -1,24 +1,15 @@
-import 'package:patrol/patrol.dart';
+import 'package:toko_mart/keys.dart';
 
-import 'common_actions.dart';
-import 'pages/login_test_page.dart';
+import 'test_app.dart';
 
 void main() {
-  patrolTest(
-    'logs in and verifies the home screen',
-    ($) async {
-      await _initializeApp($);
-      await _loginuser($);
-    },
-  );
-}
+  testApp('logs in and verifies the home screen', ($, modules) async {
+    await modules.auth.login(
+      email: const String.fromEnvironment('EMAIL'),
+      password: const String.fromEnvironment('PASSWORD'),
+    );
 
-Future<void> _initializeApp(PatrolIntegrationTester $) async {
-  CommonActions action = CommonActions($);
-  await action.initializeApp();
-}
-
-Future<void> _loginuser(PatrolIntegrationTester $) async {
-  LoginTestPage login = LoginTestPage($);
-  await login.loginWithEmail();
+    await $(keys.products.homeScreen).waitUntilVisible();
+    await $(keys.products.searchField).waitUntilVisible();
+  });
 }
