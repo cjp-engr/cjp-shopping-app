@@ -36,6 +36,10 @@ import 'features/seller/data/datasources/seller_remote_datasource.dart';
 import 'features/seller/data/repositories/seller_repository_impl.dart';
 import 'features/seller/presentation/bloc/seller_bloc.dart';
 
+// Features - Follow
+import 'features/follow/data/datasources/follow_remote_datasource.dart';
+import 'package:dio/dio.dart';
+
 class TokoMart extends StatefulWidget {
   final StorageService storageService;
   const TokoMart({super.key, required this.storageService});
@@ -47,6 +51,7 @@ class TokoMart extends StatefulWidget {
 class _TokoMartState extends State<TokoMart> {
   late final ApiClient _apiClient;
   late final AuthBloc _authBloc;
+  late final FollowRemoteDataSource _followDs;
 
   @override
   void initState() {
@@ -58,6 +63,9 @@ class _TokoMartState extends State<TokoMart> {
     final authRepo = AuthRepositoryImpl(authDs, widget.storageService);
     _authBloc = AuthBloc(authRepo, widget.storageService)
       ..add(AuthCheckRequested());
+
+    // Follow
+    _followDs = FollowRemoteDataSource(_apiClient.dio);
   }
 
   @override
@@ -94,7 +102,7 @@ class _TokoMartState extends State<TokoMart> {
         BlocProvider(create: (_) => OrderBloc(orderRepo)),
         BlocProvider(create: (_) => SellerBloc(sellerRepo)),
       ],
-      child: _RouterWrapper(authBloc: _authBloc, cartBloc: cartBloc),
+      child: _RouterWrapper(authBloc: _authBloc, cartBloc: cartBloc, followDs: _followDs, dio: _apiClient.dio),
     );
   }
 }
@@ -109,14 +117,17 @@ class _NoStretchScrollBehavior extends MaterialScrollBehavior {
 class _RouterWrapper extends StatefulWidget {
   final AuthBloc authBloc;
   final CartBloc cartBloc;
-  const _RouterWrapper({required this.authBloc, required this.cartBloc});
+  final FollowRemoteDataSource followDs;
+  final Dio dio;
+  const _RouterWrapper({required this.authBloc, required this.cartBloc, required this.followDs, required this.dio});
 
   @override
   State<_RouterWrapper> createState() => _RouterWrapperState();
 }
 
 class _RouterWrapperState extends State<_RouterWrapper> {
-  late final router = createRouter(widget.authBloc);
+  late final router = createRouter(widget.authBloc, followDs: widget.followDs, dio: widget.dio);
+
 
   @override
   Widget build(BuildContext context) {

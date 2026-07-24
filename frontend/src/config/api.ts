@@ -37,6 +37,13 @@ export const API_ENDPOINTS = {
   // Cart
   CART: `${API_BASE_URL}/cart`,
 
+  // Users / Follow
+  USERS: `${API_BASE_URL}/users`,
+  USER_PROFILE: (id: string) => `${API_BASE_URL}/users/${id}`,
+  USER_FOLLOW: (id: string) => `${API_BASE_URL}/users/${id}/follow`,
+  USER_FOLLOWERS: (id: string) => `${API_BASE_URL}/users/${id}/followers`,
+  USER_FOLLOWING: (id: string) => `${API_BASE_URL}/users/${id}/following`,
+
   // Seller
   SELLER_PRODUCTS: `${API_BASE_URL}/seller/products`,
   SELLER_PRODUCT: (id: string) => `${API_BASE_URL}/seller/products/${id}`,

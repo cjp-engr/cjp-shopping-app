@@ -57,36 +57,75 @@ class _LoginScreenState extends State<LoginScreen> {
         },
         child: Stack(
           children: [
-            // Background fashion grid
+            // Branded header — sky-blue tones
             Positioned(
               top: 0,
               left: 0,
               right: 0,
-              height: MediaQuery.of(context).size.height * 0.45,
-              child: GridView.count(
-                crossAxisCount: 3,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                children: List.generate(
-                  9,
-                  (i) => Container(
-                    decoration: BoxDecoration(
-                      color: [
-                        const Color(0xFF2A1F5A),
-                        const Color(0xFF3D2B6B),
-                        const Color(0xFF1E1A4A),
-                      ][i % 3],
-                    ),
-                    child: const Icon(
-                      Icons.shopping_bag_outlined,
-                      color: Colors.white12,
-                      size: 32,
+              height: MediaQuery.of(context).size.height * 0.44,
+              child: Stack(
+                children: [
+                  GridView.count(
+                    crossAxisCount: 3,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    children: List.generate(
+                      9,
+                      (i) => Container(
+                        decoration: BoxDecoration(
+                          color: const [
+                            Color(0xFF0C4A6E), // sky-950
+                            Color(0xFF075985), // sky-900
+                            Color(0xFF0369A1), // sky-800
+                          ][i % 3],
+                        ),
+                        child: const Icon(
+                          Icons.shopping_bag_outlined,
+                          color: Colors.white12,
+                          size: 32,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  // Logo mark
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(26),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.white.withAlpha(51),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.shopping_cart_rounded,
+                            color: Colors.white,
+                            size: 36,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'TokoMart',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            // Card — follows app theme (light/dark)
+            // Form card
             Align(
               alignment: Alignment.bottomCenter,
               child: Container(
@@ -95,6 +134,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(AppSizes.radiusXl),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(30),
+                      blurRadius: 24,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
                 ),
                 padding: EdgeInsets.fromLTRB(
                   AppSizes.lg,
@@ -120,7 +166,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Text(
                         AppStrings.signInToAccount,
                         style: TextStyle(
-                            color: AppColors.textSecondary, fontSize: 14),
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
                       ),
                       const SizedBox(height: AppSizes.xl),
                       Form(
@@ -133,6 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: _emailCtrl,
                               keyboardType: TextInputType.emailAddress,
                               prefixIcon: Icons.email_outlined,
+                              textInputAction: TextInputAction.next,
                               validator: (v) {
                                 if (v == null || v.trim().isEmpty) {
                                   return 'Email is required';
@@ -150,6 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: _passwordCtrl,
                               obscure: true,
                               prefixIcon: Icons.lock_outline,
+                              textInputAction: TextInputAction.done,
                               validator: (v) {
                                 if (v == null || v.isEmpty) {
                                   return 'Password is required';
@@ -167,7 +218,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 return AppButton(
                                   key: keys.auth.loginButton,
                                   label: AppStrings.login,
-                                  loading: state.status == AuthStatus.loading,
+                                  loading:
+                                      state.status == AuthStatus.loading,
                                   onPressed: _submit,
                                 );
                               },
@@ -183,11 +235,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             text: TextSpan(
                               text: "Don't have an account? ",
                               style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withAlpha(153),
-                                  fontSize: 14),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withAlpha(153),
+                                fontSize: 14,
+                              ),
                               children: const [
                                 TextSpan(
                                   text: 'Sign Up',

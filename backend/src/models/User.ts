@@ -41,6 +41,7 @@ export interface IUser extends Document {
   address?: IAddress;
   savedCards: ISavedCard[];
   savedAddresses: ISavedAddress[];
+  following: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -118,7 +119,11 @@ const UserSchema = new Schema<IUser>({
   savedAddresses: {
     type: [SavedAddressSchema],
     default: []
-  }
+  },
+  following: [{
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  }]
 }, {
   timestamps: true
 });

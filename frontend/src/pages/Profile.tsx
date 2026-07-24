@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -21,7 +21,9 @@ import {
   Trash2,
   PlusCircle,
   Star,
+  Users,
 } from 'lucide-react';
+import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import orderService from '../services/orderService';
 import type { SavedAddress } from '../types/user';
 
@@ -35,6 +37,7 @@ export const Profile: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderSummary, setOrderSummary] = useState<{ totalOrders: number; totalSpent: number } | null>(null);
+  const [followStats, setFollowStats] = useState<{ followersCount: number; followingCount: number } | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,6 +65,27 @@ export const Profile: React.FC = () => {
     };
 
     loadOrderSummary();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const loadFollowStats = async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.USER_PROFILE(user.id), {
+          headers: getAuthHeaders(),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setFollowStats({
+            followersCount: data.user.followersCount,
+            followingCount: data.user.followingCount,
+          });
+        }
+      } catch {
+        // non-critical
+      }
+    };
+    loadFollowStats();
   }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -244,6 +268,31 @@ export const Profile: React.FC = () => {
               <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
                 Member since {formatDate(user.createdAt)}
               </p>
+
+              {/* Followers / Following */}
+              {followStats !== null && (
+                <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <Link
+                    to={`/users/${user.id}`}
+                    className="text-center hover:opacity-70 transition-opacity group"
+                  >
+                    <p className="text-lg font-bold text-gray-900 dark:text-white leading-none group-hover:text-primary-600">
+                      {followStats.followersCount}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Followers</p>
+                  </Link>
+                  <div className="h-8 w-px bg-gray-200 dark:bg-gray-700" />
+                  <Link
+                    to={`/users/${user.id}`}
+                    className="text-center hover:opacity-70 transition-opacity group"
+                  >
+                    <p className="text-lg font-bold text-gray-900 dark:text-white leading-none group-hover:text-primary-600">
+                      {followStats.followingCount}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Following</p>
+                  </Link>
+                </div>
+              )}
             </div>
 
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-2">

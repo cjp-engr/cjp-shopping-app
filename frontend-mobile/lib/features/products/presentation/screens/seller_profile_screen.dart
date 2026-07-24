@@ -9,6 +9,10 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
+import '../../../follow/presentation/bloc/user_profile_bloc.dart';
+import '../../../follow/presentation/bloc/user_profile_event.dart';
+import '../../../follow/presentation/bloc/user_profile_state.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 class SellerProfileScreen extends StatefulWidget {
   final String sellerId;
@@ -95,6 +99,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                     avatar: seller.avatar,
                     joinYear: joinYear,
                     productCount: products.length,
+                    sellerId: widget.sellerId,
                   ),
                 ),
                 if (products.isEmpty)
@@ -178,12 +183,14 @@ class _SellerHeader extends StatelessWidget {
   final String? avatar;
   final String joinYear;
   final int productCount;
+  final String sellerId;
 
   const _SellerHeader({
     required this.name,
     this.avatar,
     required this.joinYear,
     required this.productCount,
+    required this.sellerId,
   });
 
   @override
@@ -238,6 +245,81 @@ class _SellerHeader extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: AppSizes.md),
+          // Follow button + follower count
+          BlocBuilder<UserProfileBloc, UserProfileState>(
+            builder: (context, followState) {
+              final currentUserId = context.read<AuthBloc>().state.user?.id;
+              if (currentUserId == sellerId) return const SizedBox.shrink();
+
+              final followUser = followState.user;
+              final isFollowing = followUser?.isFollowing ?? false;
+              final followersCount = followUser?.followersCount;
+              final isLoading = followState.status == UserProfileStatus.loading;
+
+              return Column(
+                children: [
+                  if (followersCount != null)
+                    Text(
+                      '$followersCount ${followersCount == 1 ? 'follower' : 'followers'}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  const SizedBox(height: AppSizes.sm),
+                  SizedBox(
+                    width: 160,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: isFollowing
+                            ? context.surfaceVariantColor
+                            : AppColors.primary,
+                        foregroundColor: isFollowing
+                            ? context.onSurfaceColor
+                            : Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radiusFull),
+                        ),
+                      ),
+                      onPressed: isLoading
+                          ? null
+                          : () => context.read<UserProfileBloc>().add(
+                                UserProfileFollowToggled(
+                                  targetUserId: sellerId,
+                                  currentlyFollowing: isFollowing,
+                                ),
+                              ),
+                      icon: isLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Icon(
+                              isFollowing
+                                  ? Icons.person_remove_rounded
+                                  : Icons.person_add_rounded,
+                              size: 16,
+                            ),
+                      label: Text(
+                        isFollowing ? 'Unfollow' : 'Follow',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: AppSizes.sm),
           const Divider(),

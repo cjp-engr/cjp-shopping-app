@@ -41,6 +41,17 @@ export interface User {
   createdAt: string;
 }
 
+export interface PublicUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatar?: string;
+  role: 'buyer' | 'seller';
+  followersCount: number;
+  followingCount: number;
+  isFollowing: boolean;
+}
+
 export interface AuthState {
   user: User | null;
   token: string | null;

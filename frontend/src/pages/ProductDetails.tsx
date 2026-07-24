@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import type { Product } from '../types/product';
 import productService from '../services/productService';
 import { Card } from '../components/common/Card';
@@ -9,7 +9,7 @@ import { Spinner } from '../components/common/Spinner';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { API_ENDPOINTS } from '../config/api';
+import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import {
   ShoppingCart,
   Star,
@@ -25,7 +25,11 @@ import {
   EyeOff,
   User,
   ChevronDown,
+  UserPlus,
+  UserMinus,
+  Store,
 } from 'lucide-react';
+import type { PublicUser } from '../types/user';
 
 interface Review {
   _id: string;
@@ -52,6 +56,8 @@ export const ProductDetails: React.FC = () => {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewPage, setReviewPage] = useState(1);
   const [reviewTotal, setReviewTotal] = useState(0);
+  const [sellerProfile, setSellerProfile] = useState<PublicUser | null>(null);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -83,6 +89,24 @@ export const ProductDetails: React.FC = () => {
 
     loadProduct();
   }, [id]);
+
+  const fetchSellerProfile = useCallback(async (sellerId: string) => {
+    try {
+      const res = await fetch(API_ENDPOINTS.USER_PROFILE(sellerId), {
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) setSellerProfile(data.user);
+    } catch {
+      // non-critical
+    }
+  }, []);
+
+  useEffect(() => {
+    if (product?.sellerId && user) {
+      fetchSellerProfile(product.sellerId);
+    }
+  }, [product?.sellerId, user, fetchSellerProfile]);
 
   useEffect(() => {
     if (!id) return;
@@ -448,6 +472,79 @@ export const ProductDetails: React.FC = () => {
             </div>
           )}
         </section>
+      )}
+
+      {/* Seller card */}
+      {sellerProfile && !isOwnProduct && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 flex items-center gap-4">
+          <Link to={`/users/${sellerProfile.id}`} className="flex items-center gap-4 flex-1 min-w-0">
+            {sellerProfile.avatar ? (
+              <img
+                src={sellerProfile.avatar}
+                alt={`${sellerProfile.firstName} ${sellerProfile.lastName}`}
+                className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-primary-100 dark:ring-primary-900"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-primary-50 dark:bg-primary-950 flex items-center justify-center flex-shrink-0 ring-2 ring-primary-100 dark:ring-primary-900">
+                <span className="text-base font-bold text-primary-600">
+                  {sellerProfile.firstName[0]}{sellerProfile.lastName[0]}
+                </span>
+              </div>
+            )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+                  {sellerProfile.firstName} {sellerProfile.lastName}
+                </p>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 flex-shrink-0">
+                  <Store className="w-3 h-3" />
+                  Seller
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {sellerProfile.followersCount} followers
+              </p>
+            </div>
+          </Link>
+          <button
+            onClick={async () => {
+              if (followLoading) return;
+              setFollowLoading(true);
+              try {
+                const method = sellerProfile.isFollowing ? 'DELETE' : 'POST';
+                const res = await fetch(API_ENDPOINTS.USER_FOLLOW(sellerProfile.id), {
+                  method,
+                  headers: getAuthHeaders(),
+                });
+                const data = await res.json();
+                if (data.success) {
+                  setSellerProfile(prev =>
+                    prev
+                      ? { ...prev, isFollowing: data.isFollowing, followersCount: data.followersCount }
+                      : prev
+                  );
+                }
+              } finally {
+                setFollowLoading(false);
+              }
+            }}
+            disabled={followLoading}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all flex-shrink-0 ${
+              sellerProfile.isFollowing
+                ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400'
+                : 'bg-primary-600 text-white hover:bg-primary-700'
+            } disabled:opacity-50`}
+          >
+            {followLoading ? (
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : sellerProfile.isFollowing ? (
+              <UserMinus className="w-4 h-4" />
+            ) : (
+              <UserPlus className="w-4 h-4" />
+            )}
+            {sellerProfile.isFollowing ? 'Unfollow' : 'Follow'}
+          </button>
+        </div>
       )}
 
       {/* Related Products */}

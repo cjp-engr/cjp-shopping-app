@@ -17,11 +17,17 @@ import '../features/seller/presentation/screens/add_edit_product_screen.dart';
 import '../features/products/domain/entities/product_entity.dart';
 import '../features/products/presentation/screens/seller_profile_screen.dart';
 import '../shared/widgets/main_shell.dart';
+import '../features/follow/data/datasources/follow_remote_datasource.dart';
+import '../features/follow/presentation/bloc/user_profile_bloc.dart';
+import '../features/follow/presentation/bloc/user_profile_event.dart';
+import '../features/follow/presentation/screens/user_profile_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dio/dio.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
-GoRouter createRouter(AuthBloc authBloc) {
+GoRouter createRouter(AuthBloc authBloc, {required FollowRemoteDataSource followDs, required Dio dio}) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
@@ -84,8 +90,14 @@ GoRouter createRouter(AuthBloc authBloc) {
       GoRoute(
         path: '/seller-profile/:sellerId',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, state) =>
-            SellerProfileScreen(sellerId: state.pathParameters['sellerId']!),
+        builder: (_, state) {
+          final sellerId = state.pathParameters['sellerId']!;
+          return BlocProvider(
+            create: (_) => UserProfileBloc(followDs)
+              ..add(UserProfileLoadRequested(sellerId)),
+            child: SellerProfileScreen(sellerId: sellerId),
+          );
+        },
       ),
       GoRoute(
         path: '/seller/add',
@@ -98,10 +110,22 @@ GoRouter createRouter(AuthBloc authBloc) {
         builder: (_, state) =>
             AddEditProductScreen(product: state.extra as ProductEntity?),
       ),
+      GoRoute(
+        path: '/users/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, state) {
+          final userId = state.pathParameters['id']!;
+          return BlocProvider(
+            create: (_) => UserProfileBloc(followDs)
+              ..add(UserProfileLoadRequested(userId)),
+            child: UserProfileScreen(userId: userId),
+          );
+        },
+      ),
       // Shell with bottom nav
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
-        builder: (_, __, child) => MainShell(child: child),
+        builder: (_, __, child) => MainShell(child: child, dio: dio),
         routes: [
           GoRoute(
             path: '/',
@@ -121,7 +145,7 @@ GoRouter createRouter(AuthBloc authBloc) {
           ),
           GoRoute(
             path: '/profile',
-            builder: (_, __) => const ProfileScreen(),
+            builder: (_, __) => ProfileScreen(followDs: followDs),
           ),
         ],
       ),

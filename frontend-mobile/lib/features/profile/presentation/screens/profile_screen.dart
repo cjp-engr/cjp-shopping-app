@@ -6,6 +6,7 @@ import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../follow/data/datasources/follow_remote_datasource.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
@@ -14,7 +15,8 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final FollowRemoteDataSource? followDs;
+  const ProfileScreen({super.key, this.followDs});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -210,6 +212,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   uploadingPhoto: _uploadingPhoto,
                   buildAvatar: _buildAvatar,
                   onPickPhoto: _pickPhoto,
+                  followDs: widget.followDs,
                 ),
 
                 const SizedBox(height: AppSizes.lg),
@@ -446,12 +449,14 @@ class _ProfileHeader extends StatelessWidget {
   final bool uploadingPhoto;
   final Widget Function(String?, String) buildAvatar;
   final VoidCallback onPickPhoto;
+  final FollowRemoteDataSource? followDs;
 
   const _ProfileHeader({
     required this.user,
     required this.uploadingPhoto,
     required this.buildAvatar,
     required this.onPickPhoto,
+    this.followDs,
   });
 
   @override
@@ -536,6 +541,10 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ),
         ),
+        if (followDs != null) ...[
+          const SizedBox(height: AppSizes.md),
+          _FollowStatsRow(userId: user.id, followDs: followDs!),
+        ],
       ],
     );
   }
@@ -1015,6 +1024,99 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Follow stats row ──────────────────────────────────────────────────────────
+
+class _FollowStatsRow extends StatefulWidget {
+  final String userId;
+  final FollowRemoteDataSource followDs;
+  const _FollowStatsRow({required this.userId, required this.followDs});
+
+  @override
+  State<_FollowStatsRow> createState() => _FollowStatsRowState();
+}
+
+class _FollowStatsRowState extends State<_FollowStatsRow> {
+  int? _followers;
+  int? _following;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final profile = await widget.followDs.getUserProfile(widget.userId);
+      if (mounted) {
+        setState(() {
+          _followers = profile.followersCount;
+          _following = profile.followingCount;
+        });
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_followers == null && _following == null) return const SizedBox.shrink();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _StatChip(
+          label: 'Followers',
+          count: _followers ?? 0,
+          onTap: () => context.push('/users/${widget.userId}'),
+        ),
+        Container(
+          width: 1,
+          height: 28,
+          margin: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+          color: Theme.of(context).dividerColor,
+        ),
+        _StatChip(
+          label: 'Following',
+          count: _following ?? 0,
+          onTap: () => context.push('/users/${widget.userId}'),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String label;
+  final int count;
+  final VoidCallback onTap;
+  const _StatChip({required this.label, required this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            '$count',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primary,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
             ),
           ),
         ],

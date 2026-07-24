@@ -15,6 +15,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import sellerRoutes from './routes/sellerRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 dotenv.config();
 
@@ -48,6 +49,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/seller', sellerRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'TokoMart API', version: '1.0.0' });

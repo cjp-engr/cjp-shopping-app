@@ -172,20 +172,27 @@ class _OrderList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (orders.isEmpty) {
-      return _EmptyOrdersState(label: emptyLabel);
-    }
-
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: onRefresh,
-      child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(
-            AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.xl),
-        itemCount: orders.length,
-        separatorBuilder: (_, __) => const SizedBox(height: AppSizes.sm),
-        itemBuilder: (_, i) => _OrderCard(order: orders[i]),
-      ),
+      child: orders.isEmpty
+          ? CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _EmptyOrdersState(label: emptyLabel),
+                ),
+              ],
+            )
+          : ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.xl),
+              itemCount: orders.length,
+              separatorBuilder: (_, __) => const SizedBox(height: AppSizes.sm),
+              itemBuilder: (_, i) => _OrderCard(order: orders[i]),
+            ),
     );
   }
 }

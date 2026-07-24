@@ -16,6 +16,7 @@ import { OrderDetail } from './pages/OrderDetail';
 import { SellerDashboard } from './pages/SellerDashboard';
 import { MyProducts } from './pages/MyProducts';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import UserProfile from './pages/UserProfile';
 
 function App() {
   return (
@@ -76,6 +77,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <MyProducts />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="users/:id"
+                  element={
+                    <ProtectedRoute>
+                      <UserProfile />
                     </ProtectedRoute>
                   }
                 />
