@@ -35,3 +35,15 @@ class SellerProductDeleteRequested extends SellerEvent {
   @override
   List<Object?> get props => [id];
 }
+
+class SellerOrdersLoadRequested extends SellerEvent {
+  const SellerOrdersLoadRequested();
+}
+
+class SellerOrderStatusUpdateRequested extends SellerEvent {
+  final String orderId;
+  final String status;
+  const SellerOrderStatusUpdateRequested(this.orderId, this.status);
+  @override
+  List<Object?> get props => [orderId, status];
+}

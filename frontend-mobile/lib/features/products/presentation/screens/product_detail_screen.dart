@@ -32,6 +32,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantity = 1;
   int _currentImagePage = 0;
   bool _previewMode = false;
+  bool _descExpanded = false;
   late final PageController _imageController;
 
   @override
@@ -79,6 +80,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               product.sellerId == authUser.id;
 
           final originalPrice = product.price * 1.4;
+          final discountPct = ((originalPrice - product.price) / originalPrice * 100).round();
           final images = product.images.isNotEmpty
               ? product.images
               : [product.image];
@@ -279,10 +281,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppColors.danger.withAlpha(25),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '-$discountPct%',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.danger,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
                               Text(
                                 '\$${product.price.toStringAsFixed(0)}',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.w900,
                                   color: context.onSurfaceColor,
                                 ),
@@ -290,7 +309,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               Text(
                                 '\$${originalPrice.toStringAsFixed(0)}',
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   color: context.onSurfaceMuted,
                                   decoration: TextDecoration.lineThrough,
                                 ),
@@ -398,15 +417,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        product.description.length > 200
-                            ? '${product.description.substring(0, 200)}…'
-                            : product.description,
+                        _descExpanded || product.description.length <= 200
+                            ? product.description
+                            : '${product.description.substring(0, 200)}…',
                         style: TextStyle(
                           color: context.onSurfaceSecondary,
                           fontSize: 14,
                           height: 1.6,
                         ),
                       ),
+                      if (product.description.length > 200) ...[
+                        const SizedBox(height: 6),
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _descExpanded = !_descExpanded),
+                          child: Text(
+                            _descExpanded ? 'Show less' : 'Show more',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
                       if (product.sellerId != null) ...[
                         const SizedBox(height: AppSizes.md),
                         _SellerBtn(
@@ -490,23 +524,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ? () {
                                 context.read<CartBloc>().add(CartItemAdded(
                                     product: product, quantity: _quantity));
-                                context.push('/cart');
-                              }
-                            : null,
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, AppSizes.buttonHeight),
-                        ),
-                        icon: const Icon(Icons.shopping_bag_outlined, size: 18),
-                        label: const Text('Buy Now'),
-                      ),
-                    ),
-                    const SizedBox(width: AppSizes.sm),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: product.inStock && !isOwnProduct
-                            ? () {
-                                context.read<CartBloc>().add(CartItemAdded(
-                                    product: product, quantity: _quantity));
                                 final router = GoRouter.of(context);
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(SnackBar(
@@ -520,10 +537,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 ));
                               }
                             : null,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, AppSizes.buttonHeight),
+                        ),
+                        icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+                        label: const Text(AppStrings.addToCart),
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.sm),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: product.inStock && !isOwnProduct
+                            ? () {
+                                context.read<CartBloc>().add(CartItemAdded(
+                                    product: product, quantity: _quantity));
+                                context.push('/cart');
+                              }
+                            : null,
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(0, AppSizes.buttonHeight),
                         ),
-                        child: const Text(AppStrings.addToCart),
+                        icon: const Icon(Icons.flash_on_rounded, size: 18),
+                        label: const Text('Buy Now'),
                       ),
                     ),
                   ],
@@ -590,43 +625,51 @@ class _SellerBtn extends StatelessWidget {
           vertical: 12,
         ),
         decoration: BoxDecoration(
-          color: context.cardColor,
+          color: AppColors.primary.withAlpha(8),
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          border: Border.all(color: context.borderColor),
+          border: Border.all(color: AppColors.primary.withAlpha(50)),
         ),
         child: Row(
           children: [
             SellerAvatar(
               avatarUrl: sellerAvatar,
               name: name,
-              size: 40,
+              size: 44,
             ),
             const SizedBox(width: AppSizes.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text(
+                    'Sold by',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
                   Text(
                     name,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: context.onSurfaceColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const Text(
-                    'Visit Store',
+                    'Visit Store →',
                     style: TextStyle(
                       fontSize: 12,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.primary,
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: context.onSurfaceMuted),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.primary),
           ],
         ),
       ),

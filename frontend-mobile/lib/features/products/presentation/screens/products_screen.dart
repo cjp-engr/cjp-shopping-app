@@ -68,8 +68,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
             BlocBuilder<AuthBloc, AuthState>(
               buildWhen: (p, c) => p.user?.role != c.user?.role,
               builder: (context, authState) {
-                if (authState.user?.isSeller != true)
+                if (authState.user?.isSeller != true) {
                   return const SizedBox.shrink();
+                }
                 return _buildViewTabs(context);
               },
             ),

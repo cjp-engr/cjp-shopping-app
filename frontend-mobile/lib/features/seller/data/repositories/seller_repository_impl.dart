@@ -1,6 +1,7 @@
 ﻿import '../../../products/domain/entities/product_entity.dart';
 import '../datasources/seller_remote_datasource.dart';
 import '../../domain/repositories/seller_repository.dart';
+import '../models/seller_order_model.dart';
 
 class SellerRepositoryImpl implements SellerRepository {
   final SellerRemoteDataSource _dataSource;
@@ -21,4 +22,12 @@ class SellerRepositoryImpl implements SellerRepository {
 
   @override
   Future<void> deleteProduct(String id) => _dataSource.deleteProduct(id);
+
+  @override
+  Future<List<SellerOrderData>> getSellerOrders() =>
+      _dataSource.getSellerOrders();
+
+  @override
+  Future<void> updateOrderStatus(String orderId, String status) =>
+      _dataSource.updateOrderStatus(orderId, status);
 }

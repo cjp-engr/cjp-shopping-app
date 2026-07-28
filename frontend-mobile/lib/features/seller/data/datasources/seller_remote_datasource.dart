@@ -1,6 +1,7 @@
 ﻿import 'package:dio/dio.dart';
 import '../../../products/data/models/product_model.dart';
 import '../../../../core/network/api_client.dart';
+import '../models/seller_order_model.dart';
 
 class SellerRemoteDataSource {
   final Dio _dio;
@@ -53,6 +54,28 @@ class SellerRemoteDataSource {
   Future<void> deleteProduct(String id) async {
     try {
       await _dio.delete('/seller/products/$id');
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  Future<List<SellerOrderData>> getSellerOrders() async {
+    try {
+      final response = await _dio.get('/seller/orders');
+      final data = response.data;
+      final List list =
+          data is List ? data : (data['orders'] ?? data['data'] ?? []);
+      return list
+          .map((e) => SellerOrderData.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  Future<void> updateOrderStatus(String orderId, String status) async {
+    try {
+      await _dio.put('/seller/orders/$orderId/status', data: {'status': status});
     } on DioException catch (e) {
       throw mapDioError(e);
     }

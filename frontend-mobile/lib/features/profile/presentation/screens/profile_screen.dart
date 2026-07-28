@@ -265,7 +265,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ],
                           ),
                         ),
-
                         const SizedBox(height: AppSizes.md),
                         const _SectionLabel('Address'),
                         const SizedBox(height: AppSizes.xs),
@@ -304,7 +303,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ],
                           ),
                         ),
-
                         const SizedBox(height: AppSizes.lg),
                         BlocBuilder<AuthBloc, AuthState>(
                           buildWhen: (p, c) => p.status != c.status,
@@ -388,27 +386,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           final isDark = themeMode == ThemeMode.dark;
                           return _SettingsRow(
                             icon: isDark
-                                ? Icons.dark_mode_outlined
-                                : Icons.light_mode_outlined,
+                                ? Icons.dark_mode_rounded
+                                : Icons.wb_sunny_rounded,
                             label: isDark ? 'Dark Mode' : 'Light Mode',
                             onTap: () => context.read<ThemeCubit>().toggle(),
-                            trailing: Switch(
-                              value: isDark,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              thumbColor: WidgetStateProperty.resolveWith(
-                                (states) =>
-                                    states.contains(WidgetState.selected)
-                                        ? AppColors.primary
-                                        : null,
-                              ),
-                              trackColor: WidgetStateProperty.resolveWith(
-                                (states) =>
-                                    states.contains(WidgetState.selected)
-                                        ? AppColors.primary.withAlpha(80)
-                                        : null,
-                              ),
-                              onChanged: (_) =>
+                            trailing: _ThemeToggle(
+                              isDark: isDark,
+                              onToggle: () =>
                                   context.read<ThemeCubit>().toggle(),
                             ),
                           );
@@ -426,9 +410,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: Icons.logout_rounded,
                         label: AppStrings.logout,
                         color: AppColors.danger,
-                        onTap: () => context
-                            .read<AuthBloc>()
-                            .add(AuthLogoutRequested()),
+                        onTap: () =>
+                            context.read<AuthBloc>().add(AuthLogoutRequested()),
                       ),
                     ],
                   ),
@@ -523,8 +506,7 @@ class _ProfileHeader extends StatelessWidget {
         ),
         const SizedBox(height: AppSizes.xs),
         Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: isSeller
                 ? AppColors.primary.withAlpha(20)
@@ -669,8 +651,8 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final muted = Theme.of(context).colorScheme.onSurface.withAlpha(130);
     return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.md, vertical: 12),
+      padding:
+          const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -705,6 +687,163 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+
+class _ThemeToggle extends StatefulWidget {
+  final bool isDark;
+  final VoidCallback onToggle;
+  const _ThemeToggle({required this.isDark, required this.onToggle});
+
+  @override
+  State<_ThemeToggle> createState() => _ThemeToggleState();
+}
+
+class _ThemeToggleState extends State<_ThemeToggle>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _progress;
+  bool _pressed = false;
+
+  // Track + thumb geometry
+  static const _trackW = 56.0;
+  static const _trackH = 30.0;
+  static const _thumbD = 24.0;
+  static const _thumbPad = 3.0;
+  static const _thumbTravel = _trackW - _thumbD - (_thumbPad * 2);
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+      value: widget.isDark ? 1.0 : 0.0,
+    );
+    _progress = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOutCubic);
+  }
+
+  @override
+  void didUpdateWidget(_ThemeToggle old) {
+    super.didUpdateWidget(old);
+    if (old.isDark != widget.isDark) {
+      widget.isDark ? _ctrl.forward() : _ctrl.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onToggle,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.92 : 1.0,
+        duration: const Duration(milliseconds: 80),
+        child: AnimatedBuilder(
+          animation: _progress,
+          builder: (_, __) {
+            final t = _progress.value;
+            const trackColor = AppColors.primary;
+            final thumbLeft = _thumbPad + (_thumbTravel * t);
+
+            return SizedBox(
+              width: _trackW,
+              height: _trackH,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: trackColor,
+                  borderRadius: BorderRadius.circular(_trackH / 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: trackColor.withAlpha(90),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Sun icon — visible in track when dark (thumb is on right)
+                    Positioned(
+                      left: 7,
+                      top: (_trackH - 14) / 2,
+                      child: Opacity(
+                        opacity: (t * 0.75).clamp(0.0, 1.0),
+                        child: const Icon(
+                          Icons.wb_sunny_rounded,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    // Moon icon — visible in track when light (thumb is on left)
+                    Positioned(
+                      right: 7,
+                      top: (_trackH - 14) / 2,
+                      child: Opacity(
+                        opacity: ((1.0 - t) * 0.75).clamp(0.0, 1.0),
+                        child: const Icon(
+                          Icons.dark_mode_rounded,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    // Sliding thumb
+                    Positioned(
+                      left: thumbLeft,
+                      top: _thumbPad,
+                      child: Container(
+                        width: _thumbD,
+                        height: _thumbD,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(40),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.center,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          transitionBuilder: (child, anim) => ScaleTransition(
+                            scale: anim,
+                            child: FadeTransition(opacity: anim, child: child),
+                          ),
+                          child: Icon(
+                            t > 0.5
+                                ? Icons.dark_mode_rounded
+                                : Icons.wb_sunny_rounded,
+                            key: ValueKey(t > 0.5),
+                            size: 13,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -789,7 +928,8 @@ class _SavedAddressListState extends State<_SavedAddressList> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
@@ -819,9 +959,11 @@ class _SavedAddressListState extends State<_SavedAddressList> {
             ),
             const SizedBox(height: AppSizes.xs),
             Row(children: [
-              Expanded(child: AppTextField(label: 'City', controller: _cityCtrl)),
+              Expanded(
+                  child: AppTextField(label: 'City', controller: _cityCtrl)),
               const SizedBox(width: AppSizes.sm),
-              Expanded(child: AppTextField(label: 'State', controller: _stateCtrl)),
+              Expanded(
+                  child: AppTextField(label: 'State', controller: _stateCtrl)),
             ]),
             const SizedBox(height: AppSizes.xs),
             AppTextField(
@@ -836,20 +978,24 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                 label: 'Save Address',
                 loading: s.status == AuthStatus.loading,
                 onPressed: () {
-                  if (_streetCtrl.text.trim().isEmpty || _cityCtrl.text.trim().isEmpty) {
+                  if (_streetCtrl.text.trim().isEmpty ||
+                      _cityCtrl.text.trim().isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Street and City are required')),
+                      const SnackBar(
+                          content: Text('Street and City are required')),
                     );
                     return;
                   }
                   context.read<AuthBloc>().add(AuthAddressAddRequested({
-                    'label': _labelCtrl.text.trim().isNotEmpty ? _labelCtrl.text.trim() : 'Home',
-                    'street': _streetCtrl.text.trim(),
-                    'city': _cityCtrl.text.trim(),
-                    'state': _stateCtrl.text.trim(),
-                    'zipCode': _zipCtrl.text.trim(),
-                    'country': '',
-                  }));
+                        'label': _labelCtrl.text.trim().isNotEmpty
+                            ? _labelCtrl.text.trim()
+                            : 'Home',
+                        'street': _streetCtrl.text.trim(),
+                        'city': _cityCtrl.text.trim(),
+                        'state': _stateCtrl.text.trim(),
+                        'zipCode': _zipCtrl.text.trim(),
+                        'country': '',
+                      }));
                   Navigator.pop(ctx);
                 },
               ),
@@ -893,9 +1039,12 @@ class _SavedAddressListState extends State<_SavedAddressList> {
           ...widget.addresses.asMap().entries.map((entry) {
             final i = entry.key;
             final addr = entry.value;
-            final displayAddr = [addr.street, addr.city, addr.state, addr.zipCode]
-                .where((s) => s.isNotEmpty)
-                .join(', ');
+            final displayAddr = [
+              addr.street,
+              addr.city,
+              addr.state,
+              addr.zipCode
+            ].where((s) => s.isNotEmpty).join(', ');
             return Column(
               children: [
                 if (i > 0)
@@ -930,7 +1079,8 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               if (addr.isDefault) ...[
@@ -940,7 +1090,8 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                                       horizontal: 6, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: AppColors.primary.withAlpha(20),
-                                    borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                                    borderRadius: BorderRadius.circular(
+                                        AppSizes.radiusFull),
                                   ),
                                   child: const Text(
                                     'Default',
@@ -1005,16 +1156,15 @@ class _SavedAddressListState extends State<_SavedAddressList> {
             onTap: _showAddSheet,
             borderRadius: const BorderRadius.vertical(
                 bottom: Radius.circular(AppSizes.radiusLg)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.md, vertical: 12),
+            child: const Padding(
+              padding:
+                  EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.add_rounded,
-                      size: 18, color: AppColors.primary),
-                  const SizedBox(width: 6),
-                  const Text(
+                  Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
+                  SizedBox(width: 6),
+                  Text(
                     'Add Address',
                     style: TextStyle(
                       fontSize: 13,
@@ -1067,7 +1217,9 @@ class _FollowStatsRowState extends State<_FollowStatsRow> {
 
   @override
   Widget build(BuildContext context) {
-    if (_followers == null && _following == null) return const SizedBox.shrink();
+    if (_followers == null && _following == null) {
+      return const SizedBox.shrink();
+    }
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -1096,7 +1248,8 @@ class _StatChip extends StatelessWidget {
   final String label;
   final int count;
   final VoidCallback onTap;
-  const _StatChip({required this.label, required this.count, required this.onTap});
+  const _StatChip(
+      {required this.label, required this.count, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1151,8 +1304,8 @@ class _SettingsRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSizes.radiusLg),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.md, vertical: 14),
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 14),
         child: Row(
           children: [
             Container(
@@ -1180,10 +1333,7 @@ class _SettingsRow extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withAlpha(100),
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
               ),
           ],
         ),

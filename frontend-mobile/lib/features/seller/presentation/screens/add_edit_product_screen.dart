@@ -84,39 +84,48 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     if (lower.contains('book') || lower.contains('read')) {
       return Icons.menu_book_outlined;
     }
-    if (lower.contains('cloth') || lower.contains('fashion') ||
+    if (lower.contains('cloth') ||
+        lower.contains('fashion') ||
         lower.contains('wear')) {
       return Icons.checkroom_outlined;
     }
-    if (lower.contains('sport') || lower.contains('outdoor') ||
+    if (lower.contains('sport') ||
+        lower.contains('outdoor') ||
         lower.contains('fitness')) {
       return Icons.sports_basketball_outlined;
     }
-    if (lower.contains('electron') || lower.contains('tech') ||
+    if (lower.contains('electron') ||
+        lower.contains('tech') ||
         lower.contains('gadget')) {
       return Icons.devices_outlined;
     }
-    if (lower.contains('food') || lower.contains('grocery') ||
+    if (lower.contains('food') ||
+        lower.contains('grocery') ||
         lower.contains('snack')) {
       return Icons.lunch_dining_outlined;
     }
-    if (lower.contains('beauty') || lower.contains('cosmetic') ||
+    if (lower.contains('beauty') ||
+        lower.contains('cosmetic') ||
         lower.contains('skin')) {
       return Icons.face_retouching_natural_outlined;
     }
-    if (lower.contains('home') || lower.contains('furniture') ||
+    if (lower.contains('home') ||
+        lower.contains('furniture') ||
         lower.contains('decor')) {
       return Icons.chair_outlined;
     }
-    if (lower.contains('toy') || lower.contains('game') ||
+    if (lower.contains('toy') ||
+        lower.contains('game') ||
         lower.contains('kids')) {
       return Icons.toys_outlined;
     }
-    if (lower.contains('health') || lower.contains('pharma') ||
+    if (lower.contains('health') ||
+        lower.contains('pharma') ||
         lower.contains('medical')) {
       return Icons.health_and_safety_outlined;
     }
-    if (lower.contains('auto') || lower.contains('car') ||
+    if (lower.contains('auto') ||
+        lower.contains('car') ||
         lower.contains('vehicle')) {
       return Icons.directions_car_outlined;
     }
@@ -327,7 +336,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ── Product Details card ─────────────────────────────────────
-                _SectionLabel('Product Details'),
+                const _SectionLabel('Product Details'),
                 const SizedBox(height: AppSizes.xs),
                 _FormCard(
                   child: Column(
@@ -424,7 +433,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                                       children: [
                                         Icon(
                                           _selectedCategory != null
-                                              ? _categoryIcon(_selectedCategory!)
+                                              ? _categoryIcon(
+                                                  _selectedCategory!)
                                               : Icons.category_outlined,
                                           color: _selectedCategory != null
                                               ? AppColors.primary
@@ -455,8 +465,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                                 ),
                                 if (field.hasError)
                                   Padding(
-                                    padding: const EdgeInsets.only(
-                                        top: 6, left: 12),
+                                    padding:
+                                        const EdgeInsets.only(top: 6, left: 12),
                                     child: Text(
                                       field.errorText!,
                                       style: const TextStyle(
@@ -476,7 +486,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 const SizedBox(height: AppSizes.md),
 
                 // ── Product Images card ──────────────────────────────────────
-                _SectionLabel('Product Images'),
+                const _SectionLabel('Product Images'),
                 const SizedBox(height: AppSizes.xs),
                 _FormCard(
                   child: _MultiImagePicker(

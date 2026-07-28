@@ -27,7 +27,8 @@ import 'package:dio/dio.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
-GoRouter createRouter(AuthBloc authBloc, {required FollowRemoteDataSource followDs, required Dio dio}) {
+GoRouter createRouter(AuthBloc authBloc,
+    {required FollowRemoteDataSource followDs, required Dio dio}) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
@@ -125,7 +126,7 @@ GoRouter createRouter(AuthBloc authBloc, {required FollowRemoteDataSource follow
       // Shell with bottom nav
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
-        builder: (_, __, child) => MainShell(child: child, dio: dio),
+        builder: (_, __, child) => MainShell(dio: dio, child: child),
         routes: [
           GoRoute(
             path: '/',

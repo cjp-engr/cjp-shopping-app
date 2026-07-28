@@ -42,6 +42,8 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
+        backgroundColor: AppColors.bannerStart,
+        foregroundColor: Colors.white,
         title: const Text('Seller Store'),
       ),
       body: BlocBuilder<ProductBloc, ProductState>(
@@ -123,15 +125,45 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                 else ...[
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(
-                        AppSizes.md, AppSizes.sm, AppSizes.md, 0),
+                        AppSizes.md, AppSizes.md, AppSizes.md, 0),
                     sliver: SliverToBoxAdapter(
-                      child: Text(
-                        'Products (${products.length})',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: context.onSurfaceColor,
-                        ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 3,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Products',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: context.onSurfaceColor,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withAlpha(20),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${products.length}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -178,6 +210,45 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
   }
 }
 
+class _StatColumn extends StatelessWidget {
+  final String value;
+  final String label;
+  final IconData icon;
+
+  const _StatColumn({
+    required this.value,
+    required this.label,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.lg, vertical: AppSizes.sm),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 20, color: AppColors.primary),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: context.onSurfaceColor,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: context.onSurfaceSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SellerHeader extends StatelessWidget {
   final String name;
   final String? avatar;
@@ -195,136 +266,176 @@ class _SellerHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: context.surfaceColor,
-      padding: const EdgeInsets.all(AppSizes.lg),
-      child: Column(
-        children: [
-          SellerAvatar(
-            avatarUrl: avatar,
-            name: name,
-            size: 72,
-          ),
-          const SizedBox(height: AppSizes.sm),
-          Text(
-            name,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: context.onSurfaceColor,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ── Gradient hero ────────────────────────────────────────────────
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.bannerStart, AppColors.primary],
             ),
           ),
-          if (joinYear.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Member since $joinYear',
-              style: TextStyle(fontSize: 13, color: context.onSurfaceSecondary),
-            ),
-          ],
-          const SizedBox(height: AppSizes.md),
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.lg, vertical: AppSizes.sm),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(20),
-              borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.shopping_bag_outlined,
-                    size: 16, color: AppColors.primary),
-                const SizedBox(width: 6),
-                Text(
-                  '$productCount ${productCount == 1 ? 'product' : 'products'}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
+          padding: const EdgeInsets.fromLTRB(
+              AppSizes.lg, AppSizes.lg, AppSizes.lg, AppSizes.lg),
+          child: Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withAlpha(200), width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(50),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: SellerAvatar(avatarUrl: avatar, name: name, size: 80),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              if (joinYear.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.calendar_today_outlined,
+                        size: 12, color: Colors.white70),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Member since $joinYear',
+                      style: const TextStyle(
+                          fontSize: 13, color: Colors.white70),
+                    ),
+                  ],
                 ),
               ],
-            ),
+            ],
           ),
-          const SizedBox(height: AppSizes.md),
-          // Follow button + follower count
-          BlocBuilder<UserProfileBloc, UserProfileState>(
+        ),
+        // ── Stats + Follow ───────────────────────────────────────────────
+        Container(
+          color: context.surfaceColor,
+          child: BlocBuilder<UserProfileBloc, UserProfileState>(
             builder: (context, followState) {
               final currentUserId = context.read<AuthBloc>().state.user?.id;
-              if (currentUserId == sellerId) return const SizedBox.shrink();
-
+              final isSelf = currentUserId == sellerId;
               final followUser = followState.user;
               final isFollowing = followUser?.isFollowing ?? false;
-              final followersCount = followUser?.followersCount;
-              final isLoading = followState.status == UserProfileStatus.loading;
+              final followersCount = followUser?.followersCount ?? 0;
+              final isLoading =
+                  followState.status == UserProfileStatus.loading;
 
               return Column(
                 children: [
-                  if (followersCount != null)
-                    Text(
-                      '$followersCount ${followersCount == 1 ? 'follower' : 'followers'}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  const SizedBox(height: AppSizes.sm),
-                  SizedBox(
-                    width: 160,
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: isFollowing
-                            ? context.surfaceVariantColor
-                            : AppColors.primary,
-                        foregroundColor: isFollowing
-                            ? context.onSurfaceColor
-                            : Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppSizes.radiusFull),
-                        ),
-                      ),
-                      onPressed: isLoading
-                          ? null
-                          : () => context.read<UserProfileBloc>().add(
-                                UserProfileFollowToggled(
-                                  targetUserId: sellerId,
-                                  currentlyFollowing: isFollowing,
-                                ),
-                              ),
-                      icon: isLoading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Icon(
-                              isFollowing
-                                  ? Icons.person_remove_rounded
-                                  : Icons.person_add_rounded,
-                              size: 16,
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSizes.md),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _StatColumn(
+                              value: '$productCount',
+                              label: productCount == 1
+                                  ? 'Product'
+                                  : 'Products',
+                              icon: Icons.shopping_bag_outlined,
                             ),
-                      label: Text(
-                        isFollowing ? 'Unfollow' : 'Follow',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                        ),
+                          ),
+                          VerticalDivider(
+                            width: 1,
+                            thickness: 1,
+                            color: context.borderColor,
+                          ),
+                          Expanded(
+                            child: _StatColumn(
+                              value: '$followersCount',
+                              label: followersCount == 1
+                                  ? 'Follower'
+                                  : 'Followers',
+                              icon: Icons.people_outline_rounded,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
+                  if (!isSelf) ...[
+                    Divider(height: 1, color: context.borderColor),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(AppSizes.lg,
+                          AppSizes.md, AppSizes.lg, AppSizes.md),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: isFollowing
+                                ? context.surfaceVariantColor
+                                : AppColors.primary,
+                            foregroundColor: isFollowing
+                                ? context.onSurfaceColor
+                                : Colors.white,
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                  AppSizes.radiusFull),
+                            ),
+                          ),
+                          onPressed: isLoading
+                              ? null
+                              : () => context.read<UserProfileBloc>().add(
+                                    UserProfileFollowToggled(
+                                      targetUserId: sellerId,
+                                      currentlyFollowing: isFollowing,
+                                    ),
+                                  ),
+                          icon: isLoading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Icon(
+                                  isFollowing
+                                      ? Icons.person_remove_rounded
+                                      : Icons.person_add_rounded,
+                                  size: 18,
+                                ),
+                          label: Text(
+                            isFollowing ? 'Unfollow' : 'Follow',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               );
             },
           ),
-          const SizedBox(height: AppSizes.sm),
-          const Divider(),
-        ],
-      ),
+        ),
+        Divider(height: 1, thickness: 1, color: context.borderColor),
+      ],
     );
   }
 }

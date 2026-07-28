@@ -1,4 +1,4 @@
-﻿import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/repositories/seller_repository.dart';
 import 'seller_event.dart';
 import 'seller_state.dart';
@@ -11,6 +11,8 @@ class SellerBloc extends Bloc<SellerEvent, SellerState> {
     on<SellerProductCreateRequested>(_onCreate);
     on<SellerProductUpdateRequested>(_onUpdate);
     on<SellerProductDeleteRequested>(_onDelete);
+    on<SellerOrdersLoadRequested>(_onLoadOrders);
+    on<SellerOrderStatusUpdateRequested>(_onUpdateOrderStatus);
   }
 
   Future<void> _onLoad(
@@ -67,6 +69,36 @@ class SellerBloc extends Bloc<SellerEvent, SellerState> {
     } catch (e) {
       emit(state.copyWith(
           status: SellerStatus.failure, errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onLoadOrders(
+      SellerOrdersLoadRequested event, Emitter<SellerState> emit) async {
+    emit(state.copyWith(ordersStatus: SellerOrdersStatus.loading));
+    try {
+      final orders = await _repository.getSellerOrders();
+      emit(state.copyWith(
+          ordersStatus: SellerOrdersStatus.success, orders: orders));
+    } catch (e) {
+      emit(state.copyWith(
+          ordersStatus: SellerOrdersStatus.failure,
+          errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateOrderStatus(
+      SellerOrderStatusUpdateRequested event,
+      Emitter<SellerState> emit) async {
+    try {
+      await _repository.updateOrderStatus(event.orderId, event.status);
+      final updated = state.orders
+          .map((o) => o.id == event.orderId ? o.copyWith(status: event.status) : o)
+          .toList();
+      emit(state.copyWith(orders: updated));
+    } catch (e) {
+      emit(state.copyWith(
+          ordersStatus: SellerOrdersStatus.failure,
+          errorMessage: e.toString()));
     }
   }
 }

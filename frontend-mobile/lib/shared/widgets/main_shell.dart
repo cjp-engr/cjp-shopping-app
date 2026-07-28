@@ -11,6 +11,7 @@ import '../../features/wishlist/presentation/bloc/wishlist_bloc.dart';
 import '../../features/wishlist/presentation/bloc/wishlist_state.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
+import '../services/notification_service.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
@@ -29,6 +30,16 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
+    // Route notification taps to the seller orders screen.
+    NotificationService.onTap = (payload) {
+      if (mounted && payload == 'seller_orders') {
+        context.go('/seller');
+      }
+    };
+    // Request permission here — Activity is guaranteed to be alive.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.instance.requestPermissions();
+    });
     _maybeStartPolling();
   }
 
@@ -87,20 +98,7 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _showOrderNotification(int count) {
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger == null) return;
-
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 6),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-        content: _OrderNotificationBanner(count: count),
-      ),
-    );
+    NotificationService.instance.showOrderNotification(count);
   }
 
   int _selectedIndex(String location, bool isSeller) {
@@ -198,71 +196,6 @@ class _MainShellState extends State<MainShell> {
             );
           },
         ),
-      ),
-    );
-  }
-}
-
-class _OrderNotificationBanner extends StatelessWidget {
-  final int count;
-  const _OrderNotificationBanner({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(20),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: const Color(0xFFD1FAE5)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFFD1FAE5),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.shopping_bag_rounded,
-              size: 18,
-              color: Color(0xFF059669),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'New order${count > 1 ? 's' : ''} received!',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
-                  ),
-                ),
-                Text(
-                  'You have $count new order${count > 1 ? 's' : ''}.',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF6B7280),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
