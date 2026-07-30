@@ -4,7 +4,7 @@ import type { Address } from './user';
 export type OrderStatus = 'pending' | 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface PaymentMethod {
-  type: 'credit-card' | 'debit-card' | 'paypal';
+  type: 'credit-card' | 'debit-card' | 'paypal' | 'cash-on-delivery';
   last4?: string;
   cardHolder?: string;
 }

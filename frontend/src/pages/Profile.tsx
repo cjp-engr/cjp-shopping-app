@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/common/Card';
@@ -21,7 +21,6 @@ import {
   Trash2,
   PlusCircle,
   Star,
-  Users,
 } from 'lucide-react';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import orderService from '../services/orderService';

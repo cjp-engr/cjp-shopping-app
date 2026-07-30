@@ -74,7 +74,7 @@ const adaptOrder = (order: any): Order & { buyer?: { id: string; firstName: stri
 });
 
 // Auth headers without Content-Type (browser sets it for multipart)
-const getAuthHeadersNoContentType = () => {
+const getAuthHeadersNoContentType = (): Record<string, string> => {
   const token = localStorage.getItem('shopping_app_auth_token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };

@@ -263,9 +263,6 @@ export const OrderDetail: React.FC = () => {
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Shipping Address</h2>
         </div>
         <div className="text-sm text-gray-600 dark:text-gray-400 space-y-0.5">
-          <p className="font-medium text-gray-800 dark:text-gray-200">
-            {order.shippingAddress.firstName} {order.shippingAddress.lastName}
-          </p>
           <p>{order.shippingAddress.street}</p>
           <p>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode}</p>
           <p>{order.shippingAddress.country}</p>

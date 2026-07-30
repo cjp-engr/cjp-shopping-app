@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Tag, X, CheckCircle, Clock, AlertCircle, ChevronRight } from 'lucide-react';
+import { Tag, X, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Spinner } from '../common/Spinner';
 import couponService, { type Coupon } from '../../services/couponService';
