@@ -73,9 +73,14 @@ class SellerRemoteDataSource {
     }
   }
 
-  Future<void> updateOrderStatus(String orderId, String status) async {
+  Future<void> updateOrderStatus(String orderId, String status,
+      {String? cancelReason}) async {
     try {
-      await _dio.put('/seller/orders/$orderId/status', data: {'status': status});
+      final body = <String, dynamic>{'status': status};
+      if (cancelReason != null && cancelReason.isNotEmpty) {
+        body['cancelReason'] = cancelReason;
+      }
+      await _dio.put('/seller/orders/$orderId/status', data: body);
     } on DioException catch (e) {
       throw mapDioError(e);
     }

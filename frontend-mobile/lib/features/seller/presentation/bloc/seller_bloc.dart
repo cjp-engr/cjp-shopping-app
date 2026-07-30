@@ -90,7 +90,8 @@ class SellerBloc extends Bloc<SellerEvent, SellerState> {
       SellerOrderStatusUpdateRequested event,
       Emitter<SellerState> emit) async {
     try {
-      await _repository.updateOrderStatus(event.orderId, event.status);
+      await _repository.updateOrderStatus(event.orderId, event.status,
+          cancelReason: event.cancelReason);
       final updated = state.orders
           .map((o) => o.id == event.orderId ? o.copyWith(status: event.status) : o)
           .toList();

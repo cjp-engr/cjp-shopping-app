@@ -27,26 +27,54 @@ class _MainShellState extends State<MainShell> {
   Set<String> _knownOrderIds = {};
   bool _initialized = false;
 
+  int _toReceiveCount = 0;
+  Timer? _ordersBadgeTimer;
+
   @override
   void initState() {
     super.initState();
-    // Route notification taps to the seller orders screen.
     NotificationService.onTap = (payload) {
-      if (mounted && payload == 'seller_orders') {
-        context.go('/seller');
+      if (mounted && payload == 'seller_orders_tab') {
+        context.go('/seller?tab=orders');
       }
     };
-    // Request permission here — Activity is guaranteed to be alive.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       NotificationService.instance.requestPermissions();
+      // Auth bloc is guaranteed to have user data by first frame.
+      _maybeStartPolling();
+      _maybeFetchToReceiveCount();
     });
-    _maybeStartPolling();
+    _ordersBadgeTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => _maybeFetchToReceiveCount(),
+    );
   }
 
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _ordersBadgeTimer?.cancel();
     super.dispose();
+  }
+
+  void _maybeFetchToReceiveCount() {
+    final isSeller = context.read<AuthBloc>().state.user?.isSeller ?? false;
+    if (isSeller) return; // sellers use the seller dashboard, not buyer orders
+    _fetchToReceiveCount();
+  }
+
+  Future<void> _fetchToReceiveCount() async {
+    try {
+      final res = await widget.dio.get('/orders');
+      final data = res.data;
+      final List<dynamic> orders =
+          data is Map ? (data['orders'] ?? data['data'] ?? []) : (data as List);
+      final count = orders
+          .whereType<Map>()
+          .where((o) => o['status'] == 'shipped')
+          .length;
+      if (mounted) setState(() => _toReceiveCount = count);
+    } catch (_) {}
   }
 
   void _maybeStartPolling() {
@@ -120,12 +148,16 @@ class _MainShellState extends State<MainShell> {
     final borderColor = context.borderColor;
 
     return BlocListener<AuthBloc, AuthState>(
-      listenWhen: (p, c) => p.user?.isSeller != c.user?.isSeller,
+      // Listen to any user change — covers login, logout, and role changes.
+      listenWhen: (p, c) => p.user != c.user,
       listener: (_, authState) {
         if (authState.user?.isSeller == true) {
           _startPolling();
+          // Clear buyer badge when a seller account is active.
+          if (mounted) setState(() => _toReceiveCount = 0);
         } else {
           _stopPolling();
+          _maybeFetchToReceiveCount();
         }
       },
       child: Scaffold(
@@ -162,8 +194,11 @@ class _MainShellState extends State<MainShell> {
                                 icon: Icons.grid_view_outlined,
                                 activeIcon: Icons.grid_view_rounded,
                                 isActive: index == 1,
-                                badge: cartCount > 0 ? cartCount : null,
-                                onTap: () => context.go('/orders'),
+                                badge: _toReceiveCount > 0 ? _toReceiveCount : null,
+                                onTap: () {
+                                  _fetchToReceiveCount();
+                                  context.go('/orders');
+                                },
                               ),
                               _NavItem(
                                 icon: Icons.favorite_border_rounded,

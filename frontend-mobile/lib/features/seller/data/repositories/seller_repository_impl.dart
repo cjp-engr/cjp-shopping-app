@@ -28,6 +28,7 @@ class SellerRepositoryImpl implements SellerRepository {
       _dataSource.getSellerOrders();
 
   @override
-  Future<void> updateOrderStatus(String orderId, String status) =>
-      _dataSource.updateOrderStatus(orderId, status);
+  Future<void> updateOrderStatus(String orderId, String status,
+          {String? cancelReason}) =>
+      _dataSource.updateOrderStatus(orderId, status, cancelReason: cancelReason);
 }

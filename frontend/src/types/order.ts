@@ -1,7 +1,7 @@
 import type { CartItem } from './cart';
 import type { Address } from './user';
 
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface PaymentMethod {
   type: 'credit-card' | 'debit-card' | 'paypal';
@@ -20,6 +20,7 @@ export interface Order {
   shipping: number;
   total: number;
   status: OrderStatus;
+  cancelReason?: string;
   createdAt: string;
   estimatedDelivery?: string;
 }

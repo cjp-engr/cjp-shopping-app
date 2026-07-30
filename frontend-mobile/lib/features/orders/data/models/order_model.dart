@@ -99,6 +99,7 @@ class OrderModel extends OrderEntity {
     required super.total,
     required super.status,
     required super.createdAt,
+    super.cancelReason,
     super.estimatedDelivery,
     super.sellerMessages = const {},
   });
@@ -133,6 +134,7 @@ class OrderModel extends OrderEntity {
       shipping: (json['shipping'] as num?)?.toDouble() ?? 0,
       total: (json['total'] as num?)?.toDouble() ?? 0,
       status: json['status'] ?? 'pending',
+      cancelReason: json['cancelReason'] as String?,
       createdAt: json['createdAt'] ?? '',
       estimatedDelivery: json['estimatedDelivery'],
       sellerMessages: sellerMessages,

@@ -23,50 +23,9 @@ class _CartScreenState extends State<CartScreen> {
   final Set<String> _selected = {};
   bool _initialised = false;
 
-  final Map<String, TextEditingController> _promoCtrls = {};
-  final Map<String, double> _sellerDiscounts = {};
-  final Map<String, String?> _promoErrors = {};
-
   @override
   void dispose() {
-    for (final c in _promoCtrls.values) {
-      c.dispose();
-    }
     super.dispose();
-  }
-
-  TextEditingController _ctrlFor(String sellerKey) =>
-      _promoCtrls.putIfAbsent(sellerKey, () => TextEditingController());
-
-  void _applyPromo(String sellerKey, List<CartItemEntity> sellerItems) {
-    final code = _ctrlFor(sellerKey).text.trim().toUpperCase();
-    final sellerSubtotal =
-        sellerItems.fold<double>(0, (s, i) => s + i.subtotal);
-    double discount = 0;
-    String? error;
-
-    if (code == 'SAVE10') {
-      discount = sellerSubtotal * 0.1;
-    } else if (code == 'SAVE20') {
-      discount = sellerSubtotal * 0.2;
-    } else {
-      error = 'Invalid promo code';
-    }
-
-    setState(() {
-      _sellerDiscounts[sellerKey] = discount;
-      _promoErrors[sellerKey] = error;
-    });
-
-    if (error == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Promo applied: \$${discount.toStringAsFixed(2)} off for this store'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
   }
 
   void _toggleItem(String productId) {
@@ -100,23 +59,7 @@ class _CartScreenState extends State<CartScreen> {
             (s, i) => s + i.subtotal,
           );
 
-  double _totalDiscount(Map<String, List<CartItemEntity>> groups) {
-    double total = 0;
-    for (final entry in groups.entries) {
-      final selectedInGroup =
-          entry.value.where((i) => _selected.contains(i.product.id)).toList();
-      if (selectedInGroup.isEmpty) continue;
-      final discount = _sellerDiscounts[entry.key] ?? 0;
-      final groupSubtotal =
-          entry.value.fold<double>(0, (s, i) => s + i.subtotal);
-      final selectedGroupSubtotal =
-          selectedInGroup.fold<double>(0, (s, i) => s + i.subtotal);
-      final ratio =
-          groupSubtotal > 0 ? selectedGroupSubtotal / groupSubtotal : 0;
-      total += discount * ratio;
-    }
-    return total;
-  }
+  double _totalDiscount(Map<String, List<CartItemEntity>> groups) => 0;
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +120,7 @@ class _CartScreenState extends State<CartScreen> {
               if (sellerSelected.isEmpty) continue;
               final sub =
                   sellerSelected.fold<double>(0, (s, i) => s + i.subtotal);
-              final disc = _sellerDiscounts[entry.key] ?? 0;
+              const disc = 0.0;
               final after = (sub - disc).clamp(0.0, double.infinity);
               final ship = after < 50 ? 9.99 : 0.0;
               final sellerTax = after * 0.08;
@@ -220,13 +163,6 @@ class _CartScreenState extends State<CartScreen> {
                           isSelected: _selected.contains(item.product.id),
                           onToggle: () => _toggleItem(item.product.id),
                         ),
-                      ),
-                      _SellerPromoRow(
-                        sellerKey: entry.key,
-                        controller: _ctrlFor(entry.key),
-                        discount: _sellerDiscounts[entry.key] ?? 0,
-                        error: _promoErrors[entry.key],
-                        onApply: () => _applyPromo(entry.key, entry.value),
                       ),
                       if (multiSeller && sellerSummaries.containsKey(entry.key))
                         _SellerSummaryCard(
@@ -387,110 +323,6 @@ class _SelectableItemTile extends StatelessWidget {
   }
 }
 
-// ── Per-seller promo code row ─────────────────────────────────────────────────
-
-class _SellerPromoRow extends StatelessWidget {
-  final String sellerKey;
-  final TextEditingController controller;
-  final double discount;
-  final String? error;
-  final VoidCallback onApply;
-
-  const _SellerPromoRow({
-    required this.sellerKey,
-    required this.controller,
-    required this.discount,
-    required this.error,
-    required this.onApply,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSizes.xs),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.md, vertical: 12),
-            decoration: BoxDecoration(
-              color: context.cardColor,
-              borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-              border: Border.all(color: context.borderColor),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.local_offer_outlined,
-                    size: 16, color: context.onSurfaceMuted),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    textCapitalization: TextCapitalization.characters,
-                    decoration: InputDecoration(
-                      hintText: 'Promo code for this store',
-                      hintStyle: TextStyle(
-                          fontSize: 13, color: context.onSurfaceMuted),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                      filled: true,
-                      fillColor: Colors.transparent,
-                    ),
-                    style:
-                        TextStyle(fontSize: 13, color: context.onSurfaceColor),
-                    onSubmitted: (_) => onApply(),
-                  ),
-                ),
-                if (discount > 0)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withAlpha(20),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-                    ),
-                    child: Text(
-                      '-\$${discount.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.success,
-                      ),
-                    ),
-                  ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: onApply,
-                  child: const Text(
-                    'Apply',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4, left: 4),
-              child: Text(
-                error!,
-                style: const TextStyle(fontSize: 11, color: AppColors.danger),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 // ── Per-seller summary (only shown for multi-seller carts) ────────────────────
 
 class _SellerSummaryCard extends StatelessWidget {
@@ -628,14 +460,6 @@ class _OrderSummary extends StatelessWidget {
           const Divider(height: 1),
           const SizedBox(height: AppSizes.sm),
           _SummaryRow('Order Amount', '\$${subtotal.toStringAsFixed(2)}'),
-          if (discount > 0) ...[
-            const SizedBox(height: AppSizes.sm),
-            _SummaryRow(
-              'Promo Discount',
-              '-\$${discount.toStringAsFixed(2)}',
-              valueColor: AppColors.success,
-            ),
-          ],
           const SizedBox(height: AppSizes.sm),
           _SummaryRow(
             AppStrings.shipping,

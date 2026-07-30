@@ -4,15 +4,19 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/theme_colors.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../products/domain/entities/product_entity.dart';
 import '../../data/models/seller_order_model.dart';
 import '../bloc/seller_bloc.dart';
 import '../bloc/seller_event.dart';
 import '../bloc/seller_state.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../voucher/data/voucher_repository.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
-  const SellerDashboardScreen({super.key});
+  final String? initialTab;
+  const SellerDashboardScreen({super.key, this.initialTab});
 
   @override
   State<SellerDashboardScreen> createState() => _SellerDashboardScreenState();
@@ -23,52 +27,111 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
   late TabController _tabController;
   String _categoryFilter = 'All';
   String _orderStatusFilter = 'all';
+  bool _ordersRequested = false;
+
+  // Voucher tab state
+  VoucherRepository? _voucherRepo;
+  List<VoucherModel> _coupons = [];
+  bool _couponsLoading = false;
+  bool _couponsRequested = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SellerBloc>()
-        ..add(const SellerProductsLoadRequested())
-        ..add(const SellerOrdersLoadRequested());
+    final initialIndex = widget.initialTab == 'orders'
+        ? 1
+        : widget.initialTab == 'vouchers'
+            ? 2
+            : 0;
+    _tabController = TabController(length: 3, vsync: this, initialIndex: initialIndex);
+    _tabController.addListener(_onTabChanged);
+    ApiClient.get().then((client) {
+      if (mounted) _voucherRepo = VoucherRepository(client);
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SellerBloc>().add(const SellerProductsLoadRequested());
+      // If opened directly on Orders tab (e.g. from a notification tap),
+      // trigger the lazy load that _onTabChanged would normally handle.
+      if (initialIndex == 1 && !_ordersRequested) {
+        _ordersRequested = true;
+        context.read<SellerBloc>().add(const SellerOrdersLoadRequested());
+      }
+    });
+  }
+
+  void _onTabChanged() {
+    if (_tabController.index == 1 && !_ordersRequested) {
+      _ordersRequested = true;
+      context.read<SellerBloc>().add(const SellerOrdersLoadRequested());
+    }
+    if (_tabController.index == 2 && !_couponsRequested) {
+      _couponsRequested = true;
+      _loadCoupons();
+    }
+  }
+
+  Future<void> _loadCoupons() async {
+    if (_voucherRepo == null) return;
+    setState(() => _couponsLoading = true);
+    final list = await _voucherRepo!.listMine();
+    if (mounted) setState(() { _coupons = list; _couponsLoading = false; });
+  }
+
+  Future<void> _deleteCoupon(String id) async {
+    if (_voucherRepo == null) return;
+    await _voucherRepo!.delete(id);
+    if (mounted) setState(() => _coupons.removeWhere((c) => c.id == id));
+  }
+
+  Future<void> _saveCoupon(Map<String, dynamic> data, {String? editId}) async {
+    if (_voucherRepo == null) return;
+    if (editId != null) {
+      final updated = await _voucherRepo!.update(editId, data);
+      if (mounted) {
+        setState(() => _coupons = _coupons.map((c) => c.id == editId ? updated : c).toList());
+      }
+    } else {
+      final created = await _voucherRepo!.create(data);
+      if (mounted) setState(() => _coupons = [created, ..._coupons]);
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
 
-  void _confirmDelete(BuildContext context, ProductEntity product) {
-    showDialog(
+  void _showCouponForm(BuildContext context, {VoucherModel? existing}) {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusLg)),
-        title: const Text('Delete Product'),
-        content: Text('Remove "${product.name}" from your shop?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              context
-                  .read<SellerBloc>()
-                  .add(SellerProductDeleteRequested(product.id));
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger),
-            ),
-          ),
-        ],
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _CouponFormSheet(
+        existing: existing,
+        onSave: (data) => _saveCoupon(data, editId: existing?.id),
       ),
     );
+  }
+
+  void _confirmDelete(BuildContext context, ProductEntity product) async {
+    final confirm = await AppDialog.show(
+      context,
+      icon: Icons.delete_outline_rounded,
+      iconColor: AppColors.danger,
+      iconBackground: AppColors.dangerSurface,
+      title: 'Delete Product',
+      body: 'Remove "${product.name}" from your shop? This action cannot be undone.',
+      cancelLabel: 'Keep It',
+      confirmLabel: 'Yes, Delete',
+      confirmColor: AppColors.danger,
+    );
+    if (confirm == true && context.mounted) {
+      context.read<SellerBloc>().add(SellerProductDeleteRequested(product.id));
+    }
   }
 
   @override
@@ -87,9 +150,12 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
           IconButton(
             icon: const Icon(Icons.refresh_rounded, size: 20),
             tooltip: 'Refresh',
-            onPressed: () => context.read<SellerBloc>()
-              ..add(const SellerProductsLoadRequested())
-              ..add(const SellerOrdersLoadRequested()),
+            onPressed: () {
+              context.read<SellerBloc>().add(const SellerProductsLoadRequested());
+              if (_ordersRequested) {
+                context.read<SellerBloc>().add(const SellerOrdersLoadRequested());
+              }
+            },
           ),
         ],
         bottom: TabBar(
@@ -141,67 +207,95 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
                 );
               },
             ),
+            const Tab(
+              icon: Icon(Icons.local_offer_outlined, size: 18),
+              text: 'Vouchers',
+            ),
           ],
         ),
       ),
-      body: BlocConsumer<SellerBloc, SellerState>(
+      body: BlocListener<SellerBloc, SellerState>(
         listenWhen: (p, c) =>
             (p.status != c.status && c.status == SellerStatus.failure) ||
             (p.ordersStatus != c.ordersStatus &&
                 c.ordersStatus == SellerOrdersStatus.failure),
-        listener: (context, state) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage ?? 'Something went wrong'),
-              backgroundColor: AppColors.danger,
-              duration: const Duration(seconds: 2),
+        listener: (context, state) {},
+        child: Column(
+          children: [
+            // ── Stats row — rebuilds only when counts change ─────────────
+            BlocBuilder<SellerBloc, SellerState>(
+              buildWhen: (p, c) =>
+                  p.products.length != c.products.length ||
+                  p.activeOrderCount != c.activeOrderCount ||
+                  p.pendingOrderCount != c.pendingOrderCount ||
+                  p.revenue != c.revenue,
+              builder: (_, state) => _StatsRow(state: state),
             ),
-          );
-        },
-        builder: (context, state) {
-          return Column(
-            children: [
-              // ── Stats row ────────────────────────────────────────────────
-              _StatsRow(state: state),
 
-              // ── Tab content ──────────────────────────────────────────────
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _ProductsTab(
+            // ── Tab content ──────────────────────────────────────────────
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Products tab — rebuilds only when products change
+                  BlocBuilder<SellerBloc, SellerState>(
+                    buildWhen: (p, c) =>
+                        p.products != c.products ||
+                        p.status != c.status,
+                    builder: (context, state) => _ProductsTab(
                       state: state,
                       categoryFilter: _categoryFilter,
                       onCategoryChanged: (cat) =>
                           setState(() => _categoryFilter = cat),
                       onDelete: (p) => _confirmDelete(context, p),
                     ),
-                    _OrdersTab(
+                  ),
+                  // Orders tab — rebuilds only when orders change
+                  BlocBuilder<SellerBloc, SellerState>(
+                    buildWhen: (p, c) =>
+                        p.orders != c.orders ||
+                        p.ordersStatus != c.ordersStatus,
+                    builder: (context, state) => _OrdersTab(
                       state: state,
                       statusFilter: _orderStatusFilter,
                       onStatusChanged: (s) =>
                           setState(() => _orderStatusFilter = s),
                     ),
-                  ],
-                ),
+                  ),
+                  // Vouchers tab
+                  _VouchersTab(
+                    coupons: _coupons,
+                    loading: _couponsLoading,
+                    onDelete: _deleteCoupon,
+                    onSave: _saveCoupon,
+                  ),
+                ],
               ),
-            ],
-          );
-        },
+            ),
+          ],
+        ),
       ),
-      floatingActionButton: BlocBuilder<SellerBloc, SellerState>(
-        builder: (context, state) {
-          return ListenableBuilder(
-            listenable: _tabController,
-            builder: (context, _) => _tabController.index == 0
-                ? FloatingActionButton(
-                    onPressed: () => context.push('/seller/add'),
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    child: const Icon(Icons.add),
-                  )
-                : const SizedBox.shrink(),
-          );
+      floatingActionButton: ListenableBuilder(
+        listenable: _tabController,
+        builder: (context, _) {
+          if (_tabController.index == 0) {
+            return FloatingActionButton(
+              onPressed: () => context.push('/seller/add'),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              child: const Icon(Icons.add),
+            );
+          }
+          if (_tabController.index == 2) {
+            return FloatingActionButton(
+              onPressed: () => _showCouponForm(context),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              tooltip: 'Create Voucher',
+              child: const Icon(Icons.add),
+            );
+          }
+          return const SizedBox.shrink();
         },
       ),
     );
@@ -505,6 +599,7 @@ class _OrdersTab extends StatelessWidget {
   static const _allTabs = [
     _StatusTab('all', 'All', Icons.receipt_long_outlined),
     _StatusTab('pending', 'Pending', Icons.access_time_rounded),
+    _StatusTab('preparing', 'Preparing', Icons.pending_actions_outlined),
     _StatusTab('processing', 'To Ship', Icons.inventory_2_outlined),
     _StatusTab('shipped', 'To Receive', Icons.local_shipping_outlined),
     _StatusTab('delivered', 'Delivered', Icons.check_circle_outline_rounded),
@@ -786,7 +881,8 @@ class _OrderCard extends StatelessWidget {
                     )),
 
                 // ── Actions ──────────────────────────────────────────────
-                if (order.canMarkToShip ||
+                if (order.canMarkPreparing ||
+                    order.canMarkToShip ||
                     order.canMarkShipped ||
                     order.canCancel) ...[
                   const SizedBox(height: 10),
@@ -794,6 +890,18 @@ class _OrderCard extends StatelessWidget {
                   const SizedBox(height: 10),
                   Row(
                     children: [
+                      if (order.canMarkPreparing)
+                        Expanded(
+                          child: _OrderActionBtn(
+                            label: 'Accept / Prepare',
+                            icon: Icons.pending_actions_outlined,
+                            color: AppColors.primary,
+                            onTap: () =>
+                                context.read<SellerBloc>().add(
+                                    SellerOrderStatusUpdateRequested(
+                                        order.id, 'preparing')),
+                          ),
+                        ),
                       if (order.canMarkToShip)
                         Expanded(
                           child: _OrderActionBtn(
@@ -818,7 +926,7 @@ class _OrderCard extends StatelessWidget {
                                         order.id, 'shipped')),
                           ),
                         ),
-                      if ((order.canMarkToShip || order.canMarkShipped) &&
+                      if ((order.canMarkPreparing || order.canMarkToShip || order.canMarkShipped) &&
                           order.canCancel)
                         const SizedBox(width: AppSizes.sm),
                       if (order.canCancel)
@@ -827,10 +935,8 @@ class _OrderCard extends StatelessWidget {
                             label: 'Cancel',
                             icon: Icons.cancel_outlined,
                             color: AppColors.danger,
-                            onTap: () =>
-                                context.read<SellerBloc>().add(
-                                    SellerOrderStatusUpdateRequested(
-                                        order.id, 'cancelled')),
+                            onTap: () => _showSellerCancelDialog(
+                                context, order.id),
                           ),
                         ),
                     ],
@@ -844,6 +950,41 @@ class _OrderCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showSellerCancelDialog(BuildContext context, String orderId) {
+    String? reason;
+    bool confirmed = false;
+    final reasonValue = ValueNotifier<String>('');
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (dialogCtx) => AppFormDialog(
+        icon: Icons.cancel_outlined,
+        iconColor: AppColors.danger,
+        iconBackground: AppColors.dangerSurface,
+        title: 'Cancel Order',
+        subtitle: 'Provide a reason for cancellation (optional).',
+        formContent: _SellerCancelReasonField(value: reasonValue),
+        cancelLabel: 'Keep Order',
+        confirmLabel: 'Yes, Cancel',
+        confirmColor: AppColors.danger,
+        onCancel: () => Navigator.of(dialogCtx).pop(),
+        onConfirm: () {
+          final text = reasonValue.value.trim();
+          reason = text.isEmpty ? null : text;
+          confirmed = true;
+          Navigator.of(dialogCtx).pop();
+        },
+      ),
+    ).then((_) {
+      reasonValue.dispose();
+      if (confirmed && context.mounted) {
+        context.read<SellerBloc>().add(SellerOrderStatusUpdateRequested(
+            orderId, 'cancelled',
+            cancelReason: reason));
+      }
+    });
   }
 
   String _formatDate(String iso) {
@@ -864,6 +1005,8 @@ class _OrderCard extends StatelessWidget {
     switch (status) {
       case 'pending':
         return const _StatusConfig('Pending', AppColors.warning);
+      case 'preparing':
+        return const _StatusConfig('Preparing', AppColors.warning);
       case 'processing':
         return const _StatusConfig('To Ship', AppColors.primary);
       case 'shipped':
@@ -967,6 +1110,8 @@ class _OrderItemRow extends StatelessWidget {
                     width: 42,
                     height: 42,
                     fit: BoxFit.cover,
+                    cacheWidth: 84,
+                    cacheHeight: 84,
                     errorBuilder: (_, __, ___) => _placeholder(),
                   )
                 : _placeholder(),
@@ -1112,6 +1257,8 @@ class _ProductTile extends StatelessWidget {
                           width: 76,
                           height: 76,
                           fit: BoxFit.cover,
+                          cacheWidth: 152,
+                          cacheHeight: 152,
                           errorBuilder: (_, __, ___) => _placeholder(),
                         )
                       : _placeholder(),
@@ -1421,48 +1568,62 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                       _SheetSection(
                         title: 'Buyer',
                         icon: Icons.person_outline_rounded,
-                        child: Row(
-                          children: [
-                            _BuyerAvatar(
-                                name: order.buyer!.fullName,
-                                size: 48),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    order.buyer!.fullName,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                      color: context.onSurfaceColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.email_outlined,
-                                          size: 13,
-                                          color: context.onSurfaceMuted),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          order.buyer!.email,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: context.onSurfaceMuted,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                        child: InkWell(
+                          onTap: order.buyer!.id.isNotEmpty
+                              ? () {
+                                  Navigator.of(context).pop();
+                                  context.push(
+                                      '/users/${order.buyer!.id}');
+                                }
+                              : null,
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radiusMd),
+                          child: Row(
+                            children: [
+                              _BuyerAvatar(
+                                  name: order.buyer!.fullName,
+                                  size: 48),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      order.buyer!.fullName,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: context.onSurfaceColor,
                                       ),
-                                    ],
-                                  ),
-                                ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.email_outlined,
+                                            size: 13,
+                                            color: context.onSurfaceMuted),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            order.buyer!.email,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: context.onSurfaceMuted,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                              Icon(Icons.chevron_right,
+                                  size: 18,
+                                  color: context.onSurfaceMuted),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: AppSizes.sm),
@@ -1495,7 +1656,16 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                               e.key == order.items.length - 1;
                           return Column(
                             children: [
-                              _DetailItemRow(item: e.value),
+                              _DetailItemRow(
+                                item: e.value,
+                                onTap: e.value.productId.isNotEmpty
+                                    ? () {
+                                        Navigator.of(context).pop();
+                                        context.push(
+                                            '/products/${e.value.productId}?hideEdit=1');
+                                      }
+                                    : null,
+                              ),
                               if (!isLast) ...[
                                 const SizedBox(height: 6),
                                 Divider(
@@ -1561,6 +1731,8 @@ class _SellerOrderDetailSheet extends StatelessWidget {
     switch (status) {
       case 'pending':
         return const _StatusConfig('Pending', AppColors.warning);
+      case 'preparing':
+        return const _StatusConfig('Preparing', AppColors.warning);
       case 'processing':
         return const _StatusConfig('To Ship', AppColors.primary);
       case 'shipped':
@@ -1619,57 +1791,69 @@ class _SheetSection extends StatelessWidget {
 
 class _DetailItemRow extends StatelessWidget {
   final SellerOrderItemData item;
-  const _DetailItemRow({required this.item});
+  final VoidCallback? onTap;
+  const _DetailItemRow({required this.item, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-          child: item.productImage.isNotEmpty
-              ? Image.network(
-                  item.productImage,
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _placeholder(),
-                )
-              : _placeholder(),
-        ),
-        const SizedBox(width: AppSizes.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.productName,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: context.onSurfaceColor,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+            child: item.productImage.isNotEmpty
+                ? Image.network(
+                    item.productImage,
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                    cacheWidth: 100,
+                    cacheHeight: 100,
+                    errorBuilder: (_, __, ___) => _placeholder(),
+                  )
+                : _placeholder(),
+          ),
+          const SizedBox(width: AppSizes.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.productName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: context.onSurfaceColor,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '\$${item.price.toStringAsFixed(2)} × ${item.quantity}',
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textMuted),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  '\$${item.price.toStringAsFixed(2)} × ${item.quantity}',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textMuted),
+                ),
+              ],
+            ),
           ),
-        ),
-        Text(
-          '\$${item.lineTotal.toStringAsFixed(2)}',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: AppColors.primary,
+          Text(
+            '\$${item.lineTotal.toStringAsFixed(2)}',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
           ),
-        ),
-      ],
+          if (onTap != null) ...[
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right,
+                size: 16, color: AppColors.textMuted),
+          ],
+        ],
+      ),
     );
   }
 
@@ -1683,6 +1867,495 @@ class _DetailItemRow extends StatelessWidget {
         child: const Icon(Icons.inventory_2_outlined,
             size: 20, color: AppColors.textMuted),
       );
+}
+
+// ── Vouchers tab ─────────────────────────────────────────────────────────────
+
+class _VouchersTab extends StatelessWidget {
+  final List<VoucherModel> coupons;
+  final bool loading;
+  final Future<void> Function(String id) onDelete;
+  final Future<void> Function(Map<String, dynamic> data, {String? editId}) onSave;
+
+  const _VouchersTab({
+    required this.coupons,
+    required this.loading,
+    required this.onDelete,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (coupons.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.local_offer_outlined, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 12),
+            Text('No vouchers yet',
+                style: TextStyle(fontSize: 15, color: Colors.grey[500])),
+            const SizedBox(height: 6),
+            Text('Tap + to create your first voucher',
+                style: TextStyle(fontSize: 13, color: Colors.grey[400])),
+          ],
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppSizes.md),
+      itemCount: coupons.length,
+      itemBuilder: (ctx, i) {
+        final c = coupons[i];
+        final daysLeft = c.daysLeft;
+        final isExpired = c.isExpired;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: ctx.surfaceColor,
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(8),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                // Color strip
+                Container(
+                  width: 6,
+                  decoration: BoxDecoration(
+                    color: c.isActive && !isExpired ? Colors.orange : Colors.grey[300],
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(10),
+                      bottomLeft: Radius.circular(10),
+                    ),
+                  ),
+                ),
+                // Icon
+                Container(
+                  width: 56,
+                  color: c.isActive && !isExpired
+                      ? Colors.orange.withValues(alpha: 0.08)
+                      : Colors.grey.withValues(alpha: 0.05),
+                  child: Center(
+                    child: Icon(
+                      Icons.local_offer_outlined,
+                      size: 26,
+                      color: c.isActive && !isExpired ? Colors.orange : Colors.grey[400],
+                    ),
+                  ),
+                ),
+                // Content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              c.code,
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: c.isActive && !isExpired ? AppColors.success : Colors.grey,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                isExpired ? 'Expired' : (c.isActive ? 'Active' : 'Inactive'),
+                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          c.discountLabel,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        ),
+                        if (c.description != null)
+                          Text(c.description!, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            if (c.minOrderAmount > 0)
+                              Text('Min \$${c.minOrderAmount.toStringAsFixed(2)}',
+                                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                            if (c.usageLimit != null)
+                              Text('${c.usedCount}/${c.usageLimit} used',
+                                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                            if (daysLeft != null && !isExpired)
+                              Text('$daysLeft day${daysLeft != 1 ? 's' : ''} left',
+                                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Actions
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      color: AppColors.primary,
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: ctx,
+                          isScrollControlled: true,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (_) => _CouponFormSheet(
+                            existing: c,
+                            onSave: (data) => onSave(data, editId: c.id),
+                          ),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      color: AppColors.danger,
+                      onPressed: () => onDelete(c.id),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Coupon create/edit form sheet ─────────────────────────────────────────────
+
+class _CouponFormSheet extends StatefulWidget {
+  final VoucherModel? existing;
+  final Future<void> Function(Map<String, dynamic> data) onSave;
+
+  const _CouponFormSheet({this.existing, required this.onSave});
+
+  @override
+  State<_CouponFormSheet> createState() => _CouponFormSheetState();
+}
+
+class _CouponFormSheetState extends State<_CouponFormSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _codeCtrl = TextEditingController();
+  final _valueCtrl = TextEditingController();
+  final _maxDiscCtrl = TextEditingController();
+  final _minAmtCtrl = TextEditingController();
+  final _limitCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  String _discountType = 'percentage';
+  bool _isActive = true;
+  DateTime? _expiresAt;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final c = widget.existing;
+    if (c != null) {
+      _codeCtrl.text = c.code;
+      _discountType = c.discountType;
+      _valueCtrl.text = c.discountValue.toString();
+      _maxDiscCtrl.text = c.maxDiscount?.toString() ?? '';
+      _minAmtCtrl.text = c.minOrderAmount.toString();
+      _limitCtrl.text = c.usageLimit?.toString() ?? '';
+      _descCtrl.text = c.description ?? '';
+      _isActive = c.isActive;
+      _expiresAt = c.expiresAt != null ? DateTime.tryParse(c.expiresAt!) : null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _codeCtrl.dispose();
+    _valueCtrl.dispose();
+    _maxDiscCtrl.dispose();
+    _minAmtCtrl.dispose();
+    _limitCtrl.dispose();
+    _descCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() { _saving = true; _error = null; });
+    try {
+      final data = <String, dynamic>{
+        'discountType': _discountType,
+        'discountValue': double.parse(_valueCtrl.text),
+        'minOrderAmount': double.tryParse(_minAmtCtrl.text) ?? 0,
+        'isActive': _isActive,
+        if (_descCtrl.text.trim().isNotEmpty) 'description': _descCtrl.text.trim(),
+        if (_maxDiscCtrl.text.trim().isNotEmpty) 'maxDiscount': double.parse(_maxDiscCtrl.text),
+        if (_limitCtrl.text.trim().isNotEmpty) 'usageLimit': int.parse(_limitCtrl.text),
+        if (_expiresAt != null) 'expiresAt': _expiresAt!.toIso8601String(),
+      };
+      if (widget.existing == null) data['code'] = _codeCtrl.text.trim().toUpperCase();
+      await widget.onSave(data);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) setState(() { _error = e.toString().replaceFirst('Exception: ', ''); _saving = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16, right: 16, top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.existing != null ? 'Edit Voucher' : 'Create Voucher',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              if (_error != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.danger.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
+                ),
+              if (widget.existing == null)
+                _field(_codeCtrl, 'Voucher Code', hint: 'e.g. SAVE10',
+                    validator: (v) => v!.trim().isEmpty ? 'Required' : null),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _discountType,
+                      decoration: _dec('Discount Type'),
+                      items: const [
+                        DropdownMenuItem(value: 'percentage', child: Text('Percentage (%)')),
+                        DropdownMenuItem(value: 'fixed', child: Text('Fixed (\$)')),
+                      ],
+                      onChanged: (v) => setState(() => _discountType = v!),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _field(_valueCtrl,
+                      _discountType == 'percentage' ? 'Discount (%)' : 'Amount (\$)',
+                      keyboardType: TextInputType.number,
+                      validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid number' : null,
+                    ),
+                  ),
+                ],
+              ),
+              if (_discountType == 'percentage') ...[
+                const SizedBox(height: 8),
+                _field(_maxDiscCtrl, 'Max Discount Cap (\$, optional)', keyboardType: TextInputType.number),
+              ],
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(child: _field(_minAmtCtrl, 'Min. Order (\$)', keyboardType: TextInputType.number)),
+                  const SizedBox(width: 10),
+                  Expanded(child: _field(_limitCtrl, 'Usage Limit (optional)', keyboardType: TextInputType.number)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _field(_descCtrl, 'Description (optional)'),
+              const SizedBox(height: 8),
+              // Expiry date picker
+              GestureDetector(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _expiresAt ?? DateTime.now().add(const Duration(days: 30)),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+                  );
+                  if (picked != null && mounted) setState(() => _expiresAt = picked);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[400]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        _expiresAt != null
+                            ? 'Expires: ${_expiresAt!.toLocal().toString().split(' ').first}'
+                            : 'Set expiry date (optional)',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      ),
+                      if (_expiresAt != null) ...[
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () => setState(() => _expiresAt = null),
+                          child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              if (widget.existing != null) ...[
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Active', style: TextStyle(fontSize: 14)),
+                  value: _isActive,
+                  onChanged: (v) => setState(() => _isActive = v),
+                  activeColor: AppColors.primary,
+                ),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: _saving
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Text(widget.existing != null ? 'Save Changes' : 'Create Voucher',
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _field(
+    TextEditingController ctrl,
+    String label, {
+    String? hint,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) =>
+      TextFormField(
+        controller: ctrl,
+        keyboardType: keyboardType,
+        decoration: _dec(label, hint: hint),
+        validator: validator,
+        style: const TextStyle(fontSize: 13),
+      );
+
+  InputDecoration _dec(String label, {String? hint}) => InputDecoration(
+        labelText: label,
+        hintText: hint,
+        labelStyle: const TextStyle(fontSize: 13),
+        hintStyle: TextStyle(fontSize: 12, color: Colors.grey[400]),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      );
+}
+
+class _SellerCancelReasonField extends StatefulWidget {
+  const _SellerCancelReasonField({required this.value});
+  final ValueNotifier<String> value;
+
+  @override
+  State<_SellerCancelReasonField> createState() => _SellerCancelReasonFieldState();
+}
+
+class _SellerCancelReasonFieldState extends State<_SellerCancelReasonField> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController();
+    _ctrl.addListener(() => widget.value.value = _ctrl.text);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return TextField(
+      controller: _ctrl,
+      maxLines: 3,
+      style: TextStyle(
+        fontSize: 14,
+        color: isDark ? Colors.white : AppColors.textPrimary,
+      ),
+      decoration: InputDecoration(
+        hintText: 'e.g. Out of stock, unable to fulfill…',
+        hintStyle: TextStyle(
+          fontSize: 13,
+          color: isDark ? const Color(0xFF64748B) : AppColors.textMuted,
+        ),
+        helperText: 'Optional — shown to the buyer',
+        helperStyle: TextStyle(fontSize: 12, color: isDark ? const Color(0xFF475569) : AppColors.textMuted),
+        filled: true,
+        fillColor: isDark ? const Color(0xFF0F172A) : AppColors.surfaceVariant,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      ),
+    );
+  }
 }
 
 class _SummaryLine extends StatelessWidget {

@@ -48,7 +48,7 @@ class SellerState extends Equatable {
       .fold(0, (sum, o) => sum + o.total);
 
   int get actionableOrderCount => orders
-      .where((o) => ['pending', 'processing', 'shipped'].contains(o.status))
+      .where((o) => ['pending', 'preparing', 'processing', 'shipped'].contains(o.status))
       .length;
 
   @override

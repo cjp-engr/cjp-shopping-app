@@ -33,11 +33,13 @@ class SellerOrderAddress {
 }
 
 class SellerOrderBuyer {
+  final String id;
   final String firstName;
   final String lastName;
   final String email;
 
   const SellerOrderBuyer({
+    required this.id,
     required this.firstName,
     required this.lastName,
     required this.email,
@@ -92,6 +94,7 @@ class SellerOrderData {
   final double shipping;
   final double total;
   final String createdAt;
+  final String? cancelReason;
   final SellerOrderBuyer? buyer;
   final SellerOrderAddress? shippingAddress;
   final List<SellerOrderItemData> items;
@@ -105,6 +108,7 @@ class SellerOrderData {
     required this.total,
     required this.createdAt,
     required this.items,
+    this.cancelReason,
     this.buyer,
     this.shippingAddress,
   });
@@ -114,12 +118,13 @@ class SellerOrderData {
 
   bool get isActive => !['delivered', 'cancelled'].contains(status);
   bool get isPending => status == 'pending';
-  bool get canMarkToShip => status == 'pending';
+  bool get canMarkPreparing => status == 'pending';
+  bool get canMarkToShip => status == 'preparing';
   bool get canMarkShipped => status == 'processing';
   bool get canCancel =>
-      status == 'pending' || status == 'processing' || status == 'shipped';
+      status == 'pending' || status == 'preparing' || status == 'processing' || status == 'shipped';
 
-  SellerOrderData copyWith({String? status}) => SellerOrderData(
+  SellerOrderData copyWith({String? status, String? cancelReason}) => SellerOrderData(
         id: id,
         status: status ?? this.status,
         subtotal: subtotal,
@@ -127,6 +132,7 @@ class SellerOrderData {
         shipping: shipping,
         total: total,
         createdAt: createdAt,
+        cancelReason: cancelReason ?? this.cancelReason,
         buyer: buyer,
         shippingAddress: shippingAddress,
         items: items,
@@ -137,6 +143,7 @@ class SellerOrderData {
     SellerOrderBuyer? buyer;
     if (userJson is Map) {
       buyer = SellerOrderBuyer(
+        id: userJson['_id']?.toString() ?? '',
         firstName: userJson['firstName']?.toString() ?? '',
         lastName: userJson['lastName']?.toString() ?? '',
         email: userJson['email']?.toString() ?? '',
@@ -163,6 +170,7 @@ class SellerOrderData {
     return SellerOrderData(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       status: json['status'] ?? 'pending',
+      cancelReason: json['cancelReason'] as String?,
       subtotal: sub,
       tax: tx,
       shipping: sh,

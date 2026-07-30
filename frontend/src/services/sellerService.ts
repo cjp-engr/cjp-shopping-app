@@ -27,10 +27,11 @@ const adaptProduct = (p: any): Product => ({
   createdAt: p.createdAt,
 });
 
-const adaptOrder = (order: any): Order & { buyer?: { firstName: string; lastName: string; email: string } } => ({
+const adaptOrder = (order: any): Order & { buyer?: { id: string; firstName: string; lastName: string; email: string } } => ({
   id: order._id || order.id,
   userId: order.userId?._id || order.userId,
   buyer: order.userId?.firstName ? {
+    id: order.userId._id || order.userId.id || '',
     firstName: order.userId.firstName,
     lastName: order.userId.lastName,
     email: order.userId.email,
@@ -159,11 +160,11 @@ class SellerService {
     return data.orders.map(adaptOrder);
   }
 
-  async updateOrderStatus(orderId: string, status: 'processing' | 'shipped' | 'delivered' | 'cancelled'): Promise<void> {
+  async updateOrderStatus(orderId: string, status: 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled', cancelReason?: string): Promise<void> {
     const res = await fetch(API_ENDPOINTS.SELLER_ORDER_STATUS(orderId), {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, ...(cancelReason ? { cancelReason } : {}) }),
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to update status'); }
   }

@@ -24,10 +24,11 @@ final class OrderCreateRequested extends OrderEvent {
 final class OrderCancelRequested extends OrderEvent {
   final String orderId;
   final String userId;
-  OrderCancelRequested(this.orderId, this.userId);
+  final String? cancelReason;
+  OrderCancelRequested(this.orderId, this.userId, {this.cancelReason});
 
   @override
-  List<Object?> get props => [orderId, userId];
+  List<Object?> get props => [orderId, userId, cancelReason];
 }
 
 final class OrderConfirmReceivedRequested extends OrderEvent {

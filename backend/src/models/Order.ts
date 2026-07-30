@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { IAddress } from './User.js';
 
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface ICartItem {
   product: mongoose.Types.ObjectId;
@@ -23,13 +23,16 @@ export interface IOrder extends Document {
   shippingAddress: IAddress;
   paymentMethod: IPaymentMethod;
   subtotal: number;
+  discount: number;
   tax: number;
   shipping: number;
   total: number;
+  couponCode?: string;
   status: OrderStatus;
   estimatedDelivery?: Date;
   shippedAt?: Date;
   refundRequestedAt?: Date;
+  cancelReason?: string;
   sellerMessages?: Record<string, string>;
   createdAt: Date;
   updatedAt: Date;
@@ -112,6 +115,13 @@ const OrderSchema = new Schema<IOrder>({
     required: true,
     min: 0
   },
+  discount: {
+    type: Number,
+    required: true,
+    default: 0,
+    min: 0
+  },
+  couponCode: { type: String },
   tax: {
     type: Number,
     required: true,
@@ -129,12 +139,13 @@ const OrderSchema = new Schema<IOrder>({
   },
   status: {
     type: String,
-    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+    enum: ['pending', 'preparing', 'processing', 'shipped', 'delivered', 'cancelled'],
     default: 'pending'
   },
   estimatedDelivery: Date,
   shippedAt: Date,
-  refundRequestedAt: Date
+  refundRequestedAt: Date,
+  cancelReason: { type: String }
 }, {
   timestamps: true
 });

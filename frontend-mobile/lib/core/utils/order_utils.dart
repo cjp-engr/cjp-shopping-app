@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 Color orderStatusColor(String status) {
   switch (status) {
     case 'pending':    return AppColors.warning;
+    case 'preparing':  return AppColors.warning;
     case 'processing': return AppColors.primary;
     case 'shipped':    return AppColors.primaryLight;
     case 'delivered':  return AppColors.success;
@@ -15,6 +16,7 @@ Color orderStatusColor(String status) {
 IconData orderStatusIcon(String status) {
   switch (status) {
     case 'pending':    return Icons.access_time_rounded;
+    case 'preparing':  return Icons.pending_actions_outlined;
     case 'processing': return Icons.inventory_2_outlined;
     case 'shipped':    return Icons.local_shipping_outlined;
     case 'delivered':  return Icons.check_circle_outline_rounded;
@@ -26,9 +28,10 @@ IconData orderStatusIcon(String status) {
 int orderStatusStep(String status) {
   switch (status) {
     case 'pending':    return 0;
-    case 'processing': return 1;
-    case 'shipped':    return 2;
-    case 'delivered':  return 3;
+    case 'preparing':  return 1;
+    case 'processing': return 2;
+    case 'shipped':    return 3;
+    case 'delivered':  return 4;
     default:           return -1;
   }
 }

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { SelectVoucherModal } from '../components/voucher/SelectVoucherModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/common/Card';
@@ -23,6 +24,8 @@ import {
   Home,
   PlusCircle,
   Trash2,
+  Tag,
+  ChevronRight,
 } from 'lucide-react';
 
 type PaymentMode = 'saved' | 'new';
@@ -75,27 +78,33 @@ export const Checkout: React.FC = () => {
   const [saveCard, setSaveCard] = useState(false);
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
 
+  // Per-seller voucher state: { sellerId -> { code, discountAmount } }
+  const [voucherSelections, setVoucherSelections] = useState<Record<string, { code: string; discountAmount: number }>>({});
+  const [voucherModalSellerId, setVoucherModalSellerId] = useState<string | null>(null);
+
   const FREE_SHIPPING_THRESHOLD = 50;
 
   // Group cart items by seller for the Order Review and per-seller shipping display
   const sellerGroups = useMemo(() => {
-    const map = new Map<string, { sellerName: string; items: typeof cart.items; subtotal: number; shipping: number; tax: number; storeTotal: number }>();
+    const map = new Map<string, { sellerId: string; sellerName: string; items: typeof cart.items; subtotal: number; discount: number; shipping: number; tax: number; storeTotal: number }>();
     for (const cartItem of cart.items) {
       const key = cartItem.product.sellerId ?? '__unknown__';
       if (!map.has(key)) {
-        map.set(key, { sellerName: cartItem.product.sellerName ?? 'Seller', items: [], subtotal: 0, shipping: 0, tax: 0, storeTotal: 0 });
+        map.set(key, { sellerId: key, sellerName: cartItem.product.sellerName ?? 'Seller', items: [], subtotal: 0, discount: 0, shipping: 0, tax: 0, storeTotal: 0 });
       }
       const group = map.get(key)!;
       group.items.push(cartItem);
       group.subtotal += cartItem.product.price * cartItem.quantity;
     }
-    for (const group of map.values()) {
-      group.shipping = group.subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 9.99;
-      group.tax = group.subtotal * 0.08;
-      group.storeTotal = group.subtotal + group.shipping + group.tax;
+    for (const [key, group] of map.entries()) {
+      group.discount = voucherSelections[key]?.discountAmount ?? 0;
+      const discounted = Math.max(0, group.subtotal - group.discount);
+      group.shipping = discounted >= FREE_SHIPPING_THRESHOLD ? 0 : 9.99;
+      group.tax = discounted * 0.08;
+      group.storeTotal = discounted + group.shipping + group.tax;
     }
     return Array.from(map.values());
-  }, [cart.items]);
+  }, [cart.items, voucherSelections]);
 
   const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -249,7 +258,11 @@ export const Checkout: React.FC = () => {
         contactPhone: shippingData.phone,
       };
 
-      const orders = await orderService.createOrder(checkoutData, cart, user.id);
+      const couponCodes: Record<string, string> = {};
+      for (const [sellerId, v] of Object.entries(voucherSelections)) {
+        if (v.code) couponCodes[sellerId] = v.code;
+      }
+      const orders = await orderService.createOrder(checkoutData, cart, user.id, couponCodes);
       orderPlaced.current = true;
       clearCart();
       navigate(`/orders?success=${orders[0]?.id ?? ''}`);
@@ -746,19 +759,21 @@ export const Checkout: React.FC = () => {
 
                 {/* Items grouped by seller */}
                 <div className="space-y-6 mb-6">
-                  {sellerGroups.map((group) => (
-                    <div key={group.sellerName}>
+                  {sellerGroups.map((group) => {
+                    const voucher = voucherSelections[group.sellerId];
+                    return (
+                    <div key={group.sellerId}>
                       {/* Seller header */}
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                           🏪 {group.sellerName}
                         </span>
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          group.subtotal >= FREE_SHIPPING_THRESHOLD
+                          group.shipping === 0
                             ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
                             : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
                         }`}>
-                          {group.subtotal >= FREE_SHIPPING_THRESHOLD ? 'Free Shipping' : 'Shipping: $9.99'}
+                          {group.shipping === 0 ? 'Free Shipping' : 'Shipping: $9.99'}
                         </span>
                       </div>
                       <div className="space-y-3">
@@ -785,12 +800,44 @@ export const Checkout: React.FC = () => {
                           </div>
                         ))}
                       </div>
+
+                      {/* Voucher button */}
+                      <button
+                        type="button"
+                        onClick={() => setVoucherModalSellerId(group.sellerId)}
+                        className={`w-full mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm transition-colors ${
+                          voucher
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30 dark:border-primary-500 text-primary-700 dark:text-primary-100'
+                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-orange-300 hover:text-orange-600 dark:hover:text-orange-400'
+                        }`}
+                      >
+                        <Tag className="w-4 h-4 flex-shrink-0" />
+                        <span className="flex-1 text-left font-medium">
+                          {voucher ? `Voucher applied: ${voucher.code}` : 'Select voucher'}
+                        </span>
+                        {voucher && (
+                          <>
+                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                              -{formatCurrency(voucher.discountAmount)}
+                            </span>
+                            <span className="text-gray-300 dark:text-gray-600">|</span>
+                          </>
+                        )}
+                        <ChevronRight className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-500" />
+                      </button>
+
                       {/* Per-seller cost breakdown */}
                       <div className="mt-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 px-4 py-3 space-y-1.5 text-sm">
                         <div className="flex justify-between text-gray-600 dark:text-gray-400">
                           <span>Order Amount</span>
                           <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.subtotal)}</span>
                         </div>
+                        {group.discount > 0 && (
+                          <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+                            <span>Voucher Discount</span>
+                            <span className="font-medium">-{formatCurrency(group.discount)}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-gray-600 dark:text-gray-400">
                           <span>Shipping</span>
                           <span className={`font-medium ${group.shipping === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>
@@ -807,7 +854,8 @@ export const Checkout: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Shipping Address */}
@@ -891,40 +939,58 @@ export const Checkout: React.FC = () => {
           <Card padding="lg" className="sticky top-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
 
-            <div className="space-y-4 mb-6">
-              {sellerGroups.map((group) => (
-                <div key={group.sellerName} className="space-y-1.5">
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 {group.sellerName}</p>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                      <span>Order Amount</span>
-                      <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                      <span>Shipping</span>
-                      <span className={`font-medium ${group.shipping === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>
-                        {group.shipping === 0 ? 'FREE' : formatCurrency(group.shipping)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                      <span>Tax (8%)</span>
-                      <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.tax)}</span>
-                    </div>
-                    <div className="flex justify-between font-semibold text-gray-800 dark:text-gray-200 pt-0.5">
-                      <span>Store Total</span>
-                      <span className="text-primary-600 dark:text-primary-400">{formatCurrency(group.storeTotal)}</span>
+            {(() => {
+              const totalDiscount = sellerGroups.reduce((s, g) => s + g.discount, 0);
+              const grandTotal = sellerGroups.reduce((s, g) => s + g.storeTotal, 0);
+              return (
+              <div className="space-y-4 mb-6">
+                {sellerGroups.map((group) => (
+                  <div key={group.sellerId} className="space-y-1.5">
+                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 {group.sellerName}</p>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>Order Amount</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.subtotal)}</span>
+                      </div>
+                      {group.discount > 0 && (
+                        <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+                          <span>Voucher</span>
+                          <span className="font-medium">-{formatCurrency(group.discount)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>Shipping</span>
+                        <span className={`font-medium ${group.shipping === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                          {group.shipping === 0 ? 'FREE' : formatCurrency(group.shipping)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>Tax (8%)</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.tax)}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-gray-800 dark:text-gray-200 pt-0.5">
+                        <span>Store Total</span>
+                        <span className="text-primary-600 dark:text-primary-400">{formatCurrency(group.storeTotal)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-                <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
-                  <span>Total ({cart.totalItems} items)</span>
-                  <span className="text-primary-600">{formatCurrency(cart.total)}</span>
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-1.5">
+                  {totalDiscount > 0 && (
+                    <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                      <span>Total Savings</span>
+                      <span>-{formatCurrency(totalDiscount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
+                    <span>Total ({cart.totalItems} items)</span>
+                    <span className="text-primary-600">{formatCurrency(grandTotal)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+              );
+            })()}
 
             <div className="space-y-2 text-sm text-gray-600">
               <div className="flex items-start gap-2">
@@ -939,6 +1005,32 @@ export const Checkout: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Voucher modal */}
+      {voucherModalSellerId && (() => {
+        const group = sellerGroups.find(g => g.sellerId === voucherModalSellerId);
+        if (!group) return null;
+        return (
+          <SelectVoucherModal
+            isOpen={true}
+            onClose={() => setVoucherModalSellerId(null)}
+            sellerId={voucherModalSellerId}
+            sellerName={group.sellerName}
+            orderAmount={group.subtotal}
+            selectedCode={voucherSelections[voucherModalSellerId]?.code ?? null}
+            onApply={(code, discountAmount) =>
+              setVoucherSelections(prev => ({ ...prev, [voucherModalSellerId]: { code, discountAmount } }))
+            }
+            onRemove={() =>
+              setVoucherSelections(prev => {
+                const next = { ...prev };
+                delete next[voucherModalSellerId];
+                return next;
+              })
+            }
+          />
+        );
+      })()}
     </div>
   );
 };

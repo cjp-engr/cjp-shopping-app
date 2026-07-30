@@ -49,6 +49,7 @@ class OrderEntity extends Equatable {
   final double shipping;
   final double total;
   final String status;
+  final String? cancelReason;
   final String createdAt;
   final String? estimatedDelivery;
   final Map<String, String> sellerMessages;
@@ -65,6 +66,7 @@ class OrderEntity extends Equatable {
     required this.total,
     required this.status,
     required this.createdAt,
+    this.cancelReason,
     this.estimatedDelivery,
     this.sellerMessages = const {},
   });
@@ -73,5 +75,5 @@ class OrderEntity extends Equatable {
       id.length >= 8 ? id.substring(0, 8).toUpperCase() : id.toUpperCase();
 
   @override
-  List<Object?> get props => [id, status, total];
+  List<Object?> get props => [id, status, total, cancelReason];
 }

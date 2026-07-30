@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Clock, Package, Truck, CheckCircle, XCircle } from 'lucide-react';
+import { Clock, Package, Truck, CheckCircle, XCircle, ClipboardList } from 'lucide-react';
 
 export type StatusVariant = 'primary' | 'success' | 'warning' | 'danger' | 'gray';
 
@@ -11,8 +11,9 @@ export interface StatusConfig {
 
 export const getStatusConfig = (status: string): StatusConfig => {
   switch (status) {
-    case 'pending':    return { icon: Clock,       variant: 'warning', label: 'Pending' };
-    case 'processing': return { icon: Package,     variant: 'primary', label: 'Processing' };
+    case 'pending':    return { icon: Clock,          variant: 'warning', label: 'Pending' };
+    case 'preparing':  return { icon: ClipboardList,  variant: 'warning', label: 'Preparing' };
+    case 'processing': return { icon: Package,        variant: 'primary', label: 'Processing' };
     case 'shipped':    return { icon: Truck,       variant: 'primary', label: 'Shipped' };
     case 'delivered':  return { icon: CheckCircle, variant: 'success', label: 'Delivered' };
     case 'cancelled':  return { icon: XCircle,     variant: 'danger',  label: 'Cancelled' };

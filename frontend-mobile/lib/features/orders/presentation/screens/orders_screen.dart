@@ -13,6 +13,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/theme_colors.dart';
 import '../../../../core/utils/order_utils.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/image_placeholder.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/review_bottom_sheet.dart';
@@ -31,6 +32,7 @@ class _TabDef {
 
 const _kTabs = [
   _TabDef('Pending', ['pending']),
+  _TabDef('Preparing', ['preparing']),
   _TabDef('To Ship', ['processing']),
   _TabDef('To Receive', ['shipped']),
   _TabDef('Complete', ['delivered']),
@@ -315,24 +317,16 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
     BuildContext context,
     OrderEntity order,
   ) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Confirm Receipt'),
-        content: const Text(
-            'Have you received your order? This will mark the order as complete.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: const Text('Not Yet'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.success),
-            onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: const Text('Yes, Received'),
-          ),
-        ],
-      ),
+    final confirm = await AppDialog.show(
+      context,
+      icon: Icons.check_circle_outline_rounded,
+      iconColor: AppColors.success,
+      iconBackground: AppColors.successSurface,
+      title: 'Confirm Receipt',
+      body: 'Have you received your order? This will mark the order as complete.',
+      cancelLabel: 'Not Yet',
+      confirmLabel: 'Yes, Received',
+      confirmColor: AppColors.success,
     );
     if (confirm == true && context.mounted) {
       context.read<OrderBloc>().add(OrderConfirmReceivedRequested(order.id));
@@ -556,19 +550,36 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                   borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                   border: Border.all(color: AppColors.danger.withAlpha(40)),
                 ),
-                child: const Row(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.cancel_outlined,
+                    const Icon(Icons.cancel_outlined,
                         size: 16, color: AppColors.danger),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        'This order has been cancelled',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.danger,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'This order has been cancelled',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.danger,
+                            ),
+                          ),
+                          if (order.cancelReason != null &&
+                              order.cancelReason!.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Reason: ${order.cancelReason}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.danger,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ],

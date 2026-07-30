@@ -77,8 +77,11 @@ GoRouter createRouter(AuthBloc authBloc,
       GoRoute(
         path: '/products/:id',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, state) =>
-            ProductDetailScreen(productId: state.pathParameters['id']!),
+        builder: (_, state) => ProductDetailScreen(
+          productId: state.pathParameters['id']!,
+          hideEditButton:
+              state.uri.queryParameters['hideEdit'] == '1',
+        ),
       ),
       GoRoute(
         path: '/orders/:id',
@@ -142,7 +145,9 @@ GoRouter createRouter(AuthBloc authBloc,
           ),
           GoRoute(
             path: '/seller',
-            builder: (_, __) => const SellerDashboardScreen(),
+            builder: (_, state) => SellerDashboardScreen(
+              initialTab: state.uri.queryParameters['tab'],
+            ),
           ),
           GoRoute(
             path: '/profile',

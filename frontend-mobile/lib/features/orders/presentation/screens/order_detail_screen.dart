@@ -11,6 +11,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/theme_colors.dart';
 import '../../../../core/utils/order_utils.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/image_placeholder.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/review_bottom_sheet.dart';
@@ -108,24 +109,16 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
   }
 
   Future<void> _showConfirmReceivedDialog(BuildContext context) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Confirm Receipt'),
-        content: Text(
-            'Have you received order #${widget.order.shortId}? This will mark the order as complete.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: const Text('Not Yet'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.success),
-            onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: const Text('Yes, Received'),
-          ),
-        ],
-      ),
+    final confirm = await AppDialog.show(
+      context,
+      icon: Icons.check_circle_outline_rounded,
+      iconColor: AppColors.success,
+      iconBackground: AppColors.successSurface,
+      title: 'Confirm Receipt',
+      body: 'Have you received order #${widget.order.shortId}? This will mark the order as complete.',
+      cancelLabel: 'Not Yet',
+      confirmLabel: 'Yes, Received',
+      confirmColor: AppColors.success,
     );
     if (confirm == true && context.mounted) {
       context
@@ -135,31 +128,39 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
   }
 
   Future<void> _showCancelDialog(BuildContext context) async {
-    final confirm = await showDialog<bool>(
+    String? reason;
+    bool confirmed = false;
+    final reasonValue = ValueNotifier<String>('');
+
+    await showDialog<void>(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Cancel Order'),
-        content: Text(
-            'Cancel order #${widget.order.shortId}?\nThis action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: const Text('Keep Order'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: const Text('Yes, Cancel'),
-          ),
-        ],
+      barrierColor: Colors.black54,
+      builder: (dialogCtx) => AppFormDialog(
+        icon: Icons.cancel_outlined,
+        iconColor: AppColors.danger,
+        iconBackground: AppColors.dangerSurface,
+        title: 'Cancel Order',
+        subtitle: 'Order #${widget.order.shortId} · This cannot be undone.',
+        formContent: _CancelReasonField(value: reasonValue),
+        cancelLabel: 'Keep Order',
+        confirmLabel: 'Yes, Cancel',
+        confirmColor: AppColors.danger,
+        onCancel: () => Navigator.of(dialogCtx).pop(),
+        onConfirm: () {
+          final text = reasonValue.value.trim();
+          reason = text.isEmpty ? null : text;
+          confirmed = true;
+          Navigator.of(dialogCtx).pop();
+        },
       ),
     );
-    if (confirm == true && context.mounted) {
+    reasonValue.dispose();
+    if (confirmed && context.mounted) {
       final user = context.read<AuthBloc>().state.user;
       if (user != null) {
-        context
-            .read<OrderBloc>()
-            .add(OrderCancelRequested(widget.order.id, user.id));
+        context.read<OrderBloc>().add(
+            OrderCancelRequested(widget.order.id, user.id,
+                cancelReason: reason));
       }
     }
   }
@@ -286,19 +287,36 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                         border:
                             Border.all(color: AppColors.danger.withAlpha(40)),
                       ),
-                      child: const Row(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.cancel_outlined,
+                          const Icon(Icons.cancel_outlined,
                               size: 16, color: AppColors.danger),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                              'This order has been cancelled',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.danger,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'This order has been cancelled',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.danger,
+                                  ),
+                                ),
+                                if (order.cancelReason != null &&
+                                    order.cancelReason!.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Reason: ${order.cancelReason}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.danger,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                         ],
@@ -617,7 +635,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
             ],
 
             // ── Cancel order ────────────────────────────────────────────
-            if (order.status == 'pending') ...[
+            if (order.status == 'pending' || order.status == 'preparing') ...[
               const SizedBox(height: AppSizes.md),
               SizedBox(
                 height: AppSizes.buttonHeight,
@@ -776,6 +794,66 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
+// ── Cancel reason field ───────────────────────────────────────────────────────
+
+class _CancelReasonField extends StatefulWidget {
+  const _CancelReasonField({required this.value});
+  final ValueNotifier<String> value;
+
+  @override
+  State<_CancelReasonField> createState() => _CancelReasonFieldState();
+}
+
+class _CancelReasonFieldState extends State<_CancelReasonField> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController();
+    _ctrl.addListener(() => widget.value.value = _ctrl.text);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return TextField(
+      controller: _ctrl,
+      maxLines: 3,
+      style: TextStyle(
+        fontSize: 14,
+        color: isDark ? Colors.white : AppColors.textPrimary,
+      ),
+      decoration: InputDecoration(
+        hintText: 'e.g. Changed my mind, found a better price…',
+        hintStyle: TextStyle(
+          fontSize: 13,
+          color: isDark ? const Color(0xFF64748B) : AppColors.textMuted,
+        ),
+        helperText: 'Optional — helps sellers improve',
+        helperStyle: TextStyle(fontSize: 12, color: isDark ? const Color(0xFF475569) : AppColors.textMuted),
+        filled: true,
+        fillColor: isDark ? const Color(0xFF0F172A) : AppColors.surfaceVariant,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      ),
+    );
+  }
+}
+
 // ── Summary row ───────────────────────────────────────────────────────────────
 
 class _SummaryRow extends StatelessWidget {
@@ -900,6 +978,7 @@ class _StatusStepper extends StatelessWidget {
 
   static const _steps = [
     (Icons.access_time_rounded, 'Placed'),
+    (Icons.pending_actions_outlined, 'Preparing'),
     (Icons.inventory_2_outlined, 'Packed'),
     (Icons.local_shipping_outlined, 'Shipped'),
     (Icons.check_circle_outline_rounded, 'Delivered'),

@@ -119,15 +119,6 @@ class _ReviewBottomSheetState extends State<ReviewBottomSheet> {
 
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.isEditing
-                ? 'Review updated successfully.'
-                : 'Review submitted! Thank you.'),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 2),
-          ),
-        );
       }
     } on DioException catch (e) {
       setState(() { _loading = false; _error = mapDioError(e); });

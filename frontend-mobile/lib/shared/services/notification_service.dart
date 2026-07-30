@@ -81,7 +81,7 @@ class NotificationService {
       title,
       body,
       NotificationDetails(android: androidDetails, iOS: iosDetails),
-      payload: 'seller_orders',
+      payload: 'seller_orders_tab',
     );
   }
 }

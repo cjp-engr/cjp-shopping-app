@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../shared/services/media_permission_service.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/theme_colors.dart';
@@ -65,6 +66,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   }
 
   Future<void> _pickFromGallery() async {
+    final granted =
+        await MediaPermissionService.requestGallery(context);
+    if (!granted || !mounted) return;
+
     final files = await _picker.pickMultiImage(imageQuality: 85);
     if (files.isNotEmpty) {
       setState(() => _pickedFiles.addAll(files));
@@ -72,6 +77,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   }
 
   Future<void> _pickFromCamera() async {
+    final granted =
+        await MediaPermissionService.requestCamera(context);
+    if (!granted || !mounted) return;
+
     final file =
         await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
     if (file != null) {
@@ -318,15 +327,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           if (state.status == SellerStatus.success) {
             context.pop();
           }
-          if (state.status == SellerStatus.failure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage ?? 'Something went wrong'),
-                backgroundColor: AppColors.danger,
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          }
+          if (state.status == SellerStatus.failure) {}
         },
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.md),

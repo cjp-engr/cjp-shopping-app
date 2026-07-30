@@ -26,6 +26,9 @@ dependencies:
   # Image picker
   image_picker: ^1.1.2
 
+  # Runtime permissions
+  permission_handler: ^11.3.1
+
   # Fonts
   google_fonts: ^6.2.1
 

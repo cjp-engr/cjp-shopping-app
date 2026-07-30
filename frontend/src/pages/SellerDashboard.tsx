@@ -5,6 +5,7 @@ import type { Product } from '../types/product';
 import type { Order } from '../types/order';
 import sellerService from '../services/sellerService';
 import type { ProductFormData } from '../services/sellerService';
+import couponService, { type Coupon } from '../services/couponService';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
@@ -14,7 +15,7 @@ import { formatCurrency, formatDate } from '../utils/formatters';
 import {
   Package, Plus, Edit, Trash2, Truck, CheckCircle,
   XCircle, Clock, AlertCircle, ShoppingBag, Store,
-  Upload, ImageOff, DollarSign, X,
+  Upload, ImageOff, DollarSign, X, Tag, ChevronRight, ClipboardList,
 } from 'lucide-react';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 
@@ -36,18 +37,19 @@ const EMPTY_FORM: ProductFormData = {
   name: '', description: '', price: 0, category: CATEGORIES[0], image: '', stock: 0,
 };
 
-type Tab = 'products' | 'orders';
+type Tab = 'products' | 'orders' | 'vouchers';
 
-type SellerOrder = Order & { buyer?: { firstName: string; lastName: string; email: string } };
+type SellerOrder = Order & { buyer?: { id: string; firstName: string; lastName: string; email: string } };
 
 const statusConfig = (status: string) => {
   switch (status) {
-    case 'pending':    return { icon: Clock,        variant: 'warning' as const, label: 'Pending' };
-    case 'processing': return { icon: Package,      variant: 'primary' as const, label: 'To Ship' };
-    case 'shipped':    return { icon: Truck,        variant: 'gray'    as const, label: 'To Receive' };
-    case 'delivered':  return { icon: CheckCircle,  variant: 'success' as const, label: 'Delivered' };
-    case 'cancelled':  return { icon: XCircle,      variant: 'danger'  as const, label: 'Cancelled' };
-    default:           return { icon: Package,      variant: 'gray'    as const, label: status };
+    case 'pending':    return { icon: Clock,         variant: 'warning' as const, label: 'Pending' };
+    case 'preparing':  return { icon: ClipboardList, variant: 'warning' as const, label: 'Preparing' };
+    case 'processing': return { icon: Package,       variant: 'primary' as const, label: 'To Ship' };
+    case 'shipped':    return { icon: Truck,         variant: 'gray'    as const, label: 'To Receive' };
+    case 'delivered':  return { icon: CheckCircle,   variant: 'success' as const, label: 'Delivered' };
+    case 'cancelled':  return { icon: XCircle,       variant: 'danger'  as const, label: 'Cancelled' };
+    default:           return { icon: Package,       variant: 'gray'    as const, label: status };
   }
 };
 
@@ -79,6 +81,17 @@ export const SellerDashboard: React.FC = () => {
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; productId: string | null; loading: boolean }>({ open: false, productId: null, loading: false });
+  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; orderId: string | null; reason: string; loading: boolean }>({ open: false, orderId: null, reason: '', loading: false });
+
+  // Vouchers state
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
+  const [couponForm, setCouponForm] = useState<Partial<Coupon>>({ discountType: 'percentage', discountValue: 10, minOrderAmount: 0, isActive: true });
+  const [showCouponForm, setShowCouponForm] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [couponFormError, setCouponFormError] = useState<string | null>(null);
+  const [couponFormLoading, setCouponFormLoading] = useState(false);
+  const [deletingCouponId, setDeletingCouponId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProducts();
@@ -193,14 +206,86 @@ export const SellerDashboard: React.FC = () => {
     }
   };
 
+  const loadCoupons = async () => {
+    setLoadingCoupons(true);
+    setCoupons(await couponService.listMine());
+    setLoadingCoupons(false);
+  };
+
+  const openCreateCoupon = () => {
+    setEditingCoupon(null);
+    setCouponForm({ discountType: 'percentage', discountValue: 10, minOrderAmount: 0, isActive: true });
+    setCouponFormError(null);
+    setShowCouponForm(true);
+  };
+
+  const openEditCoupon = (c: Coupon) => {
+    setEditingCoupon(c);
+    setCouponForm({ ...c });
+    setCouponFormError(null);
+    setShowCouponForm(true);
+  };
+
+  const handleCouponSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCouponFormError(null);
+    if (!couponForm.code && !editingCoupon) {
+      setCouponFormError('Coupon code is required');
+      return;
+    }
+    try {
+      setCouponFormLoading(true);
+      if (editingCoupon) {
+        const updated = await couponService.update(editingCoupon.id, couponForm);
+        setCoupons(prev => prev.map(c => c.id === updated.id ? updated : c));
+      } else {
+        const created = await couponService.create(couponForm);
+        setCoupons(prev => [created, ...prev]);
+      }
+      setShowCouponForm(false);
+      setEditingCoupon(null);
+    } catch (err) {
+      setCouponFormError(err instanceof Error ? err.message : 'Failed to save coupon');
+    } finally {
+      setCouponFormLoading(false);
+    }
+  };
+
+  const handleDeleteCoupon = async (id: string) => {
+    setDeletingCouponId(id);
+    try {
+      await couponService.delete(id);
+      setCoupons(prev => prev.filter(c => c.id !== id));
+    } catch {
+      // silent
+    } finally {
+      setDeletingCouponId(null);
+    }
+  };
+
   // ── Order status ──────────────────────────────────────────
-  const handleStatusUpdate = async (orderId: string, status: 'processing' | 'shipped' | 'delivered' | 'cancelled') => {
+  const handleStatusUpdate = async (orderId: string, status: 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled', cancelReason?: string) => {
     setStatusError(null);
     try {
-      await sellerService.updateOrderStatus(orderId, status);
+      await sellerService.updateOrderStatus(orderId, status, cancelReason);
       await loadOrders();
     } catch (err) {
       setStatusError(err instanceof Error ? err.message : 'Failed to update status');
+    }
+  };
+
+  const openCancelDialog = (orderId: string) => {
+    setCancelDialog({ open: true, orderId, reason: '', loading: false });
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!cancelDialog.orderId) return;
+    setCancelDialog(d => ({ ...d, loading: true }));
+    try {
+      await handleStatusUpdate(cancelDialog.orderId, 'cancelled', cancelDialog.reason || undefined);
+      setCancelDialog({ open: false, orderId: null, reason: '', loading: false });
+    } catch {
+      setCancelDialog(d => ({ ...d, loading: false }));
     }
   };
 
@@ -270,17 +355,18 @@ export const SellerDashboard: React.FC = () => {
 
       {/* Tabs */}
       {(() => {
-        const actionableCount = orders.filter(o => ['pending', 'processing', 'shipped'].includes(o.status)).length;
+        const actionableCount = orders.filter(o => ['pending', 'preparing', 'processing', 'shipped'].includes(o.status)).length;
         return (
           <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="-mb-px flex gap-1">
               {([
                 { key: 'products', label: 'My Products', Icon: ShoppingBag, badge: null },
                 { key: 'orders',   label: 'Orders',      Icon: Package,     badge: actionableCount || null },
+                { key: 'vouchers', label: 'Vouchers',    Icon: Tag,         badge: null },
               ] as const).map(({ key, label, Icon, badge }) => (
                 <button
                   key={key}
-                  onClick={() => setTab(key)}
+                  onClick={() => { setTab(key); if (key === 'vouchers' && coupons.length === 0) loadCoupons(); }}
                   className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
                     tab === key
                       ? 'border-primary-600 text-primary-600'
@@ -585,6 +671,7 @@ export const SellerDashboard: React.FC = () => {
             const statusTabs = [
               { key: 'all',        label: 'All',        icon: ShoppingBag },
               { key: 'pending',    label: 'Pending',    icon: Clock },
+              { key: 'preparing',  label: 'Preparing',  icon: ClipboardList },
               { key: 'processing', label: 'To Ship',    icon: Package },
               { key: 'shipped',    label: 'To Receive', icon: Truck },
               { key: 'delivered',  label: 'Delivered',  icon: CheckCircle },
@@ -636,9 +723,10 @@ export const SellerDashboard: React.FC = () => {
             return filtered.map(order => {
               const cfg = statusConfig(order.status);
               const StatusIcon = cfg.icon;
-              const canToShip    = order.status === 'pending';
+              const canAccept    = order.status === 'pending';
+              const canToShip    = order.status === 'preparing';
               const canToReceive = order.status === 'processing';
-              const canCancel    = order.status === 'pending' || order.status === 'processing' || order.status === 'shipped';
+              const canCancel    = order.status === 'pending' || order.status === 'preparing' || order.status === 'processing' || order.status === 'shipped';
 
               return (
                 <Card key={order.id} padding="none" className="overflow-hidden">
@@ -663,18 +751,27 @@ export const SellerDashboard: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       {/* Buyer */}
                       {order.buyer && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                          <span className="font-medium text-gray-700 dark:text-gray-200">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/users/${order.buyer!.id}`)}
+                          className="text-sm text-gray-500 dark:text-gray-400 mb-3 text-left hover:text-primary-600 dark:hover:text-primary-400 transition-colors group"
+                        >
+                          <span className="font-medium text-gray-700 dark:text-gray-200 group-hover:text-primary-600 dark:group-hover:text-primary-400">
                             {order.buyer.firstName} {order.buyer.lastName}
                           </span>
                           {' · '}{order.buyer.email}
-                        </p>
+                        </button>
                       )}
 
                       {/* Items */}
                       <div className="space-y-2">
                         {order.items.map(({ product, quantity }) => (
-                          <div key={product.id} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                          <button
+                            key={product.id}
+                            type="button"
+                            onClick={() => navigate(`/products/${product.id}`)}
+                            className="w-full flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors text-left"
+                          >
                             <div className="w-10 h-10 rounded-lg overflow-hidden bg-white dark:bg-gray-700 flex-shrink-0 border border-gray-100 dark:border-gray-600">
                               <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
                             </div>
@@ -685,14 +782,19 @@ export const SellerDashboard: React.FC = () => {
                             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0 tabular-nums">
                               {formatCurrency(product.price * quantity)}
                             </p>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>
 
                     {/* Actions */}
-                    {(canToShip || canToReceive || canCancel) && (
+                    {(canAccept || canToShip || canToReceive || canCancel) && (
                       <div className="flex sm:flex-col gap-2 sm:min-w-[148px]">
+                        {canAccept && (
+                          <Button size="sm" fullWidth onClick={() => handleStatusUpdate(order.id, 'preparing')}>
+                            <ClipboardList className="w-4 h-4 mr-1" /> Accept / Prepare
+                          </Button>
+                        )}
                         {canToShip && (
                           <Button size="sm" fullWidth onClick={() => handleStatusUpdate(order.id, 'processing')}>
                             <Package className="w-4 h-4 mr-1" /> Mark to Ship
@@ -704,7 +806,7 @@ export const SellerDashboard: React.FC = () => {
                           </Button>
                         )}
                         {canCancel && (
-                          <Button size="sm" fullWidth variant="danger" onClick={() => handleStatusUpdate(order.id, 'cancelled')}>
+                          <Button size="sm" fullWidth variant="danger" onClick={() => openCancelDialog(order.id)}>
                             <XCircle className="w-4 h-4 mr-1" /> Cancel
                           </Button>
                         )}
@@ -715,6 +817,184 @@ export const SellerDashboard: React.FC = () => {
               );
             });
           })()}
+        </div>
+      )}
+
+      {/* ── Vouchers Tab ── */}
+      {tab === 'vouchers' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">My Vouchers</h2>
+            <Button onClick={openCreateCoupon}>
+              <Plus className="w-4 h-4 mr-2" /> Create Voucher
+            </Button>
+          </div>
+
+          {/* Coupon form */}
+          {showCouponForm && (
+            <Card padding="lg" className="border-2 border-primary-200 dark:border-primary-800">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+                {editingCoupon ? 'Edit Voucher' : 'Create Voucher'}
+              </h3>
+              {couponFormError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2 mb-4">
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                  <p className="text-sm text-red-700">{couponFormError}</p>
+                </div>
+              )}
+              <form onSubmit={handleCouponSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {!editingCoupon && (
+                    <Input
+                      label="Voucher Code"
+                      value={couponForm.code ?? ''}
+                      onChange={e => setCouponForm(p => ({ ...p, code: e.target.value.toUpperCase() }))}
+                      placeholder="e.g. SAVE10"
+                      fullWidth
+                      required
+                    />
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Discount Type</label>
+                    <select
+                      value={couponForm.discountType ?? 'percentage'}
+                      onChange={e => setCouponForm(p => ({ ...p, discountType: e.target.value as 'percentage' | 'fixed' }))}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="percentage">Percentage (%)</option>
+                      <option value="fixed">Fixed Amount ($)</option>
+                    </select>
+                  </div>
+                  <Input
+                    label={couponForm.discountType === 'percentage' ? 'Discount (%)' : 'Discount Amount ($)'}
+                    type="number"
+                    value={couponForm.discountValue ?? ''}
+                    onChange={e => setCouponForm(p => ({ ...p, discountValue: Number(e.target.value) }))}
+                    fullWidth
+                    required
+                  />
+                  {couponForm.discountType === 'percentage' && (
+                    <Input
+                      label="Max Discount Cap ($, optional)"
+                      type="number"
+                      value={couponForm.maxDiscount ?? ''}
+                      onChange={e => setCouponForm(p => ({ ...p, maxDiscount: e.target.value ? Number(e.target.value) : undefined }))}
+                      placeholder="Leave blank for no cap"
+                      fullWidth
+                    />
+                  )}
+                  <Input
+                    label="Min. Order Amount ($)"
+                    type="number"
+                    value={couponForm.minOrderAmount ?? 0}
+                    onChange={e => setCouponForm(p => ({ ...p, minOrderAmount: Number(e.target.value) }))}
+                    fullWidth
+                  />
+                  <Input
+                    label="Usage Limit (optional)"
+                    type="number"
+                    value={couponForm.usageLimit ?? ''}
+                    onChange={e => setCouponForm(p => ({ ...p, usageLimit: e.target.value ? Number(e.target.value) : undefined }))}
+                    placeholder="Leave blank for unlimited"
+                    fullWidth
+                  />
+                  <Input
+                    label="Expires At (optional)"
+                    type="date"
+                    value={couponForm.expiresAt ? couponForm.expiresAt.slice(0, 10) : ''}
+                    onChange={e => setCouponForm(p => ({ ...p, expiresAt: e.target.value || undefined }))}
+                    fullWidth
+                  />
+                </div>
+                <Input
+                  label="Description (optional)"
+                  value={couponForm.description ?? ''}
+                  onChange={e => setCouponForm(p => ({ ...p, description: e.target.value }))}
+                  placeholder="e.g. 10% off for all products"
+                  fullWidth
+                />
+                {editingCoupon && (
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={couponForm.isActive ?? true}
+                      onChange={e => setCouponForm(p => ({ ...p, isActive: e.target.checked }))}
+                      className="w-4 h-4 rounded border-gray-300 text-primary-600"
+                    />
+                    Active
+                  </label>
+                )}
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setShowCouponForm(false)} disabled={couponFormLoading}>Cancel</Button>
+                  <Button type="submit" loading={couponFormLoading}>{editingCoupon ? 'Save Changes' : 'Create Voucher'}</Button>
+                </div>
+              </form>
+            </Card>
+          )}
+
+          {/* Coupon list */}
+          {loadingCoupons ? (
+            <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+          ) : coupons.length === 0 ? (
+            <Card className="text-center py-12">
+              <Tag className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-600 dark:text-gray-400">No vouchers yet. Create your first one!</p>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {coupons.map(c => {
+                const expiresIn = c.expiresAt
+                  ? Math.ceil((new Date(c.expiresAt).getTime() - Date.now()) / 86_400_000)
+                  : null;
+                const isExpired = expiresIn != null && expiresIn <= 0;
+                return (
+                  <Card key={c.id} padding="none" className={`flex items-stretch overflow-hidden ${!c.isActive || isExpired ? 'opacity-60' : ''}`}>
+                    <div className={`w-2 flex-shrink-0 ${c.isActive && !isExpired ? 'bg-orange-400' : 'bg-gray-300'}`} />
+                    <div className={`flex items-center justify-center px-4 py-4 ${c.isActive && !isExpired ? 'bg-orange-50 dark:bg-orange-900/20' : 'bg-gray-50 dark:bg-gray-800'}`}>
+                      <Tag className={`w-7 h-7 ${c.isActive && !isExpired ? 'text-orange-500' : 'text-gray-400'}`} />
+                    </div>
+                    <div className="flex-1 px-4 py-3 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-mono font-bold text-gray-900 dark:text-white text-sm">{c.code}</span>
+                        {!c.isActive && <Badge variant="gray" size="sm">Inactive</Badge>}
+                        {isExpired && <Badge variant="danger" size="sm">Expired</Badge>}
+                        {c.isActive && !isExpired && <Badge variant="success" size="sm">Active</Badge>}
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                        {c.discountType === 'percentage'
+                          ? `${c.discountValue}% off${c.maxDiscount ? ` (max ${formatCurrency(c.maxDiscount)})` : ''}`
+                          : `${formatCurrency(c.discountValue)} off`}
+                      </p>
+                      {c.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{c.description}</p>}
+                      <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-400 dark:text-gray-500">
+                        {c.minOrderAmount > 0 && <span>Min. {formatCurrency(c.minOrderAmount)}</span>}
+                        {c.usageLimit != null && <span>Used {c.usedCount}/{c.usageLimit}</span>}
+                        {expiresIn != null && !isExpired && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{expiresIn} day{expiresIn !== 1 ? 's' : ''} left</span>}
+                        {isExpired && <span className="text-red-400">Expired</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 px-3">
+                      <button
+                        onClick={() => openEditCoupon(c)}
+                        className="p-2 rounded-lg text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                        aria-label="Edit"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCoupon(c.id)}
+                        disabled={deletingCouponId === c.id}
+                        className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+                        aria-label="Delete"
+                      >
+                        {deletingCouponId === c.id ? <Spinner size="sm" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -729,6 +1009,31 @@ export const SellerDashboard: React.FC = () => {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteDialog({ open: false, productId: null, loading: false })}
       />
+
+      {/* Cancel Order Dialog */}
+      {cancelDialog.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Cancel Order</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Provide a reason for cancellation (optional).</p>
+            <textarea
+              value={cancelDialog.reason}
+              onChange={e => setCancelDialog(d => ({ ...d, reason: e.target.value }))}
+              placeholder="e.g. Out of stock, unable to fulfil..."
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-4"
+            />
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setCancelDialog({ open: false, orderId: null, reason: '', loading: false })} disabled={cancelDialog.loading}>
+                Keep Order
+              </Button>
+              <Button variant="danger" size="sm" loading={cancelDialog.loading} onClick={confirmCancelOrder}>
+                <XCircle className="w-4 h-4 mr-1" /> Confirm Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

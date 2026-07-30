@@ -22,7 +22,12 @@ import '../../../../core/network/api_client.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
-  const ProductDetailScreen({super.key, required this.productId});
+  final bool hideEditButton;
+  const ProductDetailScreen({
+    super.key,
+    required this.productId,
+    this.hideEditButton = false,
+  });
 
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
@@ -208,47 +213,48 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             current: _currentImagePage,
                           ),
                         ),
-                      Positioned(
-                        bottom: images.length > 1 ? 48 : 16,
-                        right: 16,
-                        child: BlocBuilder<WishlistBloc, WishlistState>(
-                          builder: (context, wishlist) {
-                            final wishlisted = wishlist.contains(product.id);
-                            return Semantics(
-                              label: wishlisted ? 'Remove from wishlist' : 'Add to wishlist',
-                              button: true,
-                              child: InkWell(
-                                onTap: () => context
-                                    .read<WishlistBloc>()
-                                    .add(WishlistToggled(product)),
-                                borderRadius: BorderRadius.circular(22),
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                          color: Colors.black.withAlpha(20),
-                                          blurRadius: 8)
-                                    ],
-                                  ),
-                                  child: Icon(
-                                    wishlisted
-                                        ? Icons.favorite_rounded
-                                        : Icons.favorite_border_rounded,
-                                    color: wishlisted
-                                        ? AppColors.danger
-                                        : AppColors.textMuted,
-                                    size: 22,
+                      if (!widget.hideEditButton)
+                        Positioned(
+                          bottom: images.length > 1 ? 48 : 16,
+                          right: 16,
+                          child: BlocBuilder<WishlistBloc, WishlistState>(
+                            builder: (context, wishlist) {
+                              final wishlisted = wishlist.contains(product.id);
+                              return Semantics(
+                                label: wishlisted ? 'Remove from wishlist' : 'Add to wishlist',
+                                button: true,
+                                child: InkWell(
+                                  onTap: () => context
+                                      .read<WishlistBloc>()
+                                      .add(WishlistToggled(product)),
+                                  borderRadius: BorderRadius.circular(22),
+                                  child: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                            color: Colors.black.withAlpha(20),
+                                            blurRadius: 8)
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      wishlisted
+                                          ? Icons.favorite_rounded
+                                          : Icons.favorite_border_rounded,
+                                      color: wishlisted
+                                          ? AppColors.danger
+                                          : AppColors.textMuted,
+                                      size: 22,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -483,7 +489,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 MediaQuery.of(context).padding.bottom + AppSizes.xs,
               );
 
-              if (isOwnProduct && !_previewMode) {
+              if (isOwnProduct && !_previewMode && !widget.hideEditButton) {
                 return Container(
                   padding: padding,
                   decoration: BoxDecoration(
@@ -524,17 +530,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ? () {
                                 context.read<CartBloc>().add(CartItemAdded(
                                     product: product, quantity: _quantity));
-                                final router = GoRouter.of(context);
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(SnackBar(
-                                  content:
-                                      Text('Added to cart: ${product.name}'),
-                                  duration: const Duration(seconds: 2),
-                                  action: SnackBarAction(
-                                    label: 'View Cart',
-                                    onPressed: () => router.push('/cart'),
-                                  ),
-                                ));
                               }
                             : null,
                         style: OutlinedButton.styleFrom(

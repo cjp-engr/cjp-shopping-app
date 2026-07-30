@@ -3,7 +3,7 @@ import type { Cart } from '../types/cart';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 
 class OrderService {
-  async createOrder(checkoutData: CheckoutData, cart: Cart, _userId: string): Promise<Order[]> {
+  async createOrder(checkoutData: CheckoutData, cart: Cart, _userId: string, couponCodes?: Record<string, string>): Promise<Order[]> {
     const items = cart.items.map(item => ({
       productId: item.product.id,
       quantity: item.quantity
@@ -15,7 +15,8 @@ class OrderService {
       body: JSON.stringify({
         items,
         shippingAddress: checkoutData.shippingAddress,
-        paymentMethod: checkoutData.paymentMethod
+        paymentMethod: checkoutData.paymentMethod,
+        ...(couponCodes && Object.keys(couponCodes).length > 0 ? { couponCodes } : {}),
       })
     });
 
@@ -60,11 +61,11 @@ class OrderService {
     }
   }
 
-  async updateOrderStatus(orderId: string, _userId: string, status: OrderStatus): Promise<Order> {
+  async updateOrderStatus(orderId: string, _userId: string, status: OrderStatus, cancelReason?: string): Promise<Order> {
     const response = await fetch(API_ENDPOINTS.ORDER_STATUS(orderId), {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status, ...(cancelReason ? { cancelReason } : {}) })
     });
 
     if (!response.ok) {
@@ -76,8 +77,8 @@ class OrderService {
     return this.adaptOrder(data.order);
   }
 
-  async cancelOrder(orderId: string, userId: string): Promise<Order> {
-    return this.updateOrderStatus(orderId, userId, 'cancelled');
+  async cancelOrder(orderId: string, userId: string, reason?: string): Promise<Order> {
+    return this.updateOrderStatus(orderId, userId, 'cancelled', reason);
   }
 
   async confirmReceived(orderId: string): Promise<Order> {
@@ -174,6 +175,7 @@ class OrderService {
       shipping: order.shipping,
       total: order.total,
       status: order.status,
+      cancelReason: order.cancelReason,
       createdAt: order.createdAt,
       estimatedDelivery: order.estimatedDelivery
     };

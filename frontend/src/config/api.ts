@@ -49,6 +49,12 @@ export const API_ENDPOINTS = {
   SELLER_PRODUCT: (id: string) => `${API_BASE_URL}/seller/products/${id}`,
   SELLER_ORDERS: `${API_BASE_URL}/seller/orders`,
   SELLER_ORDER_STATUS: (id: string) => `${API_BASE_URL}/seller/orders/${id}/status`,
+
+  // Coupons
+  COUPONS: `${API_BASE_URL}/coupons`,
+  COUPONS_VALIDATE: `${API_BASE_URL}/coupons/validate`,
+  SELLER_COUPONS: `${API_BASE_URL}/coupons/seller`,
+  SELLER_COUPON: (id: string) => `${API_BASE_URL}/coupons/seller/${id}`,
 };
 
 export const getAuthHeaders = () => {

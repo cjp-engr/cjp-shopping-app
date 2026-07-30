@@ -43,7 +43,9 @@ class SellerOrdersLoadRequested extends SellerEvent {
 class SellerOrderStatusUpdateRequested extends SellerEvent {
   final String orderId;
   final String status;
-  const SellerOrderStatusUpdateRequested(this.orderId, this.status);
+  final String? cancelReason;
+  const SellerOrderStatusUpdateRequested(this.orderId, this.status,
+      {this.cancelReason});
   @override
-  List<Object?> get props => [orderId, status];
+  List<Object?> get props => [orderId, status, cancelReason];
 }

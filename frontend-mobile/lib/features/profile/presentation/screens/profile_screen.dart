@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../shared/services/media_permission_service.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -12,6 +13,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -60,6 +62,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _pickPhoto() async {
+    final granted = await MediaPermissionService.requestGallery(context);
+    if (!granted || !mounted) return;
     try {
       final image = await ImagePicker().pickImage(
         source: ImageSource.gallery,
@@ -71,43 +75,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _uploadingPhoto = true);
       context.read<AuthBloc>().add(AuthAvatarUploadRequested(image.path));
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not pick image'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        setState(() => _uploadingPhoto = false);
-      }
+      if (mounted) setState(() => _uploadingPhoto = false);
     }
   }
 
-  void _confirmBecomeSeller(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Become a Seller'),
-        content: const Text(
-          'You\'ll be able to list products and sell on TokoMart. Continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              context
-                  .read<AuthBloc>()
-                  .add(AuthProfileUpdateRequested(const {'role': 'seller'}));
-            },
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
+  void _confirmBecomeSeller(BuildContext context) async {
+    final confirm = await AppDialog.show(
+      context,
+      icon: Icons.storefront_outlined,
+      iconColor: AppColors.primary,
+      iconBackground: AppColors.primaryLight,
+      title: 'Become a Seller',
+      body: 'You\'ll be able to list products and start selling on TokoMart. Continue?',
+      cancelLabel: 'Not Now',
+      confirmLabel: 'Yes, Continue',
     );
+    if (confirm == true && context.mounted) {
+      context.read<AuthBloc>().add(AuthProfileUpdateRequested(const {'role': 'seller'}));
+    }
   }
 
   void _save() {
@@ -185,13 +170,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         listener: (context, state) {
           if (state.status == AuthStatus.failure) {
             setState(() => _uploadingPhoto = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage ?? AppStrings.genericError),
-                backgroundColor: AppColors.danger,
-                duration: const Duration(seconds: 2),
-              ),
-            );
           }
           if (state.status == AuthStatus.authenticated) {
             setState(() => _uploadingPhoto = false);
@@ -980,10 +958,6 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                 onPressed: () {
                   if (_streetCtrl.text.trim().isEmpty ||
                       _cityCtrl.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Street and City are required')),
-                    );
                     return;
                   }
                   context.read<AuthBloc>().add(AuthAddressAddRequested({

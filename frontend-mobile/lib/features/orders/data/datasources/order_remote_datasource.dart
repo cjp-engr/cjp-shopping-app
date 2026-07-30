@@ -57,10 +57,14 @@ class OrderRemoteDataSource {
     }
   }
 
-  Future<OrderModel> cancelOrder(String id, String userId) async {
+  Future<OrderModel> cancelOrder(String id, String userId,
+      {String? cancelReason}) async {
     try {
-      final response = await _dio.put('/orders/$id/status',
-          data: {'status': 'cancelled', 'userId': userId});
+      final body = <String, dynamic>{'status': 'cancelled', 'userId': userId};
+      if (cancelReason != null && cancelReason.isNotEmpty) {
+        body['cancelReason'] = cancelReason;
+      }
+      final response = await _dio.put('/orders/$id/status', data: body);
       final data = response.data;
       final result =
           data is Map && data['order'] != null ? data['order'] : data;

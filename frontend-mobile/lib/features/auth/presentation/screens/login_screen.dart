@@ -45,15 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: BlocListener<AuthBloc, AuthState>(
         listenWhen: (prev, curr) => prev.status != curr.status,
         listener: (context, state) {
-          if (state.status == AuthStatus.failure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage ?? AppStrings.genericError),
-                backgroundColor: AppColors.danger,
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          }
+          if (state.status == AuthStatus.failure) {}
         },
         child: Stack(
           children: [

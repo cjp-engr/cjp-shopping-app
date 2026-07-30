@@ -20,14 +20,14 @@ import {
   Star,
   Pencil,
 } from 'lucide-react';
-import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { ReviewModal } from '../components/common/ReviewModal';
 
-type TabKey = 'all' | 'pending' | 'to-ship' | 'to-receive' | 'complete' | 'cancelled';
+type TabKey = 'all' | 'pending' | 'preparing' | 'to-ship' | 'to-receive' | 'complete' | 'cancelled';
 
 const TABS: { key: TabKey; label: string; statuses: OrderStatus[] }[] = [
   { key: 'all',        label: 'All',        statuses: [] },
   { key: 'pending',    label: 'Pending',    statuses: ['pending'] },
+  { key: 'preparing',  label: 'Preparing',  statuses: ['preparing'] },
   { key: 'to-ship',    label: 'To Ship',    statuses: ['processing'] },
   { key: 'to-receive', label: 'To Receive', statuses: ['shipped'] },
   { key: 'complete',   label: 'Complete',   statuses: ['delivered'] },
@@ -54,8 +54,8 @@ export const OrderHistory: React.FC = () => {
   const [confirmingIds, setConfirmingIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
-  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; orderId: string | null; loading: boolean }>({
-    open: false, orderId: null, loading: false,
+  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; orderId: string | null; reason: string; loading: boolean }>({
+    open: false, orderId: null, reason: '', loading: false,
   });
   const [reviewModal, setReviewModal] = useState<ReviewModalState | null>(null);
   const [reviewMap, setReviewMap] = useState<Map<string, ReviewData>>(new Map());
@@ -93,17 +93,17 @@ export const OrderHistory: React.FC = () => {
   }, [user, searchParams]);
 
   const handleCancelOrder = (orderId: string) => {
-    setCancelDialog({ open: true, orderId, loading: false });
+    setCancelDialog({ open: true, orderId, reason: '', loading: false });
   };
 
   const confirmCancelOrder = async () => {
     if (!user || !cancelDialog.orderId) return;
     setCancelDialog(d => ({ ...d, loading: true }));
     try {
-      await orderService.cancelOrder(cancelDialog.orderId, user.id);
+      await orderService.cancelOrder(cancelDialog.orderId, user.id, cancelDialog.reason || undefined);
       const updatedOrders = await orderService.getOrders(user.id);
       setOrders(updatedOrders);
-      setCancelDialog({ open: false, orderId: null, loading: false });
+      setCancelDialog({ open: false, orderId: null, reason: '', loading: false });
     } catch (error) {
       console.error('Failed to cancel order:', error);
       setCancelDialog(d => ({ ...d, loading: false }));
@@ -368,17 +368,24 @@ export const OrderHistory: React.FC = () => {
                   )}
 
                   {isCancelled && (
-                    <div className="flex items-center gap-2 px-5 py-2.5 bg-red-50 dark:bg-red-900/20 border-t border-red-100 dark:border-red-800">
-                      <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                      <span className="text-xs font-medium text-red-600 dark:text-red-400">
-                        This order has been cancelled
-                      </span>
+                    <div className="flex items-start gap-2 px-5 py-2.5 bg-red-50 dark:bg-red-900/20 border-t border-red-100 dark:border-red-800">
+                      <XCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-xs font-medium text-red-600 dark:text-red-400 block">
+                          This order has been cancelled
+                        </span>
+                        {order.cancelReason && (
+                          <span className="text-xs text-red-500 dark:text-red-400">
+                            Reason: {order.cancelReason}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
 
                   {/* Actions */}
                   <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100 dark:border-gray-700">
-                    {order.status === 'pending' && (
+                    {(order.status === 'pending' || order.status === 'preparing') && (
                       <Button variant="danger" size="sm" onClick={() => handleCancelOrder(order.id)}>
                         Cancel Order
                       </Button>
@@ -414,17 +421,31 @@ export const OrderHistory: React.FC = () => {
         </div>
       )}
 
-      <ConfirmDialog
-        open={cancelDialog.open}
-        title="Cancel Order"
-        message="Are you sure you want to cancel this order? This action cannot be undone."
-        confirmLabel="Yes, Cancel Order"
-        cancelLabel="Keep Order"
-        variant="danger"
-        loading={cancelDialog.loading}
-        onConfirm={confirmCancelOrder}
-        onCancel={() => setCancelDialog({ open: false, orderId: null, loading: false })}
-      />
+      {cancelDialog.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Cancel Order</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Are you sure you want to cancel this order? This action cannot be undone.
+            </p>
+            <textarea
+              value={cancelDialog.reason}
+              onChange={e => setCancelDialog(d => ({ ...d, reason: e.target.value }))}
+              placeholder="Reason for cancellation (optional)"
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-4"
+            />
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setCancelDialog({ open: false, orderId: null, reason: '', loading: false })} disabled={cancelDialog.loading}>
+                Keep Order
+              </Button>
+              <Button variant="danger" size="sm" loading={cancelDialog.loading} onClick={confirmCancelOrder}>
+                Yes, Cancel Order
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {reviewModal && (
         <ReviewModal

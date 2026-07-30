@@ -18,8 +18,9 @@ class OrderRepositoryImpl implements OrderRepository {
       _remote.createOrder(orderData);
 
   @override
-  Future<OrderEntity> cancelOrder(String id, String userId) =>
-      _remote.cancelOrder(id, userId);
+  Future<OrderEntity> cancelOrder(String id, String userId,
+          {String? cancelReason}) =>
+      _remote.cancelOrder(id, userId, cancelReason: cancelReason);
 
   @override
   Future<OrderEntity> confirmReceived(String id) =>

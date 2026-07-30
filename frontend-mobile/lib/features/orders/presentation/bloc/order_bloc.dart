@@ -43,8 +43,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
   Future<void> _onCancel(
       OrderCancelRequested event, Emitter<OrderState> emit) async {
     try {
-      final updated =
-          await _repository.cancelOrder(event.orderId, event.userId);
+      final updated = await _repository.cancelOrder(event.orderId, event.userId,
+          cancelReason: event.cancelReason);
       final orders = state.orders
           .map((o) => o.id == updated.id ? updated : o)
           .toList();

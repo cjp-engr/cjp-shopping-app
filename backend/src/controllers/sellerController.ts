@@ -137,7 +137,7 @@ export const getSellerOrders = async (req: AuthRequest, res: Response) => {
 // @route   PUT /api/seller/orders/:id/status
 export const updateSellerOrderStatus = async (req: AuthRequest, res: Response) => {
   try {
-    const { status } = req.body;
+    const { status, cancelReason } = req.body;
 
     const order = await Order.findById(req.params.id);
     if (!order) {
@@ -153,7 +153,8 @@ export const updateSellerOrderStatus = async (req: AuthRequest, res: Response) =
     }
 
     const validTransitions: Record<string, string[]> = {
-      pending:    ['processing', 'cancelled'],
+      pending:    ['preparing', 'cancelled'],
+      preparing:  ['processing', 'cancelled'],
       processing: ['shipped', 'cancelled'],
       shipped:    ['delivered', 'cancelled'],
       delivered:  [],
@@ -179,6 +180,9 @@ export const updateSellerOrderStatus = async (req: AuthRequest, res: Response) =
     }
 
     order.status = status;
+    if (status === 'cancelled' && cancelReason) {
+      order.cancelReason = cancelReason;
+    }
     if (status === 'shipped' && !order.shippedAt) {
       order.shippedAt = new Date();
     }

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
+import '../../../voucher/data/voucher_repository.dart';
+import '../../../voucher/presentation/select_voucher_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -41,7 +43,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // Per-seller voucher codes (key = sellerId or '__unknown__')
   final Map<String, TextEditingController> _voucherCtrls = {};
   final Map<String, double> _voucherDiscounts = {};
+  final Map<String, String> _appliedVoucherCodes = {};
   final Map<String, TextEditingController> _messageCtrls = {};
+  late final VoucherRepository _voucherRepo;
 
   @override
   void dispose() {
@@ -58,28 +62,60 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    ApiClient.get().then((client) {
+      if (mounted) _voucherRepo = VoucherRepository(client);
+    });
+  }
+
   TextEditingController _voucherCtrl(String key) =>
       _voucherCtrls.putIfAbsent(key, () => TextEditingController());
 
   TextEditingController _messageCtrl(String key) =>
       _messageCtrls.putIfAbsent(key, () => TextEditingController());
 
-  void _applyVoucher(String key, List<CartItemEntity> items) {
+  Future<void> _openVoucherScreen(String sellerKey, String sellerName, double orderAmount) async {
+    final result = await Navigator.of(context).push<VoucherSelection?>(
+      MaterialPageRoute(
+        builder: (_) => SelectVoucherScreen(
+          sellerId: sellerKey,
+          sellerName: sellerName,
+          orderAmount: orderAmount,
+          currentCode: _appliedVoucherCodes[sellerKey],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {
+      if (result != null) {
+        _voucherDiscounts[sellerKey] = result.discountAmount;
+        _appliedVoucherCodes[sellerKey] = result.code;
+        _voucherCtrl(sellerKey).text = result.code;
+      } else {
+        _voucherDiscounts.remove(sellerKey);
+        _appliedVoucherCodes.remove(sellerKey);
+        _voucherCtrl(sellerKey).clear();
+      }
+    });
+  }
+
+  Future<void> _applyVoucher(String key, List<CartItemEntity> items) async {
     final code = _voucherCtrl(key).text.trim().toUpperCase();
+    if (code.isEmpty) return;
     final groupTotal = items.fold<double>(0, (s, i) => s + i.subtotal);
-    double discount = 0;
-    if (code == 'SAVE10') {
-      discount = groupTotal * 0.1;
-    } else if (code == 'SAVE20') {
-      discount = groupTotal * 0.2;
+    try {
+      final result = await _voucherRepo.validate(code, key, groupTotal);
+      if (!mounted) return;
+      setState(() {
+        _voucherDiscounts[key] = result.discountAmount;
+        _appliedVoucherCodes[key] = result.coupon.code;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _voucherDiscounts.remove(key));
     }
-    setState(() => _voucherDiscounts[key] = discount);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(discount > 0
-          ? 'Voucher applied: -\$${discount.toStringAsFixed(2)}'
-          : 'Invalid voucher code'),
-      duration: const Duration(seconds: 2),
-    ));
   }
 
   void _submit(CartState cart, Set<String> selectedIds) {
@@ -116,6 +152,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             for (final e in _messageCtrls.entries)
               if (e.value.text.trim().isNotEmpty) e.key: e.value.text.trim(),
           },
+          'couponCodes': Map<String, String>.from(_appliedVoucherCodes),
           'contactEmail': user.email,
           'subtotal': afterDiscount,
           'tax': totalTax,
@@ -132,21 +169,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (state.status == OrderStatus.placed) {
           context.read<CartBloc>().add(CartItemsCheckedOut(widget.selectedIds));
           context.go('/orders');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Order placed successfully!'),
-              backgroundColor: AppColors.success,
-              duration: Duration(seconds: 2),
-            ),
-          );
         }
-        if (state.status == OrderStatus.failure) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(state.errorMessage ?? 'Failed to place order'),
-            backgroundColor: AppColors.danger,
-            duration: const Duration(seconds: 2),
-          ));
-        }
+        if (state.status == OrderStatus.failure) {}
       },
       child: Scaffold(
         appBar: AppBar(
@@ -241,6 +265,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               storeTotal: storeTotal,
                               onApplyVoucher: () =>
                                   _applyVoucher(sellerKey, items),
+                              onOpenVoucherScreen: () => _openVoucherScreen(
+                                sellerKey,
+                                sellerName ?? 'Store',
+                                groupSubtotal,
+                              ),
                             );
                           }),
 
@@ -632,6 +661,7 @@ class _SellerCard extends StatelessWidget {
   final double sellerTax;
   final double storeTotal;
   final VoidCallback onApplyVoucher;
+  final VoidCallback onOpenVoucherScreen;
 
   const _SellerCard({
     required this.sellerName,
@@ -643,6 +673,7 @@ class _SellerCard extends StatelessWidget {
     required this.sellerTax,
     required this.storeTotal,
     required this.onApplyVoucher,
+    required this.onOpenVoucherScreen,
   });
 
   @override
@@ -683,11 +714,12 @@ class _SellerCard extends StatelessWidget {
 
           const Divider(height: 1),
 
-          // Shop Voucher row
+          // Shop Voucher row (tapping → voucher screen)
           _VoucherRow(
             controller: voucherCtrl,
             discount: discount,
             onApply: onApplyVoucher,
+            onTapRow: onOpenVoucherScreen,
           ),
 
           const Divider(height: 1),
@@ -787,10 +819,12 @@ class _VoucherRow extends StatefulWidget {
   final TextEditingController controller;
   final double discount;
   final VoidCallback onApply;
+  final VoidCallback onTapRow;
   const _VoucherRow({
     required this.controller,
     required this.discount,
     required this.onApply,
+    required this.onTapRow,
   });
 
   @override
@@ -805,7 +839,7 @@ class _VoucherRowState extends State<_VoucherRow> {
     return Column(
       children: [
         InkWell(
-          onTap: () => setState(() => _expanded = !_expanded),
+          onTap: widget.onTapRow,
           child: Padding(
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSizes.md, vertical: 12),

@@ -9,5 +9,6 @@ abstract class SellerRepository {
       {List<String> imagePaths = const []});
   Future<void> deleteProduct(String id);
   Future<List<SellerOrderData>> getSellerOrders();
-  Future<void> updateOrderStatus(String orderId, String status);
+  Future<void> updateOrderStatus(String orderId, String status,
+      {String? cancelReason});
 }

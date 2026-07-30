@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
+import Coupon from '../models/Coupon.js';
 import { AuthRequest } from '../middleware/auth.js';
 
 // @desc    Create new order
@@ -8,7 +9,8 @@ import { AuthRequest } from '../middleware/auth.js';
 // @access  Private
 export const createOrder = async (req: AuthRequest, res: Response) => {
   try {
-    const { items, shippingAddress, paymentMethod, sellerMessages } = req.body;
+    const { items, shippingAddress, paymentMethod, sellerMessages, couponCodes } = req.body;
+    // couponCodes: Record<sellerId, couponCode>
 
     if (!items || items.length === 0) {
       return res.status(400).json({ success: false, message: 'No order items provided' });
@@ -60,9 +62,39 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
         await productDoc.save();
       }
 
-      const tax = subtotal * 0.08;
-      const shipping = subtotal >= 50 ? 0 : 9.99;
-      const total = subtotal + tax + shipping;
+      // Apply coupon if provided for this seller
+      let discount = 0;
+      let appliedCouponCode: string | undefined;
+      const rawCode = couponCodes?.[sellerKey];
+      if (rawCode) {
+        const coupon = await Coupon.findOne({
+          code: rawCode.toString().toUpperCase(),
+          sellerId: sellerKey,
+          isActive: true,
+        });
+        if (coupon) {
+          const now = new Date();
+          const notExpired = !coupon.expiresAt || coupon.expiresAt > now;
+          const withinLimit = coupon.usageLimit == null || coupon.usedCount < coupon.usageLimit;
+          const meetsMinimum = subtotal >= coupon.minOrderAmount;
+          if (notExpired && withinLimit && meetsMinimum) {
+            if (coupon.discountType === 'percentage') {
+              discount = subtotal * (coupon.discountValue / 100);
+              if (coupon.maxDiscount) discount = Math.min(discount, coupon.maxDiscount);
+            } else {
+              discount = Math.min(coupon.discountValue, subtotal);
+            }
+            coupon.usedCount += 1;
+            await coupon.save();
+            appliedCouponCode = coupon.code;
+          }
+        }
+      }
+
+      const discountedSubtotal = subtotal - discount;
+      const tax = discountedSubtotal * 0.08;
+      const shipping = discountedSubtotal >= 50 ? 0 : 9.99;
+      const total = discountedSubtotal + tax + shipping;
 
       const sellerMessage = (sellerMessages && sellerMessages[sellerKey]) ?? '';
 
@@ -72,6 +104,8 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
         shippingAddress,
         paymentMethod,
         subtotal,
+        discount,
+        couponCode: appliedCouponCode,
         tax,
         shipping,
         total,
@@ -161,10 +195,10 @@ export const getOrder = async (req: AuthRequest, res: Response) => {
 // @access  Private
 export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
   try {
-    const { status } = req.body;
+    const { status, cancelReason } = req.body;
 
     // Sellers may not set delivered — that belongs to the buyer via confirm-received
-    const sellerAllowed = ['pending', 'processing', 'shipped', 'cancelled'];
+    const sellerAllowed = ['pending', 'preparing', 'processing', 'shipped', 'cancelled'];
     const buyerAllowed  = ['cancelled'];
 
     if (!sellerAllowed.includes(status)) {
@@ -179,9 +213,9 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
     const isBuyer = order.userId.toString() === req.user?.id;
 
     if (isBuyer) {
-      // Buyer can only cancel pending orders via this endpoint
-      if (!buyerAllowed.includes(status) || order.status !== 'pending') {
-        return res.status(403).json({ success: false, message: 'You can only cancel pending orders' });
+      // Buyer can cancel pending or preparing orders via this endpoint
+      if (!buyerAllowed.includes(status) || !['pending', 'preparing'].includes(order.status)) {
+        return res.status(403).json({ success: false, message: 'You can only cancel pending or preparing orders' });
       }
     }
 
@@ -197,6 +231,9 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
     }
 
     order.status = status;
+    if (status === 'cancelled' && cancelReason) {
+      order.cancelReason = cancelReason;
+    }
     await order.save();
 
     res.status(200).json({ success: true, order });
