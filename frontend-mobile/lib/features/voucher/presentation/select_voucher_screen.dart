@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/network/api_client.dart';
 import '../data/voucher_repository.dart';
 
@@ -46,16 +47,24 @@ class _SelectVoucherScreenState extends State<SelectVoucherScreen> {
   void initState() {
     super.initState();
     _selectedCode = widget.currentCode;
-    ApiClient.get().then((client) {
-      _repo = VoucherRepository(client);
-      _load();
-    });
+    _init();
   }
 
   @override
   void dispose() {
     _codeCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _init() async {
+    try {
+      final client = await ApiClient.get();
+      if (!mounted) return;
+      _repo = VoucherRepository(client);
+      await _load();
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _load() async {
@@ -131,7 +140,7 @@ class _SelectVoucherScreenState extends State<SelectVoucherScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(null),
         ),
-        title: const Text('Select Voucher', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
+        title: const Text(AppStrings.selectVoucher, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline_rounded),
@@ -155,7 +164,7 @@ class _SelectVoucherScreenState extends State<SelectVoucherScreen> {
                         controller: _codeCtrl,
                         textCapitalization: TextCapitalization.characters,
                         decoration: InputDecoration(
-                          hintText: 'Please enter platform voucher code',
+                          hintText: AppStrings.enterPlatformVoucherHint,
                           hintStyle: TextStyle(fontSize: 13, color: Colors.grey[500]),
                           isDense: true,
                           filled: true,
@@ -181,7 +190,7 @@ class _SelectVoucherScreenState extends State<SelectVoucherScreen> {
                       ),
                       child: _applyingManual
                           ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Text('Apply', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                          : const Text(AppStrings.apply, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                     ),
                   ],
                 ),
@@ -207,7 +216,7 @@ class _SelectVoucherScreenState extends State<SelectVoucherScreen> {
                           children: [
                             Icon(Icons.local_offer_outlined, size: 56, color: Colors.grey[300]),
                             const SizedBox(height: 12),
-                            Text('No vouchers available', style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+                            Text(AppStrings.noVouchersAvailable, style: TextStyle(color: Colors.grey[500], fontSize: 14)),
                           ],
                         ),
                       )
@@ -251,17 +260,17 @@ class _SelectVoucherScreenState extends State<SelectVoucherScreen> {
             Row(
               children: [
                 Text(
-                  _selectedCode != null ? '1 Voucher Selected.' : 'No voucher selected',
+                  _selectedCode != null ? AppStrings.voucherSelected : AppStrings.noVoucherSelected,
                   style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
                 if (_selectedCode != null) ...[
                   const SizedBox(width: 6),
-                  const Text('Voucher applied',
+                  const Text(AppStrings.voucherApplied,
                       style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600)),
                   const Spacer(),
                   GestureDetector(
                     onTap: () => setState(() { _selectedCode = null; _selectedDiscount = 0; }),
-                    child: const Text('Remove',
+                    child: const Text(AppStrings.remove,
                         style: TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600)),
                   ),
                 ],
@@ -278,7 +287,7 @@ class _SelectVoucherScreenState extends State<SelectVoucherScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text('OK', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                child: const Text(AppStrings.ok, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -376,7 +385,7 @@ class _CouponTile extends StatelessWidget {
                             color: Colors.orange,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text('Recommended',
+                          child: const Text(AppStrings.recommended,
                               style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
                         ),
                       const SizedBox(height: 2),
@@ -417,7 +426,7 @@ class _CouponTile extends StatelessWidget {
                         height: 20,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey[400]!, width: 1.5),
+                          border: Border.all(color: Colors.grey.shade400, width: 1.5),
                         ),
                       ),
               ),

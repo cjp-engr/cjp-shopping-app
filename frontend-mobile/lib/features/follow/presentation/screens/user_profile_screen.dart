@@ -8,6 +8,7 @@ import '../bloc/user_profile_bloc.dart';
 import '../bloc/user_profile_event.dart';
 import '../bloc/user_profile_state.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../../core/constants/app_strings.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String userId;
@@ -53,7 +54,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text(AppStrings.profile),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
@@ -66,7 +67,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
             return const Center(child: CircularProgressIndicator());
           }
           if (state.status == UserProfileStatus.error || state.user == null) {
-            return _ErrorView(message: state.errorMessage ?? 'User not found');
+            return _ErrorView(message: state.errorMessage ?? AppStrings.userNotFound);
           }
           final user = state.user!;
           final isOwn = currentUserId == user.id;
@@ -101,8 +102,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                       fontWeight: FontWeight.w600,
                     ),
                     tabs: [
-                      Tab(text: 'Followers (${user.followersCount})'),
-                      Tab(text: 'Following (${user.followingCount})'),
+                      Tab(text: '${AppStrings.followers} (${user.followersCount})'),
+                      Tab(text: '${AppStrings.following} (${user.followingCount})'),
                     ],
                   ),
                 ),
@@ -115,13 +116,13 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   users: state.tabUsers,
                   loading: state.tabLoading,
                   currentUserId: currentUserId,
-                  emptyMessage: 'No followers yet',
+                  emptyMessage: AppStrings.noFollowers,
                 ),
                 _UserList(
                   users: state.tabUsers,
                   loading: state.tabLoading,
                   currentUserId: currentUserId,
-                  emptyMessage: 'Not following anyone yet',
+                  emptyMessage: AppStrings.notFollowingAnyone,
                 ),
               ],
             ),
@@ -207,7 +208,7 @@ class _ProfileHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  user.isSeller ? 'Seller' : 'Buyer',
+                  user.isSeller ? AppStrings.sellerRole : AppStrings.buyerRole,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -225,14 +226,14 @@ class _ProfileHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _StatChip(label: 'Followers', count: user.followersCount),
+              _StatChip(label: AppStrings.followers, count: user.followersCount),
               Container(
                 height: 32,
                 width: 1,
                 color: Theme.of(context).dividerColor,
                 margin: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
               ),
-              _StatChip(label: 'Following', count: user.followingCount),
+              _StatChip(label: AppStrings.following, count: user.followingCount),
             ],
           ),
           const SizedBox(height: AppSizes.lg),
@@ -263,7 +264,7 @@ class _ProfileHeader extends StatelessWidget {
                   size: 18,
                 ),
                 label: Text(
-                  user.isFollowing ? 'Unfollow' : 'Follow',
+                  user.isFollowing ? AppStrings.unfollow : AppStrings.follow,
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
@@ -403,7 +404,7 @@ class _UserTile extends StatelessWidget {
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       ),
       subtitle: Text(
-        user.isSeller ? 'Seller' : 'Buyer',
+        user.isSeller ? AppStrings.sellerRole : AppStrings.buyerRole,
         style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
       ),
       trailing: isOwn
@@ -427,7 +428,7 @@ class _UserTile extends StatelessWidget {
                       BorderRadius.circular(AppSizes.radiusFull),
                 ),
                 child: Text(
-                  user.isFollowing ? 'Unfollow' : 'Follow',
+                  user.isFollowing ? AppStrings.unfollow : AppStrings.follow,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -462,7 +463,7 @@ class _ErrorView extends StatelessWidget {
           const SizedBox(height: 16),
           TextButton(
             onPressed: () => context.pop(),
-            child: const Text('Go back'),
+            child: const Text(AppStrings.goBack),
           ),
         ],
       ),

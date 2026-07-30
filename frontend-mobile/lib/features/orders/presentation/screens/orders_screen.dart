@@ -32,12 +32,12 @@ class _TabDef {
 }
 
 const _kTabs = [
-  _TabDef('Pending', ['pending']),
-  _TabDef('Preparing', ['preparing']),
-  _TabDef('To Ship', ['processing']),
-  _TabDef('To Receive', ['shipped']),
-  _TabDef('Complete', ['delivered']),
-  _TabDef('Cancelled', ['cancelled']),
+  _TabDef(AppStrings.statusPending, ['pending']),
+  _TabDef(AppStrings.statusPreparing, ['preparing']),
+  _TabDef(AppStrings.statusToShip, ['processing']),
+  _TabDef(AppStrings.statusToReceive, ['shipped']),
+  _TabDef(AppStrings.statusComplete, ['delivered']),
+  _TabDef(AppStrings.statusCancelled, ['cancelled']),
 ];
 
 class OrdersScreen extends StatefulWidget {
@@ -226,9 +226,7 @@ class _EmptyOrdersState extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.md),
             Text(
-              label == 'All'
-                  ? 'No orders yet'
-                  : 'No ${label.toLowerCase()} orders',
+              'No $label orders',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -237,7 +235,7 @@ class _EmptyOrdersState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Your orders will appear here\nonce you start shopping.',
+              AppStrings.ordersEmptyBody,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -323,10 +321,10 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
       icon: Icons.check_circle_outline_rounded,
       iconColor: AppColors.success,
       iconBackground: AppColors.successSurface,
-      title: 'Confirm Receipt',
-      body: 'Have you received your order? This will mark the order as complete.',
-      cancelLabel: 'Not Yet',
-      confirmLabel: 'Yes, Received',
+      title: AppStrings.confirmReceipt,
+      body: AppStrings.confirmReceiptBody,
+      cancelLabel: AppStrings.notYet,
+      confirmLabel: AppStrings.yesReceived,
       confirmColor: AppColors.success,
     );
     if (confirm == true && context.mounted) {
@@ -454,7 +452,7 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                                     Icon(Icons.check_circle_rounded,
                                         size: 14, color: AppColors.success),
                                     SizedBox(width: 4),
-                                    Text('Reviewed',
+                                    Text(AppStrings.reviewed,
                                         style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
@@ -486,7 +484,7 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                                         Icon(Icons.star_rounded,
                                             size: 14, color: AppColors.warning),
                                         SizedBox(width: 4),
-                                        Text('Write a Review',
+                                        Text(AppStrings.writeAReview,
                                             style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
@@ -562,7 +560,7 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'This order has been cancelled',
+                            AppStrings.orderCancelledNotice,
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,

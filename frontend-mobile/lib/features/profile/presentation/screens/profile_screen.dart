@@ -79,16 +79,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _confirmBecomeSeller(BuildContext context) async {
+  Future<void> _confirmBecomeSeller(BuildContext context) async {
     final confirm = await AppDialog.show(
       context,
       icon: Icons.storefront_outlined,
       iconColor: AppColors.primary,
       iconBackground: AppColors.primaryLight,
-      title: 'Become a Seller',
-      body: 'You\'ll be able to list products and start selling on TokoMart. Continue?',
-      cancelLabel: 'Not Now',
-      confirmLabel: 'Yes, Continue',
+      title: AppStrings.becomeSeller,
+      body: AppStrings.becomeSellerBody,
+      cancelLabel: AppStrings.notNow,
+      confirmLabel: AppStrings.yesContinue,
     );
     if (confirm == true && context.mounted) {
       context.read<AuthBloc>().add(AuthProfileUpdateRequested(const {'role': 'seller'}));
@@ -161,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           else
             TextButton(
               onPressed: () => setState(() => _isEditing = false),
-              child: const Text('Cancel'),
+              child: const Text(AppStrings.cancel),
             ),
         ],
       ),
@@ -202,7 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const _SectionLabel('Personal Details'),
+                        const _SectionLabel(AppStrings.personalDetails),
                         const SizedBox(height: AppSizes.xs),
                         _FormCard(
                           child: Column(
@@ -234,7 +234,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               const SizedBox(height: AppSizes.sm),
                               AppTextField(
-                                label: 'Phone',
+                                label: AppStrings.phone,
                                 controller: _phoneCtrl,
                                 keyboardType: TextInputType.phone,
                                 prefixIcon: Icons.phone_outlined,
@@ -244,13 +244,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: AppSizes.md),
-                        const _SectionLabel('Address'),
+                        const _SectionLabel(AppStrings.address),
                         const SizedBox(height: AppSizes.xs),
                         _FormCard(
                           child: Column(
                             children: [
                               AppTextField(
-                                label: 'Street',
+                                label: AppStrings.street,
                                 controller: _streetCtrl,
                                 prefixIcon: Icons.location_on_outlined,
                               ),
@@ -259,14 +259,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 children: [
                                   Expanded(
                                     child: AppTextField(
-                                      label: 'City',
+                                      label: AppStrings.city,
                                       controller: _cityCtrl,
                                     ),
                                   ),
                                   const SizedBox(width: AppSizes.sm),
                                   Expanded(
                                     child: AppTextField(
-                                      label: 'State',
+                                      label: AppStrings.state,
                                       controller: _stateCtrl,
                                     ),
                                   ),
@@ -274,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               const SizedBox(height: AppSizes.sm),
                               AppTextField(
-                                label: 'ZIP Code',
+                                label: AppStrings.zipCode,
                                 controller: _zipCtrl,
                                 keyboardType: TextInputType.number,
                               ),
@@ -295,31 +295,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ] else ...[
                   // ── View mode ──────────────────────────────────────────────
-                  const _SectionLabel('Personal Information'),
+                  const _SectionLabel(AppStrings.personalInformation),
                   const SizedBox(height: AppSizes.xs),
                   _InfoCard(
                     items: [
                       _InfoItem(
                         Icons.person_outlined,
-                        'First Name',
+                        AppStrings.firstName,
                         user.firstName.isNotEmpty ? user.firstName : '—',
                       ),
                       _InfoItem(
                         Icons.person_outlined,
-                        'Last Name',
+                        AppStrings.lastName,
                         user.lastName.isNotEmpty ? user.lastName : '—',
                       ),
-                      _InfoItem(Icons.email_outlined, 'Email', user.email),
+                      _InfoItem(Icons.email_outlined, AppStrings.email, user.email),
                       _InfoItem(
                         Icons.phone_outlined,
-                        'Phone',
+                        AppStrings.phone,
                         (user.phone != null && user.phone!.isNotEmpty)
                             ? user.phone!
                             : '—',
                       ),
                       _InfoItem(
                         Icons.location_on_outlined,
-                        'Address',
+                        AppStrings.address,
                         user.address != null
                             ? [
                                 user.address!.street,
@@ -335,7 +335,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: AppSizes.md),
 
                   // ── Saved Addresses ────────────────────────────────────────
-                  const _SectionLabel('Saved Addresses'),
+                  const _SectionLabel(AppStrings.savedAddresses),
                   const SizedBox(height: AppSizes.xs),
                   _SavedAddressList(addresses: user.savedAddresses),
 
@@ -347,14 +347,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       if (user.isSeller)
                         _SettingsRow(
                           icon: Icons.storefront_outlined,
-                          label: 'My Shop',
+                          label: AppStrings.myShop,
                           onTap: () => context.go('/seller'),
                           showChevron: true,
                         )
                       else
                         _SettingsRow(
                           icon: Icons.store_outlined,
-                          label: 'Become a Seller',
+                          label: AppStrings.becomeSeller,
                           onTap: () => _confirmBecomeSeller(context),
                           showChevron: true,
                         ),
@@ -366,7 +366,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             icon: isDark
                                 ? Icons.dark_mode_rounded
                                 : Icons.wb_sunny_rounded,
-                            label: isDark ? 'Dark Mode' : 'Light Mode',
+                            label: isDark ? AppStrings.darkMode : AppStrings.lightMode,
                             onTap: () => context.read<ThemeCubit>().toggle(),
                             trailing: _ThemeToggle(
                               isDark: isDark,
@@ -920,17 +920,17 @@ class _SavedAddressListState extends State<_SavedAddressList> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Add Address',
+            Text(AppStrings.addAddress,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: Theme.of(ctx).colorScheme.onSurface,
                 )),
             const SizedBox(height: AppSizes.sm),
-            AppTextField(label: 'Label', controller: _labelCtrl),
+            AppTextField(label: AppStrings.label, controller: _labelCtrl),
             const SizedBox(height: AppSizes.xs),
             AppTextField(
-              label: 'Street Address',
+              label: AppStrings.streetAddress,
               controller: _streetCtrl,
               prefixIcon: Icons.home_outlined,
               keyboardType: TextInputType.streetAddress,
@@ -938,14 +938,14 @@ class _SavedAddressListState extends State<_SavedAddressList> {
             const SizedBox(height: AppSizes.xs),
             Row(children: [
               Expanded(
-                  child: AppTextField(label: 'City', controller: _cityCtrl)),
+                  child: AppTextField(label: AppStrings.city, controller: _cityCtrl)),
               const SizedBox(width: AppSizes.sm),
               Expanded(
-                  child: AppTextField(label: 'State', controller: _stateCtrl)),
+                  child: AppTextField(label: AppStrings.state, controller: _stateCtrl)),
             ]),
             const SizedBox(height: AppSizes.xs),
             AppTextField(
-              label: 'ZIP Code',
+              label: AppStrings.zipCode,
               controller: _zipCtrl,
               keyboardType: TextInputType.number,
             ),
@@ -953,7 +953,7 @@ class _SavedAddressListState extends State<_SavedAddressList> {
             BlocBuilder<AuthBloc, AuthState>(
               buildWhen: (p, c) => p.status != c.status,
               builder: (bCtx, s) => AppButton(
-                label: 'Save Address',
+                label: AppStrings.saveAddress,
                 loading: s.status == AuthStatus.loading,
                 onPressed: () {
                   if (_streetCtrl.text.trim().isEmpty ||
@@ -1003,7 +1003,7 @@ class _SavedAddressListState extends State<_SavedAddressList> {
             Padding(
               padding: const EdgeInsets.all(AppSizes.md),
               child: Text(
-                'No saved addresses',
+                AppStrings.noSavedAddresses,
                 style: TextStyle(
                   fontSize: 13,
                   color: Theme.of(context).colorScheme.onSurface.withAlpha(130),
@@ -1068,7 +1068,7 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                                         AppSizes.radiusFull),
                                   ),
                                   child: const Text(
-                                    'Default',
+                                    AppStrings.defaultLabel,
                                     style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
@@ -1097,7 +1097,7 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                           icon: Icon(Icons.star_border_rounded,
                               size: 20,
                               color: AppColors.primary.withAlpha(180)),
-                          tooltip: 'Set as default',
+                          tooltip: AppStrings.setAsDefault,
                           onPressed: () => context
                               .read<AuthBloc>()
                               .add(AuthAddressSetDefaultRequested(addr.id)),
@@ -1108,7 +1108,7 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                       IconButton(
                         icon: Icon(Icons.delete_outline,
                             size: 20, color: Colors.red.withAlpha(200)),
-                        tooltip: 'Delete address',
+                        tooltip: AppStrings.deleteAddress,
                         onPressed: () => context
                             .read<AuthBloc>()
                             .add(AuthAddressDeleteRequested(addr.id)),
@@ -1139,7 +1139,7 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                   Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
                   SizedBox(width: 6),
                   Text(
-                    'Add Address',
+                    AppStrings.addAddress,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -1198,7 +1198,7 @@ class _FollowStatsRowState extends State<_FollowStatsRow> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _StatChip(
-          label: 'Followers',
+          label: AppStrings.followers,
           count: _followers ?? 0,
           onTap: () => context.push('/users/${widget.userId}'),
         ),
@@ -1209,7 +1209,7 @@ class _FollowStatsRowState extends State<_FollowStatsRow> {
           color: Theme.of(context).dividerColor,
         ),
         _StatChip(
-          label: 'Following',
+          label: AppStrings.following,
           count: _following ?? 0,
           onTap: () => context.push('/users/${widget.userId}'),
         ),

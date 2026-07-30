@@ -76,7 +76,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   TextEditingController _messageCtrl(String key) =>
       _messageCtrls.putIfAbsent(key, () => TextEditingController());
 
-  Future<void> _openVoucherScreen(String sellerKey, String sellerName, double orderAmount) async {
+  Future<void> _openVoucherScreen(
+      String sellerKey, String sellerName, double orderAmount) async {
     final result = await Navigator.of(context).push<VoucherSelection?>(
       MaterialPageRoute(
         builder: (_) => SelectVoucherScreen(
@@ -205,8 +206,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             double totalTax = 0;
             for (final entry in groups.entries) {
               final disc = _voucherDiscounts[entry.key] ?? 0;
-              final sub =
-                  entry.value.fold<double>(0, (s, i) => s + i.subtotal);
+              final sub = entry.value.fold<double>(0, (s, i) => s + i.subtotal);
               final after = (sub - disc).clamp(0.0, double.infinity);
               totalShipping += after < 50 ? 9.99 : 0.0;
               totalTax += after * 0.08;
@@ -228,9 +228,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           // ── Shipping address ──────────────────────────────
                           BlocBuilder<AuthBloc, AuthState>(
                             buildWhen: (p, c) =>
-                                p.user?.savedAddresses != c.user?.savedAddresses,
+                                p.user?.savedAddresses !=
+                                c.user?.savedAddresses,
                             builder: (_, authState) => _AddressSection(
-                              savedAddresses: authState.user?.savedAddresses ?? const [],
+                              savedAddresses:
+                                  authState.user?.savedAddresses ?? const [],
                               streetCtrl: _streetCtrl,
                               cityCtrl: _cityCtrl,
                               stateCtrl: _stateCtrl,
@@ -247,9 +249,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             final groupSubtotal =
                                 items.fold<double>(0, (s, i) => s + i.subtotal);
                             final discount = _voucherDiscounts[sellerKey] ?? 0;
-                            final afterDiscount =
-                                (groupSubtotal - discount).clamp(0.0, double.infinity);
-                            final sellerShipping = afterDiscount < 50 ? 9.99 : 0.0;
+                            final afterDiscount = (groupSubtotal - discount)
+                                .clamp(0.0, double.infinity);
+                            final sellerShipping =
+                                afterDiscount < 50 ? 9.99 : 0.0;
                             final sellerTax = afterDiscount * 0.08;
                             final storeTotal =
                                 afterDiscount + sellerShipping + sellerTax;
@@ -611,8 +614,7 @@ class _AddressOption extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color:
-                                  AppColors.primary.withValues(alpha: 0.12),
+                              color: AppColors.primary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Text(
@@ -832,7 +834,7 @@ class _VoucherRow extends StatefulWidget {
 }
 
 class _VoucherRowState extends State<_VoucherRow> {
-  bool _expanded = false;
+  final bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1083,6 +1085,7 @@ class _PaymentSectionState extends State<_PaymentSection> {
   Future<void> _deleteCard(String id) async {
     try {
       await _http('DELETE', '/auth/payment-methods/$id', null);
+      if (!mounted) return;
       setState(() {
         if (_selectedCardId == id) {
           final remaining = widget.savedCards.where((c) => c.id != id).toList();
@@ -1186,8 +1189,8 @@ class _PaymentSectionState extends State<_PaymentSection> {
                             horizontal: 12, vertical: 11),
                         decoration: BoxDecoration(
                           color: selected
-                              ? AppColors.primary.withValues(
-                                  alpha: isDark ? 0.15 : 0.06)
+                              ? AppColors.primary
+                                  .withValues(alpha: isDark ? 0.15 : 0.06)
                               : (isDark
                                   ? Colors.white.withValues(alpha: 0.04)
                                   : Colors.grey.shade50),
@@ -1316,7 +1319,8 @@ class _PaymentSectionState extends State<_PaymentSection> {
                       width: 20,
                       height: 20,
                       decoration: BoxDecoration(
-                        color: _saveCard ? AppColors.primary : Colors.transparent,
+                        color:
+                            _saveCard ? AppColors.primary : Colors.transparent,
                         borderRadius: BorderRadius.circular(5),
                         border: Border.all(
                           color: _saveCard
@@ -1450,8 +1454,8 @@ class _NewCardForm extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                   decoration: BoxDecoration(
                     color: selected
-                        ? AppColors.primary.withValues(
-                            alpha: isDark ? 0.15 : 0.06)
+                        ? AppColors.primary
+                            .withValues(alpha: isDark ? 0.15 : 0.06)
                         : (isDark
                             ? Colors.white.withValues(alpha: 0.04)
                             : Colors.grey.shade50),
@@ -1505,8 +1509,9 @@ class _NewCardForm extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color:
-                            selected ? AppColors.primary : context.onSurfaceColor,
+                        color: selected
+                            ? AppColors.primary
+                            : context.onSurfaceColor,
                       ),
                     ),
                   ]),
@@ -1584,9 +1589,8 @@ class _ExpiryPickerField extends StatelessWidget {
       isScrollControlled: true,
       builder: (sheetCtx) => StatefulBuilder(
         builder: (ctx, setModalState) {
-          int tempIndex = controller.hasClients
-              ? controller.selectedItem
-              : initialIndex;
+          int tempIndex =
+              controller.hasClients ? controller.selectedItem : initialIndex;
           return Container(
             decoration: BoxDecoration(
               color: sheetBg,
@@ -1634,10 +1638,9 @@ class _ExpiryPickerField extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
-                          onChanged(
-                              items[controller.hasClients
-                                  ? controller.selectedItem
-                                  : initialIndex]);
+                          onChanged(items[controller.hasClients
+                              ? controller.selectedItem
+                              : initialIndex]);
                           Navigator.of(sheetCtx).pop();
                         },
                         child: const Text(
@@ -1666,8 +1669,7 @@ class _ExpiryPickerField extends StatelessWidget {
                         child: Container(
                           height: 52,
                           decoration: BoxDecoration(
-                            color:
-                                AppColors.primary.withValues(alpha: 0.08),
+                            color: AppColors.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: AppColors.primary.withValues(alpha: 0.2),
@@ -1708,8 +1710,7 @@ class _ExpiryPickerField extends StatelessWidget {
                     ],
                   ),
                 ),
-                SizedBox(
-                    height: MediaQuery.of(ctx).padding.bottom + 16),
+                SizedBox(height: MediaQuery.of(ctx).padding.bottom + 16),
               ],
             ),
           );
@@ -1912,8 +1913,9 @@ class _SellerBreakdown extends StatelessWidget {
       child: Column(
         children: [
           if (discount > 0) ...[
-            _row('Voucher Savings', '-\$${discount.toStringAsFixed(2)}',
-                context, valueColor: AppColors.success),
+            _row(
+                'Voucher Savings', '-\$${discount.toStringAsFixed(2)}', context,
+                valueColor: AppColors.success),
             const SizedBox(height: 4),
           ],
           _row(

@@ -102,7 +102,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 leading: Padding(
                   padding: const EdgeInsets.all(8),
                   child: Semantics(
-                    label: 'Go back',
+                    label: AppStrings.goBack,
                     button: true,
                     child: InkWell(
                       onTap: () => context.pop(),
@@ -126,15 +126,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
                 title: Text(
                   isOwnProduct && _previewMode
-                      ? 'Preview as Buyer'
-                      : 'Product Details',
+                      ? AppStrings.previewAsBuyer
+                      : AppStrings.productDetails,
                 ),
                 actions: [
                   if (isOwnProduct)
                     Padding(
                       padding: const EdgeInsets.only(right: 4),
                       child: Semantics(
-                        label: _previewMode ? 'Exit buyer preview' : 'Preview as buyer',
+                        label: _previewMode ? AppStrings.exitBuyerPreview : AppStrings.previewAsBuyerSemantic,
                         button: true,
                         child: InkWell(
                           onTap: () =>
@@ -170,7 +170,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Padding(
                     padding: const EdgeInsets.all(8),
                     child: Semantics(
-                      label: 'Open cart',
+                      label: AppStrings.openCart,
                       button: true,
                       child: InkWell(
                         onTap: () => context.push('/cart'),
@@ -256,7 +256,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             builder: (context, wishlist) {
                               final wishlisted = wishlist.contains(product.id);
                               return Semantics(
-                                label: wishlisted ? 'Remove from wishlist' : 'Add to wishlist',
+                                label: wishlisted ? AppStrings.removeFromWishlist : AppStrings.addToWishlist,
                                 button: true,
                                 child: InkWell(
                                   onTap: () => context
@@ -398,7 +398,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               Row(
                                 children: [
                                   Text(
-                                    'Quantity',
+                                    AppStrings.quantity,
                                     style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700,
@@ -450,7 +450,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const SizedBox(height: AppSizes.md),
                       // Description
                       Text(
-                        'Description',
+                        AppStrings.description,
                         style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -473,7 +473,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           onTap: () =>
                               setState(() => _descExpanded = !_descExpanded),
                           child: Text(
-                            _descExpanded ? 'Show less' : 'Show more',
+                            _descExpanded ? AppStrings.showLess : AppStrings.showMore,
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -543,7 +543,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             minimumSize: const Size(0, AppSizes.buttonHeight),
                           ),
                           icon: const Icon(Icons.edit_outlined, size: 18),
-                          label: const Text('Edit Product'),
+                          label: const Text(AppStrings.editProduct),
                         ),
                       ),
                     ],
@@ -588,7 +588,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           minimumSize: const Size(0, AppSizes.buttonHeight),
                         ),
                         icon: const Icon(Icons.flash_on_rounded, size: 18),
-                        label: const Text('Buy Now'),
+                        label: const Text(AppStrings.buyNow),
                       ),
                     ),
                   ],
@@ -644,7 +644,7 @@ class _SellerBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = sellerName?.isNotEmpty == true ? sellerName! : 'Seller';
     return Semantics(
-      label: 'View seller profile',
+      label: AppStrings.viewSellerProfile,
       button: true,
       child: InkWell(
       onTap: () => context.push('/seller-profile/$sellerId'),
@@ -672,7 +672,7 @@ class _SellerBtn extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Sold by',
+                    AppStrings.soldBy,
                     style: TextStyle(
                       fontSize: 11,
                       color: AppColors.textMuted,
@@ -689,7 +689,7 @@ class _SellerBtn extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const Text(
-                    'Visit Store →',
+                    AppStrings.visitStore,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -848,7 +848,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
       children: [
         Row(
           children: [
-            Text('Customer Reviews',
+            Text(AppStrings.customerReviews,
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -875,7 +875,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
                 children: [
                   Icon(Icons.star_outline_rounded, size: 32, color: context.onSurfaceMuted),
                   const SizedBox(height: 8),
-                  Text('No reviews yet',
+                  Text(AppStrings.noReviewsYet,
                       style: TextStyle(fontSize: 14, color: context.onSurfaceSecondary)),
                 ],
               ),
@@ -943,7 +943,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
                     _loadReviews();
                   },
                   icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
-                  label: const Text('Load more reviews'),
+                  label: const Text(AppStrings.loadMoreReviews),
                 ),
               ),
           ]),

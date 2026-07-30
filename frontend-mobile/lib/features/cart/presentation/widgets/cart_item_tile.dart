@@ -5,6 +5,7 @@ import '../bloc/cart_bloc.dart';
 import '../bloc/cart_event.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/theme_colors.dart';
 
 class CartItemTile extends StatefulWidget {
@@ -122,7 +123,7 @@ class _CartItemTileState extends State<CartItemTile>
                                 color: Colors.white, size: 22),
                             SizedBox(height: 4),
                             Text(
-                              'Delete',
+                              AppStrings.delete,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,

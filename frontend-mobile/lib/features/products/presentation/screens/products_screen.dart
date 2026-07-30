@@ -120,7 +120,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                     ),
                     Text(
-                      'Welcome to TokoMart',
+                      AppStrings.welcomeToTokoMart,
                       style: TextStyle(
                         fontSize: 12,
                         color: onSurfaceSec,
@@ -131,7 +131,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
               ),
               Semantics(
-                label: 'Notifications',
+                label: AppStrings.notifications,
                 button: true,
                 child: IconButton(
                   onPressed: () {},
@@ -148,7 +148,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   return Stack(
                     children: [
                       Semantics(
-                        label: 'Open cart',
+                        label: AppStrings.openCart,
                         button: true,
                         child: IconButton(
                           icon: Icon(Icons.shopping_bag_outlined,
@@ -251,12 +251,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
               _load();
             },
             itemBuilder: (_) => const [
-              PopupMenuItem(value: 'newest', child: Text('Newest')),
+              PopupMenuItem(value: 'newest', child: Text(AppStrings.sortNewest)),
               PopupMenuItem(
-                  value: 'price-asc', child: Text('Price: Low to High')),
+                  value: 'price-asc', child: Text(AppStrings.sortPriceLowToHigh)),
               PopupMenuItem(
-                  value: 'price-desc', child: Text('Price: High to Low')),
-              PopupMenuItem(value: 'rating', child: Text('Top Rated')),
+                  value: 'price-desc', child: Text(AppStrings.sortPriceHighToLow)),
+              PopupMenuItem(value: 'rating', child: Text(AppStrings.sortTopRated)),
             ],
             child: Container(
               width: 48,
@@ -344,7 +344,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           return EmptyWidget(
             message: AppStrings.noProducts,
             icon: Icons.search_off_rounded,
-            actionLabel: 'Clear Filters',
+            actionLabel: AppStrings.clearFilters,
             onAction: () {
               _searchCtrl.clear();
               setState(() => _selectedCategory = null);
@@ -377,7 +377,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       Text(
                         _searchActive
                             ? '${state.products.length} results'
-                            : 'New Arrivals',
+                            : AppStrings.newArrivals,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -471,7 +471,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     behavior: HitTestBehavior.opaque,
                     child: Center(
                       child: Text(
-                        'All Products',
+                        AppStrings.allProducts,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -492,7 +492,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     behavior: HitTestBehavior.opaque,
                     child: Center(
                       child: Text(
-                        'My Products',
+                        AppStrings.myProducts,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -527,8 +527,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             if (myProducts.isEmpty) {
               return const EmptyWidget(
                 icon: Icons.storefront_outlined,
-                message:
-                    'You have no products listed yet.\nGo to your seller dashboard to add products.',
+                message: AppStrings.noSellerProducts,
               );
             }
 
@@ -589,7 +588,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   child: filtered.isEmpty
                       ? const Center(
                           child: Text(
-                            'No products in this category.',
+                            AppStrings.noProductsInCategory,
                             style: TextStyle(color: AppColors.textMuted),
                           ),
                         )
@@ -690,7 +689,7 @@ class _PromoBanner extends StatelessWidget {
                               BorderRadius.circular(AppSizes.radiusFull),
                         ),
                         child: const Text(
-                          'Opulent Savings',
+                          AppStrings.opulentSavings,
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 11,
@@ -700,7 +699,7 @@ class _PromoBanner extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Exclusive 50%\nLuxury Sale',
+                        AppStrings.promoBannerHeadline,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 22,
@@ -721,7 +720,7 @@ class _PromoBanner extends StatelessWidget {
                                 BorderRadius.circular(AppSizes.radiusFull),
                           ),
                           child: const Text(
-                            'Shop Now',
+                            AppStrings.shopNow,
                             style: TextStyle(
                               color: AppColors.primary,
                               fontSize: 13,

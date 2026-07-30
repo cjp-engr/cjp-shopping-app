@@ -30,12 +30,13 @@ class UserProfileBloc extends Bloc<UserProfileEvent, UserProfileState> {
 
   Future<void> _onFollowToggle(
       UserProfileFollowToggled event, Emitter<UserProfileState> emit) async {
-    if (state.user == null) return;
+    final user = state.user;
+    if (user == null) return;
     try {
       final result = event.currentlyFollowing
           ? await _ds.unfollowUser(event.targetUserId)
           : await _ds.followUser(event.targetUserId);
-      final updated = state.user!.copyWith(
+      final updated = user.copyWith(
         isFollowing: result.isFollowing,
         followersCount: result.followersCount,
       );

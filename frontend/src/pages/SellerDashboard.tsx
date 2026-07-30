@@ -612,8 +612,8 @@ export const SellerDashboard: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map(product => (
                 <Card key={product.id} padding="none" className="flex flex-col overflow-hidden">
-                  <div className="aspect-square bg-gray-100 dark:bg-gray-700 relative">
-                    <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  <div className="aspect-square bg-gray-100 dark:bg-gray-700 relative overflow-hidden">
+                    <ImgWithFallback src={product.image} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
                     <span className={`absolute top-2 right-2 text-xs font-semibold px-2 py-1 rounded-full ${
                       product.stock === 0
                         ? 'bg-red-100 text-red-700'

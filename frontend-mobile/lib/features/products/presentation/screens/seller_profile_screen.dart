@@ -13,6 +13,7 @@ import '../../../follow/presentation/bloc/user_profile_bloc.dart';
 import '../../../follow/presentation/bloc/user_profile_event.dart';
 import '../../../follow/presentation/bloc/user_profile_state.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../../core/constants/app_strings.dart';
 
 class SellerProfileScreen extends StatefulWidget {
   final String sellerId;
@@ -44,7 +45,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
         scrolledUnderElevation: 0,
         backgroundColor: AppColors.bannerStart,
         foregroundColor: Colors.white,
-        title: const Text('Seller Store'),
+        title: const Text(AppStrings.sellerStore),
       ),
       body: BlocBuilder<ProductBloc, ProductState>(
         buildWhen: (p, c) =>
@@ -68,14 +69,14 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                         size: 48, color: AppColors.textMuted),
                     const SizedBox(height: AppSizes.md),
                     Text(
-                      state.sellerProfileError ?? 'Failed to load seller',
+                      state.sellerProfileError ?? AppStrings.failedToLoadSeller,
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: AppColors.textSecondary),
                     ),
                     const SizedBox(height: AppSizes.md),
                     ElevatedButton(
                       onPressed: _refresh,
-                      child: const Text('Retry'),
+                      child: const Text(AppStrings.retry),
                     ),
                   ],
                 ),
@@ -115,7 +116,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                               size: 48, color: AppColors.textMuted),
                           SizedBox(height: AppSizes.sm),
                           Text(
-                            'No products yet',
+                            AppStrings.noProductsYet,
                             style: TextStyle(color: AppColors.textSecondary),
                           ),
                         ],
@@ -419,7 +420,7 @@ class _SellerHeader extends StatelessWidget {
                                   size: 18,
                                 ),
                           label: Text(
-                            isFollowing ? 'Unfollow' : 'Follow',
+                            isFollowing ? AppStrings.unfollow : AppStrings.follow,
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 14,

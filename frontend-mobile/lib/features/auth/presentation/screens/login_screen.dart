@@ -45,7 +45,14 @@ class _LoginScreenState extends State<LoginScreen> {
       body: BlocListener<AuthBloc, AuthState>(
         listenWhen: (prev, curr) => prev.status != curr.status,
         listener: (context, state) {
-          if (state.status == AuthStatus.failure) {}
+          if (state.status == AuthStatus.failure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage ?? AppStrings.loginFailed),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         },
         child: Stack(
           children: [
@@ -225,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () => context.push('/signup'),
                           child: RichText(
                             text: TextSpan(
-                              text: "Don't have an account? ",
+                              text: AppStrings.noAccountPrefix,
                               style: TextStyle(
                                 color: Theme.of(context)
                                     .colorScheme
@@ -235,7 +242,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               children: const [
                                 TextSpan(
-                                  text: 'Sign Up',
+                                  text: AppStrings.signUpLink,
                                   style: TextStyle(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w700,

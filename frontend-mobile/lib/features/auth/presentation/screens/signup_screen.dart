@@ -52,7 +52,14 @@ class _SignupScreenState extends State<SignupScreen> {
       body: BlocListener<AuthBloc, AuthState>(
         listenWhen: (prev, curr) => prev.status != curr.status,
         listener: (context, state) {
-          if (state.status == AuthStatus.failure) {}
+          if (state.status == AuthStatus.failure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage ?? AppStrings.signUpFailed),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         },
         child: Stack(
           children: [
@@ -182,7 +189,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Create Account',
+                        AppStrings.signup,
                         style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w900,
@@ -192,7 +199,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: AppSizes.xs),
                       const Text(
-                        'Join TokoMart and start shopping',
+                        AppStrings.joinTokoMartSubtitle,
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 14,
@@ -306,7 +313,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           onPressed: () => context.pop(),
                           child: RichText(
                             text: TextSpan(
-                              text: 'Already have an account? ',
+                              text: AppStrings.hasAccountPrefix,
                               style: TextStyle(
                                 color: Theme.of(context)
                                     .colorScheme
@@ -316,7 +323,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                               children: const [
                                 TextSpan(
-                                  text: 'Sign In',
+                                  text: AppStrings.signInLink,
                                   style: TextStyle(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w700,

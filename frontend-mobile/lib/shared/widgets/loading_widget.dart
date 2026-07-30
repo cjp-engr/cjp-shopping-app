@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:toko_mart/shared/widgets/app_button.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+import '../../core/constants/app_strings.dart';
 
 class LoadingWidget extends StatelessWidget {
   const LoadingWidget({super.key});
@@ -98,7 +99,7 @@ class ErrorWidget2 extends StatelessWidget {
               TextButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: const Text(AppStrings.retry),
               ),
             ],
           ],

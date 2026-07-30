@@ -85,7 +85,7 @@ class AppDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppSizes.radiusXl),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.45 : 0.12),
+              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
               blurRadius: 32,
               offset: const Offset(0, 8),
             ),
@@ -144,7 +144,9 @@ class AppDialog extends StatelessWidget {
             Divider(
               height: 1,
               thickness: 1,
-              color: isDark ? Colors.white.withOpacity(0.08) : AppColors.border,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : AppColors.border,
             ),
 
             // ── Actions (stacked vertically for clarity) ───────────────────
@@ -157,7 +159,9 @@ class AppDialog extends StatelessWidget {
             Divider(
               height: 1,
               thickness: 1,
-              color: isDark ? Colors.white.withOpacity(0.08) : AppColors.border,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : AppColors.border,
             ),
             _ActionButton(
               label: cancelLabel,
@@ -199,7 +203,7 @@ class _ActionButton extends StatelessWidget {
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ).copyWith(
           overlayColor: WidgetStateProperty.all(
-            color.withOpacity(0.1),
+            color.withValues(alpha: 0.1),
           ),
         ),
         onPressed: onTap,
@@ -265,7 +269,7 @@ class AppFormDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppSizes.radiusXl),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.45 : 0.12),
+              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
               blurRadius: 32,
               offset: const Offset(0, 8),
             ),
@@ -318,8 +322,9 @@ class AppFormDialog extends StatelessWidget {
             Divider(
                 height: 1,
                 thickness: 1,
-                color:
-                    isDark ? Colors.white.withOpacity(0.08) : AppColors.border),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : AppColors.border),
             _ActionButton(
               label: confirmLabel,
               color: actionColor,
@@ -329,8 +334,9 @@ class AppFormDialog extends StatelessWidget {
             Divider(
                 height: 1,
                 thickness: 1,
-                color:
-                    isDark ? Colors.white.withOpacity(0.08) : AppColors.border),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : AppColors.border),
             _ActionButton(
               label: cancelLabel,
               color: isDark ? const Color(0xFF64748B) : AppColors.textSecondary,

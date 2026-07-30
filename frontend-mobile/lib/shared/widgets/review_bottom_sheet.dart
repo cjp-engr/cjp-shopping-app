@@ -2,6 +2,7 @@ import 'dart:developer' as dev;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../core/network/api_client.dart';
@@ -66,7 +67,14 @@ class ReviewBottomSheet extends StatefulWidget {
 }
 
 class _ReviewBottomSheetState extends State<ReviewBottomSheet> {
-  static const _starLabels = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+  static const _starLabels = [
+    '',
+    AppStrings.starPoor,
+    AppStrings.starFair,
+    AppStrings.starGood,
+    AppStrings.starVeryGood,
+    AppStrings.starExcellent,
+  ];
 
   late int _rating;
   late final TextEditingController _commentCtrl;
@@ -88,11 +96,11 @@ class _ReviewBottomSheetState extends State<ReviewBottomSheet> {
 
   Future<void> _submit() async {
     if (_rating == 0) {
-      setState(() => _error = 'Please select a star rating.');
+      setState(() => _error = AppStrings.pleaseSelectRating);
       return;
     }
     if (_commentCtrl.text.trim().length < 5) {
-      setState(() => _error = 'Comment must be at least 5 characters.');
+      setState(() => _error = AppStrings.commentTooShort);
       return;
     }
 
@@ -125,7 +133,7 @@ class _ReviewBottomSheetState extends State<ReviewBottomSheet> {
       setState(() { _loading = false; _error = mapDioError(e); });
     } catch (e, st) {
       dev.log('Review submit failed', error: e, stackTrace: st);
-      setState(() { _loading = false; _error = 'Failed to submit review. Please try again.'; });
+      setState(() { _loading = false; _error = AppStrings.reviewSubmitFailed; });
     }
   }
 
@@ -162,7 +170,7 @@ class _ReviewBottomSheetState extends State<ReviewBottomSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                widget.isEditing ? 'Edit Review' : 'Write a Review',
+                widget.isEditing ? AppStrings.editReview : AppStrings.writeAReview,
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -205,7 +213,7 @@ class _ReviewBottomSheetState extends State<ReviewBottomSheet> {
           const SizedBox(height: AppSizes.lg),
 
           // Stars
-          Text('Your Rating',
+          Text(AppStrings.yourRating,
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -242,7 +250,7 @@ class _ReviewBottomSheetState extends State<ReviewBottomSheet> {
           const SizedBox(height: AppSizes.lg),
 
           // Comment
-          Text('Your Review',
+          Text(AppStrings.yourReview,
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -256,7 +264,7 @@ class _ReviewBottomSheetState extends State<ReviewBottomSheet> {
             textInputAction: TextInputAction.newline,
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
-              hintText: 'Share your experience with this product...',
+              hintText: AppStrings.reviewHint,
               hintStyle: TextStyle(color: context.onSurfaceMuted, fontSize: 13),
               filled: true,
               fillColor: context.surfaceVariantColor,
@@ -307,7 +315,7 @@ class _ReviewBottomSheetState extends State<ReviewBottomSheet> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          widget.isEditing ? 'Update Review' : 'Submit Review',
+                          widget.isEditing ? AppStrings.updateReview : AppStrings.submitReview,
                           style: GoogleFonts.plusJakartaSans(
                               fontSize: 16, fontWeight: FontWeight.w600),
                         ),

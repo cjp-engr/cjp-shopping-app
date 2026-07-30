@@ -13,6 +13,7 @@ import '../bloc/seller_state.dart';
 import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../voucher/data/voucher_repository.dart';
+import '../../../../core/constants/app_strings.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   final String? initialTab;
@@ -46,9 +47,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
     _tabController =
         TabController(length: 3, vsync: this, initialIndex: initialIndex);
     _tabController.addListener(_onTabChanged);
-    ApiClient.get().then((client) {
-      if (mounted) _voucherRepo = VoucherRepository(client);
-    });
+    _initVoucherRepo();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SellerBloc>().add(const SellerProductsLoadRequested());
       // If opened directly on Orders tab (e.g. from a notification tap),
@@ -58,6 +57,14 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
         context.read<SellerBloc>().add(const SellerOrdersLoadRequested());
       }
     });
+  }
+
+  Future<void> _initVoucherRepo() async {
+    try {
+      final client = await ApiClient.get();
+      if (!mounted) return;
+      _voucherRepo = VoucherRepository(client);
+    } catch (_) {}
   }
 
   void _onTabChanged() {
@@ -75,11 +82,12 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
     if (_voucherRepo == null) return;
     setState(() => _couponsLoading = true);
     final list = await _voucherRepo!.listMine();
-    if (mounted)
+    if (mounted) {
       setState(() {
         _coupons = list;
         _couponsLoading = false;
       });
+    }
   }
 
   Future<void> _deleteCoupon(String id) async {
@@ -129,11 +137,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
       icon: Icons.delete_outline_rounded,
       iconColor: AppColors.danger,
       iconBackground: AppColors.dangerSurface,
-      title: 'Delete Product',
+      title: AppStrings.deleteProduct,
       body:
           'Remove "${product.name}" from your shop? This action cannot be undone.',
-      cancelLabel: 'Keep It',
-      confirmLabel: 'Yes, Delete',
+      cancelLabel: AppStrings.keepIt,
+      confirmLabel: AppStrings.yesDelete,
       confirmColor: AppColors.danger,
     );
     if (confirm == true && context.mounted) {
@@ -150,13 +158,13 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
-          'Seller Dashboard',
+          AppStrings.sellerDashboard,
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded, size: 20),
-            tooltip: 'Refresh',
+            tooltip: AppStrings.refresh,
             onPressed: () {
               context
                   .read<SellerBloc>()
@@ -180,7 +188,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
           tabs: [
             const Tab(
               icon: Icon(Icons.shopping_bag_outlined, size: 18),
-              text: 'My Products',
+              text: AppStrings.myProducts,
             ),
             BlocBuilder<SellerBloc, SellerState>(
               buildWhen: (p, c) =>
@@ -220,7 +228,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
             ),
             const Tab(
               icon: Icon(Icons.local_offer_outlined, size: 18),
-              text: 'Vouchers',
+              text: AppStrings.vouchers,
             ),
           ],
         ),
@@ -301,7 +309,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
               onPressed: () => _showCouponForm(context),
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              tooltip: 'Create Voucher',
+              tooltip: AppStrings.createVoucher,
               child: const Icon(Icons.add),
             );
           }
@@ -343,7 +351,7 @@ class _StatsRow extends StatelessWidget {
             iconBg: AppColors.primaryLight,
             iconColor: AppColors.primary,
             value: '${state.products.length}',
-            label: 'Products',
+            label: AppStrings.products,
           ),
           const SizedBox(width: AppSizes.sm),
           _StatCard(
@@ -351,7 +359,7 @@ class _StatsRow extends StatelessWidget {
             iconBg: AppColors.warningSurface,
             iconColor: AppColors.warning,
             value: '${state.activeOrderCount}',
-            label: 'Active',
+            label: AppStrings.active,
           ),
           const SizedBox(width: AppSizes.sm),
           _StatCard(
@@ -367,7 +375,7 @@ class _StatsRow extends StatelessWidget {
             iconBg: AppColors.successSurface,
             iconColor: AppColors.success,
             value: '\$${state.revenue.toStringAsFixed(0)}',
-            label: 'Revenue',
+            label: AppStrings.revenue,
           ),
         ],
       ),
@@ -460,8 +468,8 @@ class _ProductsTab extends StatelessWidget {
     if (state.products.isEmpty && state.status != SellerStatus.initial) {
       return EmptyWidget(
         icon: Icons.storefront_outlined,
-        message: 'No products yet.\nTap + to list your first product.',
-        actionLabel: 'Add Product',
+        message: AppStrings.noProductsListedYet,
+        actionLabel: AppStrings.addProduct,
         onAction: () => context.push('/seller/add'),
       );
     }
@@ -553,7 +561,7 @@ class _ProductsTab extends StatelessWidget {
             child: filtered.isEmpty
                 ? Center(
                     child: Text(
-                      'No products in this category.',
+                      AppStrings.noProductsInCategory,
                       style: TextStyle(color: context.onSurfaceMuted),
                     ),
                   )
@@ -598,12 +606,12 @@ class _OrdersTab extends StatelessWidget {
 
   static const _allTabs = [
     _StatusTab('all', 'All', Icons.receipt_long_outlined),
-    _StatusTab('pending', 'Pending', Icons.access_time_rounded),
-    _StatusTab('preparing', 'Preparing', Icons.pending_actions_outlined),
-    _StatusTab('processing', 'To Ship', Icons.inventory_2_outlined),
-    _StatusTab('shipped', 'To Receive', Icons.local_shipping_outlined),
-    _StatusTab('delivered', 'Delivered', Icons.check_circle_outline_rounded),
-    _StatusTab('cancelled', 'Cancelled', Icons.cancel_outlined),
+    _StatusTab('pending', AppStrings.statusPending, Icons.access_time_rounded),
+    _StatusTab('preparing', AppStrings.statusPreparing, Icons.pending_actions_outlined),
+    _StatusTab('processing', AppStrings.statusToShip, Icons.inventory_2_outlined),
+    _StatusTab('shipped', AppStrings.statusToReceive, Icons.local_shipping_outlined),
+    _StatusTab('delivered', AppStrings.stepDelivered, Icons.check_circle_outline_rounded),
+    _StatusTab('cancelled', AppStrings.statusCancelled, Icons.cancel_outlined),
   ];
 
   @override
@@ -616,7 +624,7 @@ class _OrdersTab extends StatelessWidget {
         state.ordersStatus == SellerOrdersStatus.success) {
       return const EmptyWidget(
         icon: Icons.receipt_long_outlined,
-        message: 'No orders yet for your products.',
+        message: AppStrings.noOrdersForProducts,
       );
     }
 
@@ -719,7 +727,7 @@ class _OrdersTab extends StatelessWidget {
             child: filtered.isEmpty
                 ? Center(
                     child: Text(
-                      'No orders with this status.',
+                      AppStrings.noOrdersWithStatus,
                       style: TextStyle(color: context.onSurfaceMuted),
                     ),
                   )
@@ -885,7 +893,7 @@ class _OrderCard extends StatelessWidget {
                           if (order.canMarkPreparing)
                             Expanded(
                               child: _OrderActionBtn(
-                                label: 'Accept / Prepare',
+                                label: AppStrings.acceptPrepare,
                                 icon: Icons.pending_actions_outlined,
                                 color: AppColors.primary,
                                 onTap: () => context.read<SellerBloc>().add(
@@ -896,7 +904,7 @@ class _OrderCard extends StatelessWidget {
                           if (order.canMarkToShip)
                             Expanded(
                               child: _OrderActionBtn(
-                                label: 'Mark to Ship',
+                                label: AppStrings.markToShip,
                                 icon: Icons.inventory_2_outlined,
                                 color: AppColors.primary,
                                 onTap: () => context.read<SellerBloc>().add(
@@ -907,7 +915,7 @@ class _OrderCard extends StatelessWidget {
                           if (order.canMarkShipped)
                             Expanded(
                               child: _OrderActionBtn(
-                                label: 'Mark Shipped',
+                                label: AppStrings.markShipped,
                                 icon: Icons.local_shipping_outlined,
                                 color: AppColors.primary,
                                 onTap: () => context.read<SellerBloc>().add(
@@ -954,11 +962,11 @@ class _OrderCard extends StatelessWidget {
         icon: Icons.cancel_outlined,
         iconColor: AppColors.danger,
         iconBackground: AppColors.dangerSurface,
-        title: 'Cancel Order',
-        subtitle: 'Provide a reason for cancellation (optional).',
+        title: AppStrings.cancelOrder,
+        subtitle: AppStrings.cancelReasonSubtitle,
         formContent: _SellerCancelReasonField(value: reasonValue),
-        cancelLabel: 'Keep Order',
-        confirmLabel: 'Yes, Cancel',
+        cancelLabel: AppStrings.keepOrder,
+        confirmLabel: AppStrings.yesCancel,
         confirmColor: AppColors.danger,
         onCancel: () => Navigator.of(dialogCtx).pop(),
         onConfirm: () {
@@ -1005,17 +1013,17 @@ class _OrderCard extends StatelessWidget {
   _StatusConfig _statusConfig(String status) {
     switch (status) {
       case 'pending':
-        return const _StatusConfig('Pending', AppColors.warning);
+        return const _StatusConfig(AppStrings.statusPending, AppColors.warning);
       case 'preparing':
-        return const _StatusConfig('Preparing', AppColors.warning);
+        return const _StatusConfig(AppStrings.statusPreparing, AppColors.warning);
       case 'processing':
-        return const _StatusConfig('To Ship', AppColors.primary);
+        return const _StatusConfig(AppStrings.statusToShip, AppColors.primary);
       case 'shipped':
-        return const _StatusConfig('To Receive', Color(0xFF6B7280));
+        return const _StatusConfig(AppStrings.statusToReceive, Color(0xFF6B7280));
       case 'delivered':
-        return const _StatusConfig('Delivered', AppColors.success);
+        return const _StatusConfig(AppStrings.stepDelivered, AppColors.success);
       case 'cancelled':
-        return const _StatusConfig('Cancelled', AppColors.danger);
+        return const _StatusConfig(AppStrings.statusCancelled, AppColors.danger);
       default:
         return _StatusConfig(status, AppColors.textMuted);
     }
@@ -1333,7 +1341,7 @@ class _ProductTile extends StatelessWidget {
                         color: AppColors.primary,
                         bgColor: AppColors.primaryLight,
                         onPressed: isSaving ? null : onEdit,
-                        tooltip: 'Edit',
+                        tooltip: AppStrings.edit,
                       ),
                       const SizedBox(height: 8),
                       _ActionIconBtn(
@@ -1341,7 +1349,7 @@ class _ProductTile extends StatelessWidget {
                         color: AppColors.danger,
                         bgColor: AppColors.dangerSurface,
                         onPressed: isSaving ? null : onDelete,
-                        tooltip: 'Delete',
+                        tooltip: AppStrings.delete,
                       ),
                     ],
                   ),
@@ -1570,7 +1578,7 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                     // ── Buyer info ─────────────────────────────────────────
                     if (order.buyer != null) ...[
                       _SheetSection(
-                        title: 'Buyer',
+                        title: AppStrings.buyer,
                         icon: Icons.person_outline_rounded,
                         child: InkWell(
                           onTap: order.buyer!.id.isNotEmpty
@@ -1632,7 +1640,7 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                     // ── Shipping address ────────────────────────────────────
                     if (addr != null && addr.formatted.isNotEmpty) ...[
                       _SheetSection(
-                        title: 'Shipping Address',
+                        title: AppStrings.shippingAddress,
                         icon: Icons.location_on_outlined,
                         child: Text(
                           addr.formatted,
@@ -1679,24 +1687,24 @@ class _SellerOrderDetailSheet extends StatelessWidget {
 
                     // ── Cost breakdown ──────────────────────────────────────
                     _SheetSection(
-                      title: 'Cost Breakdown',
+                      title: AppStrings.costBreakdown,
                       icon: Icons.receipt_outlined,
                       child: Column(
                         children: [
                           _SummaryLine(
-                            label: 'Subtotal',
+                            label: AppStrings.subtotal,
                             value: '\$${computedSubtotal.toStringAsFixed(2)}',
                           ),
                           const SizedBox(height: 8),
                           _SummaryLine(
-                            label: 'Tax',
+                            label: AppStrings.tax,
                             value: '\$${tax.toStringAsFixed(2)}',
                           ),
                           const SizedBox(height: 8),
                           _SummaryLine(
-                            label: 'Shipping',
+                            label: AppStrings.shipping,
                             value: shipping == 0
-                                ? 'Free'
+                                ? AppStrings.free
                                 : '\$${shipping.toStringAsFixed(2)}',
                           ),
                           Padding(
@@ -1705,7 +1713,7 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                                 Divider(height: 1, color: context.borderColor),
                           ),
                           _SummaryLine(
-                            label: 'Total',
+                            label: AppStrings.total,
                             value: '\$${total.toStringAsFixed(2)}',
                             isTotal: true,
                           ),
@@ -1725,17 +1733,17 @@ class _SellerOrderDetailSheet extends StatelessWidget {
   _StatusConfig _statusCfg(String status) {
     switch (status) {
       case 'pending':
-        return const _StatusConfig('Pending', AppColors.warning);
+        return const _StatusConfig(AppStrings.statusPending, AppColors.warning);
       case 'preparing':
-        return const _StatusConfig('Preparing', AppColors.warning);
+        return const _StatusConfig(AppStrings.statusPreparing, AppColors.warning);
       case 'processing':
-        return const _StatusConfig('To Ship', AppColors.primary);
+        return const _StatusConfig(AppStrings.statusToShip, AppColors.primary);
       case 'shipped':
-        return const _StatusConfig('To Receive', Color(0xFF6B7280));
+        return const _StatusConfig(AppStrings.statusToReceive, Color(0xFF6B7280));
       case 'delivered':
-        return const _StatusConfig('Delivered', AppColors.success);
+        return const _StatusConfig(AppStrings.stepDelivered, AppColors.success);
       case 'cancelled':
-        return const _StatusConfig('Cancelled', AppColors.danger);
+        return const _StatusConfig(AppStrings.statusCancelled, AppColors.danger);
       default:
         return _StatusConfig(status, AppColors.textMuted);
     }
@@ -1892,10 +1900,10 @@ class _VouchersTab extends StatelessWidget {
           children: [
             Icon(Icons.local_offer_outlined, size: 64, color: Colors.grey[300]),
             const SizedBox(height: 12),
-            Text('No vouchers yet',
+            Text(AppStrings.noVouchersYet,
                 style: TextStyle(fontSize: 15, color: Colors.grey[500])),
             const SizedBox(height: 6),
-            Text('Tap + to create your first voucher',
+            Text(AppStrings.tapToCreateVoucher,
                 style: TextStyle(fontSize: 13, color: Colors.grey[400])),
           ],
         ),
@@ -1983,8 +1991,8 @@ class _VouchersTab extends StatelessWidget {
                               ),
                               child: Text(
                                 isExpired
-                                    ? 'Expired'
-                                    : (c.isActive ? 'Active' : 'Inactive'),
+                                    ? AppStrings.expired
+                                    : (c.isActive ? AppStrings.active : AppStrings.inactive),
                                 style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
@@ -2139,16 +2147,18 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
           'usageLimit': int.parse(_limitCtrl.text),
         if (_expiresAt != null) 'expiresAt': _expiresAt!.toIso8601String(),
       };
-      if (widget.existing == null)
+      if (widget.existing == null) {
         data['code'] = _codeCtrl.text.trim().toUpperCase();
+      }
       await widget.onSave(data);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = e.toString().replaceFirst('Exception: ', '');
           _saving = false;
         });
+      }
     }
   }
 
@@ -2172,7 +2182,7 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    widget.existing != null ? 'Edit Voucher' : 'Create Voucher',
+                    widget.existing != null ? AppStrings.editVoucher : AppStrings.createVoucher,
                     style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.w800),
                   ),
@@ -2195,21 +2205,21 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                           color: AppColors.danger, fontSize: 13)),
                 ),
               if (widget.existing == null)
-                _field(_codeCtrl, 'Voucher Code',
-                    hint: 'e.g. SAVE10',
+                _field(_codeCtrl, AppStrings.voucherCode,
+                    hint: AppStrings.voucherCodeHint,
                     validator: (v) => v!.trim().isEmpty ? 'Required' : null),
               const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _discountType,
-                      decoration: _dec('Discount Type'),
+                      initialValue: _discountType,
+                      decoration: _dec(AppStrings.discountType),
                       items: const [
                         DropdownMenuItem(
-                            value: 'percentage', child: Text('Percentage (%)')),
+                            value: 'percentage', child: Text(AppStrings.percentageOption)),
                         DropdownMenuItem(
-                            value: 'fixed', child: Text('Fixed (\$)')),
+                            value: 'fixed', child: Text(AppStrings.fixedOption)),
                       ],
                       onChanged: (v) => setState(() => _discountType = v!),
                     ),
@@ -2219,8 +2229,8 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                     child: _field(
                       _valueCtrl,
                       _discountType == 'percentage'
-                          ? 'Discount (%)'
-                          : 'Amount (\$)',
+                          ? AppStrings.discountPercent
+                          : AppStrings.discountAmount,
                       keyboardType: TextInputType.number,
                       validator: (v) => double.tryParse(v ?? '') == null
                           ? 'Invalid number'
@@ -2231,23 +2241,23 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
               ),
               if (_discountType == 'percentage') ...[
                 const SizedBox(height: 8),
-                _field(_maxDiscCtrl, 'Max Discount Cap (\$, optional)',
+                _field(_maxDiscCtrl, AppStrings.maxDiscountCap,
                     keyboardType: TextInputType.number),
               ],
               const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
-                      child: _field(_minAmtCtrl, 'Min. Order (\$)',
+                      child: _field(_minAmtCtrl, AppStrings.minOrder,
                           keyboardType: TextInputType.number)),
                   const SizedBox(width: 10),
                   Expanded(
-                      child: _field(_limitCtrl, 'Usage Limit (optional)',
+                      child: _field(_limitCtrl, AppStrings.usageLimit,
                           keyboardType: TextInputType.number)),
                 ],
               ),
               const SizedBox(height: 8),
-              _field(_descCtrl, 'Description (optional)'),
+              _field(_descCtrl, AppStrings.descriptionOptional),
               const SizedBox(height: 8),
               // Expiry date picker
               GestureDetector(
@@ -2259,8 +2269,9 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
                   );
-                  if (picked != null && mounted)
+                  if (picked != null && mounted) {
                     setState(() => _expiresAt = picked);
+                  }
                 },
                 child: Container(
                   padding:
@@ -2277,7 +2288,7 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                       Text(
                         _expiresAt != null
                             ? 'Expires: ${_expiresAt!.toLocal().toString().split(' ').first}'
-                            : 'Set expiry date (optional)',
+                            : AppStrings.setExpiryDate,
                         style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                       ),
                       if (_expiresAt != null) ...[
@@ -2296,10 +2307,10 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                 const SizedBox(height: 8),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Active', style: TextStyle(fontSize: 14)),
+                  title: const Text(AppStrings.active, style: TextStyle(fontSize: 14)),
                   value: _isActive,
                   onChanged: (v) => setState(() => _isActive = v),
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                 ),
               ],
               const SizedBox(height: 16),
@@ -2322,8 +2333,8 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                               strokeWidth: 2, color: Colors.white))
                       : Text(
                           widget.existing != null
-                              ? 'Save Changes'
-                              : 'Create Voucher',
+                              ? AppStrings.saveChanges
+                              : AppStrings.createVoucher,
                           style: const TextStyle(
                               fontWeight: FontWeight.w700, fontSize: 15)),
                 ),
@@ -2398,12 +2409,12 @@ class _SellerCancelReasonFieldState extends State<_SellerCancelReasonField> {
         color: isDark ? Colors.white : AppColors.textPrimary,
       ),
       decoration: InputDecoration(
-        hintText: 'e.g. Out of stock, unable to fulfill…',
+        hintText: AppStrings.cancelReasonHint,
         hintStyle: TextStyle(
           fontSize: 13,
           color: isDark ? const Color(0xFF64748B) : AppColors.textMuted,
         ),
-        helperText: 'Optional — shown to the buyer',
+        helperText: AppStrings.cancelReasonHelper,
         helperStyle: TextStyle(
             fontSize: 12,
             color: isDark ? const Color(0xFF475569) : AppColors.textMuted),

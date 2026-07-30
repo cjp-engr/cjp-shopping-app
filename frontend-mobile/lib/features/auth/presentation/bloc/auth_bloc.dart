@@ -99,31 +99,34 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onAddressAdd(AuthAddressAddRequested event, Emitter<AuthState> emit) async {
+    final user = state.user;
+    if (user == null) return;
     emit(state.copyWith(status: AuthStatus.loading));
     try {
       final addresses = await _repository.addSavedAddress(event.data);
-      final updatedUser = state.user!.copyWith(savedAddresses: addresses);
-      emit(state.copyWith(status: AuthStatus.authenticated, user: updatedUser));
+      emit(state.copyWith(status: AuthStatus.authenticated, user: user.copyWith(savedAddresses: addresses)));
     } catch (e) {
       emit(state.copyWith(status: AuthStatus.failure, errorMessage: e.toString()));
     }
   }
 
   Future<void> _onAddressDelete(AuthAddressDeleteRequested event, Emitter<AuthState> emit) async {
+    final user = state.user;
+    if (user == null) return;
     try {
       final addresses = await _repository.deleteSavedAddress(event.addressId);
-      final updatedUser = state.user!.copyWith(savedAddresses: addresses);
-      emit(state.copyWith(status: AuthStatus.authenticated, user: updatedUser));
+      emit(state.copyWith(status: AuthStatus.authenticated, user: user.copyWith(savedAddresses: addresses)));
     } catch (e) {
       emit(state.copyWith(status: AuthStatus.failure, errorMessage: e.toString()));
     }
   }
 
   Future<void> _onAddressSetDefault(AuthAddressSetDefaultRequested event, Emitter<AuthState> emit) async {
+    final user = state.user;
+    if (user == null) return;
     try {
       final addresses = await _repository.setDefaultAddress(event.addressId);
-      final updatedUser = state.user!.copyWith(savedAddresses: addresses);
-      emit(state.copyWith(status: AuthStatus.authenticated, user: updatedUser));
+      emit(state.copyWith(status: AuthStatus.authenticated, user: user.copyWith(savedAddresses: addresses)));
     } catch (e) {
       emit(state.copyWith(status: AuthStatus.failure, errorMessage: e.toString()));
     }

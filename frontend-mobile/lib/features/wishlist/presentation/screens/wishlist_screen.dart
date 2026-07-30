@@ -26,7 +26,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Favourites'),
+        title: const Text(AppStrings.favorites),
         actions: [
           BlocBuilder<WishlistBloc, WishlistState>(
             builder: (context, state) {
@@ -35,7 +35,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 onPressed: () =>
                     context.read<WishlistBloc>().add(const WishlistCleared()),
                 child: const Text(
-                  'Clear all',
+                  AppStrings.clearAll,
                   style: TextStyle(
                     color: AppColors.danger,
                     fontWeight: FontWeight.w600,
@@ -81,7 +81,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                           ),
                           const SizedBox(height: AppSizes.lg),
                           Text(
-                            'No favorites yet',
+                            AppStrings.noFavoritesYet,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -90,10 +90,9 @@ class _WishlistScreenState extends State<WishlistScreen> {
                           ),
                           const SizedBox(height: AppSizes.xs),
                           Text(
-                            'Tap the heart on any product\nto save it here',
+                            AppStrings.wishlistEmptyBody,
                             textAlign: TextAlign.center,
-                            style:
-                                TextStyle(fontSize: 14, color: onSurfaceSec),
+                            style: TextStyle(fontSize: 14, color: onSurfaceSec),
                           ),
                           const SizedBox(height: AppSizes.xl),
                           SizedBox(
@@ -144,8 +143,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                       final product = state.items[i];
                       final originalPrice = product.price * 1.4;
                       return GestureDetector(
-                        onTap: () =>
-                            context.push('/products/${product.id}'),
+                        onTap: () => context.push('/products/${product.id}'),
                         child: Container(
                           decoration: BoxDecoration(
                             color: cardBg,
@@ -192,21 +190,18 @@ class _WishlistScreenState extends State<WishlistScreen> {
                               ),
                               Expanded(
                                 child: Padding(
-                                  padding:
-                                      const EdgeInsets.all(AppSizes.md),
+                                  padding: const EdgeInsets.all(AppSizes.md),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
                                       Container(
-                                        padding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
                                           color: AppColors.primaryLight,
-                                          borderRadius:
-                                              BorderRadius.circular(
-                                                  AppSizes.radiusFull),
+                                          borderRadius: BorderRadius.circular(
+                                              AppSizes.radiusFull),
                                         ),
                                         child: Text(
                                           product.category,
@@ -239,8 +234,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                           ),
                                           const SizedBox(width: 2),
                                           Text(
-                                            product.rating
-                                                .toStringAsFixed(1),
+                                            product.rating.toStringAsFixed(1),
                                             style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
@@ -262,8 +256,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                                 '\$${product.price.toStringAsFixed(0)}',
                                                 style: TextStyle(
                                                   fontSize: 16,
-                                                  fontWeight:
-                                                      FontWeight.w900,
+                                                  fontWeight: FontWeight.w900,
                                                   color: onSurface,
                                                 ),
                                               ),
@@ -281,14 +274,12 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                           GestureDetector(
                                             onTap: () => context
                                                 .read<WishlistBloc>()
-                                                .add(
-                                                    WishlistToggled(product)),
+                                                .add(WishlistToggled(product)),
                                             child: Container(
                                               width: 36,
                                               height: 36,
                                               decoration: const BoxDecoration(
-                                                color:
-                                                    AppColors.dangerSurface,
+                                                color: AppColors.dangerSurface,
                                                 shape: BoxShape.circle,
                                               ),
                                               child: const Icon(

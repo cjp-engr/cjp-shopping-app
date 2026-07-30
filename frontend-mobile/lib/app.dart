@@ -51,6 +51,10 @@ class TokoMart extends StatefulWidget {
 class _TokoMartState extends State<TokoMart> {
   late final ApiClient _apiClient;
   late final AuthBloc _authBloc;
+  late final CartBloc _cartBloc;
+  late final ProductBloc _productBloc;
+  late final OrderBloc _orderBloc;
+  late final SellerBloc _sellerBloc;
   late final FollowRemoteDataSource _followDs;
 
   @override
@@ -64,6 +68,21 @@ class _TokoMartState extends State<TokoMart> {
     _authBloc = AuthBloc(authRepo, widget.storageService)
       ..add(AuthCheckRequested());
 
+    // Products
+    final productRepo = ProductRepositoryImpl(ProductRemoteDataSource(_apiClient.dio));
+    _productBloc = ProductBloc(productRepo);
+
+    // Orders
+    final orderRepo = OrderRepositoryImpl(OrderRemoteDataSource(_apiClient.dio));
+    _orderBloc = OrderBloc(orderRepo);
+
+    // Seller
+    final sellerRepo = SellerRepositoryImpl(SellerRemoteDataSource(_apiClient.dio));
+    _sellerBloc = SellerBloc(sellerRepo);
+
+    // Cart
+    _cartBloc = CartBloc(CartRemoteDataSource(_apiClient.dio));
+
     // Follow
     _followDs = FollowRemoteDataSource(_apiClient.dio);
   }
@@ -71,38 +90,26 @@ class _TokoMartState extends State<TokoMart> {
   @override
   void dispose() {
     _authBloc.close();
+    _cartBloc.close();
+    _productBloc.close();
+    _orderBloc.close();
+    _sellerBloc.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Products
-    final productDs = ProductRemoteDataSource(_apiClient.dio);
-    final productRepo = ProductRepositoryImpl(productDs);
-
-    // Orders
-    final orderDs = OrderRemoteDataSource(_apiClient.dio);
-    final orderRepo = OrderRepositoryImpl(orderDs);
-
-    // Seller
-    final sellerDs = SellerRemoteDataSource(_apiClient.dio);
-    final sellerRepo = SellerRepositoryImpl(sellerDs);
-
-    // Cart
-    final cartDs = CartRemoteDataSource(_apiClient.dio);
-    final cartBloc = CartBloc(cartDs);
-
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => ThemeCubit()),
         BlocProvider.value(value: _authBloc),
-        BlocProvider(create: (_) => ProductBloc(productRepo)),
-        BlocProvider.value(value: cartBloc),
+        BlocProvider.value(value: _productBloc),
+        BlocProvider.value(value: _cartBloc),
         BlocProvider(create: (_) => WishlistBloc()),
-        BlocProvider(create: (_) => OrderBloc(orderRepo)),
-        BlocProvider(create: (_) => SellerBloc(sellerRepo)),
+        BlocProvider.value(value: _orderBloc),
+        BlocProvider.value(value: _sellerBloc),
       ],
-      child: _RouterWrapper(authBloc: _authBloc, cartBloc: cartBloc, followDs: _followDs, dio: _apiClient.dio),
+      child: _RouterWrapper(authBloc: _authBloc, cartBloc: _cartBloc, followDs: _followDs, dio: _apiClient.dio),
     );
   }
 }

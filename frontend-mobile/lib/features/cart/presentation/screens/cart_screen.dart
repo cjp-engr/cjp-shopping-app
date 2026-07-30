@@ -371,29 +371,29 @@ class _SellerSummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          _SummaryRow('Order Amount', '\$${subtotal.toStringAsFixed(2)}'),
+          _SummaryRow(AppStrings.orderAmount, '\$${subtotal.toStringAsFixed(2)}'),
           if (discount > 0) ...[
             const SizedBox(height: 4),
             _SummaryRow(
-              'Discount',
+              AppStrings.discount,
               '-\$${discount.toStringAsFixed(2)}',
               valueColor: AppColors.success,
             ),
           ],
           const SizedBox(height: 4),
           _SummaryRow(
-            'Shipping',
-            shipping == 0 ? 'FREE' : '\$${shipping.toStringAsFixed(2)}',
+            AppStrings.shipping,
+            shipping == 0 ? AppStrings.freeShipping : '\$${shipping.toStringAsFixed(2)}',
             valueColor: shipping == 0 ? AppColors.success : null,
           ),
           const SizedBox(height: 4),
-          _SummaryRow('Tax (8%)', '\$${tax.toStringAsFixed(2)}'),
+          _SummaryRow(AppStrings.taxLabel, '\$${tax.toStringAsFixed(2)}'),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 6),
             child: Divider(height: 1),
           ),
           _SummaryRow(
-            'Store Total',
+            AppStrings.storeTotal,
             '\$${storeTotal.toStringAsFixed(2)}',
             bold: true,
           ),
@@ -447,7 +447,7 @@ class _OrderSummary extends StatelessWidget {
                   size: 17, color: AppColors.primary),
               const SizedBox(width: 7),
               Text(
-                'Order Summary',
+                AppStrings.orderSummary,
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -459,7 +459,7 @@ class _OrderSummary extends StatelessWidget {
           const SizedBox(height: AppSizes.sm),
           const Divider(height: 1),
           const SizedBox(height: AppSizes.sm),
-          _SummaryRow('Order Amount', '\$${subtotal.toStringAsFixed(2)}'),
+          _SummaryRow(AppStrings.orderAmount, '\$${subtotal.toStringAsFixed(2)}'),
           const SizedBox(height: AppSizes.sm),
           _SummaryRow(
             AppStrings.shipping,
@@ -469,12 +469,12 @@ class _OrderSummary extends StatelessWidget {
             valueColor: shipping == 0 ? AppColors.success : null,
           ),
           const SizedBox(height: AppSizes.sm),
-          _SummaryRow('Tax (8%)', '\$${tax.toStringAsFixed(2)}'),
+          _SummaryRow(AppStrings.taxLabel, '\$${tax.toStringAsFixed(2)}'),
           const SizedBox(height: AppSizes.sm),
           const Divider(height: 1),
           const SizedBox(height: AppSizes.sm),
           _SummaryRow(
-            'Total Payment',
+            AppStrings.totalPayment,
             '\$${total.toStringAsFixed(2)}',
             bold: true,
             valueColor: AppColors.primary,
@@ -559,7 +559,7 @@ class _CheckoutBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    onCheckout != null ? AppStrings.checkout : 'Select items',
+                    onCheckout != null ? AppStrings.checkout : AppStrings.selectItems,
                     style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.w700),
                   ),

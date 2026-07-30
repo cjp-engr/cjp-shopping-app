@@ -8,6 +8,7 @@ import '../bloc/order_state.dart';
 import '../../domain/entities/order_entity.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/theme_colors.dart';
 import '../../../../core/utils/order_utils.dart';
@@ -40,10 +41,10 @@ class OrderDetailScreen extends StatelessWidget {
 
         if (order == null) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Order Details')),
+            appBar: AppBar(title: const Text(AppStrings.orderDetails)),
             body: const Center(
               child: Text(
-                'Order not found',
+                AppStrings.orderNotFound,
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             ),
@@ -114,10 +115,10 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
       icon: Icons.check_circle_outline_rounded,
       iconColor: AppColors.success,
       iconBackground: AppColors.successSurface,
-      title: 'Confirm Receipt',
+      title: AppStrings.confirmReceipt,
       body: 'Have you received order #${widget.order.shortId}? This will mark the order as complete.',
-      cancelLabel: 'Not Yet',
-      confirmLabel: 'Yes, Received',
+      cancelLabel: AppStrings.notYet,
+      confirmLabel: AppStrings.yesReceived,
       confirmColor: AppColors.success,
     );
     if (confirm == true && context.mounted) {
@@ -139,11 +140,11 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
         icon: Icons.cancel_outlined,
         iconColor: AppColors.danger,
         iconBackground: AppColors.dangerSurface,
-        title: 'Cancel Order',
+        title: AppStrings.cancelOrder,
         subtitle: 'Order #${widget.order.shortId} · This cannot be undone.',
         formContent: _CancelReasonField(value: reasonValue),
-        cancelLabel: 'Keep Order',
-        confirmLabel: 'Yes, Cancel',
+        cancelLabel: AppStrings.keepOrder,
+        confirmLabel: AppStrings.yesCancel,
         confirmColor: AppColors.danger,
         onCancel: () => Navigator.of(dialogCtx).pop(),
         onConfirm: () {
@@ -203,7 +204,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(sellerName ?? 'Order Details'),
+        title: Text(sellerName ?? AppStrings.orderDetails),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -275,7 +276,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SectionTitle(label: 'Status'),
+                  const _SectionTitle(label: AppStrings.status),
                   const SizedBox(height: AppSizes.md),
                   if (isCancelled)
                     Container(
@@ -298,7 +299,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'This order has been cancelled',
+                                  AppStrings.orderCancelledNotice,
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -352,7 +353,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Estimated Delivery',
+                          AppStrings.estimatedDelivery,
                           style: TextStyle(
                             fontSize: 12,
                             color: context.onSurfaceMuted,
@@ -382,11 +383,11 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SectionTitle(label: 'Delivery Information'),
+                  const _SectionTitle(label: AppStrings.deliveryInformation),
                   const SizedBox(height: AppSizes.md),
                   _InfoRow(
                     icon: Icons.location_on_outlined,
-                    label: 'Address',
+                    label: AppStrings.address,
                     value: [
                       addr.street,
                       '${addr.city}, ${addr.state} ${addr.zipCode}',
@@ -396,7 +397,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                   const SizedBox(height: AppSizes.sm),
                   _InfoRow(
                     icon: Icons.payment_outlined,
-                    label: 'Payment Method',
+                    label: AppStrings.paymentMethod,
                     value: order.paymentType.isNotEmpty
                         ? order.paymentType[0].toUpperCase() +
                             order.paymentType.substring(1)
@@ -415,7 +416,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                 children: [
                   Row(
                     children: [
-                      const _SectionTitle(label: 'Order Items'),
+                      const _SectionTitle(label: AppStrings.orderItems),
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -494,7 +495,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Message to Seller',
+                                      AppStrings.messageToSeller,
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
@@ -539,22 +540,22 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SectionTitle(label: 'Order Details'),
+                  const _SectionTitle(label: AppStrings.orderDetails),
                   const SizedBox(height: AppSizes.md),
                   _SummaryRow(
-                    label: 'Subtotal',
+                    label: AppStrings.subtotal,
                     value: '\$${displaySubtotal.toStringAsFixed(2)}',
                   ),
                   const SizedBox(height: 8),
                   _SummaryRow(
-                    label: 'Tax (8%)',
+                    label: AppStrings.taxLabel,
                     value: '\$${displayTax.toStringAsFixed(2)}',
                   ),
                   const SizedBox(height: 8),
                   _SummaryRow(
-                    label: 'Shipping',
+                    label: AppStrings.shipping,
                     value: displayShipping == 0
-                        ? 'Free'
+                        ? AppStrings.free
                         : '\$${displayShipping.toStringAsFixed(2)}',
                   ),
                   const Padding(
@@ -562,7 +563,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                     child: Divider(height: 1),
                   ),
                   _SummaryRow(
-                    label: 'Total',
+                    label: AppStrings.total,
                     value: '\$${displayTotal.toStringAsFixed(2)}',
                     isTotal: true,
                   ),
@@ -589,7 +590,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                             size: 16, color: AppColors.primary),
                         SizedBox(width: 6),
                         Text(
-                          'Your order is on the way!',
+                          AppStrings.orderOnTheWay,
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -600,7 +601,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Once you receive your items, tap below to confirm receipt and complete the order.',
+                      AppStrings.confirmReceiptInstruction,
                       style: TextStyle(
                         fontSize: 12,
                         color: context.onSurfaceSecondary,
@@ -622,7 +623,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                         ),
                         icon: const Icon(Icons.check_circle_outline, size: 18),
                         label: const Text(
-                          'Order Received',
+                          AppStrings.orderReceived,
                           style: TextStyle(
                               fontWeight: FontWeight.w700, fontSize: 14),
                         ),
@@ -649,7 +650,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                   ),
                   icon: const Icon(Icons.cancel_outlined, size: 18),
                   label: const Text(
-                    'Cancel Order',
+                    AppStrings.cancelOrder,
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                   ),
                   onPressed: () => _showCancelDialog(context),
@@ -977,11 +978,11 @@ class _StatusStepper extends StatelessWidget {
   const _StatusStepper({required this.currentStep});
 
   static const _steps = [
-    (Icons.access_time_rounded, 'Placed'),
-    (Icons.pending_actions_outlined, 'Preparing'),
-    (Icons.inventory_2_outlined, 'Packed'),
-    (Icons.local_shipping_outlined, 'Shipped'),
-    (Icons.check_circle_outline_rounded, 'Delivered'),
+    (Icons.access_time_rounded, AppStrings.stepPlaced),
+    (Icons.pending_actions_outlined, AppStrings.stepPreparing),
+    (Icons.inventory_2_outlined, AppStrings.stepPacked),
+    (Icons.local_shipping_outlined, AppStrings.stepShipped),
+    (Icons.check_circle_outline_rounded, AppStrings.stepDelivered),
   ];
 
   @override
@@ -1088,7 +1089,7 @@ class _ReviewCard extends StatelessWidget {
                   size: 13, color: AppColors.warning),
               const SizedBox(width: 4),
               const Text(
-                'Your Review',
+                AppStrings.yourReview,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -1149,7 +1150,7 @@ class _ReviewCard extends StatelessWidget {
                           size: 11, color: AppColors.primary),
                       SizedBox(width: 3),
                       Text(
-                        'Edit',
+                        AppStrings.edit,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,

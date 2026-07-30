@@ -16,6 +16,7 @@ import '../bloc/seller_event.dart';
 import '../bloc/seller_state.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../../../core/constants/app_strings.dart';
 
 class AddEditProductScreen extends StatefulWidget {
   final ProductEntity? product;
@@ -166,7 +167,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 padding: const EdgeInsets.fromLTRB(
                     AppSizes.md, AppSizes.xs, AppSizes.md, AppSizes.sm),
                 child: Text(
-                  'Select Category',
+                  AppStrings.selectCategory,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -252,7 +253,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   child: const Icon(Icons.photo_library_outlined,
                       color: AppColors.primary, size: 20),
                 ),
-                title: const Text('Choose from Gallery',
+                title: const Text(AppStrings.chooseFromGallery,
                     style:
                         TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                 onTap: () {
@@ -271,7 +272,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   child: const Icon(Icons.camera_alt_outlined,
                       color: AppColors.primary, size: 20),
                 ),
-                title: const Text('Take a Photo',
+                title: const Text(AppStrings.takeAPhoto,
                     style:
                         TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                 onTap: () {
@@ -319,7 +320,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Product' : 'Add Product'),
+        title: Text(_isEditing ? AppStrings.editProduct : AppStrings.addProduct),
       ),
       body: BlocListener<SellerBloc, SellerState>(
         listenWhen: (p, c) => p.status != c.status,
@@ -337,13 +338,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ── Product Details card ─────────────────────────────────────
-                const _SectionLabel('Product Details'),
+                const _SectionLabel(AppStrings.productDetails),
                 const SizedBox(height: AppSizes.xs),
                 _FormCard(
                   child: Column(
                     children: [
                       AppTextField(
-                        label: 'Product Name',
+                        label: AppStrings.productName,
                         controller: _nameCtrl,
                         prefixIcon: Icons.inventory_2_outlined,
                         validator: (v) =>
@@ -351,7 +352,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       ),
                       const SizedBox(height: AppSizes.sm),
                       AppTextField(
-                        label: 'Description',
+                        label: AppStrings.description,
                         controller: _descCtrl,
                         maxLines: 3,
                         maxLength: 200,
@@ -363,7 +364,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                         children: [
                           Expanded(
                             child: AppTextField(
-                              label: 'Price (\$)',
+                              label: AppStrings.priceLabel,
                               controller: _priceCtrl,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
@@ -383,7 +384,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                           const SizedBox(width: AppSizes.sm),
                           Expanded(
                             child: AppTextField(
-                              label: 'Stock',
+                              label: AppStrings.stock,
                               controller: _stockCtrl,
                               keyboardType: TextInputType.number,
                               prefixIcon: Icons.warehouse_outlined,
@@ -446,7 +447,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                                         Expanded(
                                           child: Text(
                                             _selectedCategory ??
-                                                'Select a category',
+                                                AppStrings.selectCategory,
                                             style: TextStyle(
                                               fontSize: 14,
                                               color: _selectedCategory != null
@@ -487,7 +488,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 const SizedBox(height: AppSizes.md),
 
                 // ── Product Images card ──────────────────────────────────────
-                const _SectionLabel('Product Images'),
+                const _SectionLabel(AppStrings.productImages),
                 const SizedBox(height: AppSizes.xs),
                 _FormCard(
                   child: _MultiImagePicker(
@@ -506,7 +507,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 BlocBuilder<SellerBloc, SellerState>(
                   buildWhen: (p, c) => p.status != c.status,
                   builder: (context, state) => AppButton(
-                    label: _isEditing ? 'Save Changes' : 'List Product',
+                    label: _isEditing ? AppStrings.saveChanges : AppStrings.listProduct,
                     loading: state.status == SellerStatus.saving,
                     onPressed: _submit,
                   ),
@@ -659,7 +660,7 @@ class _AddTile extends StatelessWidget {
             ),
             const SizedBox(height: 5),
             Text(
-              'Add Photo',
+              AppStrings.addPhoto,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
