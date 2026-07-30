@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+
+const _fontFamily = 'PlusJakartaSans';
 
 class AppButton extends StatelessWidget {
   final String label;
@@ -57,7 +58,8 @@ class AppButton extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusMd),
             ),
-            textStyle: GoogleFonts.plusJakartaSans(
+            textStyle: const TextStyle(
+              fontFamily: _fontFamily,
               fontSize: 15,
               fontWeight: FontWeight.w600,
             ),
@@ -86,7 +88,8 @@ class AppButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
-          textStyle: GoogleFonts.plusJakartaSans(
+          textStyle: const TextStyle(
+            fontFamily: _fontFamily,
             fontSize: 15,
             fontWeight: FontWeight.w700,
           ),

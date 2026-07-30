@@ -1,7 +1,6 @@
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:toko_mart/shared/widgets/app_button.dart';
 import '../bloc/order_bloc.dart';
@@ -633,8 +632,8 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                             borderRadius:
                                 BorderRadius.circular(AppSizes.radiusSm),
                           ),
-                          textStyle: GoogleFonts.plusJakartaSans(
-                              fontSize: 13, fontWeight: FontWeight.w600),
+                          textStyle: const TextStyle(
+                              fontFamily: 'PlusJakartaSans', fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
