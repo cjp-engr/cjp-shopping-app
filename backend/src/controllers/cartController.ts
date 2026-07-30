@@ -35,15 +35,15 @@ export const syncCart = async (req: AuthRequest, res: Response) => {
   try {
     const { items } = req.body as { items: { productId: string; quantity: number }[] };
 
-    // Group by sellerId — look up each product to find its seller
+    // Group by sellerId — batch-fetch all products in one query
+    const validItems = (items ?? []).filter(i => i.quantity > 0);
+    const productIds = validItems.map(i => i.productId);
+    const products = await Product.find({ _id: { $in: productIds } }).select('sellerId');
+    const sellerById = new Map(products.map(p => [p._id.toString(), p.sellerId?.toString() ?? '__unknown__']));
+
     const sellerMap = new Map<string, { productId: string; quantity: number }[]>();
-
-    for (const item of items ?? []) {
-      if (item.quantity <= 0) continue;
-
-      const product = await Product.findById(item.productId).select('sellerId');
-      const sellerKey = product?.sellerId?.toString() ?? '__unknown__';
-
+    for (const item of validItems) {
+      const sellerKey = sellerById.get(item.productId) ?? '__unknown__';
       if (!sellerMap.has(sellerKey)) sellerMap.set(sellerKey, []);
       sellerMap.get(sellerKey)!.push(item);
     }

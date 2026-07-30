@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "backend-patterns": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/backend-patterns/SKILL.md",
+      "computedHash": "82ef426e6923d9ede1213e2062a0f069071afa3013f61b96d57db93d2dc2410c"
+    },
     "flutter-dart-code-review": {
       "source": "affaan-m/ECC",
       "sourceType": "github",

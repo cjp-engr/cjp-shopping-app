@@ -1,41 +1,41 @@
 import { Request, Response, NextFunction } from 'express';
 
-export interface ApiError extends Error {
-  statusCode?: number;
-  errors?: any[];
+export class AppError extends Error {
+  constructor(
+    public readonly statusCode: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'AppError';
+    Object.setPrototypeOf(this, AppError.prototype);
+  }
 }
 
 export const errorHandler = (
-  err: ApiError,
+  err: Error & { statusCode?: number; code?: number; keyPattern?: Record<string, unknown>; errors?: Record<string, { message: string }> },
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction,
 ) => {
-  let statusCode = err.statusCode || 500;
+  let statusCode = err.statusCode ?? 500;
   let message = err.message || 'Server Error';
 
-  // Mongoose duplicate key error
-  if (err.name === 'MongoServerError' && (err as any).code === 11000) {
+  if (err.name === 'MongoServerError' && err.code === 11000) {
     statusCode = 400;
-    const field = Object.keys((err as any).keyPattern)[0];
+    const field = Object.keys(err.keyPattern ?? {})[0] ?? 'Field';
     message = `${field} already exists`;
   }
 
-  // Mongoose validation error
-  if (err.name === 'ValidationError') {
+  if (err.name === 'ValidationError' && err.errors) {
     statusCode = 400;
-    message = Object.values((err as any).errors)
-      .map((e: any) => e.message)
-      .join(', ');
+    message = Object.values(err.errors).map(e => e.message).join(', ');
   }
 
-  // Mongoose cast error
   if (err.name === 'CastError') {
     statusCode = 400;
-    message = 'Resource not found';
+    message = 'Invalid resource ID';
   }
 
-  // JWT errors
   if (err.name === 'JsonWebTokenError') {
     statusCode = 401;
     message = 'Invalid token';
@@ -46,17 +46,17 @@ export const errorHandler = (
     message = 'Token expired';
   }
 
-  console.error(`[${statusCode}] ${req.method} ${req.originalUrl} → FULL ERROR:`, JSON.stringify(err, null, 2));
+  if (process.env.NODE_ENV !== 'test') {
+    console.error(`[${statusCode}] ${req.method} ${req.originalUrl}`, err.message);
+  }
 
   res.status(statusCode).json({
     success: false,
     message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };
 
-export const notFound = (req: Request, res: Response, next: NextFunction) => {
-  const error = new Error(`Not Found - ${req.originalUrl}`) as ApiError;
-  error.statusCode = 404;
-  next(error);
+export const notFound = (req: Request, _res: Response, next: NextFunction) => {
+  next(new AppError(404, `Not Found — ${req.originalUrl}`));
 };

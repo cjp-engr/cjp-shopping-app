@@ -1,195 +1,71 @@
-﻿import { Response } from 'express';
-import Product from '../models/Product.js';
-import Order from '../models/Order.js';
+import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
+import * as sellerService from '../services/sellerService.js';
 
-function buildImageUrls(files: Express.Multer.File[]): string[] {
-  // When using Cloudinary storage, f.path is the secure Cloudinary URL
-  return files.map(f => (f as any).path || f.filename);
+function extractImageUrls(files: Express.Multer.File[]): string[] {
+  return files.map(f => (f as Express.Multer.File & { path: string }).path || f.filename);
 }
 
-// @desc    Get seller's products
-// @route   GET /api/seller/products
-export const getSellerProducts = async (req: AuthRequest, res: Response) => {
+export const getSellerProducts = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const products = await Product.find({ sellerId: req.user?.id }).sort({ createdAt: -1 });
+    const products = await sellerService.getSellerProducts(req.user!.id);
     res.status(200).json({ success: true, products });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Server error' });
-  }
+  } catch (err) { next(err); }
 };
 
-// @desc    Create a product
-// @route   POST /api/seller/products
-export const createProduct = async (req: AuthRequest, res: Response) => {
+export const createProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { name, description, price, category, stock, tags } = req.body;
-
-    if (!name || !description || !price || !category) {
-      return res.status(400).json({ success: false, message: 'Please provide all required fields' });
+    if (!name || !description || price == null || !category) {
+      return res.status(400).json({ success: false, message: 'name, description, price, and category are required' });
     }
-
-    const uploadedFiles = (req.files as Express.Multer.File[]) ?? [];
-    const imageUrls = buildImageUrls(uploadedFiles);
-    const primaryImage = imageUrls[0] ?? '';
-
-    const product = await Product.create({
-      name,
-      description,
-      price,
-      category,
-      image: primaryImage,
-      images: imageUrls,
-      stock: stock || 0,
-      tags: tags || [],
-      sellerId: req.user?.id
-    });
-
+    const files = (req.files as Express.Multer.File[]) ?? [];
+    const product = await sellerService.createSellerProduct(
+      req.user!.id,
+      { name, description, price: Number(price), category, stock: Number(stock ?? 0), tags },
+      extractImageUrls(files),
+    );
     res.status(201).json({ success: true, product });
-  } catch (error) {
-    console.error('[createProduct error]', error);
-    const message = error instanceof Error ? error.message : 'Server error';
-    res.status(500).json({ success: false, message });
-  }
+  } catch (err) { next(err); }
 };
 
-// @desc    Update a product
-// @route   PUT /api/seller/products/:id
-export const updateProduct = async (req: AuthRequest, res: Response) => {
+export const updateProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const product = await Product.findById(req.params.id);
-
-    if (!product) {
-      return res.status(404).json({ success: false, message: 'Product not found' });
-    }
-
-    if (product.sellerId?.toString() !== req.user?.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to update this product' });
-    }
-
     const { name, description, price, category, stock, tags } = req.body;
-    const uploadedFiles = (req.files as Express.Multer.File[]) ?? [];
-
-    if (name) product.name = name;
-    if (description) product.description = description;
-    if (price !== undefined) product.price = price;
-    if (category) product.category = category;
-    if (stock !== undefined) product.stock = stock;
-    if (tags) product.tags = tags;
-
-    if (uploadedFiles.length > 0) {
-      const imageUrls = buildImageUrls(uploadedFiles);
-      product.image = imageUrls[0];
-      product.images = imageUrls;
-    }
-
-    const updated = await product.save();
-    res.status(200).json({ success: true, product: updated });
-  } catch (error) {
-    console.error('[updateProduct error]', error);
-    const message = error instanceof Error ? error.message : 'Server error';
-    res.status(500).json({ success: false, message });
-  }
+    const files = (req.files as Express.Multer.File[]) ?? [];
+    const product = await sellerService.updateSellerProduct(
+      req.params.id,
+      req.user!.id,
+      { name, description, price: price != null ? Number(price) : undefined, category, stock: stock != null ? Number(stock) : undefined, tags },
+      files.length > 0 ? extractImageUrls(files) : undefined,
+    );
+    res.status(200).json({ success: true, product });
+  } catch (err) { next(err); }
 };
 
-// @desc    Delete a product
-// @route   DELETE /api/seller/products/:id
-export const deleteProduct = async (req: AuthRequest, res: Response) => {
+export const deleteProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const product = await Product.findById(req.params.id);
-
-    if (!product) {
-      return res.status(404).json({ success: false, message: 'Product not found' });
-    }
-
-    if (product.sellerId?.toString() !== req.user?.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to delete this product' });
-    }
-
-    await product.deleteOne();
+    await sellerService.deleteSellerProduct(req.params.id, req.user!.id);
     res.status(200).json({ success: true, message: 'Product deleted' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Server error' });
-  }
+  } catch (err) { next(err); }
 };
 
-// @desc    Get orders containing seller's products
-// @route   GET /api/seller/orders
-export const getSellerOrders = async (req: AuthRequest, res: Response) => {
+export const getSellerOrders = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const sellerProducts = await Product.find({ sellerId: req.user?.id }).select('_id');
-    const sellerProductIds = sellerProducts.map(p => p._id.toString());
-
-    const orders = await Order.find({
-      'items.product': { $in: sellerProductIds }
-    })
-      .populate('items.product')
-      .populate('userId', 'firstName lastName email')
-      .sort({ createdAt: -1 });
-
+    const orders = await sellerService.getSellerOrders(req.user!.id);
     res.status(200).json({ success: true, orders });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Server error' });
-  }
+  } catch (err) { next(err); }
 };
 
-// @desc    Update order status (seller)
-// @route   PUT /api/seller/orders/:id/status
-export const updateSellerOrderStatus = async (req: AuthRequest, res: Response) => {
+export const updateSellerOrderStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { status, cancelReason } = req.body;
-
-    const order = await Order.findById(req.params.id);
-    if (!order) {
-      return res.status(400).json({ success: false, message: 'Order not found' });
-    }
-
-    const sellerProducts = await Product.find({ sellerId: req.user?.id }).select('_id');
-    const sellerProductIds = new Set(sellerProducts.map(p => p._id.toString()));
-
-    const hasSellersProduct = order.items.some(item => sellerProductIds.has(item.product.toString()));
-    if (!hasSellersProduct) {
-      return res.status(403).json({ success: false, message: 'Not authorized to update this order' });
-    }
-
-    const validTransitions: Record<string, string[]> = {
-      pending:    ['preparing', 'cancelled'],
-      preparing:  ['processing', 'cancelled'],
-      processing: ['shipped', 'cancelled'],
-      shipped:    ['delivered', 'cancelled'],
-      delivered:  [],
-      cancelled:  []
-    };
-
-    const allowedNext = validTransitions[order.status] ?? [];
-    if (!allowedNext.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot transition order from '${order.status}' to '${status}'`
-      });
-    }
-
-    if (status === 'cancelled' && order.status !== 'cancelled') {
-      for (const item of order.items) {
-        const product = await Product.findById(item.product);
-        if (product) {
-          product.stock += item.quantity;
-          await product.save();
-        }
-      }
-    }
-
-    order.status = status;
-    if (status === 'cancelled' && cancelReason) {
-      order.cancelReason = cancelReason;
-    }
-    if (status === 'shipped' && !order.shippedAt) {
-      order.shippedAt = new Date();
-    }
-    await order.save();
-
+    const order = await sellerService.updateSellerOrderStatus(
+      req.params.id,
+      req.user!.id,
+      status,
+      cancelReason,
+    );
     res.status(200).json({ success: true, order });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Server error' });
-  }
+  } catch (err) { next(err); }
 };
