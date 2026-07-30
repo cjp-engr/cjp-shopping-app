@@ -182,6 +182,9 @@ export const SelectVoucherModal: React.FC<Props> = ({
 
                       {/* Content */}
                       <div className="flex-1 px-3 py-3 min-w-0">
+                        <p className={`text-xs font-extrabold tracking-wide mb-1 ${isSelected ? 'text-primary-600 dark:text-primary-300' : 'text-orange-500'}`}>
+                          {coupon.code}
+                        </p>
                         {recommended && (
                           <span className="inline-block text-xs font-bold bg-orange-500 text-white px-1.5 py-0.5 rounded mb-1">
                             Recommended

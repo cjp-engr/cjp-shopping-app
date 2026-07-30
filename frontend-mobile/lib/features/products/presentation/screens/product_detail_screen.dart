@@ -11,6 +11,7 @@ import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
 import '../../../cart/presentation/bloc/cart_event.dart';
+import '../../../cart/presentation/bloc/cart_state.dart';
 import '../../../wishlist/presentation/bloc/wishlist_bloc.dart';
 import '../../../wishlist/presentation/bloc/wishlist_event.dart';
 import '../../../wishlist/presentation/bloc/wishlist_state.dart';
@@ -174,20 +175,54 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       child: InkWell(
                         onTap: () => context.push('/cart'),
                         borderRadius: BorderRadius.circular(24),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.black.withAlpha(15),
-                                  blurRadius: 8)
-                            ],
-                          ),
-                          child: const Icon(Icons.shopping_bag_outlined,
-                              color: AppColors.textPrimary, size: 20),
+                        child: BlocBuilder<CartBloc, CartState>(
+                          builder: (context, cartState) {
+                            final count = cartState.totalQuantity;
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                          color: Colors.black.withAlpha(15),
+                                          blurRadius: 8)
+                                    ],
+                                  ),
+                                  child: const Icon(Icons.shopping_bag_outlined,
+                                      color: AppColors.textPrimary, size: 20),
+                                ),
+                                if (count > 0)
+                                  Positioned(
+                                    top: -2,
+                                    right: -2,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(3),
+                                      constraints: const BoxConstraints(
+                                          minWidth: 16, minHeight: 16),
+                                      decoration: const BoxDecoration(
+                                        color: AppColors.danger,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        count > 99 ? '99+' : '$count',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          height: 1,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ),

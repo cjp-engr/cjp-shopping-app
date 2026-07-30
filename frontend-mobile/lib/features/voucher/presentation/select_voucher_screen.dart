@@ -256,21 +256,17 @@ class _SelectVoucherScreenState extends State<SelectVoucherScreen> {
                 ),
                 if (_selectedCode != null) ...[
                   const SizedBox(width: 6),
-                  const Text('Shipping promotion applied',
+                  const Text('Voucher applied',
                       style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600)),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => setState(() { _selectedCode = null; _selectedDiscount = 0; }),
+                    child: const Text('Remove',
+                        style: TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
                 ],
               ],
             ),
-            if (_selectedCode != null)
-              TextButton(
-                onPressed: () => setState(() { _selectedCode = null; _selectedDiscount = 0; }),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text('Remove', style: TextStyle(color: AppColors.primary, fontSize: 13)),
-              ),
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
@@ -348,7 +344,7 @@ class _CouponTile extends StatelessWidget {
                     : const Color(0xFF26AA99).withValues(alpha: 0.08),
                 child: Center(
                   child: Icon(
-                    Icons.local_shipping_outlined,
+                    Icons.local_offer_outlined,
                     size: 32,
                     color: isSelected ? AppColors.primary : const Color(0xFF26AA99),
                   ),
@@ -362,6 +358,16 @@ class _CouponTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(
+                        coupon.code,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          color: isSelected ? AppColors.primary : const Color(0xFF26AA99),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
                       if (coupon.discountType == 'percentage' ||
                           coupon.minOrderAmount == 0)
                         Container(

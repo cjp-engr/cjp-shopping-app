@@ -69,10 +69,8 @@ class _MainShellState extends State<MainShell> {
       final data = res.data;
       final List<dynamic> orders =
           data is Map ? (data['orders'] ?? data['data'] ?? []) : (data as List);
-      final count = orders
-          .whereType<Map>()
-          .where((o) => o['status'] == 'shipped')
-          .length;
+      final count =
+          orders.whereType<Map>().where((o) => o['status'] == 'shipped').length;
       if (mounted) setState(() => _toReceiveCount = count);
     } catch (_) {}
   }
@@ -170,7 +168,6 @@ class _MainShellState extends State<MainShell> {
 
             return BlocBuilder<CartBloc, CartState>(
               builder: (context, cart) {
-                final cartCount = cart.totalQuantity;
                 return BlocBuilder<WishlistBloc, WishlistState>(
                   builder: (context, wishlist) {
                     final wishlistCount = wishlist.items.length;
@@ -194,7 +191,9 @@ class _MainShellState extends State<MainShell> {
                                 icon: Icons.grid_view_outlined,
                                 activeIcon: Icons.grid_view_rounded,
                                 isActive: index == 1,
-                                badge: _toReceiveCount > 0 ? _toReceiveCount : null,
+                                badge: _toReceiveCount > 0
+                                    ? _toReceiveCount
+                                    : null,
                                 onTap: () {
                                   _fetchToReceiveCount();
                                   context.go('/orders');

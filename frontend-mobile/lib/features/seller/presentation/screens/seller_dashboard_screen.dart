@@ -43,7 +43,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
         : widget.initialTab == 'vouchers'
             ? 2
             : 0;
-    _tabController = TabController(length: 3, vsync: this, initialIndex: initialIndex);
+    _tabController =
+        TabController(length: 3, vsync: this, initialIndex: initialIndex);
     _tabController.addListener(_onTabChanged);
     ApiClient.get().then((client) {
       if (mounted) _voucherRepo = VoucherRepository(client);
@@ -74,7 +75,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
     if (_voucherRepo == null) return;
     setState(() => _couponsLoading = true);
     final list = await _voucherRepo!.listMine();
-    if (mounted) setState(() { _coupons = list; _couponsLoading = false; });
+    if (mounted)
+      setState(() {
+        _coupons = list;
+        _couponsLoading = false;
+      });
   }
 
   Future<void> _deleteCoupon(String id) async {
@@ -88,7 +93,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
     if (editId != null) {
       final updated = await _voucherRepo!.update(editId, data);
       if (mounted) {
-        setState(() => _coupons = _coupons.map((c) => c.id == editId ? updated : c).toList());
+        setState(() => _coupons =
+            _coupons.map((c) => c.id == editId ? updated : c).toList());
       }
     } else {
       final created = await _voucherRepo!.create(data);
@@ -124,7 +130,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
       iconColor: AppColors.danger,
       iconBackground: AppColors.dangerSurface,
       title: 'Delete Product',
-      body: 'Remove "${product.name}" from your shop? This action cannot be undone.',
+      body:
+          'Remove "${product.name}" from your shop? This action cannot be undone.',
       cancelLabel: 'Keep It',
       confirmLabel: 'Yes, Delete',
       confirmColor: AppColors.danger,
@@ -151,9 +158,13 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
             icon: const Icon(Icons.refresh_rounded, size: 20),
             tooltip: 'Refresh',
             onPressed: () {
-              context.read<SellerBloc>().add(const SellerProductsLoadRequested());
+              context
+                  .read<SellerBloc>()
+                  .add(const SellerProductsLoadRequested());
               if (_ordersRequested) {
-                context.read<SellerBloc>().add(const SellerOrdersLoadRequested());
+                context
+                    .read<SellerBloc>()
+                    .add(const SellerOrdersLoadRequested());
               }
             },
           ),
@@ -190,8 +201,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
                               horizontal: 6, vertical: 1),
                           decoration: BoxDecoration(
                             color: AppColors.danger,
-                            borderRadius: BorderRadius.circular(
-                                AppSizes.radiusFull),
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusFull),
                           ),
                           child: Text(
                             '$badge',
@@ -240,8 +251,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
                   // Products tab — rebuilds only when products change
                   BlocBuilder<SellerBloc, SellerState>(
                     buildWhen: (p, c) =>
-                        p.products != c.products ||
-                        p.status != c.status,
+                        p.products != c.products || p.status != c.status,
                     builder: (context, state) => _ProductsTab(
                       state: state,
                       categoryFilter: _categoryFilter,
@@ -478,32 +488,24 @@ class _ProductsTab extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSizes.md, vertical: AppSizes.xs),
               itemCount: categories.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(width: AppSizes.xs),
+              separatorBuilder: (_, __) => const SizedBox(width: AppSizes.xs),
               itemBuilder: (context, i) {
                 final cat = categories[i];
                 final isActive = cat == categoryFilter;
                 final count = cat == 'All'
                     ? state.products.length
-                    : state.products
-                        .where((p) => p.category == cat)
-                        .length;
+                    : state.products.where((p) => p.category == cat).length;
                 return GestureDetector(
                   onTap: () => onCategoryChanged(cat),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: isActive
-                          ? AppColors.primary
-                          : Colors.transparent,
-                      borderRadius:
-                          BorderRadius.circular(AppSizes.radiusFull),
+                      color: isActive ? AppColors.primary : Colors.transparent,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                       border: Border.all(
-                        color: isActive
-                            ? AppColors.primary
-                            : AppColors.border,
+                        color: isActive ? AppColors.primary : AppColors.border,
                       ),
                     ),
                     child: Row(
@@ -514,9 +516,8 @@ class _ProductsTab extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: isActive
-                                ? Colors.white
-                                : AppColors.textMuted,
+                            color:
+                                isActive ? Colors.white : AppColors.textMuted,
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -527,17 +528,16 @@ class _ProductsTab extends StatelessWidget {
                             color: isActive
                                 ? Colors.white.withAlpha(51)
                                 : AppColors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(
-                                AppSizes.radiusFull),
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusFull),
                           ),
                           child: Text(
                             '$count',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: isActive
-                                  ? Colors.white
-                                  : AppColors.textMuted,
+                              color:
+                                  isActive ? Colors.white : AppColors.textMuted,
                             ),
                           ),
                         ),
@@ -621,8 +621,8 @@ class _OrdersTab extends StatelessWidget {
     }
 
     final visibleTabs = _allTabs
-        .where((t) =>
-            t.key == 'all' || state.orders.any((o) => o.status == t.key))
+        .where(
+            (t) => t.key == 'all' || state.orders.any((o) => o.status == t.key))
         .toList();
 
     final filtered = statusFilter == 'all'
@@ -644,16 +644,13 @@ class _OrdersTab extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSizes.md, vertical: AppSizes.xs),
                 itemCount: visibleTabs.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: AppSizes.xs),
+                separatorBuilder: (_, __) => const SizedBox(width: AppSizes.xs),
                 itemBuilder: (context, i) {
                   final tab = visibleTabs[i];
                   final isActive = tab.key == statusFilter;
                   final count = tab.key == 'all'
                       ? state.orders.length
-                      : state.orders
-                          .where((o) => o.status == tab.key)
-                          .length;
+                      : state.orders.where((o) => o.status == tab.key).length;
                   return GestureDetector(
                     onTap: () => onStatusChanged(tab.key),
                     child: AnimatedContainer(
@@ -661,15 +658,13 @@ class _OrdersTab extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: isActive
-                            ? AppColors.primary
-                            : Colors.transparent,
+                        color:
+                            isActive ? AppColors.primary : Colors.transparent,
                         borderRadius:
                             BorderRadius.circular(AppSizes.radiusFull),
                         border: Border.all(
-                          color: isActive
-                              ? AppColors.primary
-                              : AppColors.border,
+                          color:
+                              isActive ? AppColors.primary : AppColors.border,
                         ),
                       ),
                       child: Row(
@@ -686,9 +681,8 @@ class _OrdersTab extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: isActive
-                                  ? Colors.white
-                                  : AppColors.textMuted,
+                              color:
+                                  isActive ? Colors.white : AppColors.textMuted,
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -699,8 +693,8 @@ class _OrdersTab extends StatelessWidget {
                               color: isActive
                                   ? Colors.white.withAlpha(51)
                                   : AppColors.surfaceVariant,
-                              borderRadius: BorderRadius.circular(
-                                  AppSizes.radiusFull),
+                              borderRadius:
+                                  BorderRadius.circular(AppSizes.radiusFull),
                             ),
                             child: Text(
                               '$count',
@@ -785,167 +779,164 @@ class _OrderCard extends StatelessWidget {
             ],
           ),
           child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header ──────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.md, vertical: 10),
-            child: Row(
-              children: [
-                // Order ID with monospaced style
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: context.bgColor,
-                    borderRadius:
-                        BorderRadius.circular(AppSizes.radiusSm),
-                    border: Border.all(color: context.borderColor),
-                  ),
-                  child: Text(
-                    '#${order.shortId}',
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      color: context.onSurfaceColor,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header ──────────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.md, vertical: 10),
+                child: Row(
+                  children: [
+                    // Order ID with monospaced style
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: context.bgColor,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                        border: Border.all(color: context.borderColor),
+                      ),
+                      child: Text(
+                        '#${order.shortId}',
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          color: context.onSurfaceColor,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    _StatusBadge(label: cfg.label, color: cfg.color),
+                    const Spacer(),
+                    Text(
+                      _formatDate(order.createdAt),
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.textMuted),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                _StatusBadge(label: cfg.label, color: cfg.color),
-                const Spacer(),
-                Text(
-                  _formatDate(order.createdAt),
-                  style: const TextStyle(
-                      fontSize: 11, color: AppColors.textMuted),
-                ),
-              ],
-            ),
-          ),
+              ),
 
-          Divider(height: 1, color: context.borderColor),
+              Divider(height: 1, color: context.borderColor),
 
-          Padding(
-            padding: const EdgeInsets.all(AppSizes.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Buyer ────────────────────────────────────────────────
-                if (order.buyer != null) ...[
-                  Row(
-                    children: [
-                      _BuyerAvatar(name: order.buyer!.fullName),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              order.buyer!.fullName,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: context.onSurfaceColor,
-                              ),
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Buyer ────────────────────────────────────────────────
+                    if (order.buyer != null) ...[
+                      Row(
+                        children: [
+                          _BuyerAvatar(name: order.buyer!.fullName),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  order.buyer!.fullName,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.onSurfaceColor,
+                                  ),
+                                ),
+                                Text(
+                                  order.buyer!.email,
+                                  style: const TextStyle(
+                                      fontSize: 12, color: AppColors.textMuted),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
-                            Text(
-                              order.buyer!.email,
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textMuted),
-                              overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '\$${order.total.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primary,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '\$${order.total.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
-                        ),
-                      ),
+                      const SizedBox(height: AppSizes.sm),
                     ],
-                  ),
-                  const SizedBox(height: AppSizes.sm),
-                ],
 
-                // ── Items ────────────────────────────────────────────────
-                ...order.items.map((item) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: _OrderItemRow(item: item),
-                    )),
+                    // ── Items ────────────────────────────────────────────────
+                    ...order.items.map((item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: _OrderItemRow(item: item),
+                        )),
 
-                // ── Actions ──────────────────────────────────────────────
-                if (order.canMarkPreparing ||
-                    order.canMarkToShip ||
-                    order.canMarkShipped ||
-                    order.canCancel) ...[
-                  const SizedBox(height: 10),
-                  Divider(height: 1, color: context.borderColor),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      if (order.canMarkPreparing)
-                        Expanded(
-                          child: _OrderActionBtn(
-                            label: 'Accept / Prepare',
-                            icon: Icons.pending_actions_outlined,
-                            color: AppColors.primary,
-                            onTap: () =>
-                                context.read<SellerBloc>().add(
+                    // ── Actions ──────────────────────────────────────────────
+                    if (order.canMarkPreparing ||
+                        order.canMarkToShip ||
+                        order.canMarkShipped ||
+                        order.canCancel) ...[
+                      const SizedBox(height: 10),
+                      Divider(height: 1, color: context.borderColor),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          if (order.canMarkPreparing)
+                            Expanded(
+                              child: _OrderActionBtn(
+                                label: 'Accept / Prepare',
+                                icon: Icons.pending_actions_outlined,
+                                color: AppColors.primary,
+                                onTap: () => context.read<SellerBloc>().add(
                                     SellerOrderStatusUpdateRequested(
                                         order.id, 'preparing')),
-                          ),
-                        ),
-                      if (order.canMarkToShip)
-                        Expanded(
-                          child: _OrderActionBtn(
-                            label: 'Mark to Ship',
-                            icon: Icons.inventory_2_outlined,
-                            color: AppColors.primary,
-                            onTap: () =>
-                                context.read<SellerBloc>().add(
+                              ),
+                            ),
+                          if (order.canMarkToShip)
+                            Expanded(
+                              child: _OrderActionBtn(
+                                label: 'Mark to Ship',
+                                icon: Icons.inventory_2_outlined,
+                                color: AppColors.primary,
+                                onTap: () => context.read<SellerBloc>().add(
                                     SellerOrderStatusUpdateRequested(
                                         order.id, 'processing')),
-                          ),
-                        ),
-                      if (order.canMarkShipped)
-                        Expanded(
-                          child: _OrderActionBtn(
-                            label: 'Mark Shipped',
-                            icon: Icons.local_shipping_outlined,
-                            color: AppColors.primary,
-                            onTap: () =>
-                                context.read<SellerBloc>().add(
+                              ),
+                            ),
+                          if (order.canMarkShipped)
+                            Expanded(
+                              child: _OrderActionBtn(
+                                label: 'Mark Shipped',
+                                icon: Icons.local_shipping_outlined,
+                                color: AppColors.primary,
+                                onTap: () => context.read<SellerBloc>().add(
                                     SellerOrderStatusUpdateRequested(
                                         order.id, 'shipped')),
-                          ),
-                        ),
-                      if ((order.canMarkPreparing || order.canMarkToShip || order.canMarkShipped) &&
-                          order.canCancel)
-                        const SizedBox(width: AppSizes.sm),
-                      if (order.canCancel)
-                        Expanded(
-                          child: _OrderActionBtn(
-                            label: 'Cancel',
-                            icon: Icons.cancel_outlined,
-                            color: AppColors.danger,
-                            onTap: () => _showSellerCancelDialog(
-                                context, order.id),
-                          ),
-                        ),
+                              ),
+                            ),
+                          if ((order.canMarkPreparing ||
+                                  order.canMarkToShip ||
+                                  order.canMarkShipped) &&
+                              order.canCancel)
+                            const SizedBox(width: AppSizes.sm),
+                          if (order.canCancel)
+                            Expanded(
+                              child: _OrderActionBtn(
+                                label: 'Cancel',
+                                icon: Icons.cancel_outlined,
+                                color: AppColors.danger,
+                                onTap: () =>
+                                    _showSellerCancelDialog(context, order.id),
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -992,8 +983,18 @@ class _OrderCard extends StatelessWidget {
     try {
       final dt = DateTime.parse(iso).toLocal();
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
       ];
       return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
     } catch (_) {
@@ -1134,8 +1135,8 @@ class _OrderItemRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Qty ${item.quantity} × \$${item.price.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                      fontSize: 11, color: AppColors.textMuted),
+                  style:
+                      const TextStyle(fontSize: 11, color: AppColors.textMuted),
                 ),
               ],
             ),
@@ -1360,8 +1361,8 @@ class _ProductTile extends StatelessWidget {
           color: AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         ),
-        child: const Icon(Icons.inventory_2_outlined,
-            color: AppColors.textMuted),
+        child:
+            const Icon(Icons.inventory_2_outlined, color: AppColors.textMuted),
       );
 }
 
@@ -1412,8 +1413,7 @@ class _StockBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = product.inStock ? AppColors.success : AppColors.danger;
-    final label =
-        product.inStock ? 'Stock: ${product.stock}' : 'Out of Stock';
+    final label = product.inStock ? 'Stock: ${product.stock}' : 'Out of Stock';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -1453,8 +1453,18 @@ class _SellerOrderDetailSheet extends StatelessWidget {
     try {
       final dt = DateTime.parse(iso).toLocal();
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
     } catch (_) {
@@ -1471,15 +1481,11 @@ class _SellerOrderDetailSheet extends StatelessWidget {
     final computedSubtotal = order.subtotal > 0
         ? order.subtotal
         : order.items.fold<double>(0, (s, i) => s + i.lineTotal);
-    final tax = order.tax > 0
-        ? order.tax
-        : computedSubtotal * 0.08;
-    final shipping = (order.shipping > 0 || computedSubtotal >= 50)
-        ? order.shipping
-        : 9.99;
-    final total = order.total > 0
-        ? order.total
-        : computedSubtotal + tax + shipping;
+    final tax = order.tax > 0 ? order.tax : computedSubtotal * 0.08;
+    final shipping =
+        (order.shipping > 0 || computedSubtotal >= 50) ? order.shipping : 9.99;
+    final total =
+        order.total > 0 ? order.total : computedSubtotal + tax + shipping;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -1489,8 +1495,7 @@ class _SellerOrderDetailSheet extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: context.bgColor,
-            borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             children: [
@@ -1529,8 +1534,7 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                           Text(
                             _formatDate(order.createdAt),
                             style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textMuted),
+                                fontSize: 12, color: AppColors.textMuted),
                           ),
                         ],
                       ),
@@ -1572,8 +1576,7 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                           onTap: order.buyer!.id.isNotEmpty
                               ? () {
                                   Navigator.of(context).pop();
-                                  context.push(
-                                      '/users/${order.buyer!.id}');
+                                  context.push('/users/${order.buyer!.id}');
                                 }
                               : null,
                           borderRadius:
@@ -1581,13 +1584,11 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                           child: Row(
                             children: [
                               _BuyerAvatar(
-                                  name: order.buyer!.fullName,
-                                  size: 48),
+                                  name: order.buyer!.fullName, size: 48),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       order.buyer!.fullName,
@@ -1620,8 +1621,7 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                                 ),
                               ),
                               Icon(Icons.chevron_right,
-                                  size: 18,
-                                  color: context.onSurfaceMuted),
+                                  size: 18, color: context.onSurfaceMuted),
                             ],
                           ),
                         ),
@@ -1652,8 +1652,7 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                       icon: Icons.shopping_bag_outlined,
                       child: Column(
                         children: order.items.asMap().entries.map((e) {
-                          final isLast =
-                              e.key == order.items.length - 1;
+                          final isLast = e.key == order.items.length - 1;
                           return Column(
                             children: [
                               _DetailItemRow(
@@ -1668,9 +1667,7 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                               ),
                               if (!isLast) ...[
                                 const SizedBox(height: 6),
-                                Divider(
-                                    height: 1,
-                                    color: context.borderColor),
+                                Divider(height: 1, color: context.borderColor),
                                 const SizedBox(height: 6),
                               ],
                             ],
@@ -1688,8 +1685,7 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                         children: [
                           _SummaryLine(
                             label: 'Subtotal',
-                            value:
-                                '\$${computedSubtotal.toStringAsFixed(2)}',
+                            value: '\$${computedSubtotal.toStringAsFixed(2)}',
                           ),
                           const SizedBox(height: 8),
                           _SummaryLine(
@@ -1704,10 +1700,9 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                                 : '\$${shipping.toStringAsFixed(2)}',
                           ),
                           Padding(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 10),
-                            child: Divider(
-                                height: 1, color: context.borderColor),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child:
+                                Divider(height: 1, color: context.borderColor),
                           ),
                           _SummaryLine(
                             label: 'Total',
@@ -1833,8 +1828,8 @@ class _DetailItemRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '\$${item.price.toStringAsFixed(2)} × ${item.quantity}',
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.textMuted),
+                  style:
+                      const TextStyle(fontSize: 12, color: AppColors.textMuted),
                 ),
               ],
             ),
@@ -1875,7 +1870,8 @@ class _VouchersTab extends StatelessWidget {
   final List<VoucherModel> coupons;
   final bool loading;
   final Future<void> Function(String id) onDelete;
-  final Future<void> Function(Map<String, dynamic> data, {String? editId}) onSave;
+  final Future<void> Function(Map<String, dynamic> data, {String? editId})
+      onSave;
 
   const _VouchersTab({
     required this.coupons,
@@ -1932,7 +1928,9 @@ class _VouchersTab extends StatelessWidget {
                 Container(
                   width: 6,
                   decoration: BoxDecoration(
-                    color: c.isActive && !isExpired ? Colors.orange : Colors.grey[300],
+                    color: c.isActive && !isExpired
+                        ? Colors.orange
+                        : Colors.grey[300],
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(10),
                       bottomLeft: Radius.circular(10),
@@ -1949,14 +1947,17 @@ class _VouchersTab extends StatelessWidget {
                     child: Icon(
                       Icons.local_offer_outlined,
                       size: 26,
-                      color: c.isActive && !isExpired ? Colors.orange : Colors.grey[400],
+                      color: c.isActive && !isExpired
+                          ? Colors.orange
+                          : Colors.grey[400],
                     ),
                   ),
                 ),
                 // Content
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1972,14 +1973,22 @@ class _VouchersTab extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: c.isActive && !isExpired ? AppColors.success : Colors.grey,
+                                color: c.isActive && !isExpired
+                                    ? AppColors.success
+                                    : Colors.grey,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                isExpired ? 'Expired' : (c.isActive ? 'Active' : 'Inactive'),
-                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                                isExpired
+                                    ? 'Expired'
+                                    : (c.isActive ? 'Active' : 'Inactive'),
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600),
                               ),
                             ),
                           ],
@@ -1987,23 +1996,31 @@ class _VouchersTab extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           c.discountLabel,
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 13),
                         ),
                         if (c.description != null)
-                          Text(c.description!, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                          Text(c.description!,
+                              style: TextStyle(
+                                  fontSize: 11, color: Colors.grey[600])),
                         const SizedBox(height: 4),
                         Wrap(
                           spacing: 8,
                           children: [
                             if (c.minOrderAmount > 0)
-                              Text('Min \$${c.minOrderAmount.toStringAsFixed(2)}',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                              Text(
+                                  'Min \$${c.minOrderAmount.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                      fontSize: 11, color: Colors.grey[500])),
                             if (c.usageLimit != null)
                               Text('${c.usedCount}/${c.usageLimit} used',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                                  style: TextStyle(
+                                      fontSize: 11, color: Colors.grey[500])),
                             if (daysLeft != null && !isExpired)
-                              Text('$daysLeft day${daysLeft != 1 ? 's' : ''} left',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                              Text(
+                                  '$daysLeft day${daysLeft != 1 ? 's' : ''} left',
+                                  style: TextStyle(
+                                      fontSize: 11, color: Colors.grey[500])),
                           ],
                         ),
                       ],
@@ -2022,7 +2039,8 @@ class _VouchersTab extends StatelessWidget {
                           context: ctx,
                           isScrollControlled: true,
                           shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                            borderRadius:
+                                BorderRadius.vertical(top: Radius.circular(20)),
                           ),
                           builder: (_) => _CouponFormSheet(
                             existing: c,
@@ -2103,23 +2121,34 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _saving = true; _error = null; });
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       final data = <String, dynamic>{
         'discountType': _discountType,
         'discountValue': double.parse(_valueCtrl.text),
         'minOrderAmount': double.tryParse(_minAmtCtrl.text) ?? 0,
         'isActive': _isActive,
-        if (_descCtrl.text.trim().isNotEmpty) 'description': _descCtrl.text.trim(),
-        if (_maxDiscCtrl.text.trim().isNotEmpty) 'maxDiscount': double.parse(_maxDiscCtrl.text),
-        if (_limitCtrl.text.trim().isNotEmpty) 'usageLimit': int.parse(_limitCtrl.text),
+        if (_descCtrl.text.trim().isNotEmpty)
+          'description': _descCtrl.text.trim(),
+        if (_maxDiscCtrl.text.trim().isNotEmpty)
+          'maxDiscount': double.parse(_maxDiscCtrl.text),
+        if (_limitCtrl.text.trim().isNotEmpty)
+          'usageLimit': int.parse(_limitCtrl.text),
         if (_expiresAt != null) 'expiresAt': _expiresAt!.toIso8601String(),
       };
-      if (widget.existing == null) data['code'] = _codeCtrl.text.trim().toUpperCase();
+      if (widget.existing == null)
+        data['code'] = _codeCtrl.text.trim().toUpperCase();
       await widget.onSave(data);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString().replaceFirst('Exception: ', ''); _saving = false; });
+      if (mounted)
+        setState(() {
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _saving = false;
+        });
     }
   }
 
@@ -2127,7 +2156,9 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
-        left: 16, right: 16, top: 20,
+        left: 16,
+        right: 16,
+        top: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       child: SingleChildScrollView(
@@ -2142,7 +2173,8 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                 children: [
                   Text(
                     widget.existing != null ? 'Edit Voucher' : 'Create Voucher',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w800),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -2158,10 +2190,13 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                     color: AppColors.danger.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
+                  child: Text(_error!,
+                      style: const TextStyle(
+                          color: AppColors.danger, fontSize: 13)),
                 ),
               if (widget.existing == null)
-                _field(_codeCtrl, 'Voucher Code', hint: 'e.g. SAVE10',
+                _field(_codeCtrl, 'Voucher Code',
+                    hint: 'e.g. SAVE10',
                     validator: (v) => v!.trim().isEmpty ? 'Required' : null),
               const SizedBox(height: 8),
               Row(
@@ -2171,32 +2206,44 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                       value: _discountType,
                       decoration: _dec('Discount Type'),
                       items: const [
-                        DropdownMenuItem(value: 'percentage', child: Text('Percentage (%)')),
-                        DropdownMenuItem(value: 'fixed', child: Text('Fixed (\$)')),
+                        DropdownMenuItem(
+                            value: 'percentage', child: Text('Percentage (%)')),
+                        DropdownMenuItem(
+                            value: 'fixed', child: Text('Fixed (\$)')),
                       ],
                       onChanged: (v) => setState(() => _discountType = v!),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: _field(_valueCtrl,
-                      _discountType == 'percentage' ? 'Discount (%)' : 'Amount (\$)',
+                    child: _field(
+                      _valueCtrl,
+                      _discountType == 'percentage'
+                          ? 'Discount (%)'
+                          : 'Amount (\$)',
                       keyboardType: TextInputType.number,
-                      validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid number' : null,
+                      validator: (v) => double.tryParse(v ?? '') == null
+                          ? 'Invalid number'
+                          : null,
                     ),
                   ),
                 ],
               ),
               if (_discountType == 'percentage') ...[
                 const SizedBox(height: 8),
-                _field(_maxDiscCtrl, 'Max Discount Cap (\$, optional)', keyboardType: TextInputType.number),
+                _field(_maxDiscCtrl, 'Max Discount Cap (\$, optional)',
+                    keyboardType: TextInputType.number),
               ],
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: _field(_minAmtCtrl, 'Min. Order (\$)', keyboardType: TextInputType.number)),
+                  Expanded(
+                      child: _field(_minAmtCtrl, 'Min. Order (\$)',
+                          keyboardType: TextInputType.number)),
                   const SizedBox(width: 10),
-                  Expanded(child: _field(_limitCtrl, 'Usage Limit (optional)', keyboardType: TextInputType.number)),
+                  Expanded(
+                      child: _field(_limitCtrl, 'Usage Limit (optional)',
+                          keyboardType: TextInputType.number)),
                 ],
               ),
               const SizedBox(height: 8),
@@ -2207,21 +2254,25 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: _expiresAt ?? DateTime.now().add(const Duration(days: 30)),
+                    initialDate: _expiresAt ??
+                        DateTime.now().add(const Duration(days: 30)),
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
                   );
-                  if (picked != null && mounted) setState(() => _expiresAt = picked);
+                  if (picked != null && mounted)
+                    setState(() => _expiresAt = picked);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey[400]!),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primary),
+                      const Icon(Icons.calendar_today_outlined,
+                          size: 16, color: AppColors.primary),
                       const SizedBox(width: 8),
                       Text(
                         _expiresAt != null
@@ -2233,7 +2284,8 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                         const Spacer(),
                         GestureDetector(
                           onTap: () => setState(() => _expiresAt = null),
-                          child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                          child: const Icon(Icons.close,
+                              size: 16, color: Colors.grey),
                         ),
                       ],
                     ],
@@ -2259,12 +2311,21 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                   child: _saving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Text(widget.existing != null ? 'Save Changes' : 'Create Voucher',
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : Text(
+                          widget.existing != null
+                              ? 'Save Changes'
+                              : 'Create Voucher',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 15)),
                 ),
               ),
             ],
@@ -2295,7 +2356,8 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
         labelStyle: const TextStyle(fontSize: 13),
         hintStyle: TextStyle(fontSize: 12, color: Colors.grey[400]),
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       );
 }
@@ -2305,7 +2367,8 @@ class _SellerCancelReasonField extends StatefulWidget {
   final ValueNotifier<String> value;
 
   @override
-  State<_SellerCancelReasonField> createState() => _SellerCancelReasonFieldState();
+  State<_SellerCancelReasonField> createState() =>
+      _SellerCancelReasonFieldState();
 }
 
 class _SellerCancelReasonFieldState extends State<_SellerCancelReasonField> {
@@ -2341,7 +2404,9 @@ class _SellerCancelReasonFieldState extends State<_SellerCancelReasonField> {
           color: isDark ? const Color(0xFF64748B) : AppColors.textMuted,
         ),
         helperText: 'Optional — shown to the buyer',
-        helperStyle: TextStyle(fontSize: 12, color: isDark ? const Color(0xFF475569) : AppColors.textMuted),
+        helperStyle: TextStyle(
+            fontSize: 12,
+            color: isDark ? const Color(0xFF475569) : AppColors.textMuted),
         filled: true,
         fillColor: isDark ? const Color(0xFF0F172A) : AppColors.surfaceVariant,
         border: OutlineInputBorder(
@@ -2352,7 +2417,8 @@ class _SellerCancelReasonFieldState extends State<_SellerCancelReasonField> {
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
     );
   }
@@ -2374,22 +2440,17 @@ class _SummaryLine extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: isTotal ? 15 : 13,
-            fontWeight:
-                isTotal ? FontWeight.w800 : FontWeight.w400,
-            color: isTotal
-                ? context.onSurfaceColor
-                : context.onSurfaceSecondary,
+            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w400,
+            color:
+                isTotal ? context.onSurfaceColor : context.onSurfaceSecondary,
           ),
         ),
         Text(
           value,
           style: TextStyle(
             fontSize: isTotal ? 16 : 13,
-            fontWeight:
-                isTotal ? FontWeight.w900 : FontWeight.w500,
-            color: isTotal
-                ? AppColors.primary
-                : context.onSurfaceColor,
+            fontWeight: isTotal ? FontWeight.w900 : FontWeight.w500,
+            color: isTotal ? AppColors.primary : context.onSurfaceColor,
           ),
         ),
       ],

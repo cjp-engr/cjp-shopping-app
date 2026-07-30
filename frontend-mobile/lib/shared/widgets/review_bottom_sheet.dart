@@ -1,6 +1,7 @@
 import 'dart:developer' as dev;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../core/network/api_client.dart';
@@ -307,7 +308,7 @@ class _ReviewBottomSheetState extends State<ReviewBottomSheet> {
                         const SizedBox(width: 8),
                         Text(
                           widget.isEditing ? 'Update Review' : 'Submit Review',
-                          style: const TextStyle(
+                          style: GoogleFonts.plusJakartaSans(
                               fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                       ],

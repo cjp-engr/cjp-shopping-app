@@ -23,33 +23,33 @@ class AppTheme {
         surfaceContainerHighest: AppColors.surfaceVariant,
       ),
       scaffoldBackgroundColor: AppColors.background,
-      textTheme: GoogleFonts.openSansTextTheme().apply(
+      textTheme: GoogleFonts.plusJakartaSansTextTheme().apply(
         bodyColor: AppColors.textPrimary,
         displayColor: AppColors.textPrimary,
       ),
 
       // ── AppBar ──────────────────────────────────────────────────────────
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         shadowColor: Colors.transparent,
         centerTitle: true,
-        systemOverlayStyle: SystemUiOverlayStyle(
+        systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarBrightness: Brightness.light,
           statusBarIconBrightness: Brightness.dark,
           statusBarColor: Colors.transparent,
         ),
-        titleTextStyle: TextStyle(
+        titleTextStyle: GoogleFonts.plusJakartaSans(
           fontSize: 18,
           fontWeight: FontWeight.w800,
           color: AppColors.textPrimary,
           letterSpacing: -0.3,
         ),
-        iconTheme: IconThemeData(color: AppColors.textPrimary, size: 22),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 22),
         actionsIconTheme:
-            IconThemeData(color: AppColors.textPrimary, size: 22),
+            const IconThemeData(color: AppColors.textPrimary, size: 22),
         surfaceTintColor: Colors.transparent,
       ),
 
@@ -85,7 +85,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.1,
@@ -108,7 +108,7 @@ class AppTheme {
           side: const BorderSide(color: AppColors.borderStrong, width: 1.5),
           elevation: 0,
           shadowColor: Colors.transparent,
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -119,7 +119,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -220,12 +220,16 @@ class AppTheme {
   }
 
   static ThemeData get dark {
-    const darkSurface = Color(0xFF111827);    // gray-900  (web dark:bg-gray-900)
-    const darkBackground = Color(0xFF0F172A); // slate-900 (slightly deeper base)
-    const darkCard = Color(0xFF1F2937);       // gray-800  (web dark:bg-gray-800)
-    const darkBorder = Color(0xFF374151);     // gray-700  (web dark:border-gray-700)
-    const darkTextPrimary = Color(0xFFF3F4F6); // gray-100 (web dark:text-gray-100)
-    const darkTextSecondary = Color(0xFF9CA3AF); // gray-400 (web dark:text-gray-400)
+    const darkSurface = Color(0xFF111827); // gray-900  (web dark:bg-gray-900)
+    const darkBackground =
+        Color(0xFF0F172A); // slate-900 (slightly deeper base)
+    const darkCard = Color(0xFF1F2937); // gray-800  (web dark:bg-gray-800)
+    const darkBorder =
+        Color(0xFF374151); // gray-700  (web dark:border-gray-700)
+    const darkTextPrimary =
+        Color(0xFFF3F4F6); // gray-100 (web dark:text-gray-100)
+    const darkTextSecondary =
+        Color(0xFF9CA3AF); // gray-400 (web dark:text-gray-400)
 
     return ThemeData(
       useMaterial3: true,
@@ -242,7 +246,9 @@ class AppTheme {
         surfaceContainerHighest: darkCard,
       ),
       scaffoldBackgroundColor: darkBackground,
-      textTheme: GoogleFonts.openSansTextTheme(ThemeData.dark().textTheme).apply(
+      textTheme:
+          GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme)
+              .apply(
         bodyColor: darkTextPrimary,
         displayColor: darkTextPrimary,
       ),
@@ -295,7 +301,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.1,
@@ -316,19 +322,22 @@ class AppTheme {
           side: const BorderSide(color: darkBorder, width: 1.5),
           elevation: 0,
           shadowColor: Colors.transparent,
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primaryLight,
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: darkCard,
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: BorderSide.none,
@@ -349,10 +358,12 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: const BorderSide(color: AppColors.danger, width: 2),
         ),
-        labelStyle: const TextStyle(color: darkTextSecondary, fontWeight: FontWeight.w500),
+        labelStyle: const TextStyle(
+            color: darkTextSecondary, fontWeight: FontWeight.w500),
         hintStyle: const TextStyle(color: darkTextSecondary, fontSize: 14),
         errorStyle: const TextStyle(color: AppColors.danger, fontSize: 12),
-        floatingLabelStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+        floatingLabelStyle: const TextStyle(
+            color: AppColors.primary, fontWeight: FontWeight.w600),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: darkCard,
@@ -370,7 +381,8 @@ class AppTheme {
         elevation: 0,
         showCheckmark: false,
       ),
-      dividerTheme: const DividerThemeData(color: darkBorder, thickness: 1, space: 0),
+      dividerTheme:
+          const DividerThemeData(color: darkBorder, thickness: 1, space: 0),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: darkCard,
