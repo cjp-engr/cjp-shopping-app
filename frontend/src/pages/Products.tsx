@@ -1,69 +1,52 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import type { Product, ProductFilters, SortOption } from '../types/product';
-import productService from '../services/productService';
+import { useSearchParams } from 'react-router-dom';
+import type { ProductFilters, SortOption } from '../types/product';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { Badge } from '../components/common/Badge';
+import { ProductCard } from '../components/common/ProductCard';
 import { Spinner } from '../components/common/Spinner';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { formatCurrency } from '../utils/formatters';
-import { ShoppingCart, Star, Search, SlidersHorizontal, X } from 'lucide-react';
+import { useProducts } from '../hooks/useProducts';
+import { useDebounce } from '../hooks/useDebounce';
+import { Search, SlidersHorizontal, X, Star } from 'lucide-react';
 
 export const Products: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState<SortOption>('rating');
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
   const [minRating, setMinRating] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
-  const navigate = useNavigate();
   const { addToCart } = useCart();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
 
+  const debouncedSearch = useDebounce(searchInput, 400);
+
   useEffect(() => {
-    const cats = productService.getCategories();
-    setCategories(cats);
     const categoryParam = searchParams.get('category');
     if (categoryParam) setSelectedCategory(categoryParam);
   }, [searchParams]);
 
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        setLoading(true);
-        const filters: ProductFilters = {
-          searchQuery: searchQuery || undefined,
-          category: selectedCategory !== 'All' ? selectedCategory : undefined,
-          priceRange: { min: priceRange.min, max: priceRange.max },
-          rating: minRating || undefined,
-        };
-        const result = await productService.getProducts(filters, sortBy);
-        setProducts(result);
-      } catch (error) {
-        console.error('Failed to load products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadProducts();
-  }, [searchQuery, selectedCategory, sortBy, priceRange, minRating]);
+  const filters: ProductFilters = {
+    searchQuery: debouncedSearch || undefined,
+    category: selectedCategory !== 'All' ? selectedCategory : undefined,
+    rating: minRating || undefined,
+  };
+
+  const { products, loading } = useProducts(filters, sortBy);
+
+  const categories = ['All', 'Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports & Outdoors'];
 
   const handleResetFilters = () => {
-    setSearchQuery('');
+    setSearchInput('');
     setSelectedCategory('All');
-    setPriceRange({ min: 0, max: 10000 });
     setMinRating(0);
     setSortBy('rating');
   };
 
-  const activeFiltersCount = [selectedCategory !== 'All', minRating > 0, searchQuery !== ''].filter(Boolean).length;
+  const activeFiltersCount = [selectedCategory !== 'All', minRating > 0, searchInput !== ''].filter(Boolean).length;
 
   return (
     <div className="space-y-6">
@@ -110,13 +93,13 @@ export const Products: React.FC = () => {
         <input
           type="text"
           placeholder="Search products by name, category…"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
           className="w-full pl-10 pr-10 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
         />
-        {searchQuery && (
+        {searchInput && (
           <button
-            onClick={() => setSearchQuery('')}
+            onClick={() => setSearchInput('')}
             className="absolute right-3.5 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600"
             aria-label="Clear search"
           >
@@ -205,54 +188,16 @@ export const Products: React.FC = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {products.filter(p => p.sellerId !== user?.id).map(product => (
-                <Card
-                  key={product.id}
-                  hover
-                  padding="none"
-                  className="flex flex-col overflow-hidden"
-                  onClick={() => navigate(`/products/${product.id}`)}
-                >
-                  <div className="aspect-square overflow-hidden bg-gray-50">
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                      loading="lazy"
-                    />
-                  </div>
-
-                  <div className="flex flex-col flex-1 p-4">
-                    <Badge variant="primary" size="sm" className="self-start mb-2">
-                      {product.category}
-                    </Badge>
-                    <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 text-sm leading-snug flex-1">
-                      {product.name}
-                    </h3>
-                    <div className="flex items-center gap-1 mb-3">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span className="text-xs font-medium text-gray-700">{product.rating}</span>
-                      <span className="text-xs text-gray-400">({product.reviews})</span>
-                    </div>
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-lg font-bold text-primary-600">{formatCurrency(product.price)}</p>
-                      {product.stock < 10 && product.stock > 0 && (
-                        <span className="text-xs text-orange-600 font-medium">Only {product.stock} left</span>
-                      )}
-                    </div>
-
-                    <Button
-                      size="sm"
-                      fullWidth
-                      onClick={e => { e.stopPropagation(); addToCart(product, 1); }}
-                      disabled={product.stock === 0 || product.sellerId === user?.id}
-                    >
-                      <ShoppingCart className="w-4 h-4 mr-1.5" />
-                      {product.stock === 0 ? 'Out of Stock' : product.sellerId === user?.id ? 'Your Product' : 'Add to Cart'}
-                    </Button>
-                  </div>
-                </Card>
-              ))}
+              {products
+                .filter(p => p.sellerId !== user?.id)
+                .map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    currentUserId={user?.id}
+                    onAddToCart={p => addToCart(p, 1)}
+                  />
+                ))}
             </div>
           )}
         </div>

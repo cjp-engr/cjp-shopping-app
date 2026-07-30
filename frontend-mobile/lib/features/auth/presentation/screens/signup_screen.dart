@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -101,7 +102,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () => context.pop(),
-                        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusFull),
                         child: Container(
                           width: 40,
                           height: 40,
@@ -298,8 +300,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               builder: (context, state) {
                                 return AppButton(
                                   label: AppStrings.signup,
-                                  loading:
-                                      state.status == AuthStatus.loading,
+                                  loading: state.status == AuthStatus.loading,
                                   onPressed: _submit,
                                 );
                               },
@@ -314,7 +315,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: RichText(
                             text: TextSpan(
                               text: AppStrings.hasAccountPrefix,
-                              style: TextStyle(
+                              style: GoogleFonts.plusJakartaSans(
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onSurface

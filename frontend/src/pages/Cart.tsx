@@ -6,6 +6,7 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { formatCurrency } from '../utils/formatters';
 import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ShoppingBag, Lock, Tag } from 'lucide-react';
+import { TAX_RATE, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from '../utils/constants';
 
 export const Cart: React.FC = () => {
   const navigate = useNavigate();
@@ -30,8 +31,6 @@ export const Cart: React.FC = () => {
     if (currentQuantity > 1) updateQuantity(productId, currentQuantity - 1);
   };
 
-  const freeShippingThreshold = 50;
-
   // Group items by seller for rendering
   const sellerGroups = useMemo(() => {
     const map = new Map<string, { sellerName: string; items: typeof cart.items; subtotal: number; shipping: number; tax: number; storeTotal: number }>();
@@ -52,15 +51,15 @@ export const Cart: React.FC = () => {
       group.subtotal += cartItem.product.price * cartItem.quantity;
     }
     for (const group of map.values()) {
-      group.shipping = group.subtotal >= 50 ? 0 : 9.99;
-      group.tax = group.subtotal * 0.08;
+      group.shipping = group.subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+      group.tax = group.subtotal * TAX_RATE;
       group.storeTotal = group.subtotal + group.shipping + group.tax;
     }
     return Array.from(map.values());
   }, [cart.items]);
 
   const allFreeShipping = cart.shipping === 0 && cart.items.length > 0;
-  const anySellerNeedsMore = sellerGroups.some(g => g.subtotal < freeShippingThreshold);
+  const anySellerNeedsMore = sellerGroups.some(g => g.subtotal < FREE_SHIPPING_THRESHOLD);
 
   if (cart.items.length === 0) {
     return (
@@ -113,7 +112,7 @@ export const Cart: React.FC = () => {
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl p-4 flex items-center gap-3">
           <Tag className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
           <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-            Add more items per seller to unlock free shipping for that seller (min. {formatCurrency(freeShippingThreshold)}).
+            Add more items per seller to unlock free shipping for that seller (min. {formatCurrency(FREE_SHIPPING_THRESHOLD)}).
           </p>
         </div>
       )}
@@ -135,11 +134,11 @@ export const Cart: React.FC = () => {
                   🏪 {group.sellerName}
                 </span>
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                  group.subtotal >= freeShippingThreshold
+                  group.subtotal >= FREE_SHIPPING_THRESHOLD
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                     : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                 }`}>
-                  {group.subtotal >= freeShippingThreshold ? 'Free Shipping' : `+${formatCurrency(freeShippingThreshold - group.subtotal)} for free shipping`}
+                  {group.subtotal >= FREE_SHIPPING_THRESHOLD ? 'Free Shipping' : `+${formatCurrency(FREE_SHIPPING_THRESHOLD - group.subtotal)} for free shipping`}
                 </span>
               </div>
               {group.items.map(({ product, quantity }) => (

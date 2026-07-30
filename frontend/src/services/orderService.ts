@@ -94,15 +94,6 @@ class OrderService {
     return this.adaptOrder(data.order);
   }
 
-  getOrderSummary(_userId: string): { totalOrders: number; totalSpent: number } {
-    // This will need to be implemented with async/await
-    // For now, return defaults
-    return {
-      totalOrders: 0,
-      totalSpent: 0
-    };
-  }
-
   async getOrderSummaryAsync(userId: string): Promise<{ totalOrders: number; totalSpent: number }> {
     const orders = await this.getOrders(userId);
     const completedOrders = orders.filter(o => o.status !== 'cancelled');

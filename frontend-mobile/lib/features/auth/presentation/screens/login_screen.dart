@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -217,8 +218,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 return AppButton(
                                   key: keys.auth.loginButton,
                                   label: AppStrings.login,
-                                  loading:
-                                      state.status == AuthStatus.loading,
+                                  loading: state.status == AuthStatus.loading,
                                   onPressed: _submit,
                                 );
                               },
@@ -233,7 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: RichText(
                             text: TextSpan(
                               text: AppStrings.noAccountPrefix,
-                              style: TextStyle(
+                              style: GoogleFonts.plusJakartaSans(
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onSurface

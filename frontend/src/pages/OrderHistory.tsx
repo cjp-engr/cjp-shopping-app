@@ -19,6 +19,7 @@ import {
   Store,
   Star,
   Pencil,
+  Eye,
 } from 'lucide-react';
 import { ReviewModal } from '../components/common/ReviewModal';
 
@@ -384,7 +385,11 @@ export const OrderHistory: React.FC = () => {
                   )}
 
                   {/* Actions */}
-                  <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center gap-2 px-5 py-3 border-t border-gray-100 dark:border-gray-700">
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/orders/${order.id}`)}>
+                      <Eye className="w-4 h-4 mr-1.5" /> View Details
+                    </Button>
+                    <div className="flex-1" />
                     {(order.status === 'pending' || order.status === 'preparing') && (
                       <Button variant="danger" size="sm" onClick={() => handleCancelOrder(order.id)}>
                         Cancel Order

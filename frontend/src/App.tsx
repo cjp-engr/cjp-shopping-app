@@ -14,6 +14,7 @@ import { Checkout } from './pages/Checkout';
 import { OrderHistory } from './pages/OrderHistory';
 import { OrderDetail } from './pages/OrderDetail';
 import { SellerDashboard } from './pages/SellerDashboard';
+import { SellerOrderDetail } from './pages/SellerOrderDetail';
 import { MyProducts } from './pages/MyProducts';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import UserProfile from './pages/UserProfile';
@@ -69,6 +70,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <SellerDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="seller/orders/:id"
+                  element={
+                    <ProtectedRoute>
+                      <SellerOrderDetail />
                     </ProtectedRoute>
                   }
                 />

@@ -4,12 +4,11 @@ import type { Product } from '../types/product';
 import productService from '../services/productService';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { Badge } from '../components/common/Badge';
+import { ProductCard } from '../components/common/ProductCard';
 import { Spinner } from '../components/common/Spinner';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { formatCurrency } from '../utils/formatters';
-import { ShoppingCart, Star, Zap, ShieldCheck, BadgePercent, ArrowRight } from 'lucide-react';
+import { Zap, ShieldCheck, BadgePercent, ArrowRight } from 'lucide-react';
 
 export const Home: React.FC = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -126,63 +125,16 @@ export const Home: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {featuredProducts.filter(p => p.sellerId !== user?.id).map((product) => (
-              <Card
-                key={product.id}
-                hover
-                padding="none"
-                className="flex flex-col overflow-hidden"
-                onClick={() => navigate(`/products/${product.id}`)}
-              >
-                <div className="aspect-square overflow-hidden bg-gray-50 dark:bg-gray-700">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    loading="lazy"
-                  />
-                </div>
-
-                <div className="flex flex-col flex-1 p-4">
-                  <Badge variant="primary" size="sm" className="self-start mb-2">
-                    {product.category}
-                  </Badge>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1 line-clamp-2 text-sm leading-snug flex-1">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center gap-1 mb-3">
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{product.rating}</span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">({product.reviews})</span>
-                  </div>
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-lg font-bold text-primary-600">
-                      {formatCurrency(product.price)}
-                    </p>
-                    {product.stock < 5 && product.stock > 0 && (
-                      <span className="text-xs text-orange-600 font-medium">Only {product.stock} left</span>
-                    )}
-                  </div>
-
-                  <Button
-                    size="sm"
-                    fullWidth
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(product, 1);
-                    }}
-                    disabled={product.stock === 0 || product.sellerId === user?.id}
-                  >
-                    <ShoppingCart className="w-4 h-4 mr-1.5" />
-                    {product.stock === 0
-                      ? 'Out of Stock'
-                      : product.sellerId === user?.id
-                      ? 'Your Product'
-                      : 'Add to Cart'}
-                  </Button>
-                </div>
-              </Card>
-            ))}
+            {featuredProducts
+              .filter(p => p.sellerId !== user?.id)
+              .map(product => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  currentUserId={user?.id}
+                  onAddToCart={p => addToCart(p, 1)}
+                />
+              ))}
           </div>
         )}
       </section>

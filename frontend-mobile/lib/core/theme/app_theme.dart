@@ -26,34 +26,33 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
       fontFamily: _fontFamily,
       textTheme: ThemeData.light().textTheme.apply(
-        fontFamily: _fontFamily,
-        bodyColor: AppColors.textPrimary,
-        displayColor: AppColors.textPrimary,
-      ),
+            fontFamily: _fontFamily,
+            bodyColor: AppColors.textPrimary,
+            displayColor: AppColors.textPrimary,
+          ),
 
       // ── AppBar ──────────────────────────────────────────────────────────
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         shadowColor: Colors.transparent,
         centerTitle: true,
-        systemOverlayStyle: const SystemUiOverlayStyle(
+        systemOverlayStyle: SystemUiOverlayStyle(
           statusBarBrightness: Brightness.light,
           statusBarIconBrightness: Brightness.dark,
           statusBarColor: Colors.transparent,
         ),
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
           fontFamily: _fontFamily,
           fontSize: 18,
           fontWeight: FontWeight.w800,
           color: AppColors.textPrimary,
           letterSpacing: -0.3,
         ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 22),
-        actionsIconTheme:
-            const IconThemeData(color: AppColors.textPrimary, size: 22),
+        iconTheme: IconThemeData(color: AppColors.textPrimary, size: 22),
+        actionsIconTheme: IconThemeData(color: AppColors.textPrimary, size: 22),
         surfaceTintColor: Colors.transparent,
       ),
 
@@ -255,10 +254,10 @@ class AppTheme {
       scaffoldBackgroundColor: darkBackground,
       fontFamily: _fontFamily,
       textTheme: ThemeData.dark().textTheme.apply(
-        fontFamily: _fontFamily,
-        bodyColor: darkTextPrimary,
-        displayColor: darkTextPrimary,
-      ),
+            fontFamily: _fontFamily,
+            bodyColor: darkTextPrimary,
+            displayColor: darkTextPrimary,
+          ),
       appBarTheme: const AppBarTheme(
         backgroundColor: darkSurface,
         foregroundColor: darkTextPrimary,

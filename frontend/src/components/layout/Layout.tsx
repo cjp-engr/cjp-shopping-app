@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useState, useCallback } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { ShoppingBag, X } from 'lucide-react';
 import Navbar from './Navbar';
 import { useSellerOrderNotifier } from '../../hooks/useSellerOrderNotifier';
@@ -11,6 +11,7 @@ interface OrderToast {
 
 const Layout = () => {
   const [toasts, setToasts] = useState<OrderToast[]>([]);
+  const navigate = useNavigate();
 
   const handleNewOrders = useCallback((count: number) => {
     const id = Date.now();
@@ -52,6 +53,7 @@ const Layout = () => {
             key={toast.id}
             count={toast.count}
             onDismiss={() => dismiss(toast.id)}
+            onNavigate={() => { dismiss(toast.id); navigate('/seller?tab=orders'); }}
           />
         ))}
       </div>
@@ -62,12 +64,19 @@ const Layout = () => {
 function SellerOrderToast({
   count,
   onDismiss,
+  onNavigate,
 }: {
   count: number;
   onDismiss: () => void;
+  onNavigate: () => void;
 }) {
   return (
-    <div className="flex items-start gap-3 bg-white dark:bg-gray-800 border border-green-200 dark:border-green-800 shadow-lg rounded-2xl px-4 py-3 w-80 animate-in slide-in-from-bottom-4 fade-in duration-300">
+    <div
+      role="status"
+      aria-live="polite"
+      onClick={onNavigate}
+      className="flex items-start gap-3 bg-white dark:bg-gray-800 border border-green-200 dark:border-green-800 shadow-lg rounded-2xl px-4 py-3 w-80 animate-in slide-in-from-bottom-4 fade-in duration-300 cursor-pointer hover:border-green-400 dark:hover:border-green-600 hover:shadow-xl transition-shadow"
+    >
       <div className="flex-shrink-0 w-9 h-9 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
         <ShoppingBag className="w-4 h-4 text-green-600 dark:text-green-400" />
       </div>
@@ -80,7 +89,7 @@ function SellerOrderToast({
         </p>
       </div>
       <button
-        onClick={onDismiss}
+        onClick={e => { e.stopPropagation(); onDismiss(); }}
         className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
         aria-label="Dismiss"
       >

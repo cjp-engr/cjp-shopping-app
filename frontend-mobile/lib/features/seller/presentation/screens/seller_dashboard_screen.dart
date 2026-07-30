@@ -607,10 +607,14 @@ class _OrdersTab extends StatelessWidget {
   static const _allTabs = [
     _StatusTab('all', 'All', Icons.receipt_long_outlined),
     _StatusTab('pending', AppStrings.statusPending, Icons.access_time_rounded),
-    _StatusTab('preparing', AppStrings.statusPreparing, Icons.pending_actions_outlined),
-    _StatusTab('processing', AppStrings.statusToShip, Icons.inventory_2_outlined),
-    _StatusTab('shipped', AppStrings.statusToReceive, Icons.local_shipping_outlined),
-    _StatusTab('delivered', AppStrings.stepDelivered, Icons.check_circle_outline_rounded),
+    _StatusTab('preparing', AppStrings.statusPreparing,
+        Icons.pending_actions_outlined),
+    _StatusTab(
+        'processing', AppStrings.statusToShip, Icons.inventory_2_outlined),
+    _StatusTab(
+        'shipped', AppStrings.statusToReceive, Icons.local_shipping_outlined),
+    _StatusTab('delivered', AppStrings.stepDelivered,
+        Icons.check_circle_outline_rounded),
     _StatusTab('cancelled', AppStrings.statusCancelled, Icons.cancel_outlined),
   ];
 
@@ -893,7 +897,7 @@ class _OrderCard extends StatelessWidget {
                           if (order.canMarkPreparing)
                             Expanded(
                               child: _OrderActionBtn(
-                                label: AppStrings.acceptPrepare,
+                                label: AppStrings.prepare,
                                 icon: Icons.pending_actions_outlined,
                                 color: AppColors.primary,
                                 onTap: () => context.read<SellerBloc>().add(
@@ -1015,15 +1019,18 @@ class _OrderCard extends StatelessWidget {
       case 'pending':
         return const _StatusConfig(AppStrings.statusPending, AppColors.warning);
       case 'preparing':
-        return const _StatusConfig(AppStrings.statusPreparing, AppColors.warning);
+        return const _StatusConfig(
+            AppStrings.statusPreparing, AppColors.warning);
       case 'processing':
         return const _StatusConfig(AppStrings.statusToShip, AppColors.primary);
       case 'shipped':
-        return const _StatusConfig(AppStrings.statusToReceive, Color(0xFF6B7280));
+        return const _StatusConfig(
+            AppStrings.statusToReceive, Color(0xFF6B7280));
       case 'delivered':
         return const _StatusConfig(AppStrings.stepDelivered, AppColors.success);
       case 'cancelled':
-        return const _StatusConfig(AppStrings.statusCancelled, AppColors.danger);
+        return const _StatusConfig(
+            AppStrings.statusCancelled, AppColors.danger);
       default:
         return _StatusConfig(status, AppColors.textMuted);
     }
@@ -1735,15 +1742,18 @@ class _SellerOrderDetailSheet extends StatelessWidget {
       case 'pending':
         return const _StatusConfig(AppStrings.statusPending, AppColors.warning);
       case 'preparing':
-        return const _StatusConfig(AppStrings.statusPreparing, AppColors.warning);
+        return const _StatusConfig(
+            AppStrings.statusPreparing, AppColors.warning);
       case 'processing':
         return const _StatusConfig(AppStrings.statusToShip, AppColors.primary);
       case 'shipped':
-        return const _StatusConfig(AppStrings.statusToReceive, Color(0xFF6B7280));
+        return const _StatusConfig(
+            AppStrings.statusToReceive, Color(0xFF6B7280));
       case 'delivered':
         return const _StatusConfig(AppStrings.stepDelivered, AppColors.success);
       case 'cancelled':
-        return const _StatusConfig(AppStrings.statusCancelled, AppColors.danger);
+        return const _StatusConfig(
+            AppStrings.statusCancelled, AppColors.danger);
       default:
         return _StatusConfig(status, AppColors.textMuted);
     }
@@ -1992,7 +2002,9 @@ class _VouchersTab extends StatelessWidget {
                               child: Text(
                                 isExpired
                                     ? AppStrings.expired
-                                    : (c.isActive ? AppStrings.active : AppStrings.inactive),
+                                    : (c.isActive
+                                        ? AppStrings.active
+                                        : AppStrings.inactive),
                                 style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
@@ -2182,7 +2194,9 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    widget.existing != null ? AppStrings.editVoucher : AppStrings.createVoucher,
+                    widget.existing != null
+                        ? AppStrings.editVoucher
+                        : AppStrings.createVoucher,
                     style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.w800),
                   ),
@@ -2217,9 +2231,11 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                       decoration: _dec(AppStrings.discountType),
                       items: const [
                         DropdownMenuItem(
-                            value: 'percentage', child: Text(AppStrings.percentageOption)),
+                            value: 'percentage',
+                            child: Text(AppStrings.percentageOption)),
                         DropdownMenuItem(
-                            value: 'fixed', child: Text(AppStrings.fixedOption)),
+                            value: 'fixed',
+                            child: Text(AppStrings.fixedOption)),
                       ],
                       onChanged: (v) => setState(() => _discountType = v!),
                     ),
@@ -2307,7 +2323,8 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
                 const SizedBox(height: 8),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text(AppStrings.active, style: TextStyle(fontSize: 14)),
+                  title: const Text(AppStrings.active,
+                      style: TextStyle(fontSize: 14)),
                   value: _isActive,
                   onChanged: (v) => setState(() => _isActive = v),
                   activeThumbColor: AppColors.primary,

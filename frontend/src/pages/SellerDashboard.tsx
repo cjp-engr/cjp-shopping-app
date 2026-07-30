@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import type { Product } from '../types/product';
 import type { Order } from '../types/order';
@@ -16,8 +16,10 @@ import {
   Package, Plus, Edit, Trash2, Truck, CheckCircle,
   XCircle, Clock, AlertCircle, ShoppingBag, Store,
   Upload, ImageOff, DollarSign, X, Tag, ChevronRight, ClipboardList,
+  Eye,
 } from 'lucide-react';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { getStatusConfig } from '../utils/orderUtils';
 
 const ImgWithFallback: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className }) => {
   const [failed, setFailed] = useState(false);
@@ -33,6 +35,18 @@ const ImgWithFallback: React.FC<{ src: string; alt: string; className?: string }
 
 const CATEGORIES = ['Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports & Outdoors'];
 
+const ORDER_STATUS_STEPS = ['pending', 'preparing', 'processing', 'shipped', 'delivered'] as const;
+const ORDER_STEP_LABELS  = ['Pending', 'Preparing', 'Processing', 'Shipped', 'Delivered'];
+
+const STATUS_BORDER_CLASS: Record<string, string> = {
+  pending:    'border-l-amber-400',
+  preparing:  'border-l-blue-400',
+  processing: 'border-l-indigo-400',
+  shipped:    'border-l-orange-400',
+  delivered:  'border-l-green-500',
+  cancelled:  'border-l-red-400',
+};
+
 const EMPTY_FORM: ProductFormData = {
   name: '', description: '', price: 0, category: CATEGORIES[0], image: '', stock: 0,
 };
@@ -41,23 +55,16 @@ type Tab = 'products' | 'orders' | 'vouchers';
 
 type SellerOrder = Order & { buyer?: { id: string; firstName: string; lastName: string; email: string } };
 
-const statusConfig = (status: string) => {
-  switch (status) {
-    case 'pending':    return { icon: Clock,         variant: 'warning' as const, label: 'Pending' };
-    case 'preparing':  return { icon: ClipboardList, variant: 'warning' as const, label: 'Preparing' };
-    case 'processing': return { icon: Package,       variant: 'primary' as const, label: 'To Ship' };
-    case 'shipped':    return { icon: Truck,         variant: 'gray'    as const, label: 'To Receive' };
-    case 'delivered':  return { icon: CheckCircle,   variant: 'success' as const, label: 'Delivered' };
-    case 'cancelled':  return { icon: XCircle,       variant: 'danger'  as const, label: 'Cancelled' };
-    default:           return { icon: Package,       variant: 'gray'    as const, label: status };
-  }
-};
 
 export const SellerDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [tab, setTab] = useState<Tab>('products');
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState<Tab>(() => {
+    const t = searchParams.get('tab');
+    return (t === 'orders' || t === 'vouchers') ? t : 'products';
+  });
 
   // Products state
   const [products, setProducts] = useState<Product[]>([]);
@@ -717,100 +724,156 @@ export const SellerDashboard: React.FC = () => {
             if (filtered.length === 0) return (
               <Card className="text-center py-12">
                 <Package className="w-16 h-16 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600 dark:text-gray-400">No {statusConfig(orderStatusFilter).label.toLowerCase()} orders.</p>
+                <p className="text-gray-600 dark:text-gray-400">No {getStatusConfig(orderStatusFilter).label.toLowerCase()} orders.</p>
               </Card>
             );
             return filtered.map(order => {
-              const cfg = statusConfig(order.status);
+              const cfg = getStatusConfig(order.status);
               const StatusIcon = cfg.icon;
               const canAccept    = order.status === 'pending';
               const canToShip    = order.status === 'preparing';
               const canToReceive = order.status === 'processing';
-              const canCancel    = order.status === 'pending' || order.status === 'preparing' || order.status === 'processing' || order.status === 'shipped';
+              const canCancel    = ['pending', 'preparing', 'processing', 'shipped'].includes(order.status);
+              const isCancelled  = order.status === 'cancelled';
+              const stepIndex    = ORDER_STATUS_STEPS.indexOf(order.status as typeof ORDER_STATUS_STEPS[number]);
+              const borderClass  = STATUS_BORDER_CLASS[order.status] ?? 'border-l-gray-300';
+
+              // Buyer initials for avatar
+              const buyerInitial = order.buyer
+                ? (order.buyer.firstName[0] ?? '') + (order.buyer.lastName[0] ?? '')
+                : '?';
 
               return (
-                <Card key={order.id} padding="none" className="overflow-hidden">
-                  {/* Order header */}
-                  <div className="flex items-center justify-between px-5 py-3 bg-gray-50 dark:bg-gray-700/40 border-b border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-sm font-semibold text-gray-700 dark:text-gray-200">
-                        #{order.id.slice(0, 8).toUpperCase()}
-                      </span>
-                      <Badge variant={cfg.variant} size="sm" className="flex items-center gap-1">
-                        <StatusIcon className="w-3 h-3" />
-                        {cfg.label}
-                      </Badge>
+                <Card key={order.id} padding="none" className={`overflow-hidden border-l-4 ${borderClass}`}>
+                  {/* ── Header ── */}
+                  <div className="flex items-center gap-3 px-5 py-3 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-700/60">
+                    <span className="font-mono text-sm font-bold text-gray-800 dark:text-gray-100 tracking-wide">
+                      #{order.id.slice(0, 8).toUpperCase()}
+                    </span>
+                    <Badge variant={cfg.variant} size="sm" className="flex items-center gap-1">
+                      <StatusIcon className="w-3 h-3" />
+                      {cfg.label}
+                    </Badge>
+                    <div className="flex-1" />
+                    <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{formatDate(order.createdAt)}</span>
+                    <span className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{formatCurrency(order.total)}</span>
+                  </div>
+
+                  {/* ── Progress bar (All tab only) ── */}
+                  {!isCancelled && orderStatusFilter === 'all' && (
+                    <div className="px-5 pt-3 pb-1">
+                      <div className="flex items-center gap-0">
+                        {ORDER_STATUS_STEPS.map((step, i) => {
+                          const done    = i <= stepIndex;
+                          const current = i === stepIndex;
+                          return (
+                            <React.Fragment key={step}>
+                              <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                                <div className={`w-2.5 h-2.5 rounded-full border-2 transition-colors ${
+                                  done
+                                    ? current
+                                      ? 'border-primary-600 bg-primary-600 ring-2 ring-primary-200 dark:ring-primary-800'
+                                      : 'border-primary-600 bg-primary-600'
+                                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
+                                }`} />
+                                <span className={`text-[10px] leading-none whitespace-nowrap ${
+                                  current
+                                    ? 'text-primary-600 dark:text-primary-400 font-semibold'
+                                    : done
+                                    ? 'text-gray-500 dark:text-gray-400'
+                                    : 'text-gray-300 dark:text-gray-600'
+                                }`}>
+                                  {ORDER_STEP_LABELS[i]}
+                                </span>
+                              </div>
+                              {i < ORDER_STATUS_STEPS.length - 1 && (
+                                <div className={`flex-1 h-0.5 -translate-y-2 mx-0.5 ${
+                                  i < stepIndex ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'
+                                }`} />
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(order.createdAt)}</span>
-                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{formatCurrency(order.total)}</span>
+                  )}
+
+                  <div className="px-5 py-4 space-y-4">
+                    {/* ── Buyer ── */}
+                    {order.buyer && (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/users/${order.buyer!.id}`)}
+                        className="flex items-center gap-2.5 w-full text-left group"
+                      >
+                        <div className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 flex items-center justify-center text-xs font-bold flex-shrink-0 uppercase">
+                          {buyerInitial}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-sm font-semibold text-gray-800 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                            {order.buyer.firstName} {order.buyer.lastName}
+                          </span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500 ml-1.5">{order.buyer.email}</span>
+                        </div>
+                        <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 ml-auto flex-shrink-0 group-hover:text-primary-500 transition-colors" />
+                      </button>
+                    )}
+
+                    {/* ── Items ── */}
+                    <div className="space-y-1.5">
+                      {order.items.map(({ product, quantity }) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          onClick={() => navigate(`/products/${product.id}`)}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700/40 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors text-left group"
+                        >
+                          <div className="w-11 h-11 rounded-lg overflow-hidden bg-white dark:bg-gray-700 flex-shrink-0 border border-gray-100 dark:border-gray-600 shadow-sm">
+                            <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors">
+                              {product.name}
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                              Qty {quantity} × {formatCurrency(product.price)}
+                            </p>
+                          </div>
+                          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 flex-shrink-0 tabular-nums">
+                            {formatCurrency(product.price * quantity)}
+                          </p>
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 p-5">
-                    <div className="flex-1 min-w-0">
-                      {/* Buyer */}
-                      {order.buyer && (
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/users/${order.buyer!.id}`)}
-                          className="text-sm text-gray-500 dark:text-gray-400 mb-3 text-left hover:text-primary-600 dark:hover:text-primary-400 transition-colors group"
-                        >
-                          <span className="font-medium text-gray-700 dark:text-gray-200 group-hover:text-primary-600 dark:group-hover:text-primary-400">
-                            {order.buyer.firstName} {order.buyer.lastName}
-                          </span>
-                          {' · '}{order.buyer.email}
-                        </button>
-                      )}
-
-                      {/* Items */}
-                      <div className="space-y-2">
-                        {order.items.map(({ product, quantity }) => (
-                          <button
-                            key={product.id}
-                            type="button"
-                            onClick={() => navigate(`/products/${product.id}`)}
-                            className="w-full flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors text-left"
-                          >
-                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-white dark:bg-gray-700 flex-shrink-0 border border-gray-100 dark:border-gray-600">
-                              <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{product.name}</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">Qty {quantity} × {formatCurrency(product.price)}</p>
-                            </div>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0 tabular-nums">
-                              {formatCurrency(product.price * quantity)}
-                            </p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    {(canAccept || canToShip || canToReceive || canCancel) && (
-                      <div className="flex sm:flex-col gap-2 sm:min-w-[148px]">
-                        {canAccept && (
-                          <Button size="sm" fullWidth onClick={() => handleStatusUpdate(order.id, 'preparing')}>
-                            <ClipboardList className="w-4 h-4 mr-1" /> Accept / Prepare
-                          </Button>
-                        )}
-                        {canToShip && (
-                          <Button size="sm" fullWidth onClick={() => handleStatusUpdate(order.id, 'processing')}>
-                            <Package className="w-4 h-4 mr-1" /> Mark to Ship
-                          </Button>
-                        )}
-                        {canToReceive && (
-                          <Button size="sm" fullWidth onClick={() => handleStatusUpdate(order.id, 'shipped')}>
-                            <Truck className="w-4 h-4 mr-1" /> Mark Shipped
-                          </Button>
-                        )}
-                        {canCancel && (
-                          <Button size="sm" fullWidth variant="danger" onClick={() => openCancelDialog(order.id)}>
-                            <XCircle className="w-4 h-4 mr-1" /> Cancel
-                          </Button>
-                        )}
-                      </div>
+                  {/* ── Action footer ── */}
+                  <div className="flex items-center gap-2 px-5 py-3 border-t border-gray-100 dark:border-gray-700/60 bg-gray-50/50 dark:bg-gray-800/30">
+                    <Button size="sm" variant="outline" onClick={() => navigate(`/seller/orders/${order.id}`, { state: { order } })} className="flex-shrink-0">
+                      <Eye className="w-4 h-4 mr-1.5" /> View Details
+                    </Button>
+                    <div className="flex-1" />
+                    {canAccept && (
+                      <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'preparing')}>
+                        <ClipboardList className="w-4 h-4 mr-1.5" /> Prepare
+                      </Button>
+                    )}
+                    {canToShip && (
+                      <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'processing')}>
+                        <Package className="w-4 h-4 mr-1.5" /> Mark to Ship
+                      </Button>
+                    )}
+                    {canToReceive && (
+                      <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'shipped')}>
+                        <Truck className="w-4 h-4 mr-1.5" /> Mark Shipped
+                      </Button>
+                    )}
+                    {canCancel && (
+                      <Button size="sm" variant="outline" onClick={() => openCancelDialog(order.id)}
+                        className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                      >
+                        <XCircle className="w-4 h-4 mr-1.5" /> Cancel
+                      </Button>
                     )}
                   </div>
                 </Card>
@@ -1037,3 +1100,4 @@ export const SellerDashboard: React.FC = () => {
     </div>
   );
 };
+

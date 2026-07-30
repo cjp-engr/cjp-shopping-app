@@ -158,7 +158,8 @@ export const Profile: React.FC = () => {
       } as any);
       setIsEditing(false);
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      const timer = setTimeout(() => setSuccess(false), 3000);
+      return () => clearTimeout(timer);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile');
     } finally {

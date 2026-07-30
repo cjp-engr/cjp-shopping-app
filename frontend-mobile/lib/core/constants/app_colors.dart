@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // ── Brand — Sky Blue (matches web primary-500/600) ────────────────────────
-  static const Color primary = Color(0xFF0284C7);      // sky-600
-  static const Color primaryLight = Color(0xFFE0F2FE); // sky-100
-  static const Color primaryDark = Color(0xFF0369A1);  // sky-700
+  // ── Brand — Trust Orange (matches web primary-500/600) ───────────────────
+  static const Color primary = Color(0xFFFF9900);      // orange brand
+  static const Color primaryLight = Color(0xFFFFF8F0); // warm white tint
+  static const Color primaryDark = Color(0xFFFF6B00);  // CTA / active orange
   static const Color accent = Color(0xFF8B5CF6);        // violet-500 (web secondary)
 
   // ── Semantic ─────────────────────────────────────────────────────────────
@@ -31,16 +31,20 @@ class AppColors {
   static const Color textMuted = Color(0xFF9CA3AF);     // gray-400
 
   // ── Dark CTA Button ───────────────────────────────────────────────────────
-  static const Color darkButton = Color(0xFF0284C7);    // sky-600 (matches web)
+  static const Color darkButton = Color(0xFFFF6B00);    // CTA orange (matches web primary-600)
 
   // ── Banner Gradient ───────────────────────────────────────────────────────
-  static const Color bannerStart = Color(0xFF0369A1);   // sky-700
-  static const Color bannerEnd = Color(0xFF075985);     // sky-800
+  static const Color bannerStart = Color(0xFF232F3E);   // dark navy (matches web primary-800)
+  static const Color bannerEnd = Color(0xFF1A252F);     // deep navy (matches web primary-900)
 
   // ── Splash / Onboarding ───────────────────────────────────────────────────
-  static const Color splashBg = Color(0xFF0C4A6E);      // sky-950
+  static const Color splashBg = Color(0xFF1A252F);      // deep navy
 
   // ── Shimmer ──────────────────────────────────────────────────────────────
-  static const Color shimmerBase = Color(0xFFF3F4F6);   // gray-100
+  static const Color shimmerBase = Color(0xFFF3F4F6);      // gray-100
   static const Color shimmerHighlight = Color(0xFFF9FAFB); // gray-50
+
+  // ── Sale / Discount ───────────────────────────────────────────────────────
+  static const Color sale = Color(0xFFE31837);           // sale red
+  static const Color saleSurface = Color(0xFFFFEBEE);   // sale red tint
 }

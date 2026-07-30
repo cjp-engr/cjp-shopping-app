@@ -1,7 +1,8 @@
 import type { User, LoginCredentials, SignupData } from '../types/user';
 import { API_ENDPOINTS, getAuthHeaders, getHeaders } from '../config/api';
+import { STORAGE_KEYS } from '../utils/constants';
 
-const getAuthToken = () => localStorage.getItem('shopping_app_auth_token');
+const getAuthToken = () => localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
 
 interface AuthResponse {
   user: User;
@@ -24,8 +25,8 @@ class AuthService {
     const data = await response.json();
 
     // Store token and user data
-    localStorage.setItem('shopping_app_auth_token', data.token);
-    localStorage.setItem('shopping_app_user_data', JSON.stringify(data.user));
+    localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
+    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
 
     return {
       user: data.user,
@@ -47,8 +48,8 @@ class AuthService {
 
     const data = await response.json();
 
-    localStorage.setItem('shopping_app_auth_token', data.token);
-    localStorage.setItem('shopping_app_user_data', JSON.stringify(data.user));
+    localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
+    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
 
     return {
       user: data.user,
@@ -74,7 +75,7 @@ class AuthService {
       }
 
       const data = await response.json();
-      localStorage.setItem('shopping_app_user_data', JSON.stringify(data.user));
+      localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
       return data.user;
     } catch (error) {
       this.logout();
@@ -95,7 +96,7 @@ class AuthService {
     }
 
     const data = await response.json();
-    localStorage.setItem('shopping_app_user_data', JSON.stringify(data.user));
+    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
     return data.user;
   }
 
@@ -116,18 +117,17 @@ class AuthService {
     }
 
     const data = await response.json();
-    localStorage.setItem('shopping_app_user_data', JSON.stringify(data.user));
+    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
     return data.user;
   }
 
   logout(): void {
-    localStorage.removeItem('shopping_app_auth_token');
-    localStorage.removeItem('shopping_app_user_data');
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
   }
 
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('shopping_app_auth_token');
-    return token !== null;
+    return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) !== null;
   }
 }
 

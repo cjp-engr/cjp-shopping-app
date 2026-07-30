@@ -111,23 +111,11 @@ class ProductService {
     return ['All', 'Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports & Outdoors'];
   }
 
-  getFeaturedProducts(_count: number = 8): Product[] {
-    // This is synchronous, so we'll need to fetch products first
-    // For now, return empty array - components should use async version
-    return [];
-  }
-
   async getFeaturedProductsAsync(count: number = 8): Promise<Product[]> {
     // minReviews=1 is enforced server-side so sellers cannot game the
     // Featured section by listing new products with zero reviews.
     const products = await this.getProducts(undefined, 'rating', 1);
     return products.slice(0, count);
-  }
-
-  getRelatedProducts(_productId: string, _count: number = 4): Product[] {
-    // This is synchronous, so we'll need to fetch products first
-    // For now, return empty array - components should use async version
-    return [];
   }
 
   async getRelatedProductsAsync(productId: string, count: number = 4): Promise<Product[]> {

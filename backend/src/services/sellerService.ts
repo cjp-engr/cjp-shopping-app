@@ -62,10 +62,17 @@ export async function getSellerOrders(sellerId: string) {
     .populate('userId', 'firstName lastName email')
     .sort({ createdAt: -1 });
 
-  // Filter each order's items to only this seller's products
+  // Filter each order's items to only this seller's products.
+  // After populate, item.product is a Document — extract _id to compare.
+  const sellerIdSet = new Set(sellerProductIds.map(id => id.toString()));
   return orders.map(order => {
-    const sellerIdSet = new Set(sellerProductIds.map(id => id.toString()));
-    const filteredItems = order.items.filter(item => sellerIdSet.has(item.product.toString()));
+    const filteredItems = order.items.filter(item => {
+      const productId =
+        item.product != null && typeof item.product === 'object' && '_id' in (item.product as object)
+          ? (item.product as any)._id?.toString()
+          : item.product?.toString();
+      return productId ? sellerIdSet.has(productId) : false;
+    });
     return { ...order.toObject(), items: filteredItems };
   });
 }
@@ -82,7 +89,13 @@ export async function updateSellerOrderStatus(
   const sellerProductIds = await Product.find({ sellerId }).distinct('_id');
   const sellerIdSet = new Set(sellerProductIds.map(id => id.toString()));
 
-  const hasSellersProduct = order.items.some(item => sellerIdSet.has(item.product.toString()));
+  const hasSellersProduct = order.items.some(item => {
+    const productId =
+      item.product != null && typeof item.product === 'object' && '_id' in (item.product as object)
+        ? (item.product as any)._id?.toString()
+        : item.product?.toString();
+    return productId ? sellerIdSet.has(productId) : false;
+  });
   if (!hasSellersProduct) throw new AppError(403, 'Not authorized to update this order');
 
   const allowed = VALID_TRANSITIONS[order.status] ?? [];
