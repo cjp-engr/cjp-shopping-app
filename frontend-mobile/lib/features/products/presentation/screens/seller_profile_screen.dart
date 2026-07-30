@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../bloc/product_bloc.dart';
@@ -39,72 +40,91 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        backgroundColor: AppColors.bannerStart,
-        foregroundColor: Colors.white,
-        title: const Text(AppStrings.sellerStore),
-      ),
-      body: BlocBuilder<ProductBloc, ProductState>(
-        buildWhen: (p, c) =>
-            p.sellerProfileStatus != c.sellerProfileStatus ||
-            p.sellerProfile != c.sellerProfile,
-        builder: (context, state) {
-          if (state.sellerProfileStatus == ProductStatus.loading) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            );
-          }
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        body: BlocBuilder<ProductBloc, ProductState>(
+          buildWhen: (p, c) =>
+              p.sellerProfileStatus != c.sellerProfileStatus ||
+              p.sellerProfile != c.sellerProfile,
+          builder: (context, state) {
+            if (state.sellerProfileStatus == ProductStatus.loading) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              );
+            }
 
-          if (state.sellerProfileStatus == ProductStatus.failure) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.lg),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline,
-                        size: 48, color: AppColors.textMuted),
-                    const SizedBox(height: AppSizes.md),
-                    Text(
-                      state.sellerProfileError ?? AppStrings.failedToLoadSeller,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: AppSizes.md),
-                    ElevatedButton(
-                      onPressed: _refresh,
-                      child: const Text(AppStrings.retry),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          final profile = state.sellerProfile;
-          if (profile == null) return const SizedBox.shrink();
-
-          final seller = profile.seller;
-          final products = profile.products;
-          final joinYear = _parseYear(seller.createdAt);
-
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: _refresh,
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _SellerHeader(
-                    name: seller.fullName,
-                    avatar: seller.avatar,
-                    joinYear: joinYear,
-                    productCount: products.length,
-                    sellerId: widget.sellerId,
+            if (state.sellerProfileStatus == ProductStatus.failure) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.lg),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline,
+                          size: 48, color: AppColors.textMuted),
+                      const SizedBox(height: AppSizes.md),
+                      Text(
+                        state.sellerProfileError ?? AppStrings.failedToLoadSeller,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: AppSizes.md),
+                      ElevatedButton(
+                        onPressed: _refresh,
+                        child: const Text(AppStrings.retry),
+                      ),
+                    ],
                   ),
                 ),
+              );
+            }
+
+            final profile = state.sellerProfile;
+            if (profile == null) return const SizedBox.shrink();
+
+            final seller = profile.seller;
+            final products = profile.products;
+            final joinYear = _parseYear(seller.createdAt);
+
+            return RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: _refresh,
+              child: CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    pinned: true,
+                    elevation: 0,
+                    scrolledUnderElevation: 0,
+                    backgroundColor: AppColors.bannerStart,
+                    foregroundColor: Colors.white,
+                    leading: IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      onPressed: () => context.pop(),
+                    ),
+                    title: const Text(
+                      AppStrings.sellerStore,
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    flexibleSpace: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppColors.bannerStart, AppColors.primary],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _SellerHeader(
+                      name: seller.fullName,
+                      avatar: seller.avatar,
+                      joinYear: joinYear,
+                      productCount: products.length,
+                      sellerId: widget.sellerId,
+                    ),
+                  ),
                 if (products.isEmpty)
                   const SliverFillRemaining(
                     hasScrollBody: false,
@@ -198,6 +218,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
           );
         },
       ),
+      ),
     );
   }
 
@@ -270,7 +291,7 @@ class _SellerHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Gradient hero ────────────────────────────────────────────────
+        // ── Gradient hero — continues from SliverAppBar gradient ────────
         Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -280,7 +301,7 @@ class _SellerHeader extends StatelessWidget {
             ),
           ),
           padding: const EdgeInsets.fromLTRB(
-              AppSizes.lg, AppSizes.lg, AppSizes.lg, AppSizes.lg),
+              AppSizes.lg, AppSizes.lg, AppSizes.lg, AppSizes.xl),
           child: Column(
             children: [
               Container(

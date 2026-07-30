@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -157,9 +158,15 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
         backgroundColor: AppColors.bannerStart,
         foregroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         title: const Text(
           AppStrings.sellerDashboard,
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: Colors.white,
+          ),
         ),
         actions: [
           IconButton(
