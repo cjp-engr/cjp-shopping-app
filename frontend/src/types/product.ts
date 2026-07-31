@@ -14,6 +14,13 @@ export interface Product {
   createdAt: string;
   sellerId?: string;
   sellerName?: string;
+  brand?: string;
+  condition?: 'new' | 'used';
+  sku?: string;
+  discount?: number;
+  shippingOptions?: Array<'standard' | 'express' | 'pickup'>;
+  shippingFee?: 'free' | 'buyer_pays';
+  shippingFeeAmount?: number;
 }
 
 export interface ProductFilters {

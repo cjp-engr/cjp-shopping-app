@@ -53,8 +53,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   final _picker = ImagePicker();
 
   // Step 4 — Shipping
-  String _shippingOption = 'standard';
+  final Set<String> _shippingOptions = {'standard'};
   String _shippingFee = 'free';
+  late final TextEditingController _shippingFeeAmountCtrl;
 
   bool get _isEditing => widget.product != null;
 
@@ -67,18 +68,40 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     AppStrings.stepReview,
   ];
 
+  static const _stepIcons = [
+    Icons.storefront_outlined,
+    Icons.attach_money,
+    Icons.notes_outlined,
+    Icons.photo_outlined,
+    Icons.local_shipping_outlined,
+    Icons.fact_check_outlined,
+  ];
+
   @override
   void initState() {
     super.initState();
     final p = widget.product;
     _nameCtrl  = TextEditingController(text: p?.name ?? '');
-    _brandCtrl = TextEditingController();
+    _brandCtrl = TextEditingController(text: p?.brand ?? '');
     _priceCtrl = TextEditingController(text: p != null ? p.price.toStringAsFixed(2) : '');
     _stockCtrl = TextEditingController(text: p != null ? '${p.stock}' : '');
-    _skuCtrl   = TextEditingController();
-    _discountCtrl = TextEditingController();
+    _skuCtrl   = TextEditingController(text: p?.sku ?? '');
+    _discountCtrl = TextEditingController(text: p?.discount != null ? '${p!.discount}' : '');
     _descCtrl  = TextEditingController(text: p?.description ?? '');
+    _shippingFeeAmountCtrl = TextEditingController(
+      text: p?.shippingFeeAmount != null ? '${p!.shippingFeeAmount}' : '',
+    );
     _selectedCategory = (p?.category.isNotEmpty == true) ? p!.category : null;
+    if (p != null) {
+      _condition = p.condition ?? 'new';
+      _shippingFee = p.shippingFee ?? 'free';
+      if (p.shippingOptions.isNotEmpty) {
+        _shippingOptions
+          ..clear()
+          ..addAll(p.shippingOptions);
+      }
+      if (p.tags.isNotEmpty) _tags.addAll(p.tags);
+    }
     final imgs = p?.images ?? [];
     _existingImageUrls = imgs.isNotEmpty
         ? List<String>.from(imgs)
@@ -97,6 +120,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     _discountCtrl.dispose();
     _descCtrl.dispose();
     _tagCtrl.dispose();
+    _shippingFeeAmountCtrl.dispose();
     super.dispose();
   }
 
@@ -118,6 +142,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         if (_pickedFiles.isEmpty && _existingImageUrls.isEmpty) {
           return 'Please add at least one product image.';
         }
+      case 4:
+        if (_shippingOptions.isEmpty) return 'Please select at least one delivery option.';
     }
     return null;
   }
@@ -173,8 +199,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       if (_skuCtrl.text.trim().isNotEmpty) 'sku': _skuCtrl.text.trim(),
       if (_discountCtrl.text.trim().isNotEmpty) 'discount': double.tryParse(_discountCtrl.text.trim()),
       if (_tags.isNotEmpty) 'tags': _tags,
-      'shippingOption': _shippingOption,
+      'shippingOptions': _shippingOptions.toList(),
       'shippingFee': _shippingFee,
+      if (_shippingFee == 'buyer_pays' && _shippingFeeAmountCtrl.text.trim().isNotEmpty)
+        'shippingFeeAmount': double.tryParse(_shippingFeeAmountCtrl.text.trim()),
     };
     final imagePaths = _pickedFiles.map((f) => f.path).toList();
     if (_isEditing) {
@@ -344,7 +372,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         },
         child: Column(
           children: [
-            _StepProgressBar(currentStep: _currentPage, labels: _stepLabels),
+            _WizardStepper(currentStep: _currentPage, labels: _stepLabels, icons: _stepIcons),
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -457,40 +485,45 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _PageHeader(title: AppStrings.stepPricing, subtitle: 'Set your price and stock details'),
+          const _PageHeader(title: AppStrings.stepPricing, subtitle: AppStrings.pricingSubtitle),
           const SizedBox(height: AppSizes.md),
           _FormCard(child: Column(children: [
-            Row(children: [
-              Expanded(child: AppTextField(
-                label: AppStrings.priceLabel,
-                controller: _priceCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                prefixIcon: Icons.attach_money,
-              )),
-              const SizedBox(width: AppSizes.sm),
-              Expanded(child: AppTextField(
-                label: AppStrings.stock,
-                controller: _stockCtrl,
-                keyboardType: TextInputType.number,
-                prefixIcon: Icons.warehouse_outlined,
-              )),
-            ]),
+            AppTextField(
+              label: AppStrings.priceLabel,
+              controller: _priceCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              prefixIcon: Icons.attach_money,
+            ),
             const SizedBox(height: AppSizes.sm),
-            Row(children: [
-              Expanded(child: AppTextField(
-                label: AppStrings.skuOptional,
-                controller: _skuCtrl,
-                prefixIcon: Icons.qr_code_outlined,
-              )),
-              const SizedBox(width: AppSizes.sm),
-              Expanded(child: AppTextField(
-                label: AppStrings.discountOptional,
-                controller: _discountCtrl,
-                keyboardType: TextInputType.number,
-                prefixIcon: Icons.percent_outlined,
-              )),
-            ]),
+            AppTextField(
+              label: AppStrings.stock,
+              controller: _stockCtrl,
+              keyboardType: TextInputType.number,
+              prefixIcon: Icons.warehouse_outlined,
+            ),
+            const SizedBox(height: AppSizes.sm),
+            AppTextField(
+              label: AppStrings.skuOptional,
+              controller: _skuCtrl,
+              prefixIcon: Icons.qr_code_outlined,
+            ),
+            const SizedBox(height: AppSizes.sm),
+            AppTextField(
+              label: AppStrings.discountOptional,
+              controller: _discountCtrl,
+              keyboardType: TextInputType.number,
+              prefixIcon: Icons.percent_outlined,
+            ),
           ])),
+          const SizedBox(height: AppSizes.md),
+          AnimatedBuilder(
+            animation: Listenable.merge([_priceCtrl, _discountCtrl, _stockCtrl]),
+            builder: (context, _) => _PricingComputedCard(
+              price: double.tryParse(_priceCtrl.text.trim()) ?? 0,
+              stock: int.tryParse(_stockCtrl.text.trim()) ?? 0,
+              discount: double.tryParse(_discountCtrl.text.trim()) ?? 0,
+            ),
+          ),
         ],
       ),
     );
@@ -598,6 +631,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           const SizedBox(height: AppSizes.md),
           const _SectionLabel(AppStrings.deliveryOption),
           const SizedBox(height: AppSizes.xs),
+          Text(
+            'Select all that apply — buyers choose one at checkout',
+            style: TextStyle(fontSize: 11, color: context.onSurfaceMuted),
+          ),
+          const SizedBox(height: AppSizes.sm),
           ...([
             ('standard', AppStrings.standardDelivery, '3–7 business days', Icons.local_shipping_outlined),
             ('express',  AppStrings.expressDelivery,  '1–2 business days', Icons.electric_bolt_outlined),
@@ -606,8 +644,14 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             padding: const EdgeInsets.only(bottom: AppSizes.xs),
             child: _ShippingOptionCard(
               label: o.$2, subtitle: o.$3, icon: o.$4,
-              selected: _shippingOption == o.$1,
-              onTap: () => setState(() => _shippingOption = o.$1),
+              checked: _shippingOptions.contains(o.$1),
+              onTap: () => setState(() {
+                if (_shippingOptions.contains(o.$1)) {
+                  _shippingOptions.remove(o.$1);
+                } else {
+                  _shippingOptions.add(o.$1);
+                }
+              }),
             ),
           )),
           const SizedBox(height: AppSizes.md),
@@ -628,6 +672,16 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               onTap: () => setState(() => _shippingFee = 'buyer_pays'),
             )),
           ]),
+          if (_shippingFee == 'buyer_pays') ...[
+            const SizedBox(height: AppSizes.md),
+            _FormCard(child: AppTextField(
+              label: AppStrings.shippingFeeAmount,
+              controller: _shippingFeeAmountCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              prefixIcon: Icons.attach_money,
+              hint: '0.00',
+            )),
+          ],
         ],
       ),
     );
@@ -670,12 +724,18 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               ),
               _ReviewRow(
                 label: AppStrings.deliveryOption,
-                value: _shippingOption[0].toUpperCase() + _shippingOption.substring(1),
+                value: _shippingOptions.isEmpty
+                    ? '—'
+                    : _shippingOptions.map((o) => o[0].toUpperCase() + o.substring(1)).join(', '),
                 onEdit: () => _goToPage(4),
               ),
               _ReviewRow(
                 label: AppStrings.shippingFee,
-                value: _shippingFee == 'free' ? AppStrings.freeShipping : AppStrings.feeByBuyer,
+                value: _shippingFee == 'free'
+                    ? AppStrings.freeShipping
+                    : (_shippingFeeAmountCtrl.text.trim().isNotEmpty
+                        ? '${AppStrings.feeByBuyer} \$${_shippingFeeAmountCtrl.text.trim()}'
+                        : AppStrings.feeByBuyer),
                 onEdit: () => _goToPage(4),
                 last: true,
               ),
@@ -723,12 +783,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   }
 }
 
-// ── Step progress bar ─────────────────────────────────────────────────────────
+// ── Wizard stepper ────────────────────────────────────────────────────────────
 
-class _StepProgressBar extends StatelessWidget {
+class _WizardStepper extends StatelessWidget {
   final int currentStep;
   final List<String> labels;
-  const _StepProgressBar({required this.currentStep, required this.labels});
+  final List<IconData> icons;
+  const _WizardStepper({required this.currentStep, required this.labels, required this.icons});
 
   @override
   Widget build(BuildContext context) {
@@ -739,29 +800,162 @@ class _StepProgressBar extends StatelessWidget {
         color: context.cardColor,
         border: Border(bottom: BorderSide(color: context.borderColor.withAlpha(80))),
       ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          for (int i = 0; i < total; i++) ...[
+            if (i > 0)
+              Expanded(
+                child: Container(
+                  height: 2,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    color: i <= currentStep
+                        ? AppColors.primary
+                        : context.borderColor.withAlpha(80),
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+            _StepNode(
+              index: i,
+              current: currentStep,
+              label: labels[i],
+              icon: icons[i],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StepNode extends StatelessWidget {
+  final int index;
+  final int current;
+  final String label;
+  final IconData icon;
+  const _StepNode({required this.index, required this.current, required this.label, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = index == current;
+    final isCompleted = index < current;
+
+    if (isActive) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+        ),
+      );
+    }
+
+    return Container(
+      width: 26,
+      height: 26,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isCompleted ? AppColors.primary : Colors.transparent,
+        border: isCompleted ? null : Border.all(color: context.borderColor.withAlpha(120)),
+      ),
+      child: Icon(
+        isCompleted ? Icons.check_rounded : icon,
+        size: 13,
+        color: isCompleted ? Colors.white : context.onSurfaceMuted,
+      ),
+    );
+  }
+}
+
+// ── Pricing computed card ─────────────────────────────────────────────────────
+
+class _PricingComputedCard extends StatelessWidget {
+  final double price;
+  final int stock;
+  final double discount;
+  const _PricingComputedCard({required this.price, required this.stock, required this.discount});
+
+  @override
+  Widget build(BuildContext context) {
+    if (price <= 0) return const SizedBox.shrink();
+    final hasDiscount = discount > 0 && discount <= 100;
+    final finalPrice = hasDiscount ? price - (price * discount / 100) : price;
+    final totalValue = finalPrice * stock;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.md),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withAlpha(10),
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        border: Border.all(color: AppColors.primary.withAlpha(40)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text(
-              labels[currentStep],
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary),
-            ),
-            Text(
-              'Step ${currentStep + 1} of $total',
-              style: TextStyle(fontSize: 12, color: context.onSurfaceMuted),
-            ),
+          const Row(children: [
+            Icon(Icons.calculate_outlined, size: 14, color: AppColors.primary),
+            SizedBox(width: 6),
+            Text('Price Breakdown', style: TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary,
+            )),
           ]),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: (currentStep + 1) / total,
-              backgroundColor: AppColors.primary.withAlpha(25),
-              color: AppColors.primary,
-              minHeight: 4,
+          const SizedBox(height: AppSizes.sm),
+          _CalcRow(label: AppStrings.unitPrice, value: '\$${price.toStringAsFixed(2)}'),
+          if (hasDiscount) ...[
+            _CalcRow(label: AppStrings.discountOptional, value: '-${discount.toStringAsFixed(0)}%', muted: true),
+            const Divider(height: 16),
+            _CalcRow(
+              label: AppStrings.afterDiscount,
+              value: '\$${finalPrice.toStringAsFixed(2)}',
+              highlighted: true,
             ),
-          ),
+          ],
+          if (stock > 0) ...[
+            if (!hasDiscount) const Divider(height: 16),
+            _CalcRow(
+              label: AppStrings.totalStockValue,
+              value: '\$${totalValue.toStringAsFixed(2)}',
+              highlighted: !hasDiscount,
+              muted: hasDiscount,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CalcRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool highlighted;
+  final bool muted;
+  const _CalcRow({required this.label, required this.value, this.highlighted = false, this.muted = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(
+            fontSize: highlighted ? 13 : 12,
+            fontWeight: highlighted ? FontWeight.w700 : FontWeight.w500,
+            color: muted ? context.onSurfaceMuted : context.onSurfaceColor,
+          )),
+          Text(value, style: TextStyle(
+            fontSize: highlighted ? 14 : 12,
+            fontWeight: highlighted ? FontWeight.w800 : FontWeight.w600,
+            color: highlighted ? AppColors.primary : (muted ? context.onSurfaceMuted : context.onSurfaceColor),
+          )),
         ],
       ),
     );
@@ -868,9 +1062,9 @@ class _ShippingOptionCard extends StatelessWidget {
   final String label;
   final String subtitle;
   final IconData icon;
-  final bool selected;
+  final bool checked;
   final VoidCallback onTap;
-  const _ShippingOptionCard({required this.label, required this.subtitle, required this.icon, required this.selected, required this.onTap});
+  const _ShippingOptionCard({required this.label, required this.subtitle, required this.icon, required this.checked, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -880,28 +1074,42 @@ class _ShippingOptionCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(AppSizes.sm),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withAlpha(12) : context.cardColor,
+          color: checked ? AppColors.primary.withAlpha(12) : context.cardColor,
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          border: Border.all(color: selected ? AppColors.primary : context.borderColor, width: selected ? 2 : 1),
+          border: Border.all(color: checked ? AppColors.primary : context.borderColor, width: checked ? 2 : 1),
         ),
         child: Row(children: [
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
-              color: selected ? AppColors.primary.withAlpha(20) : context.surfaceVariantColor,
+              color: checked ? AppColors.primary.withAlpha(20) : context.surfaceVariantColor,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 18, color: selected ? AppColors.primary : context.onSurfaceMuted),
+            child: Icon(icon, size: 18, color: checked ? AppColors.primary : context.onSurfaceMuted),
           ),
           const SizedBox(width: AppSizes.sm),
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: selected ? AppColors.primary : context.onSurfaceColor)),
+              Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: checked ? AppColors.primary : context.onSurfaceColor)),
               Text(subtitle, style: TextStyle(fontSize: 11, color: context.onSurfaceMuted)),
             ],
           )),
-          if (selected) const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 18),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 20, height: 20,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: checked ? AppColors.primary : Colors.transparent,
+              border: Border.all(
+                color: checked ? AppColors.primary : context.borderColor,
+                width: 1.5,
+              ),
+            ),
+            child: checked
+                ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
+                : null,
+          ),
         ]),
       ),
     );

@@ -9,14 +9,14 @@ export interface ProductFormData {
   category: string;
   image: string;
   stock: number;
-  // Extended fields
   brand?: string;
   condition?: 'new' | 'used';
   sku?: string;
   discount?: number;
   tags?: string[];
-  shippingOption?: string;
-  shippingFee?: string;
+  shippingOptions?: Array<'standard' | 'express' | 'pickup'>;
+  shippingFee?: 'free' | 'buyer_pays';
+  shippingFeeAmount?: number;
 }
 
 const adaptProduct = (p: any): Product => ({
@@ -33,6 +33,13 @@ const adaptProduct = (p: any): Product => ({
   tags: p.tags,
   specifications: p.specifications ?? undefined,
   createdAt: p.createdAt,
+  brand: p.brand,
+  condition: p.condition,
+  sku: p.sku,
+  discount: p.discount,
+  shippingOptions: p.shippingOptions,
+  shippingFee: p.shippingFee,
+  shippingFeeAmount: p.shippingFeeAmount,
 });
 
 const adaptOrder = (order: any): Order & { buyer?: { id: string; firstName: string; lastName: string; email: string } } => ({
@@ -110,9 +117,10 @@ class SellerService {
       if (form.condition)     fd.append('condition', form.condition);
       if (form.sku)           fd.append('sku', form.sku);
       if (form.discount != null) fd.append('discount', String(form.discount));
-      if (form.tags?.length)  fd.append('tags', JSON.stringify(form.tags));
-      if (form.shippingOption) fd.append('shippingOption', form.shippingOption);
-      if (form.shippingFee)   fd.append('shippingFee', form.shippingFee);
+      if (form.tags?.length)       fd.append('tags', JSON.stringify(form.tags));
+      if (form.shippingOptions?.length) fd.append('shippingOptions', JSON.stringify(form.shippingOptions));
+      if (form.shippingFee)        fd.append('shippingFee', form.shippingFee);
+      if (form.shippingFeeAmount != null) fd.append('shippingFeeAmount', String(form.shippingFeeAmount));
       imageFiles.forEach(f => fd.append('images', f));
       body = fd;
       headers = getAuthHeadersNoContentType();
@@ -146,9 +154,10 @@ class SellerService {
       if (form.condition)     fd.append('condition', form.condition);
       if (form.sku)           fd.append('sku', form.sku);
       if (form.discount != null) fd.append('discount', String(form.discount));
-      if (form.tags?.length)  fd.append('tags', JSON.stringify(form.tags));
-      if (form.shippingOption) fd.append('shippingOption', form.shippingOption);
-      if (form.shippingFee)   fd.append('shippingFee', form.shippingFee);
+      if (form.tags?.length)       fd.append('tags', JSON.stringify(form.tags));
+      if (form.shippingOptions?.length) fd.append('shippingOptions', JSON.stringify(form.shippingOptions));
+      if (form.shippingFee)        fd.append('shippingFee', form.shippingFee);
+      if (form.shippingFeeAmount != null) fd.append('shippingFeeAmount', String(form.shippingFeeAmount));
       imageFiles.forEach(f => fd.append('images', f));
       body = fd;
       headers = getAuthHeadersNoContentType();

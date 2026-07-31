@@ -275,6 +275,11 @@ class AppStrings {
   static const String stepImages = 'Images';
   static const String stepShipping = 'Shipping';
   static const String stepReview = 'Review';
+  static const String unitPrice = 'Unit Price';
+  static const String afterDiscount = 'After Discount';
+  static const String totalStockValue = 'Total Stock Value';
+  static const String pricingSubtitle = 'Set your price and stock details';
+  static const String shippingFeeAmount = 'Shipping Fee Amount (Optional)';
 
   // ── Wishlist ──────────────────────────────────────────────────────────────
   static const String favorites = 'Favorites';

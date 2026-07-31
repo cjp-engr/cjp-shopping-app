@@ -18,6 +18,13 @@ class ProductEntity extends Equatable {
   final String? sellerName;
   final String? sellerAvatar;
   final int soldCount;
+  final String? brand;
+  final String? condition;
+  final String? sku;
+  final double? discount;
+  final List<String> shippingOptions;
+  final String? shippingFee;
+  final double? shippingFeeAmount;
 
   const ProductEntity({
     required this.id,
@@ -37,6 +44,13 @@ class ProductEntity extends Equatable {
     this.sellerId,
     this.sellerName,
     this.sellerAvatar,
+    this.brand,
+    this.condition,
+    this.sku,
+    this.discount,
+    this.shippingOptions = const [],
+    this.shippingFee,
+    this.shippingFeeAmount,
   });
 
   bool get inStock => stock > 0;

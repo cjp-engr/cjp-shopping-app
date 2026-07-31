@@ -27,8 +27,9 @@ interface WizardData {
   tags: string[];
   imageMode: 'upload' | 'url';
   imageUrl: string;
-  shippingOption: 'standard' | 'express' | 'pickup';
+  shippingOptions: Array<'standard' | 'express' | 'pickup'>;
   shippingFee: 'free' | 'buyer_pays';
+  shippingFeeAmount: string;
 }
 
 const EMPTY_DATA: WizardData = {
@@ -36,7 +37,7 @@ const EMPTY_DATA: WizardData = {
   price: '', stock: '', sku: '', discount: '',
   description: '', tags: [],
   imageMode: 'upload', imageUrl: '',
-  shippingOption: 'standard', shippingFee: 'free',
+  shippingOptions: ['standard'], shippingFee: 'free', shippingFeeAmount: '',
 };
 
 interface ProductWizardProps {
@@ -67,10 +68,17 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
           ...EMPTY_DATA,
           name: product.name,
           category: product.category,
+          brand: product.brand ?? '',
+          condition: product.condition ?? 'new',
           price: String(product.price),
           stock: String(product.stock),
+          sku: product.sku ?? '',
+          discount: product.discount != null ? String(product.discount) : '',
           description: product.description,
           tags: product.tags ?? [],
+          shippingOptions: product.shippingOptions ?? ['standard'],
+          shippingFee: product.shippingFee ?? 'free',
+          shippingFeeAmount: product.shippingFeeAmount != null ? String(product.shippingFeeAmount) : '',
         }
       : EMPTY_DATA,
   );
@@ -105,6 +113,9 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         ? !!data.imageUrl.trim()
         : imageFiles.length > 0 || existingUrls.length > 0;
       if (!ok) return 'Please add at least one product image.';
+    }
+    if (step === 5) {
+      if (data.shippingOptions.length === 0) return 'Please select at least one delivery option.';
     }
     return null;
   };
@@ -156,8 +167,9 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         sku: data.sku.trim() || undefined,
         discount: data.discount ? Number(data.discount) : undefined,
         tags: data.tags.length > 0 ? data.tags : undefined,
-        shippingOption: data.shippingOption,
+        shippingOptions: data.shippingOptions,
         shippingFee: data.shippingFee,
+        shippingFeeAmount: data.shippingFee === 'buyer_pays' && data.shippingFeeAmount ? Number(data.shippingFeeAmount) : undefined,
       };
       if (isEditing) {
         await sellerService.updateProduct(
@@ -424,72 +436,109 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
   );
 
   // ── Step 5: Shipping ────────────────────────────────────────────────────────
-  const Step5 = () => (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Shipping</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Set delivery options for buyers</p>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Delivery Option</label>
-        <div className="space-y-2">
-          {([
-            { value: 'standard', label: 'Standard', desc: '3–7 business days', Icon: Truck },
-            { value: 'express',  label: 'Express',  desc: '1–2 business days', Icon: Package },
-            { value: 'pickup',   label: 'Pickup',   desc: 'Buyer collects in person', Icon: Package },
-          ] as const).map(({ value, label, desc, Icon }) => (
-            <button key={value} type="button" onClick={() => set('shippingOption', value)}
-              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl border-2 transition-all text-left ${
-                data.shippingOption === value
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
-              }`}>
-              <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                data.shippingOption === value ? 'border-primary-500' : 'border-gray-300'
-              }`}>
-                {data.shippingOption === value && <div className="w-2.5 h-2.5 rounded-full bg-primary-500" />}
+  const Step5 = () => {
+    const toggleOption = (value: 'standard' | 'express' | 'pickup') => {
+      const current = data.shippingOptions;
+      const next = current.includes(value)
+        ? current.filter(o => o !== value)
+        : [...current, value];
+      set('shippingOptions', next);
+    };
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Shipping</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Set delivery options for buyers</p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Delivery Options</label>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">Select all that apply — buyers choose one at checkout</p>
+          <div className="space-y-2">
+            {([
+              { value: 'standard', label: 'Standard', desc: '3–7 business days', Icon: Truck },
+              { value: 'express',  label: 'Express',  desc: '1–2 business days', Icon: Package },
+              { value: 'pickup',   label: 'Pickup',   desc: 'Buyer collects in person', Icon: Package },
+            ] as const).map(({ value, label, desc, Icon }) => {
+              const checked = data.shippingOptions.includes(value);
+              return (
+                <button key={value} type="button" onClick={() => toggleOption(value)}
+                  className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl border-2 transition-all text-left ${
+                    checked
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                  }`}>
+                  <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+                    checked ? 'border-primary-500 bg-primary-500' : 'border-gray-300 dark:border-gray-600'
+                  }`}>
+                    {checked && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${checked ? 'text-primary-600' : 'text-gray-400'}`} />
+                  <div>
+                    <p className={`text-sm font-semibold ${checked ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200'}`}>
+                      {label}
+                    </p>
+                    <p className="text-xs text-gray-400">{desc}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Shipping Fee</label>
+          <div className="grid grid-cols-2 gap-3">
+            {([
+              { value: 'free',       label: 'Free Shipping', desc: 'You absorb the cost' },
+              { value: 'buyer_pays', label: 'Buyer Pays',    desc: 'Fee added at checkout' },
+            ] as const).map(({ value, label, desc }) => (
+              <button key={value} type="button" onClick={() => set('shippingFee', value)}
+                className={`flex items-start gap-3 px-4 py-3.5 rounded-xl border-2 transition-all text-left ${
+                  data.shippingFee === value
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                }`}>
+                <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center ${
+                  data.shippingFee === value ? 'border-primary-500' : 'border-gray-300'
+                }`}>
+                  {data.shippingFee === value && <div className="w-2 h-2 rounded-full bg-primary-500" />}
+                </div>
+                <div>
+                  <p className={`text-sm font-semibold ${data.shippingFee === value ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200'}`}>
+                    {label}
+                  </p>
+                  <p className="text-xs text-gray-400">{desc}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+          {data.shippingFee === 'buyer_pays' && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Shipping Fee Amount <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={data.shippingFeeAmount}
+                  onChange={e => set('shippingFeeAmount', e.target.value)}
+                  className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
               </div>
-              <Icon className={`w-4 h-4 flex-shrink-0 ${data.shippingOption === value ? 'text-primary-600' : 'text-gray-400'}`} />
-              <div>
-                <p className={`text-sm font-semibold ${data.shippingOption === value ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200'}`}>
-                  {label}
-                </p>
-                <p className="text-xs text-gray-400">{desc}</p>
-              </div>
-            </button>
-          ))}
+              <p className="text-xs text-gray-400 mt-1">Leave blank to let buyers see "calculated at checkout"</p>
+            </div>
+          )}
         </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Shipping Fee</label>
-        <div className="grid grid-cols-2 gap-3">
-          {([
-            { value: 'free',       label: 'Free Shipping', desc: 'You absorb the cost' },
-            { value: 'buyer_pays', label: 'Buyer Pays',    desc: 'Fee added at checkout' },
-          ] as const).map(({ value, label, desc }) => (
-            <button key={value} type="button" onClick={() => set('shippingFee', value)}
-              className={`flex items-start gap-3 px-4 py-3.5 rounded-xl border-2 transition-all text-left ${
-                data.shippingFee === value
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
-              }`}>
-              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center ${
-                data.shippingFee === value ? 'border-primary-500' : 'border-gray-300'
-              }`}>
-                {data.shippingFee === value && <div className="w-2 h-2 rounded-full bg-primary-500" />}
-              </div>
-              <div>
-                <p className={`text-sm font-semibold ${data.shippingFee === value ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200'}`}>
-                  {label}
-                </p>
-                <p className="text-xs text-gray-400">{desc}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   // ── Step 6: Review ──────────────────────────────────────────────────────────
   const Step6 = () => {
@@ -554,8 +603,13 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
             )}
             <Row label="Images" value={`${imgCount} photo${imgCount !== 1 ? 's' : ''}`} onEdit={() => setStep(4)} />
             <Row
-              label="Shipping"
-              value={`${data.shippingOption.charAt(0).toUpperCase() + data.shippingOption.slice(1)} · ${data.shippingFee === 'free' ? 'Free shipping' : 'Buyer pays'}`}
+              label="Delivery"
+              value={data.shippingOptions.map(o => o.charAt(0).toUpperCase() + o.slice(1)).join(', ') || '—'}
+              onEdit={() => setStep(5)}
+            />
+            <Row
+              label="Shipping Fee"
+              value={data.shippingFee === 'free' ? 'Free shipping' : data.shippingFeeAmount ? `Buyer pays $${data.shippingFeeAmount}` : 'Buyer pays'}
               onEdit={() => setStep(5)}
             />
           </div>

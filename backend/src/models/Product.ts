@@ -18,8 +18,9 @@ export interface IProduct extends Document {
   condition?: 'new' | 'used';
   sku?: string;
   discount?: number;
-  shippingOption?: string;
+  shippingOptions?: string[];
   shippingFee?: string;
+  shippingFeeAmount?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,8 +47,9 @@ const ProductSchema = new Schema<IProduct>({
   condition: { type: String, enum: ['new', 'used'] },
   sku: { type: String, trim: true },
   discount: { type: Number, min: 0, max: 100 },
-  shippingOption: { type: String },
+  shippingOptions: [{ type: String }],
   shippingFee: { type: String },
+  shippingFeeAmount: { type: Number, min: 0 },
 }, { timestamps: true });
 
 ProductSchema.index({ name: 'text', description: 'text' });

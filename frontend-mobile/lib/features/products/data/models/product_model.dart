@@ -19,6 +19,13 @@ class ProductModel extends ProductEntity {
     super.sellerId,
     super.sellerName,
     super.sellerAvatar,
+    super.brand,
+    super.condition,
+    super.sku,
+    super.discount,
+    super.shippingOptions,
+    super.shippingFee,
+    super.shippingFeeAmount,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -55,6 +62,13 @@ class ProductModel extends ProductEntity {
       sellerId: sellerId,
       sellerName: sellerName?.isNotEmpty == true ? sellerName : null,
       sellerAvatar: sellerAvatar?.isNotEmpty == true ? sellerAvatar : null,
+      brand: json['brand']?.toString(),
+      condition: json['condition']?.toString(),
+      sku: json['sku']?.toString(),
+      discount: (json['discount'] as num?)?.toDouble(),
+      shippingOptions: (json['shippingOptions'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      shippingFee: json['shippingFee']?.toString(),
+      shippingFeeAmount: (json['shippingFeeAmount'] as num?)?.toDouble(),
     );
   }
 }

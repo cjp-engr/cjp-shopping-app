@@ -58,8 +58,9 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _maybeFetchToReceiveCount() {
-    final isSeller = context.read<AuthBloc>().state.user?.isSeller ?? false;
-    if (isSeller) return; // sellers use the seller dashboard, not buyer orders
+    final authState = context.read<AuthBloc>().state;
+    if (authState.status != AuthStatus.authenticated) return;
+    if (authState.user?.isSeller ?? false) return; // sellers use the seller dashboard
     _fetchToReceiveCount();
   }
 
@@ -76,8 +77,9 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _maybeStartPolling() {
-    final authBloc = context.read<AuthBloc>();
-    if (authBloc.state.user?.isSeller != true) return;
+    final authState = context.read<AuthBloc>().state;
+    if (authState.status != AuthStatus.authenticated) return;
+    if (authState.user?.isSeller != true) return;
     _startPolling();
   }
 

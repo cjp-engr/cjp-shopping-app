@@ -1,4 +1,5 @@
-﻿import 'package:dio/dio.dart';
+﻿import 'dart:convert';
+import 'package:dio/dio.dart';
 import '../../../products/data/models/product_model.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/seller_order_model.dart';
@@ -91,7 +92,10 @@ class SellerRemoteDataSource {
     if (imagePaths.isEmpty) return data;
     final formData = FormData();
     data.forEach((key, value) {
-      formData.fields.add(MapEntry(key, value.toString()));
+      final encoded = value is List || value is Map
+          ? jsonEncode(value)
+          : value.toString();
+      formData.fields.add(MapEntry(key, encoded));
     });
     for (final path in imagePaths) {
       final fileName = path.split(RegExp(r'[/\\]')).last;
