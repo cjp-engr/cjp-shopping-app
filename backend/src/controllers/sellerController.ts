@@ -15,14 +15,14 @@ export const getSellerProducts = async (req: AuthRequest, res: Response, next: N
 
 export const createProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { name, description, price, category, stock, tags } = req.body;
+    const { name, description, price, category, stock, tags, brand, condition, sku, discount, shippingOption, shippingFee, image } = req.body;
     if (!name || !description || price == null || !category) {
       return res.status(400).json({ success: false, message: 'name, description, price, and category are required' });
     }
     const files = (req.files as Express.Multer.File[]) ?? [];
     const product = await sellerService.createSellerProduct(
       req.user!.id,
-      { name, description, price: Number(price), category, stock: Number(stock ?? 0), tags },
+      { name, description, price: Number(price), category, stock: Number(stock ?? 0), tags, brand, condition, sku, discount: discount != null ? Number(discount) : undefined, shippingOption, shippingFee, image },
       extractImageUrls(files),
     );
     res.status(201).json({ success: true, product });
@@ -31,12 +31,12 @@ export const createProduct = async (req: AuthRequest, res: Response, next: NextF
 
 export const updateProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { name, description, price, category, stock, tags } = req.body;
+    const { name, description, price, category, stock, tags, brand, condition, sku, discount, shippingOption, shippingFee, image } = req.body;
     const files = (req.files as Express.Multer.File[]) ?? [];
     const product = await sellerService.updateSellerProduct(
       req.params.id,
       req.user!.id,
-      { name, description, price: price != null ? Number(price) : undefined, category, stock: stock != null ? Number(stock) : undefined, tags },
+      { name, description, price: price != null ? Number(price) : undefined, category, stock: stock != null ? Number(stock) : undefined, tags, brand, condition, sku, discount: discount != null ? Number(discount) : undefined, shippingOption, shippingFee, image },
       files.length > 0 ? extractImageUrls(files) : undefined,
     );
     res.status(200).json({ success: true, product });

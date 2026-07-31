@@ -17,12 +17,12 @@ export async function getSellerProducts(sellerId: string) {
 
 export async function createSellerProduct(
   sellerId: string,
-  data: { name: string; description: string; price: number; category: string; stock?: number; tags?: string[] },
+  data: { name: string; description: string; price: number; category: string; stock?: number; tags?: string[]; brand?: string; condition?: string; sku?: string; discount?: number; shippingOption?: string; shippingFee?: string; image?: string },
   imageUrls: string[],
 ) {
   return Product.create({
     ...data,
-    image: imageUrls[0] ?? '',
+    image: imageUrls[0] ?? data.image ?? '',
     images: imageUrls,
     sellerId,
   });
@@ -31,17 +31,20 @@ export async function createSellerProduct(
 export async function updateSellerProduct(
   productId: string,
   sellerId: string,
-  updates: { name?: string; description?: string; price?: number; category?: string; stock?: number; tags?: string[] },
+  updates: { name?: string; description?: string; price?: number; category?: string; stock?: number; tags?: string[]; brand?: string; condition?: string; sku?: string; discount?: number; shippingOption?: string; shippingFee?: string; image?: string },
   imageUrls?: string[],
 ) {
   const product = await Product.findById(productId);
   if (!product) throw new AppError(404, 'Product not found');
   if (product.sellerId?.toString() !== sellerId) throw new AppError(403, 'Not authorized to update this product');
 
-  Object.assign(product, updates);
+  const { image: imageUrl, ...rest } = updates;
+  Object.assign(product, rest);
   if (imageUrls && imageUrls.length > 0) {
     product.image = imageUrls[0];
     product.images = imageUrls;
+  } else if (imageUrl !== undefined) {
+    product.image = imageUrl;
   }
 
   return product.save();

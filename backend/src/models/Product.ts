@@ -14,6 +14,12 @@ export interface IProduct extends Document {
   tags?: string[];
   specifications?: Map<string, string>;
   sellerId?: mongoose.Types.ObjectId;
+  brand?: string;
+  condition?: 'new' | 'used';
+  sku?: string;
+  discount?: number;
+  shippingOption?: string;
+  shippingFee?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +42,12 @@ const ProductSchema = new Schema<IProduct>({
   tags: [{ type: String }],
   specifications: { type: Map, of: String },
   sellerId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  brand: { type: String, trim: true },
+  condition: { type: String, enum: ['new', 'used'] },
+  sku: { type: String, trim: true },
+  discount: { type: Number, min: 0, max: 100 },
+  shippingOption: { type: String },
+  shippingFee: { type: String },
 }, { timestamps: true });
 
 ProductSchema.index({ name: 'text', description: 'text' });

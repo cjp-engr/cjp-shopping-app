@@ -8,6 +8,7 @@ class AppTextField extends StatefulWidget {
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onFieldSubmitted;
   final IconData? prefixIcon;
   final String? prefix;
   final Widget? suffixWidget;
@@ -26,6 +27,7 @@ class AppTextField extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.validator,
     this.onChanged,
+    this.onFieldSubmitted,
     this.prefixIcon,
     this.prefix,
     this.suffixWidget,
@@ -59,6 +61,7 @@ class _AppTextFieldState extends State<AppTextField> {
       textCapitalization: widget.textCapitalization,
       validator: widget.validator,
       onChanged: widget.onChanged,
+      onFieldSubmitted: widget.onFieldSubmitted,
       readOnly: widget.readOnly,
       maxLines: widget.maxLines,
       maxLength: widget.maxLength,

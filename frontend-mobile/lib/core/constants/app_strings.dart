@@ -251,6 +251,31 @@ class AppStrings {
   static const String takeAPhoto = 'Take a Photo';
   static const String listProduct = 'List Product';
 
+  // ── Multi-step wizard ─────────────────────────────────────────────────────
+  static const String createNewListing = 'Create New Listing';
+  static const String publishListing = 'Publish Listing';
+  static const String saveDraft = 'Save Draft';
+  static const String brandOptional = 'Brand (Optional)';
+  static const String condition = 'Condition';
+  static const String brandNew = 'Brand New';
+  static const String usedCondition = 'Used';
+  static const String skuOptional = 'SKU (Optional)';
+  static const String discountOptional = 'Discount % (Optional)';
+  static const String tags = 'Tags';
+  static const String addTag = 'Add Tag';
+  static const String deliveryOption = 'Delivery Option';
+  static const String standardDelivery = 'Standard';
+  static const String expressDelivery = 'Express';
+  static const String pickup = 'Pickup';
+  static const String feeByBuyer = 'Buyer Pays';
+  static const String reviewListing = 'Review Your Listing';
+  static const String stepBasicInfo = 'Basic Info';
+  static const String stepPricing = 'Pricing';
+  static const String stepDescription = 'Description';
+  static const String stepImages = 'Images';
+  static const String stepShipping = 'Shipping';
+  static const String stepReview = 'Review';
+
   // ── Wishlist ──────────────────────────────────────────────────────────────
   static const String favorites = 'Favorites';
   static const String clearAll = 'Clear all';

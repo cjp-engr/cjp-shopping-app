@@ -9,6 +9,14 @@ export interface ProductFormData {
   category: string;
   image: string;
   stock: number;
+  // Extended fields
+  brand?: string;
+  condition?: 'new' | 'used';
+  sku?: string;
+  discount?: number;
+  tags?: string[];
+  shippingOption?: string;
+  shippingFee?: string;
 }
 
 const adaptProduct = (p: any): Product => ({
@@ -98,6 +106,13 @@ class SellerService {
       fd.append('price', String(form.price));
       fd.append('category', form.category);
       fd.append('stock', String(form.stock));
+      if (form.brand)         fd.append('brand', form.brand);
+      if (form.condition)     fd.append('condition', form.condition);
+      if (form.sku)           fd.append('sku', form.sku);
+      if (form.discount != null) fd.append('discount', String(form.discount));
+      if (form.tags?.length)  fd.append('tags', JSON.stringify(form.tags));
+      if (form.shippingOption) fd.append('shippingOption', form.shippingOption);
+      if (form.shippingFee)   fd.append('shippingFee', form.shippingFee);
       imageFiles.forEach(f => fd.append('images', f));
       body = fd;
       headers = getAuthHeadersNoContentType();
@@ -127,6 +142,13 @@ class SellerService {
       if (form.price !== undefined) fd.append('price', String(form.price));
       if (form.category)    fd.append('category', form.category);
       if (form.stock !== undefined) fd.append('stock', String(form.stock));
+      if (form.brand)         fd.append('brand', form.brand);
+      if (form.condition)     fd.append('condition', form.condition);
+      if (form.sku)           fd.append('sku', form.sku);
+      if (form.discount != null) fd.append('discount', String(form.discount));
+      if (form.tags?.length)  fd.append('tags', JSON.stringify(form.tags));
+      if (form.shippingOption) fd.append('shippingOption', form.shippingOption);
+      if (form.shippingFee)   fd.append('shippingFee', form.shippingFee);
       imageFiles.forEach(f => fd.append('images', f));
       body = fd;
       headers = getAuthHeadersNoContentType();
