@@ -23,6 +23,7 @@ import {
   CreditCard,
   Star,
   Pencil,
+  Zap,
 } from 'lucide-react';
 
 type ReviewModalState = {
@@ -150,6 +151,17 @@ export const OrderDetail: React.FC = () => {
             <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-700">
               <Store className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{sellerName}</span>
+              {order.selectedDeliveryOption && (() => {
+                const opt = order.selectedDeliveryOption!;
+                const Icon = opt === 'express' ? Zap : opt === 'pickup' ? Package : Truck;
+                const label = opt === 'standard' ? 'Standard' : opt === 'express' ? 'Express' : 'Pickup';
+                return (
+                  <span className="ml-auto flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 rounded-full">
+                    <Icon className="w-3 h-3" />
+                    {label}
+                  </span>
+                );
+              })()}
             </div>
 
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -238,9 +250,21 @@ export const OrderDetail: React.FC = () => {
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Order Summary</h2>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-gray-600 dark:text-gray-400">
-            <span>Subtotal</span>
+            <span>Order Amount</span>
             <span>{formatCurrency(order.subtotal)}</span>
           </div>
+          {order.productDiscount > 0 && (
+            <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+              <span>Product Discount</span>
+              <span>-{formatCurrency(order.productDiscount)}</span>
+            </div>
+          )}
+          {order.discount > 0 && (
+            <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+              <span>Voucher</span>
+              <span>-{formatCurrency(order.discount)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-gray-600 dark:text-gray-400">
             <span>Shipping</span>
             <span>{order.shipping === 0 ? 'Free' : formatCurrency(order.shipping)}</span>

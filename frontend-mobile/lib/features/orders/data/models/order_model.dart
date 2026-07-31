@@ -94,6 +94,8 @@ class OrderModel extends OrderEntity {
     required super.shippingAddress,
     required super.paymentType,
     required super.subtotal,
+    required super.productDiscount,
+    required super.discount,
     required super.tax,
     required super.shipping,
     required super.total,
@@ -102,6 +104,7 @@ class OrderModel extends OrderEntity {
     super.cancelReason,
     super.estimatedDelivery,
     super.sellerMessages = const {},
+    super.selectedDeliveryOption,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -130,6 +133,8 @@ class OrderModel extends OrderEntity {
           json['shippingAddress'] as Map<String, dynamic>? ?? {}),
       paymentType: payment['type'] ?? 'credit-card',
       subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0,
+      productDiscount: (json['productDiscount'] as num?)?.toDouble() ?? 0,
+      discount: (json['discount'] as num?)?.toDouble() ?? 0,
       tax: (json['tax'] as num?)?.toDouble() ?? 0,
       shipping: (json['shipping'] as num?)?.toDouble() ?? 0,
       total: (json['total'] as num?)?.toDouble() ?? 0,
@@ -138,6 +143,7 @@ class OrderModel extends OrderEntity {
       createdAt: json['createdAt'] ?? '',
       estimatedDelivery: json['estimatedDelivery'],
       sellerMessages: sellerMessages,
+      selectedDeliveryOption: json['selectedDeliveryOption'] as String?,
     );
   }
 }

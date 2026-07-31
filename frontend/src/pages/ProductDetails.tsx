@@ -28,6 +28,8 @@ import {
   UserPlus,
   UserMinus,
   Store,
+  Tag,
+  Zap,
 } from 'lucide-react';
 import type { PublicUser } from '../types/user';
 
@@ -281,15 +283,68 @@ export const ProductDetails: React.FC = () => {
 
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-6">
-              <span className="text-4xl font-bold text-primary-600">
-                {formatCurrency(product.price)}
-              </span>
+              {product.discount && product.discount > 0 ? (
+                <>
+                  <span className="text-4xl font-bold text-primary-600">
+                    {formatCurrency(product.price * (1 - product.discount / 100))}
+                  </span>
+                  <span className="text-xl text-gray-400 line-through">
+                    {formatCurrency(product.price)}
+                  </span>
+                  <span className="px-2 py-0.5 text-sm font-bold text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg">
+                    -{product.discount}%
+                  </span>
+                </>
+              ) : (
+                <span className="text-4xl font-bold text-primary-600">
+                  {formatCurrency(product.price)}
+                </span>
+              )}
             </div>
 
             {/* Description */}
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
               {product.description}
             </p>
+
+            {/* Tags */}
+            {product.tags && product.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {product.tags.map(tag => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full"
+                  >
+                    <Tag className="w-3 h-3" />
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Product Details (brand, condition, SKU) */}
+            {(product.brand || product.condition || product.sku) && (
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-3 mb-6 p-4 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-100 dark:border-gray-600">
+                {product.brand && (
+                  <>
+                    <dt className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Brand</dt>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-white">{product.brand}</dd>
+                  </>
+                )}
+                {product.condition && (
+                  <>
+                    <dt className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Condition</dt>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-white capitalize">{product.condition}</dd>
+                  </>
+                )}
+                {product.sku && (
+                  <>
+                    <dt className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">SKU</dt>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-white font-mono">{product.sku}</dd>
+                  </>
+                )}
+              </dl>
+            )}
 
             {/* Stock Status */}
             <div className="mb-6">
@@ -351,10 +406,54 @@ export const ProductDetails: React.FC = () => {
             </div>
           )}
 
-          {/* Features */}
+          {/* Shipping & Trust badges */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Delivery options from seller */}
+            {product.shippingOptions && product.shippingOptions.length > 0 ? (
+              <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600 sm:col-span-2">
+                <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
+                  <Truck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white">Delivery Options</p>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {product.shippingOptions.map(opt => {
+                      const labels: Record<string, string> = {
+                        standard: 'Standard (3–7 days)',
+                        express: 'Express (1–2 days)',
+                        pickup: 'Pickup',
+                      };
+                      return (
+                        <span key={opt} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full border border-primary-100 dark:border-primary-800">
+                          {opt === 'express' && <Zap className="w-3 h-3" />}
+                          {opt === 'standard' && <Truck className="w-3 h-3" />}
+                          {opt === 'pickup' && <Store className="w-3 h-3" />}
+                          {labels[opt] ?? opt}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {product.shippingFee === 'free'
+                      ? 'Free shipping'
+                      : product.shippingFeeAmount
+                        ? `Shipping fee: ${formatCurrency(product.shippingFeeAmount)}`
+                        : 'Buyer pays shipping'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600">
+                <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
+                  <Truck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white">Free Shipping</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">On orders over $50</p>
+                </div>
+              </div>
+            )}
             {[
-              { icon: Truck, label: 'Free Shipping', sub: 'On orders over $50' },
               { icon: RotateCcw, label: 'Easy Returns', sub: '30-day return policy' },
               { icon: Shield, label: 'Secure Payment', sub: '100% secure checkout' },
               { icon: Package, label: 'Quality Assured', sub: 'Premium products only' },

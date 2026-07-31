@@ -11,6 +11,7 @@ import '../features/cart/presentation/screens/cart_screen.dart';
 import '../features/orders/presentation/screens/orders_screen.dart';
 import '../features/orders/presentation/screens/order_detail_screen.dart';
 import '../features/orders/presentation/screens/checkout_screen.dart';
+import '../features/voucher/presentation/select_voucher_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/wishlist/presentation/screens/wishlist_screen.dart';
 import '../features/seller/presentation/screens/seller_dashboard_screen.dart';
@@ -71,9 +72,21 @@ GoRouter createRouter(AuthBloc authBloc,
       GoRoute(
         path: '/checkout',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, state) => CheckoutScreen(
-          selectedIds: (state.extra as Set<String>?) ?? const {},
-        ),
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is Map) {
+            return CheckoutScreen(
+              selectedIds: (extra['selected'] as Set<String>?) ?? const {},
+              initialDeliverySelections:
+                  (extra['deliverySelections'] as Map<String, String>?) ?? const {},
+              initialVoucherSelections:
+                  (extra['voucherSelections'] as Map<String, VoucherSelection>?) ?? const {},
+            );
+          }
+          return CheckoutScreen(
+            selectedIds: (extra as Set<String>?) ?? const {},
+          );
+        },
       ),
       GoRoute(
         path: '/products/:id',

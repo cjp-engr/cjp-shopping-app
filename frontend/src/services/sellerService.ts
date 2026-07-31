@@ -16,7 +16,7 @@ export interface ProductFormData {
   tags?: string[];
   shippingOptions?: Array<'standard' | 'express' | 'pickup'>;
   shippingFee?: 'free' | 'buyer_pays';
-  shippingFeeAmount?: number;
+  shippingFeeAmounts?: Record<string, number>;
 }
 
 const adaptProduct = (p: any): Product => ({
@@ -39,7 +39,7 @@ const adaptProduct = (p: any): Product => ({
   discount: p.discount,
   shippingOptions: p.shippingOptions,
   shippingFee: p.shippingFee,
-  shippingFeeAmount: p.shippingFeeAmount,
+  shippingFeeAmounts: p.shippingFeeAmounts,
 });
 
 const adaptOrder = (order: any): Order & { buyer?: { id: string; firstName: string; lastName: string; email: string } } => ({
@@ -120,7 +120,7 @@ class SellerService {
       if (form.tags?.length)       fd.append('tags', JSON.stringify(form.tags));
       if (form.shippingOptions?.length) fd.append('shippingOptions', JSON.stringify(form.shippingOptions));
       if (form.shippingFee)        fd.append('shippingFee', form.shippingFee);
-      if (form.shippingFeeAmount != null) fd.append('shippingFeeAmount', String(form.shippingFeeAmount));
+      if (form.shippingFeeAmounts && Object.keys(form.shippingFeeAmounts).length > 0) fd.append('shippingFeeAmounts', JSON.stringify(form.shippingFeeAmounts));
       imageFiles.forEach(f => fd.append('images', f));
       body = fd;
       headers = getAuthHeadersNoContentType();
@@ -157,7 +157,7 @@ class SellerService {
       if (form.tags?.length)       fd.append('tags', JSON.stringify(form.tags));
       if (form.shippingOptions?.length) fd.append('shippingOptions', JSON.stringify(form.shippingOptions));
       if (form.shippingFee)        fd.append('shippingFee', form.shippingFee);
-      if (form.shippingFeeAmount != null) fd.append('shippingFeeAmount', String(form.shippingFeeAmount));
+      if (form.shippingFeeAmounts && Object.keys(form.shippingFeeAmounts).length > 0) fd.append('shippingFeeAmounts', JSON.stringify(form.shippingFeeAmounts));
       imageFiles.forEach(f => fd.append('images', f));
       body = fd;
       headers = getAuthHeadersNoContentType();

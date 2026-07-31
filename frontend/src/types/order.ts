@@ -16,11 +16,14 @@ export interface Order {
   shippingAddress: Address;
   paymentMethod: PaymentMethod;
   subtotal: number;
+  productDiscount: number;
+  discount: number;
   tax: number;
   shipping: number;
   total: number;
   status: OrderStatus;
   cancelReason?: string;
+  selectedDeliveryOption?: string;
   createdAt: string;
   estimatedDelivery?: string;
 }

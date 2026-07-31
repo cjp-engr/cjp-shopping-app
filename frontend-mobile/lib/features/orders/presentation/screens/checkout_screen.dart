@@ -24,8 +24,17 @@ import '../../../cart/presentation/bloc/cart_state.dart';
 class CheckoutScreen extends StatefulWidget {
   /// Product IDs of the items selected in the cart for this checkout.
   final Set<String> selectedIds;
+  /// Pre-selected delivery options from the cart screen (seller key → option).
+  final Map<String, String> initialDeliverySelections;
+  /// Pre-applied vouchers from the cart screen (seller key → VoucherSelection).
+  final Map<String, VoucherSelection> initialVoucherSelections;
 
-  const CheckoutScreen({super.key, this.selectedIds = const {}});
+  const CheckoutScreen({
+    super.key,
+    this.selectedIds = const {},
+    this.initialDeliverySelections = const {},
+    this.initialVoucherSelections = const {},
+  });
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -47,6 +56,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final Map<String, TextEditingController> _messageCtrls = {};
   late final VoucherRepository _voucherRepo;
 
+  // Per-seller delivery option selection (key = sellerId or '__unknown__')
+  late final Map<String, String> _deliverySelections;
+
   @override
   void dispose() {
     _streetCtrl.dispose();
@@ -65,6 +77,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
+    _deliverySelections = Map<String, String>.from(widget.initialDeliverySelections);
+    // Pre-populate voucher state from cart selections
+    for (final entry in widget.initialVoucherSelections.entries) {
+      _voucherDiscounts[entry.key] = entry.value.discountAmount;
+      _appliedVoucherCodes[entry.key] = entry.value.code;
+      _voucherCtrl(entry.key).text = entry.value.code;
+    }
     ApiClient.get().then((client) {
       if (mounted) _voucherRepo = VoucherRepository(client);
     });
@@ -132,11 +151,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final items = selectedItems
         .map((i) => {'productId': i.product.id, 'quantity': i.quantity})
         .toList();
-    final totalDiscount =
+    double effectivePriceSubmit(CartItemEntity i) {
+      final d = i.product.discount;
+      return d != null && d > 0 ? i.product.price * (1 - d / 100) : i.product.price;
+    }
+    final effectiveSubtotal = selectedItems.fold<double>(
+        0, (s, i) => s + effectivePriceSubmit(i) * i.quantity);
+    final voucherTotal =
         _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
     final totalShipping = cart.shippingFor(sellerDiscounts: _voucherDiscounts);
-    final afterDiscount =
-        (cart.subtotal - totalDiscount).clamp(0, double.infinity);
+    final afterDiscount = (effectiveSubtotal - voucherTotal).clamp(0.0, double.infinity);
     final totalTax = afterDiscount * 0.08;
     context.read<OrderBloc>().add(OrderCreateRequested({
           'userId': user.id,
@@ -154,6 +178,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               if (e.value.text.trim().isNotEmpty) e.key: e.value.text.trim(),
           },
           'couponCodes': Map<String, String>.from(_appliedVoucherCodes),
+          'deliverySelections': Map<String, String>.from(_deliverySelections),
           'contactEmail': user.email,
           'subtotal': afterDiscount,
           'tax': totalTax,
@@ -198,21 +223,52 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               groups[key]!.add(item);
             }
 
-            final selectedSubtotal =
-                selectedItems.fold<double>(0, (s, i) => s + i.subtotal);
-            final totalDiscount =
+            double effectivePrice(CartItemEntity i) {
+              final d = i.product.discount;
+              return d != null && d > 0
+                  ? i.product.price * (1 - d / 100)
+                  : i.product.price;
+            }
+
+            // Gross = raw prices; effective = after product-level % discount
+            final grossSubtotal = selectedItems.fold<double>(
+                0, (s, i) => s + i.product.price * i.quantity);
+            final effectiveSubtotal = selectedItems.fold<double>(
+                0, (s, i) => s + effectivePrice(i) * i.quantity);
+            final productDiscountTotal = grossSubtotal - effectiveSubtotal;
+            final voucherTotal =
                 _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
+            final totalDiscount = productDiscountTotal + voucherTotal;
+            // Voucher applied on top of already-discounted price
+            final afterDiscount =
+                (effectiveSubtotal - voucherTotal).clamp(0.0, double.infinity);
             double totalShipping = 0;
             double totalTax = 0;
             for (final entry in groups.entries) {
-              final disc = _voucherDiscounts[entry.key] ?? 0;
-              final sub = entry.value.fold<double>(0, (s, i) => s + i.subtotal);
-              final after = (sub - disc).clamp(0.0, double.infinity);
-              totalShipping += after < 50 ? 9.99 : 0.0;
-              totalTax += after * 0.08;
+              final grpEffective = entry.value.fold<double>(
+                  0, (s, i) => s + effectivePrice(i) * i.quantity);
+              final grpVoucher = _voucherDiscounts[entry.key] ?? 0;
+              final grpAfter = (grpEffective - grpVoucher).clamp(0.0, double.infinity);
+              String? grpFee;
+              Map<String, double> grpFeeAmounts = {};
+              for (final item in entry.value) {
+                grpFee ??= item.product.shippingFee;
+                if (grpFeeAmounts.isEmpty) grpFeeAmounts = item.product.shippingFeeAmounts;
+              }
+              final selectedOpt = _deliverySelections[entry.key] ??
+                  entry.value.first.product.shippingOptions.firstOrNull;
+              if (grpFee == 'free') {
+                // free — add nothing
+              } else if (grpFee == 'buyer_pays') {
+                totalShipping +=
+                    (selectedOpt != null ? grpFeeAmounts[selectedOpt] : null) ??
+                        grpFeeAmounts.values.firstOrNull ??
+                        0.0;
+              } else {
+                totalShipping += grpAfter < 50 ? 9.99 : 0.0;
+              }
+              totalTax += grpAfter * 0.08;
             }
-            final afterDiscount =
-                (selectedSubtotal - totalDiscount).clamp(0.0, double.infinity);
             final grandTotal = afterDiscount + totalShipping + totalTax;
 
             return Form(
@@ -246,13 +302,39 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             final sellerKey = entry.key;
                             final items = entry.value;
                             final sellerName = items.first.product.sellerName;
-                            final groupSubtotal =
-                                items.fold<double>(0, (s, i) => s + i.subtotal);
-                            final discount = _voucherDiscounts[sellerKey] ?? 0;
-                            final afterDiscount = (groupSubtotal - discount)
-                                .clamp(0.0, double.infinity);
-                            final sellerShipping =
-                                afterDiscount < 50 ? 9.99 : 0.0;
+                            final groupGross = items.fold<double>(
+                                0, (s, i) => s + i.product.price * i.quantity);
+                            final groupSubtotal = items.fold<double>(
+                                0, (s, i) => s + effectivePrice(i) * i.quantity);
+                            final groupProductDiscount = groupGross - groupSubtotal;
+                            final groupVoucherDiscount = _voucherDiscounts[sellerKey] ?? 0.0;
+                            final afterDiscount =
+                                (groupSubtotal - groupVoucherDiscount).clamp(0.0, double.infinity);
+
+                            // Collect shipping options across all products (union)
+                            final shippingOptions = <String>[];
+                            String? shippingFee;
+                            Map<String, double> shippingFeeAmounts = {};
+                            for (final item in items) {
+                              for (final opt in item.product.shippingOptions) {
+                                if (!shippingOptions.contains(opt)) {
+                                  shippingOptions.add(opt);
+                                }
+                              }
+                              shippingFee ??= item.product.shippingFee;
+                              if (shippingFeeAmounts.isEmpty) shippingFeeAmounts = item.product.shippingFeeAmounts;
+                            }
+
+                            final sellerSelectedOpt = _deliverySelections[sellerKey] ?? shippingOptions.firstOrNull;
+                            double sellerShipping;
+                            if (shippingFee == 'free') {
+                              sellerShipping = 0.0;
+                            } else if (shippingFee == 'buyer_pays') {
+                              sellerShipping = (sellerSelectedOpt != null ? shippingFeeAmounts[sellerSelectedOpt] : null) ?? shippingFeeAmounts.values.firstOrNull ?? 0.0;
+                            } else {
+                              sellerShipping = afterDiscount < 50 ? 9.99 : 0.0;
+                            }
+
                             final sellerTax = afterDiscount * 0.08;
                             final storeTotal =
                                 afterDiscount + sellerShipping + sellerTax;
@@ -262,7 +344,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               items: items,
                               voucherCtrl: _voucherCtrl(sellerKey),
                               messageCtrl: _messageCtrl(sellerKey),
-                              discount: discount,
+                              grossSubtotal: groupGross,
+                              productDiscount: groupProductDiscount,
+                              voucherDiscount: groupVoucherDiscount,
                               sellerShipping: sellerShipping,
                               sellerTax: sellerTax,
                               storeTotal: storeTotal,
@@ -273,6 +357,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 sellerName ?? 'Store',
                                 groupSubtotal,
                               ),
+                              shippingOptions: shippingOptions,
+                              selectedDelivery: _deliverySelections[sellerKey],
+                              onDeliveryChanged: (opt) => setState(
+                                  () => _deliverySelections[sellerKey] = opt),
                             );
                           }),
 
@@ -296,8 +384,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                           // ── Order total breakdown ─────────────────────────
                           _TotalBreakdown(
-                            subtotal: selectedSubtotal,
-                            totalDiscount: totalDiscount,
+                            grossSubtotal: grossSubtotal,
+                            productDiscount: productDiscountTotal,
+                            voucherDiscount: voucherTotal,
                             totalShipping: totalShipping,
                             totalTax: totalTax,
                             grandTotal: grandTotal,
@@ -658,24 +747,34 @@ class _SellerCard extends StatelessWidget {
   final List<CartItemEntity> items;
   final TextEditingController voucherCtrl;
   final TextEditingController messageCtrl;
-  final double discount;
+  final double grossSubtotal;
+  final double productDiscount;
+  final double voucherDiscount;
   final double sellerShipping;
   final double sellerTax;
   final double storeTotal;
   final VoidCallback onApplyVoucher;
   final VoidCallback onOpenVoucherScreen;
+  final List<String> shippingOptions;
+  final String? selectedDelivery;
+  final ValueChanged<String> onDeliveryChanged;
 
   const _SellerCard({
     required this.sellerName,
     required this.items,
     required this.voucherCtrl,
     required this.messageCtrl,
-    required this.discount,
+    required this.grossSubtotal,
+    required this.productDiscount,
+    required this.voucherDiscount,
     required this.sellerShipping,
     required this.sellerTax,
     required this.storeTotal,
     required this.onApplyVoucher,
     required this.onOpenVoucherScreen,
+    required this.shippingOptions,
+    required this.selectedDelivery,
+    required this.onDeliveryChanged,
   });
 
   @override
@@ -716,10 +815,20 @@ class _SellerCard extends StatelessWidget {
 
           const Divider(height: 1),
 
+          // Delivery option selector
+          if (shippingOptions.isNotEmpty)
+            _DeliveryOptionRow(
+              options: shippingOptions,
+              selected: selectedDelivery ?? shippingOptions.first,
+              onChanged: onDeliveryChanged,
+            ),
+
+          if (shippingOptions.isNotEmpty) const Divider(height: 1),
+
           // Shop Voucher row (tapping → voucher screen)
           _VoucherRow(
             controller: voucherCtrl,
-            discount: discount,
+            discount: voucherDiscount,
             onApply: onApplyVoucher,
             onTapRow: onOpenVoucherScreen,
           ),
@@ -734,7 +843,9 @@ class _SellerCard extends StatelessWidget {
           // Per-seller order breakdown
           _SellerBreakdown(
             itemCount: itemCount,
-            discount: discount,
+            grossSubtotal: grossSubtotal,
+            productDiscount: productDiscount,
+            voucherDiscount: voucherDiscount,
             shipping: sellerShipping,
             tax: sellerTax,
             total: storeTotal,
@@ -789,13 +900,36 @@ class _CheckoutItemRow extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '\$${item.product.price.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (item.product.discount != null && item.product.discount! > 0) ...[
+                          Text(
+                            '\$${item.product.price.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              decoration: TextDecoration.lineThrough,
+                              color: context.onSurfaceMuted,
+                            ),
+                          ),
+                          Text(
+                            '\$${(item.product.price * (1 - item.product.discount! / 100)).toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ] else
+                          Text(
+                            '\$${item.product.price.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                      ],
                     ),
                     Text(
                       'x${item.quantity}',
@@ -1779,14 +1913,16 @@ class _ExpiryPickerField extends StatelessWidget {
 // ── Order total breakdown ─────────────────────────────────────────────────────
 
 class _TotalBreakdown extends StatelessWidget {
-  final double subtotal;
-  final double totalDiscount;
+  final double grossSubtotal;
+  final double productDiscount;
+  final double voucherDiscount;
   final double totalShipping;
   final double totalTax;
   final double grandTotal;
   const _TotalBreakdown({
-    required this.subtotal,
-    required this.totalDiscount,
+    required this.grossSubtotal,
+    required this.productDiscount,
+    required this.voucherDiscount,
     required this.totalShipping,
     required this.totalTax,
     required this.grandTotal,
@@ -1824,12 +1960,20 @@ class _TotalBreakdown extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSizes.sm),
-          _summaryRow('Merchandise Subtotal',
-              '\$${subtotal.toStringAsFixed(2)}', context),
-          if (totalDiscount > 0)
-            _summaryRow('Voucher Savings',
-                '-\$${totalDiscount.toStringAsFixed(2)}', context,
+          _summaryRow('Merchandise Total',
+              '\$${grossSubtotal.toStringAsFixed(2)}', context),
+          if (productDiscount > 0) ...[
+            const SizedBox(height: 2),
+            _summaryRow('Product Discount',
+                '-\$${productDiscount.toStringAsFixed(2)}', context,
                 valueColor: AppColors.success),
+          ],
+          if (voucherDiscount > 0) ...[
+            const SizedBox(height: 2),
+            _summaryRow('Voucher Savings',
+                '-\$${voucherDiscount.toStringAsFixed(2)}', context,
+                valueColor: AppColors.success),
+          ],
           _summaryRow(
             'Shipping Fee',
             totalShipping == 0
@@ -1892,14 +2036,18 @@ class _TotalBreakdown extends StatelessWidget {
 
 class _SellerBreakdown extends StatelessWidget {
   final int itemCount;
-  final double discount;
+  final double grossSubtotal;
+  final double productDiscount;
+  final double voucherDiscount;
   final double shipping;
   final double tax;
   final double total;
 
   const _SellerBreakdown({
     required this.itemCount,
-    required this.discount,
+    required this.grossSubtotal,
+    required this.productDiscount,
+    required this.voucherDiscount,
     required this.shipping,
     required this.tax,
     required this.total,
@@ -1907,17 +2055,30 @@ class _SellerBreakdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
+    return Container(
+      margin: const EdgeInsets.symmetric(
           horizontal: AppSizes.md, vertical: AppSizes.sm),
+      padding: const EdgeInsets.all(AppSizes.sm),
+      decoration: BoxDecoration(
+        color: context.surfaceVariantColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      ),
       child: Column(
         children: [
-          if (discount > 0) ...[
-            _row(
-                'Voucher Savings', '-\$${discount.toStringAsFixed(2)}', context,
-                valueColor: AppColors.success),
+          _row('Order Amount', '\$${grossSubtotal.toStringAsFixed(2)}', context),
+          if (productDiscount > 0) ...[
             const SizedBox(height: 4),
+            _row('Product Discount',
+                '-\$${productDiscount.toStringAsFixed(2)}', context,
+                valueColor: AppColors.success),
           ],
+          if (voucherDiscount > 0) ...[
+            const SizedBox(height: 4),
+            _row('Voucher Savings',
+                '-\$${voucherDiscount.toStringAsFixed(2)}', context,
+                valueColor: AppColors.success),
+          ],
+          const SizedBox(height: 4),
           _row(
             'Shipping ($itemCount item${itemCount != 1 ? 's' : ''})',
             shipping == 0 ? 'FREE' : '\$${shipping.toStringAsFixed(2)}',
@@ -1956,6 +2117,124 @@ class _SellerBreakdown extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Delivery option row ───────────────────────────────────────────────────────
+
+class _DeliveryOptionRow extends StatelessWidget {
+  final List<String> options;
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  const _DeliveryOptionRow({
+    required this.options,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  String _label(String opt) {
+    switch (opt) {
+      case 'express':
+        return 'Express';
+      case 'pickup':
+        return 'Pickup';
+      default:
+        return 'Standard';
+    }
+  }
+
+  IconData _icon(String opt) {
+    switch (opt) {
+      case 'express':
+        return Icons.bolt_rounded;
+      case 'pickup':
+        return Icons.store_rounded;
+      default:
+        return Icons.local_shipping_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSizes.md, 10, AppSizes.md, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.local_shipping_outlined,
+                  size: 14, color: context.onSurfaceMuted),
+              const SizedBox(width: 6),
+              Text(
+                'Delivery Method',
+                style: TextStyle(fontSize: 13, color: context.onSurfaceColor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: options.map((opt) {
+              final isSelected = selected == opt;
+              final isDark =
+                  Theme.of(context).brightness == Brightness.dark;
+              return GestureDetector(
+                onTap: () => onChanged(opt),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary
+                            .withValues(alpha: isDark ? 0.18 : 0.08)
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.04)
+                            : Colors.grey.shade50),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.primary
+                          : (isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.grey.shade200),
+                      width: isSelected ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _icon(opt),
+                        size: 14,
+                        color: isSelected
+                            ? AppColors.primary
+                            : context.onSurfaceMuted,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        _label(opt),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: isSelected
+                              ? AppColors.primary
+                              : context.onSurfaceColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 }

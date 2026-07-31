@@ -20,7 +20,7 @@ export interface Product {
   discount?: number;
   shippingOptions?: Array<'standard' | 'express' | 'pickup'>;
   shippingFee?: 'free' | 'buyer_pays';
-  shippingFeeAmount?: number;
+  shippingFeeAmounts?: Record<string, number>;
 }
 
 export interface ProductFilters {

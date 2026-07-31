@@ -24,7 +24,7 @@ class ProductEntity extends Equatable {
   final double? discount;
   final List<String> shippingOptions;
   final String? shippingFee;
-  final double? shippingFeeAmount;
+  final Map<String, double> shippingFeeAmounts;
 
   const ProductEntity({
     required this.id,
@@ -50,7 +50,7 @@ class ProductEntity extends Equatable {
     this.discount,
     this.shippingOptions = const [],
     this.shippingFee,
-    this.shippingFeeAmount,
+    this.shippingFeeAmounts = const {},
   });
 
   bool get inStock => stock > 0;

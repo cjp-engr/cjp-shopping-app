@@ -15,6 +15,7 @@ interface CreateOrderParams {
   paymentMethod: object;
   sellerMessages?: Record<string, string>;
   couponCodes?: Record<string, string>;
+  deliverySelections?: Record<string, string>;
 }
 
 async function applyCoupon(
@@ -61,7 +62,7 @@ async function restoreStock(items: Array<{ product: unknown; quantity: number }>
 }
 
 export async function createOrders(params: CreateOrderParams) {
-  const { userId, items, shippingAddress, paymentMethod, sellerMessages = {}, couponCodes = {} } = params;
+  const { userId, items, shippingAddress, paymentMethod, sellerMessages = {}, couponCodes = {}, deliverySelections = {} } = params;
 
   // Validate all products and group by seller in one pass
   const sellerGroups = new Map<string, Array<{ productDoc: InstanceType<typeof Product>; quantity: number }>>();
@@ -83,9 +84,14 @@ export async function createOrders(params: CreateOrderParams) {
 
   for (const [sellerKey, groupItems] of sellerGroups) {
     let subtotal = 0;
+    let productDiscount = 0;
 
     const orderItems = groupItems.map(({ productDoc, quantity }) => {
-      subtotal += productDoc.price * quantity;
+      const gross = productDoc.price * quantity;
+      const discPct = (productDoc.discount ?? 0);
+      const itemDiscount = gross * (discPct / 100);
+      subtotal += gross;
+      productDiscount += itemDiscount;
       return {
         product: productDoc._id,
         productName: productDoc.name,
@@ -104,14 +110,30 @@ export async function createOrders(params: CreateOrderParams) {
       ),
     );
 
+    const effectiveSubtotal = subtotal - productDiscount;
+
     const { discount, couponCode } = couponCodes[sellerKey]
-      ? await applyCoupon(couponCodes[sellerKey], sellerKey, subtotal)
+      ? await applyCoupon(couponCodes[sellerKey], sellerKey, effectiveSubtotal)
       : { discount: 0, couponCode: undefined };
 
-    const discountedSubtotal = subtotal - discount;
-    const tax = discountedSubtotal * 0.08;
-    const shipping = discountedSubtotal >= 50 ? 0 : 9.99;
-    const total = discountedSubtotal + tax + shipping;
+    const afterAllDiscounts = effectiveSubtotal - discount;
+    const tax = afterAllDiscounts * 0.08;
+
+    // Use seller's configured fee per selected delivery option
+    const firstProduct = groupItems[0].productDoc as any;
+    const shippingFee: string | undefined = firstProduct.shippingFee;
+    const shippingFeeAmounts: Record<string, number> = firstProduct.shippingFeeAmounts?.toJSON?.() ?? firstProduct.shippingFeeAmounts ?? {};
+    const selectedDeliveryOption = deliverySelections[sellerKey];
+    let shipping: number;
+    if (shippingFee === 'free') {
+      shipping = 0;
+    } else if (shippingFee === 'buyer_pays') {
+      shipping = (selectedDeliveryOption && shippingFeeAmounts[selectedDeliveryOption]) ?? Object.values(shippingFeeAmounts)[0] ?? 0;
+    } else {
+      shipping = afterAllDiscounts >= 50 ? 0 : 9.99;
+    }
+
+    const total = afterAllDiscounts + tax + shipping;
 
     const order = await Order.create({
       userId,
@@ -119,6 +141,7 @@ export async function createOrders(params: CreateOrderParams) {
       shippingAddress,
       paymentMethod,
       subtotal,
+      productDiscount,
       discount,
       couponCode,
       tax,
@@ -126,6 +149,7 @@ export async function createOrders(params: CreateOrderParams) {
       total,
       estimatedDelivery,
       sellerMessages: sellerMessages[sellerKey] ? { [sellerKey]: sellerMessages[sellerKey] } : {},
+      deliverySelections: selectedDeliveryOption ? { [sellerKey]: selectedDeliveryOption } : {},
     });
 
     createdOrders.push(order);

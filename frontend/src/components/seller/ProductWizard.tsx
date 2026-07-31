@@ -29,7 +29,7 @@ interface WizardData {
   imageUrl: string;
   shippingOptions: Array<'standard' | 'express' | 'pickup'>;
   shippingFee: 'free' | 'buyer_pays';
-  shippingFeeAmount: string;
+  shippingFeeAmounts: Record<string, string>;
 }
 
 const EMPTY_DATA: WizardData = {
@@ -37,7 +37,7 @@ const EMPTY_DATA: WizardData = {
   price: '', stock: '', sku: '', discount: '',
   description: '', tags: [],
   imageMode: 'upload', imageUrl: '',
-  shippingOptions: ['standard'], shippingFee: 'free', shippingFeeAmount: '',
+  shippingOptions: ['standard'], shippingFee: 'free', shippingFeeAmounts: {},
 };
 
 interface ProductWizardProps {
@@ -78,7 +78,9 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
           tags: product.tags ?? [],
           shippingOptions: product.shippingOptions ?? ['standard'],
           shippingFee: product.shippingFee ?? 'free',
-          shippingFeeAmount: product.shippingFeeAmount != null ? String(product.shippingFeeAmount) : '',
+          shippingFeeAmounts: product.shippingFeeAmounts
+            ? Object.fromEntries(Object.entries(product.shippingFeeAmounts).map(([k, v]) => [k, String(v)]))
+            : {},
         }
       : EMPTY_DATA,
   );
@@ -169,7 +171,13 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         tags: data.tags.length > 0 ? data.tags : undefined,
         shippingOptions: data.shippingOptions,
         shippingFee: data.shippingFee,
-        shippingFeeAmount: data.shippingFee === 'buyer_pays' && data.shippingFeeAmount ? Number(data.shippingFeeAmount) : undefined,
+        shippingFeeAmounts: data.shippingFee === 'buyer_pays'
+          ? Object.fromEntries(
+              Object.entries(data.shippingFeeAmounts)
+                .filter(([, v]) => v.trim() !== '')
+                .map(([k, v]) => [k, Number(v)])
+            )
+          : undefined,
       };
       if (isEditing) {
         await sellerService.updateProduct(
@@ -516,23 +524,32 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
             ))}
           </div>
           {data.shippingFee === 'buyer_pays' && (
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Shipping Fee Amount <span className="text-gray-400 font-normal">(optional)</span>
+            <div className="mt-4 space-y-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Shipping Fee per Delivery Option <span className="text-gray-400 font-normal">(optional)</span>
               </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={data.shippingFeeAmount}
-                  onChange={e => set('shippingFeeAmount', e.target.value)}
-                  className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-              <p className="text-xs text-gray-400 mt-1">Leave blank to let buyers see "calculated at checkout"</p>
+              {([
+                { value: 'standard', label: 'Standard' },
+                { value: 'express',  label: 'Express'  },
+                { value: 'pickup',   label: 'Pickup'   },
+              ] as const).filter(({ value }) => data.shippingOptions.includes(value)).map(({ value, label }) => (
+                <div key={value} className="flex items-center gap-3">
+                  <span className="w-24 text-sm text-gray-600 dark:text-gray-300 font-medium flex-shrink-0">{label}</span>
+                  <div className="relative flex-1">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={data.shippingFeeAmounts[value] ?? ''}
+                      onChange={e => set('shippingFeeAmounts', { ...data.shippingFeeAmounts, [value]: e.target.value })}
+                      className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              ))}
+              <p className="text-xs text-gray-400">Leave blank to show "calculated at checkout"</p>
             </div>
           )}
         </div>

@@ -4,7 +4,7 @@ import * as orderService from '../services/orderService.js';
 
 export const createOrder = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { items, shippingAddress, paymentMethod, sellerMessages, couponCodes } = req.body;
+    const { items, shippingAddress, paymentMethod, sellerMessages, couponCodes, deliverySelections } = req.body;
     const orders = await orderService.createOrders({
       userId: req.user!.id,
       items,
@@ -12,6 +12,7 @@ export const createOrder = async (req: AuthRequest, res: Response, next: NextFun
       paymentMethod,
       sellerMessages,
       couponCodes,
+      deliverySelections,
     });
     res.status(201).json({ success: true, orders });
   } catch (err) { next(err); }

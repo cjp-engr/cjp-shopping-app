@@ -1,6 +1,33 @@
 import type { Product, ProductFilters, SortOption } from '../types/product';
 import { API_ENDPOINTS, getHeaders } from '../config/api';
 
+const adaptProduct = (p: any): Product => ({
+  id: p._id,
+  name: p.name,
+  description: p.description,
+  price: p.price,
+  category: p.category,
+  image: p.image,
+  images: p.images,
+  stock: p.stock,
+  rating: p.rating,
+  reviews: p.reviews,
+  tags: p.tags,
+  specifications: p.specifications,
+  createdAt: p.createdAt,
+  sellerId: p.sellerId?._id ?? p.sellerId ?? undefined,
+  sellerName: p.sellerId?.firstName
+    ? `${p.sellerId.firstName} ${p.sellerId.lastName ?? ''}`.trim()
+    : undefined,
+  brand: p.brand,
+  condition: p.condition,
+  sku: p.sku,
+  discount: p.discount,
+  shippingOptions: p.shippingOptions,
+  shippingFee: p.shippingFee,
+  shippingFeeAmounts: p.shippingFeeAmounts,
+});
+
 class ProductService {
   async getProducts(filters?: ProductFilters, sortBy?: SortOption, minReviews?: number): Promise<Product[]> {
     const params = new URLSearchParams();
@@ -44,25 +71,7 @@ class ProductService {
     const data = await response.json();
 
     // Adapt backend response to frontend format
-    return data.products.map((p: any) => ({
-      id: p._id,
-      name: p.name,
-      description: p.description,
-      price: p.price,
-      category: p.category,
-      image: p.image,
-      images: p.images,
-      stock: p.stock,
-      rating: p.rating,
-      reviews: p.reviews,
-      tags: p.tags,
-      specifications: p.specifications,
-      createdAt: p.createdAt,
-      sellerId: p.sellerId?._id ?? p.sellerId ?? undefined,
-      sellerName: p.sellerId?.firstName
-        ? `${p.sellerId.firstName} ${p.sellerId.lastName ?? ''}`.trim()
-        : undefined,
-    }));
+    return data.products.map((p: any) => adaptProduct(p));
   }
 
   async getProductById(id: string): Promise<Product | null> {
@@ -78,25 +87,7 @@ class ProductService {
       const data = await response.json();
       const p = data.product;
 
-      return {
-        id: p._id,
-        name: p.name,
-        description: p.description,
-        price: p.price,
-        category: p.category,
-        image: p.image,
-        images: p.images,
-        stock: p.stock,
-        rating: p.rating,
-        reviews: p.reviews,
-        tags: p.tags,
-        specifications: p.specifications,
-        createdAt: p.createdAt,
-        sellerId: p.sellerId?._id ?? p.sellerId ?? undefined,
-        sellerName: p.sellerId?.firstName
-          ? `${p.sellerId.firstName} ${p.sellerId.lastName ?? ''}`.trim()
-          : undefined,
-      };
+      return adaptProduct(p);
     } catch (error) {
       return null;
     }

@@ -45,6 +45,8 @@ class OrderEntity extends Equatable {
   final OrderAddressEntity shippingAddress;
   final String paymentType;
   final double subtotal;
+  final double productDiscount;
+  final double discount;
   final double tax;
   final double shipping;
   final double total;
@@ -53,6 +55,7 @@ class OrderEntity extends Equatable {
   final String createdAt;
   final String? estimatedDelivery;
   final Map<String, String> sellerMessages;
+  final String? selectedDeliveryOption;
 
   const OrderEntity({
     required this.id,
@@ -61,6 +64,8 @@ class OrderEntity extends Equatable {
     required this.shippingAddress,
     required this.paymentType,
     required this.subtotal,
+    required this.productDiscount,
+    required this.discount,
     required this.tax,
     required this.shipping,
     required this.total,
@@ -69,6 +74,7 @@ class OrderEntity extends Equatable {
     this.cancelReason,
     this.estimatedDelivery,
     this.sellerMessages = const {},
+    this.selectedDeliveryOption,
   });
 
   String get shortId =>

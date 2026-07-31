@@ -23,6 +23,7 @@ export interface IOrder extends Document {
   shippingAddress: IAddress;
   paymentMethod: IPaymentMethod;
   subtotal: number;
+  productDiscount: number;
   discount: number;
   tax: number;
   shipping: number;
@@ -34,6 +35,7 @@ export interface IOrder extends Document {
   refundRequestedAt?: Date;
   cancelReason?: string;
   sellerMessages?: Record<string, string>;
+  deliverySelections?: Record<string, string>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -106,6 +108,11 @@ const OrderSchema = new Schema<IOrder>({
     of: String,
     default: {}
   },
+  deliverySelections: {
+    type: Map,
+    of: String,
+    default: {}
+  },
   paymentMethod: {
     type: PaymentMethodSchema,
     required: true
@@ -113,6 +120,12 @@ const OrderSchema = new Schema<IOrder>({
   subtotal: {
     type: Number,
     required: true,
+    min: 0
+  },
+  productDiscount: {
+    type: Number,
+    required: true,
+    default: 0,
     min: 0
   },
   discount: {

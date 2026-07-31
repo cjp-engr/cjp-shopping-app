@@ -20,7 +20,7 @@ export interface IProduct extends Document {
   discount?: number;
   shippingOptions?: string[];
   shippingFee?: string;
-  shippingFeeAmount?: number;
+  shippingFeeAmounts?: Record<string, number>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,7 +49,7 @@ const ProductSchema = new Schema<IProduct>({
   discount: { type: Number, min: 0, max: 100 },
   shippingOptions: [{ type: String }],
   shippingFee: { type: String },
-  shippingFeeAmount: { type: Number, min: 0 },
+  shippingFeeAmounts: { type: Map, of: Number, default: {} },
 }, { timestamps: true });
 
 ProductSchema.index({ name: 'text', description: 'text' });

@@ -85,8 +85,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               product.sellerId != null &&
               product.sellerId == authUser.id;
 
-          final originalPrice = product.price * 1.4;
-          final discountPct = ((originalPrice - product.price) / originalPrice * 100).round();
+          final hasDiscount = (product.discount ?? 0) > 0;
+          final discountPct = hasDiscount ? product.discount!.round() : 0;
+          final discountedPrice = hasDiscount
+              ? product.price * (1 - product.discount! / 100)
+              : product.price;
+          final originalPrice = hasDiscount ? product.price : product.price * 1.4;
           final images = product.images.isNotEmpty
               ? product.images
               : [product.image];
@@ -322,6 +326,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
+                              if (hasDiscount)
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 7, vertical: 3),
@@ -338,17 +343,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              if (hasDiscount) const SizedBox(height: 2),
                               Text(
-                                '\$${product.price.toStringAsFixed(0)}',
+                                '\$${discountedPrice.toStringAsFixed(2)}',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900,
                                   color: context.onSurfaceColor,
                                 ),
                               ),
+                              if (hasDiscount)
                               Text(
-                                '\$${originalPrice.toStringAsFixed(0)}',
+                                '\$${originalPrice.toStringAsFixed(2)}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: context.onSurfaceMuted,
@@ -481,6 +487,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                           ),
                         ),
+                      ],
+                      // Product details: brand, condition, SKU
+                      if (product.brand != null || product.condition != null || product.sku != null) ...[
+                        const SizedBox(height: AppSizes.md),
+                        _ProductInfoTable(product: product),
+                      ],
+                      // Tags
+                      if (product.tags.isNotEmpty) ...[
+                        const SizedBox(height: AppSizes.md),
+                        _TagsRow(tags: product.tags),
+                      ],
+                      // Shipping
+                      if (product.shippingOptions.isNotEmpty || product.shippingFee != null) ...[
+                        const SizedBox(height: AppSizes.md),
+                        _ShippingInfo(product: product),
                       ],
                       if (product.sellerId != null) ...[
                         const SizedBox(height: AppSizes.md),
@@ -624,6 +645,192 @@ class _QtyBtn extends StatelessWidget {
                   ? AppColors.textMuted
                   : AppColors.textPrimary),
         ),
+      ),
+    );
+  }
+}
+
+// ── Product info table (brand / condition / SKU) ──────────────────────────────
+
+class _ProductInfoTable extends StatelessWidget {
+  final dynamic product;
+  const _ProductInfoTable({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <MapEntry<String, String>>[
+      if (product.brand != null) MapEntry('Brand', product.brand!),
+      if (product.condition != null)
+        MapEntry('Condition', product.condition == 'new' ? 'Brand New' : 'Used'),
+      if (product.sku != null) MapEntry('SKU', product.sku!),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        children: rows.asMap().entries.map((entry) {
+          final isLast = entry.key == rows.length - 1;
+          final row = entry.value;
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.md, vertical: 10),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 90,
+                      child: Text(row.key,
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: context.onSurfaceMuted,
+                              fontWeight: FontWeight.w500)),
+                    ),
+                    Expanded(
+                      child: Text(row.value,
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: context.onSurfaceColor)),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isLast) Divider(height: 1, color: context.borderColor),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ── Tags row ──────────────────────────────────────────────────────────────────
+
+class _TagsRow extends StatelessWidget {
+  final List<String> tags;
+  const _TagsRow({required this.tags});
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: tags.map((t) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withAlpha(15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.primary.withAlpha(40)),
+        ),
+        child: Text(
+          '#$t',
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.primary,
+          ),
+        ),
+      )).toList(),
+    );
+  }
+}
+
+// ── Shipping info ─────────────────────────────────────────────────────────────
+
+class _ShippingInfo extends StatelessWidget {
+  final dynamic product;
+  const _ShippingInfo({required this.product});
+
+  String _optionLabel(String opt) {
+    switch (opt) {
+      case 'standard': return 'Standard (3–7 days)';
+      case 'express':  return 'Express (1–2 days)';
+      case 'pickup':   return 'Pickup';
+      default:         return opt;
+    }
+  }
+
+  IconData _optionIcon(String opt) {
+    switch (opt) {
+      case 'express': return Icons.electric_bolt_outlined;
+      case 'pickup':  return Icons.storefront_outlined;
+      default:        return Icons.local_shipping_outlined;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final options = (product.shippingOptions as List<String>);
+    final fee = product.shippingFee as String?;
+    final feeAmounts = product.shippingFeeAmounts;
+
+    String feeLabel;
+    if (fee == 'free') {
+      feeLabel = 'Free shipping';
+    } else if (fee == 'buyer_pays' && feeAmounts.isNotEmpty) {
+      final parts = feeAmounts.entries
+          .map((e) => '${e.key[0].toUpperCase()}${e.key.substring(1)}: \$${e.value.toStringAsFixed(2)}')
+          .join(', ');
+      feeLabel = 'Shipping fee: $parts';
+    } else {
+      feeLabel = 'Buyer pays shipping';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.md),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.local_shipping_outlined,
+                size: 16, color: AppColors.primary),
+            const SizedBox(width: 6),
+            Text('Delivery',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: context.onSurfaceColor)),
+          ]),
+          const SizedBox(height: AppSizes.sm),
+          if (options.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: options.map((opt) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.primary.withAlpha(50)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_optionIcon(opt), size: 13, color: AppColors.primary),
+                    const SizedBox(width: 4),
+                    Text(_optionLabel(opt),
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary)),
+                  ],
+                ),
+              )).toList(),
+            ),
+          const SizedBox(height: AppSizes.xs),
+          Text(feeLabel,
+              style: TextStyle(fontSize: 12, color: context.onSurfaceMuted)),
+        ],
       ),
     );
   }

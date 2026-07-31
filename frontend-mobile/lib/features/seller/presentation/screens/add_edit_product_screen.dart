@@ -55,7 +55,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   // Step 4 — Shipping
   final Set<String> _shippingOptions = {'standard'};
   String _shippingFee = 'free';
-  late final TextEditingController _shippingFeeAmountCtrl;
+  final Map<String, TextEditingController> _shippingFeeAmountCtrls = {};
 
   bool get _isEditing => widget.product != null;
 
@@ -88,9 +88,6 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     _skuCtrl   = TextEditingController(text: p?.sku ?? '');
     _discountCtrl = TextEditingController(text: p?.discount != null ? '${p!.discount}' : '');
     _descCtrl  = TextEditingController(text: p?.description ?? '');
-    _shippingFeeAmountCtrl = TextEditingController(
-      text: p?.shippingFeeAmount != null ? '${p!.shippingFeeAmount}' : '',
-    );
     _selectedCategory = (p?.category.isNotEmpty == true) ? p!.category : null;
     if (p != null) {
       _condition = p.condition ?? 'new';
@@ -101,6 +98,12 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           ..addAll(p.shippingOptions);
       }
       if (p.tags.isNotEmpty) _tags.addAll(p.tags);
+    }
+    for (final opt in ['standard', 'express', 'pickup']) {
+      final existingAmount = p?.shippingFeeAmounts[opt];
+      _shippingFeeAmountCtrls[opt] = TextEditingController(
+        text: existingAmount != null ? existingAmount.toStringAsFixed(2) : '',
+      );
     }
     final imgs = p?.images ?? [];
     _existingImageUrls = imgs.isNotEmpty
@@ -120,7 +123,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     _discountCtrl.dispose();
     _descCtrl.dispose();
     _tagCtrl.dispose();
-    _shippingFeeAmountCtrl.dispose();
+    for (final ctrl in _shippingFeeAmountCtrls.values) {
+      ctrl.dispose();
+    }
     super.dispose();
   }
 
@@ -201,8 +206,12 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       if (_tags.isNotEmpty) 'tags': _tags,
       'shippingOptions': _shippingOptions.toList(),
       'shippingFee': _shippingFee,
-      if (_shippingFee == 'buyer_pays' && _shippingFeeAmountCtrl.text.trim().isNotEmpty)
-        'shippingFeeAmount': double.tryParse(_shippingFeeAmountCtrl.text.trim()),
+      if (_shippingFee == 'buyer_pays')
+        'shippingFeeAmounts': {
+          for (final opt in _shippingOptions)
+            if (_shippingFeeAmountCtrls[opt]?.text.trim().isNotEmpty == true)
+              opt: double.tryParse(_shippingFeeAmountCtrls[opt]!.text.trim()) ?? 0.0,
+        },
     };
     final imagePaths = _pickedFiles.map((f) => f.path).toList();
     if (_isEditing) {
@@ -674,13 +683,42 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           ]),
           if (_shippingFee == 'buyer_pays') ...[
             const SizedBox(height: AppSizes.md),
-            _FormCard(child: AppTextField(
-              label: AppStrings.shippingFeeAmount,
-              controller: _shippingFeeAmountCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              prefixIcon: Icons.attach_money,
-              hint: '0.00',
-            )),
+            _FormCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Shipping Fee per Delivery Option',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: AppSizes.sm),
+                  for (final opt in ['standard', 'express', 'pickup'])
+                    if (_shippingOptions.contains(opt)) ...[
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 80,
+                            child: Text(
+                              opt[0].toUpperCase() + opt.substring(1),
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                          Expanded(
+                            child: AppTextField(
+                              label: '',
+                              controller: _shippingFeeAmountCtrls[opt]!,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              prefixIcon: Icons.attach_money,
+                              hint: '0.00',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSizes.xs),
+                    ],
+                ],
+              ),
+            ),
           ],
         ],
       ),
@@ -733,9 +771,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 label: AppStrings.shippingFee,
                 value: _shippingFee == 'free'
                     ? AppStrings.freeShipping
-                    : (_shippingFeeAmountCtrl.text.trim().isNotEmpty
-                        ? '${AppStrings.feeByBuyer} \$${_shippingFeeAmountCtrl.text.trim()}'
-                        : AppStrings.feeByBuyer),
+                    : () {
+                        final parts = _shippingOptions
+                            .where((o) => _shippingFeeAmountCtrls[o]?.text.trim().isNotEmpty == true)
+                            .map((o) => '${o[0].toUpperCase()}${o.substring(1)}: \$${_shippingFeeAmountCtrls[o]!.text.trim()}')
+                            .toList();
+                        return parts.isEmpty ? AppStrings.feeByBuyer : parts.join(', ');
+                      }(),
                 onEdit: () => _goToPage(4),
                 last: true,
               ),

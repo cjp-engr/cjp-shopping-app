@@ -25,7 +25,7 @@ class ProductModel extends ProductEntity {
     super.discount,
     super.shippingOptions,
     super.shippingFee,
-    super.shippingFeeAmount,
+    super.shippingFeeAmounts,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -68,7 +68,13 @@ class ProductModel extends ProductEntity {
       discount: (json['discount'] as num?)?.toDouble(),
       shippingOptions: (json['shippingOptions'] as List?)?.map((e) => e.toString()).toList() ?? [],
       shippingFee: json['shippingFee']?.toString(),
-      shippingFeeAmount: (json['shippingFeeAmount'] as num?)?.toDouble(),
+      shippingFeeAmounts: json['shippingFeeAmounts'] is Map
+          ? Map<String, double>.fromEntries(
+              (json['shippingFeeAmounts'] as Map).entries.map(
+                    (e) => MapEntry(e.key.toString(), (e.value as num).toDouble()),
+                  ),
+            )
+          : const {},
     );
   }
 }

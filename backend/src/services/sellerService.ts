@@ -17,7 +17,7 @@ export async function getSellerProducts(sellerId: string) {
 
 export async function createSellerProduct(
   sellerId: string,
-  data: { name: string; description: string; price: number; category: string; stock?: number; tags?: string[]; brand?: string; condition?: string; sku?: string; discount?: number; shippingOptions?: string[]; shippingFee?: string; shippingFeeAmount?: number; image?: string },
+  data: { name: string; description: string; price: number; category: string; stock?: number; tags?: string[]; brand?: string; condition?: string; sku?: string; discount?: number; shippingOptions?: string[]; shippingFee?: string; shippingFeeAmounts?: Record<string, number>; image?: string },
   imageUrls: string[],
 ) {
   return Product.create({
@@ -31,7 +31,7 @@ export async function createSellerProduct(
 export async function updateSellerProduct(
   productId: string,
   sellerId: string,
-  updates: { name?: string; description?: string; price?: number; category?: string; stock?: number; tags?: string[]; brand?: string; condition?: string; sku?: string; discount?: number; shippingOptions?: string[]; shippingFee?: string; shippingFeeAmount?: number; image?: string },
+  updates: { name?: string; description?: string; price?: number; category?: string; stock?: number; tags?: string[]; brand?: string; condition?: string; sku?: string; discount?: number; shippingOptions?: string[]; shippingFee?: string; shippingFeeAmounts?: Record<string, number>; image?: string },
   imageUrls?: string[],
 ) {
   const product = await Product.findById(productId);

@@ -11,6 +11,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
+import '../../../voucher/presentation/select_voucher_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -22,11 +23,10 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   final Set<String> _selected = {};
   bool _initialised = false;
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
+  // Per-seller delivery option selection (only relevant for buyer_pays sellers)
+  final Map<String, String> _deliverySelections = {};
+  // Per-seller voucher discounts (code → discountAmount)
+  final Map<String, VoucherSelection> _voucherSelections = {};
 
   void _toggleItem(String productId) {
     setState(() {
@@ -53,13 +53,49 @@ class _CartScreenState extends State<CartScreen> {
     });
   }
 
+  // Effective price after product-level percentage discount
+  double _effectivePrice(CartItemEntity item) {
+    final disc = item.product.discount;
+    if (disc == null || disc <= 0) return item.product.price;
+    return item.product.price * (1 - disc / 100);
+  }
+
   double _selectedSubtotal(List<CartItemEntity> all) =>
       all.where((i) => _selected.contains(i.product.id)).fold(
             0,
-            (s, i) => s + i.subtotal,
+            (s, i) => s + _effectivePrice(i) * i.quantity,
           );
 
-  double _totalDiscount(Map<String, List<CartItemEntity>> groups) => 0;
+  // Total product-level discount across selected items
+  double _totalDiscount(List<CartItemEntity> all) {
+    return all.where((i) => _selected.contains(i.product.id)).fold(0.0, (s, i) {
+      final disc = i.product.discount;
+      if (disc == null || disc <= 0) return s;
+      return s + (i.product.price - _effectivePrice(i)) * i.quantity;
+    });
+  }
+
+  Future<void> _openVoucherScreen(
+      String sellerKey, String sellerName, double orderAmount) async {
+    final result = await Navigator.of(context).push<VoucherSelection>(
+      MaterialPageRoute(
+        builder: (_) => SelectVoucherScreen(
+          sellerId: sellerKey,
+          sellerName: sellerName,
+          orderAmount: orderAmount,
+          currentCode: _voucherSelections[sellerKey]?.code,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {
+      if (result == null) {
+        _voucherSelections.remove(sellerKey);
+      } else {
+        _voucherSelections[sellerKey] = result;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,16 +136,21 @@ class _CartScreenState extends State<CartScreen> {
           };
 
           final selectedSubtotal = _selectedSubtotal(state.items);
-          final totalDiscount = _totalDiscount(sellerGroups);
+          final totalProductDiscount = _totalDiscount(state.items);
+          final totalVoucherDiscount = _voucherSelections.entries
+              .where((e) => sellerGroups.containsKey(e.key))
+              .fold<double>(0, (s, e) => s + e.value.discountAmount);
           final afterDiscount =
-              (selectedSubtotal - totalDiscount).clamp(0, double.infinity);
+              (selectedSubtotal - totalVoucherDiscount).clamp(0.0, double.infinity);
 
           final sellerSummaries = <String,
               ({
             double subtotal,
             double discount,
+            double voucherDiscount,
             double shipping,
-            double tax
+            double tax,
+            List<String> shippingOptions,
           })>{};
           double shipping = 0;
           if (selectedSubtotal > 0) {
@@ -118,18 +159,50 @@ class _CartScreenState extends State<CartScreen> {
                   .where((i) => _selected.contains(i.product.id))
                   .toList();
               if (sellerSelected.isEmpty) continue;
-              final sub =
-                  sellerSelected.fold<double>(0, (s, i) => s + i.subtotal);
-              const disc = 0.0;
-              final after = (sub - disc).clamp(0.0, double.infinity);
-              final ship = after < 50 ? 9.99 : 0.0;
+              final sub = sellerSelected.fold<double>(
+                  0, (s, i) => s + _effectivePrice(i) * i.quantity);
+              final disc = sellerSelected.fold<double>(0.0, (s, i) {
+                final d = i.product.discount;
+                if (d == null || d <= 0) return s;
+                return s + (i.product.price - _effectivePrice(i)) * i.quantity;
+              });
+              final voucherDisc = _voucherSelections[entry.key]?.discountAmount ?? 0.0;
+              final after = (sub - voucherDisc).clamp(0.0, double.infinity);
+
+              // Collect delivery options across seller's selected items
+              final opts = <String>[];
+              for (final i in sellerSelected) {
+                for (final opt in i.product.shippingOptions) {
+                  if (!opts.contains(opt)) opts.add(opt);
+                }
+              }
+
+              // Determine shipping based on seller's configured fee
+              final sellerShippingFee = sellerSelected.first.product.shippingFee;
+              final double ship;
+              if (sellerShippingFee == 'free') {
+                ship = 0.0;
+              } else if (sellerShippingFee == 'buyer_pays') {
+                // Use selected delivery option fee if available
+                final selectedOpt = _deliverySelections[entry.key] ?? opts.firstOrNull;
+                final feeAmounts = sellerSelected.first.product.shippingFeeAmounts;
+                if (selectedOpt != null && feeAmounts.containsKey(selectedOpt)) {
+                  ship = feeAmounts[selectedOpt]!;
+                } else {
+                  ship = -1.0; // sentinel: unknown
+                }
+              } else {
+                ship = after < 50 ? 9.99 : 0.0;
+              }
+              if (ship >= 0) shipping += ship;
               final sellerTax = after * 0.08;
-              shipping += ship;
               sellerSummaries[entry.key] = (
                 subtotal: sub,
                 discount: disc,
+                voucherDiscount: voucherDisc,
                 shipping: ship,
                 tax: sellerTax,
+                shippingOptions: opts,
               );
             }
           }
@@ -164,20 +237,44 @@ class _CartScreenState extends State<CartScreen> {
                           onToggle: () => _toggleItem(item.product.id),
                         ),
                       ),
-                      if (multiSeller && sellerSummaries.containsKey(entry.key))
-                        _SellerSummaryCard(
-                          sellerName: sellerNames[entry.key] ?? 'Store',
-                          subtotal: sellerSummaries[entry.key]!.subtotal,
-                          discount: sellerSummaries[entry.key]!.discount,
-                          shipping: sellerSummaries[entry.key]!.shipping,
-                          tax: sellerSummaries[entry.key]!.tax,
+                      if (sellerSummaries.containsKey(entry.key)) ...[
+                        if (sellerSummaries[entry.key]!.shippingOptions.isNotEmpty &&
+                            sellerSummaries[entry.key]!.shipping != 0 ||
+                            sellerSummaries[entry.key]!.shipping == -1.0)
+                          _DeliveryOptionSelector(
+                            sellerKey: entry.key,
+                            options: sellerSummaries[entry.key]!.shippingOptions,
+                            feeAmounts: entry.value.first.product.shippingFeeAmounts,
+                            selected: _deliverySelections[entry.key] ??
+                                sellerSummaries[entry.key]!.shippingOptions.firstOrNull,
+                            onSelect: (opt) => setState(() => _deliverySelections[entry.key] = opt),
+                          ),
+                        const SizedBox(height: AppSizes.xs),
+                        _VoucherRow(
+                          voucher: _voucherSelections[entry.key],
+                          onTap: () => _openVoucherScreen(
+                            entry.key,
+                            sellerNames[entry.key] ?? 'Store',
+                            sellerSummaries[entry.key]!.subtotal,
+                          ),
                         ),
+                        if (multiSeller)
+                          _SellerSummaryCard(
+                            sellerName: sellerNames[entry.key] ?? 'Store',
+                            subtotal: sellerSummaries[entry.key]!.subtotal,
+                            productDiscount: sellerSummaries[entry.key]!.discount,
+                            voucherDiscount: sellerSummaries[entry.key]!.voucherDiscount,
+                            shipping: sellerSummaries[entry.key]!.shipping,
+                            tax: sellerSummaries[entry.key]!.tax,
+                          ),
+                      ],
                       const SizedBox(height: AppSizes.sm),
                     ],
                     const SizedBox(height: AppSizes.xs),
                     _OrderSummary(
-                      subtotal: selectedSubtotal,
-                      discount: totalDiscount,
+                      subtotal: selectedSubtotal + totalProductDiscount,
+                      productDiscount: totalProductDiscount,
+                      voucherDiscount: totalVoucherDiscount,
                       shipping: shipping,
                       tax: tax,
                       total: total,
@@ -191,8 +288,11 @@ class _CartScreenState extends State<CartScreen> {
                 total: total,
                 onCheckout: selectedCount == 0
                     ? null
-                    : () => context.push('/checkout',
-                        extra: Set<String>.from(_selected)),
+                    : () => context.push('/checkout', extra: {
+                        'selected': Set<String>.from(_selected),
+                        'deliverySelections': Map<String, String>.from(_deliverySelections),
+                        'voucherSelections': Map<String, VoucherSelection>.from(_voucherSelections),
+                      }),
               ),
             ],
           );
@@ -328,21 +428,24 @@ class _SelectableItemTile extends StatelessWidget {
 class _SellerSummaryCard extends StatelessWidget {
   final String sellerName;
   final double subtotal;
-  final double discount;
+  final double productDiscount;
+  final double voucherDiscount;
   final double shipping;
   final double tax;
 
   const _SellerSummaryCard({
     required this.sellerName,
     required this.subtotal,
-    required this.discount,
+    required this.productDiscount,
+    required this.voucherDiscount,
     required this.shipping,
     required this.tax,
   });
 
   @override
   Widget build(BuildContext context) {
-    final afterDiscount = (subtotal - discount).clamp(0.0, double.infinity);
+    // subtotal is already effective (product discount baked in); only subtract voucher
+    final afterDiscount = (subtotal - voucherDiscount).clamp(0.0, double.infinity);
     final storeTotal = afterDiscount + shipping + tax;
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.xs),
@@ -371,20 +474,29 @@ class _SellerSummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          _SummaryRow(AppStrings.orderAmount, '\$${subtotal.toStringAsFixed(2)}'),
-          if (discount > 0) ...[
+          _SummaryRow(AppStrings.orderAmount, '\$${(subtotal + productDiscount).toStringAsFixed(2)}'),
+          if (productDiscount > 0) ...[
             const SizedBox(height: 4),
             _SummaryRow(
               AppStrings.discount,
-              '-\$${discount.toStringAsFixed(2)}',
+              '-\$${productDiscount.toStringAsFixed(2)}',
+              valueColor: AppColors.success,
+            ),
+          ],
+          if (voucherDiscount > 0) ...[
+            const SizedBox(height: 4),
+            _SummaryRow(
+              'Voucher Savings',
+              '-\$${voucherDiscount.toStringAsFixed(2)}',
               valueColor: AppColors.success,
             ),
           ],
           const SizedBox(height: 4),
           _SummaryRow(
             AppStrings.shipping,
-            shipping == 0 ? AppStrings.freeShipping : '\$${shipping.toStringAsFixed(2)}',
-            valueColor: shipping == 0 ? AppColors.success : null,
+            shipping < 0 ? 'At checkout' : (shipping == 0 ? AppStrings.freeShipping : '\$${shipping.toStringAsFixed(2)}'),
+            valueColor: shipping < 0 ? null : (shipping == 0 ? AppColors.success : null),
+            muted: shipping < 0,
           ),
           const SizedBox(height: 4),
           _SummaryRow(AppStrings.taxLabel, '\$${tax.toStringAsFixed(2)}'),
@@ -393,7 +505,7 @@ class _SellerSummaryCard extends StatelessWidget {
             child: Divider(height: 1),
           ),
           _SummaryRow(
-            AppStrings.storeTotal,
+            shipping < 0 ? 'Subtotal + Tax' : AppStrings.storeTotal,
             '\$${storeTotal.toStringAsFixed(2)}',
             bold: true,
           ),
@@ -407,14 +519,16 @@ class _SellerSummaryCard extends StatelessWidget {
 
 class _OrderSummary extends StatelessWidget {
   final double subtotal;
-  final double discount;
+  final double productDiscount;
+  final double voucherDiscount;
   final double shipping;
   final double tax;
   final double total;
 
   const _OrderSummary({
     required this.subtotal,
-    required this.discount,
+    required this.productDiscount,
+    required this.voucherDiscount,
     required this.shipping,
     required this.tax,
     required this.total,
@@ -460,13 +574,30 @@ class _OrderSummary extends StatelessWidget {
           const Divider(height: 1),
           const SizedBox(height: AppSizes.sm),
           _SummaryRow(AppStrings.orderAmount, '\$${subtotal.toStringAsFixed(2)}'),
+          if (productDiscount > 0) ...[
+            const SizedBox(height: AppSizes.sm),
+            _SummaryRow(
+              AppStrings.discount,
+              '-\$${productDiscount.toStringAsFixed(2)}',
+              valueColor: AppColors.success,
+            ),
+          ],
+          if (voucherDiscount > 0) ...[
+            const SizedBox(height: AppSizes.sm),
+            _SummaryRow(
+              'Voucher Savings',
+              '-\$${voucherDiscount.toStringAsFixed(2)}',
+              valueColor: AppColors.success,
+            ),
+          ],
           const SizedBox(height: AppSizes.sm),
           _SummaryRow(
             AppStrings.shipping,
-            shipping == 0
-                ? AppStrings.freeShipping
-                : '\$${shipping.toStringAsFixed(2)}',
-            valueColor: shipping == 0 ? AppColors.success : null,
+            shipping < 0
+                ? 'At checkout'
+                : (shipping == 0 ? AppStrings.freeShipping : '\$${shipping.toStringAsFixed(2)}'),
+            valueColor: shipping < 0 ? null : (shipping == 0 ? AppColors.success : null),
+            muted: shipping < 0,
           ),
           const SizedBox(height: AppSizes.sm),
           _SummaryRow(AppStrings.taxLabel, '\$${tax.toStringAsFixed(2)}'),
@@ -474,11 +605,18 @@ class _OrderSummary extends StatelessWidget {
           const Divider(height: 1),
           const SizedBox(height: AppSizes.sm),
           _SummaryRow(
-            AppStrings.totalPayment,
+            shipping < 0 ? 'Total Payment*' : AppStrings.totalPayment,
             '\$${total.toStringAsFixed(2)}',
             bold: true,
             valueColor: AppColors.primary,
           ),
+          if (shipping < 0) ...[
+            const SizedBox(height: 4),
+            Text(
+              '* Excl. shipping, calculated at checkout',
+              style: TextStyle(fontSize: 10, color: context.onSurfaceMuted, fontStyle: FontStyle.italic),
+            ),
+          ],
         ],
       ),
     );
@@ -577,7 +715,179 @@ class _CheckoutBar extends StatelessWidget {
   }
 }
 
-// ── Per-seller summary card ───────────────────────────────────────────────────
+// ── Voucher row ───────────────────────────────────────────────────────────────
+
+class _VoucherRow extends StatelessWidget {
+  final VoucherSelection? voucher;
+  final VoidCallback onTap;
+
+  const _VoucherRow({required this.voucher, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.md, vertical: AppSizes.sm),
+        decoration: BoxDecoration(
+          color: context.surfaceVariantColor,
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.4),
+            style: BorderStyle.solid,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.local_activity_outlined,
+                size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                voucher != null ? 'Voucher: ${voucher!.code}' : 'Apply Shop Voucher',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (voucher != null)
+              Text(
+                '-\$${voucher!.discountAmount.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w600,
+                ),
+              )
+            else
+              const Icon(Icons.chevron_right, size: 18, color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Delivery option selector (for buyer_pays sellers) ────────────────────────
+
+class _DeliveryOptionSelector extends StatelessWidget {
+  final String sellerKey;
+  final List<String> options;
+  final Map<String, double> feeAmounts;
+  final String? selected;
+  final void Function(String) onSelect;
+
+  const _DeliveryOptionSelector({
+    required this.sellerKey,
+    required this.options,
+    required this.feeAmounts,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  String _label(String opt) {
+    switch (opt) {
+      case 'standard': return 'Standard';
+      case 'express': return 'Express';
+      case 'pickup': return 'Pickup';
+      default: return opt[0].toUpperCase() + opt.substring(1);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (options.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.xs),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.md, vertical: AppSizes.sm),
+      decoration: BoxDecoration(
+        color: context.surfaceVariantColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.local_shipping_outlined,
+                  size: 14, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                'Delivery Option',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: context.onSurfaceColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: options.map((opt) {
+              final isSelected = selected == opt;
+              final fee = feeAmounts[opt];
+              return GestureDetector(
+                onTap: () => onSelect(opt),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary.withAlpha(18)
+                        : context.surfaceColor,
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : context.onSurfaceMuted.withAlpha(60),
+                      width: isSelected ? 1.5 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isSelected) ...[
+                        const Icon(Icons.check_circle_rounded,
+                            size: 13, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                      ],
+                      Text(
+                        _label(opt),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected
+                              ? AppColors.primary
+                              : context.onSurfaceSecondary,
+                        ),
+                      ),
+                      if (fee != null) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          fee == 0 ? 'FREE' : '\$${fee.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: fee == 0 ? AppColors.success : context.onSurfaceMuted,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 // ── Summary row ───────────────────────────────────────────────────────────────
 
@@ -586,9 +896,10 @@ class _SummaryRow extends StatelessWidget {
   final String value;
   final bool bold;
   final Color? valueColor;
+  final bool muted;
 
   const _SummaryRow(this.label, this.value,
-      {this.bold = false, this.valueColor});
+      {this.bold = false, this.valueColor, this.muted = false});
 
   @override
   Widget build(BuildContext context) {
@@ -606,9 +917,12 @@ class _SummaryRow extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            color: valueColor ?? context.onSurfaceColor,
+            color: muted
+                ? context.onSurfaceMuted
+                : (valueColor ?? context.onSurfaceColor),
             fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-            fontSize: bold ? 16 : 13,
+            fontSize: muted ? 11 : (bold ? 16 : 13),
+            fontStyle: muted ? FontStyle.italic : FontStyle.normal,
           ),
         ),
       ],

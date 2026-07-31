@@ -192,11 +192,14 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
             : 'Store')
         : null;
 
-    final displaySubtotal =
-        filteredItems.fold<double>(0, (s, i) => s + i.total);
-    final displayTax = displaySubtotal * 0.08;
-    final displayShipping = displaySubtotal >= 50 ? 0.0 : 9.99;
-    final displayTotal = displaySubtotal + displayTax + displayShipping;
+    // Use the values saved at order time — they already account for
+    // product discounts, vouchers, and the selected delivery method.
+    final displaySubtotal = order.subtotal;
+    final displayProductDiscount = order.productDiscount;
+    final displayDiscount = order.discount;
+    final displayTax = order.tax;
+    final displayShipping = order.shipping;
+    final displayTotal = order.total;
 
     // Group filtered items by seller — computed once per build, not in a closure
     final groups = groupItemsBySeller(filteredItems, (i) => i.sellerId);
@@ -403,6 +406,17 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                             order.paymentType.substring(1)
                         : order.paymentType,
                   ),
+                  if (order.selectedDeliveryOption != null) ...[
+                    const SizedBox(height: AppSizes.sm),
+                    _InfoRow(
+                      icon: Icons.local_shipping_outlined,
+                      label: 'Delivery Method',
+                      value: () {
+                        final opt = order.selectedDeliveryOption!;
+                        return opt[0].toUpperCase() + opt.substring(1);
+                      }(),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -543,20 +557,36 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                   const _SectionTitle(label: AppStrings.orderDetails),
                   const SizedBox(height: AppSizes.md),
                   _SummaryRow(
-                    label: AppStrings.subtotal,
+                    label: AppStrings.orderAmount,
                     value: '\$${displaySubtotal.toStringAsFixed(2)}',
                   ),
-                  const SizedBox(height: 8),
-                  _SummaryRow(
-                    label: AppStrings.taxLabel,
-                    value: '\$${displayTax.toStringAsFixed(2)}',
-                  ),
+                  if (displayProductDiscount > 0) ...[
+                    const SizedBox(height: 8),
+                    _SummaryRow(
+                      label: AppStrings.discount,
+                      value: '-\$${displayProductDiscount.toStringAsFixed(2)}',
+                      valueColor: AppColors.success,
+                    ),
+                  ],
+                  if (displayDiscount > 0) ...[
+                    const SizedBox(height: 8),
+                    _SummaryRow(
+                      label: 'Voucher',
+                      value: '-\$${displayDiscount.toStringAsFixed(2)}',
+                      valueColor: AppColors.success,
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   _SummaryRow(
                     label: AppStrings.shipping,
                     value: displayShipping == 0
                         ? AppStrings.free
                         : '\$${displayShipping.toStringAsFixed(2)}',
+                  ),
+                  const SizedBox(height: 8),
+                  _SummaryRow(
+                    label: AppStrings.taxLabel,
+                    value: '\$${displayTax.toStringAsFixed(2)}',
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: AppSizes.sm),
@@ -861,8 +891,9 @@ class _SummaryRow extends StatelessWidget {
   final String label;
   final String value;
   final bool isTotal;
+  final Color? valueColor;
   const _SummaryRow(
-      {required this.label, required this.value, this.isTotal = false});
+      {required this.label, required this.value, this.isTotal = false, this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -882,7 +913,7 @@ class _SummaryRow extends StatelessWidget {
           value,
           style: TextStyle(
             fontSize: isTotal ? 16 : 13,
-            color: isTotal ? AppColors.primary : context.onSurfaceColor,
+            color: valueColor ?? (isTotal ? AppColors.primary : context.onSurfaceColor),
             fontWeight: isTotal ? FontWeight.w900 : FontWeight.w500,
           ),
         ),

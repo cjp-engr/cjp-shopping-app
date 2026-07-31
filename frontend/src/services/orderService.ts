@@ -3,7 +3,7 @@ import type { Cart } from '../types/cart';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 
 class OrderService {
-  async createOrder(checkoutData: CheckoutData, cart: Cart, _userId: string, couponCodes?: Record<string, string>): Promise<Order[]> {
+  async createOrder(checkoutData: CheckoutData, cart: Cart, _userId: string, couponCodes?: Record<string, string>, deliverySelections?: Record<string, string>): Promise<Order[]> {
     const items = cart.items.map(item => ({
       productId: item.product.id,
       quantity: item.quantity
@@ -17,6 +17,7 @@ class OrderService {
         shippingAddress: checkoutData.shippingAddress,
         paymentMethod: checkoutData.paymentMethod,
         ...(couponCodes && Object.keys(couponCodes).length > 0 ? { couponCodes } : {}),
+        ...(deliverySelections && Object.keys(deliverySelections).length > 0 ? { deliverySelections } : {}),
       })
     });
 
@@ -162,13 +163,16 @@ class OrderService {
       shippingAddress: order.shippingAddress,
       paymentMethod: order.paymentMethod,
       subtotal: order.subtotal,
+      productDiscount: order.productDiscount ?? 0,
+      discount: order.discount ?? 0,
       tax: order.tax,
       shipping: order.shipping,
       total: order.total,
       status: order.status,
       cancelReason: order.cancelReason,
       createdAt: order.createdAt,
-      estimatedDelivery: order.estimatedDelivery
+      estimatedDelivery: order.estimatedDelivery,
+      selectedDeliveryOption: order.selectedDeliveryOption,
     };
   }
 }
