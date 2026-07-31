@@ -12,18 +12,28 @@ A full-featured multi-seller e-commerce application with a React web frontend, F
 - **Checkout Flow**: Multi-step checkout (shipping → payment → review) with saved addresses and saved cards
 - **Order History**: View past orders with status tracking and per-item detail
 - **Product Reviews**: Leave a star rating and written review after receiving an order
+- **Wishlist**: Save products for later; wishlist count shown in bottom navigation
+
+### Seller Dashboard
+- **Multi-Step Product Wizard**: 6-step form (Basic Info → Pricing → Description → Images → Shipping → Review) for creating and editing listings on both web and mobile
+- **Multi-Select Delivery Options**: Sellers pick Standard, Express, and/or Pickup — buyers choose one at checkout
+- **Shipping Fee Configuration**: Sellers set Free Shipping or Buyer Pays; entering Buyer Pays reveals a fee amount field
+- **Product Fields**: Name, Category, Brand, Condition (New/Used), Price, Stock, SKU, Discount %, Description, Tags, and Images
+- **Pricing Computed Card**: Real-time breakdown showing unit price, discount, final price, and total stock value
+- **Order Management**: View and update order status (Pending → Preparing → Processing → Shipped → Delivered); cancel with reason
+- **New Order Notifications**: Push notification when a new order arrives (polled every 30 s)
 
 ### Users & Accounts
 - **Authentication**: JWT-based login and signup (bcryptjs-hashed passwords)
 - **User Profile**: Edit personal info, upload avatar, manage saved addresses and payment cards
-- **Seller Dashboard**: Sellers can list, edit, and delete their own products
+- **Role-Based Navigation**: Bottom nav adapts to buyer vs seller role; sellers get a Storefront tab
 
 ### Technical
 - **Cart Persistence**: Cart is synced to MongoDB on every change and restored from the server on login — survives logout/re-login
 - **Cross-Account Isolation**: Cart is cleared locally on logout; each user loads only their own cart on login
 - **Dark Mode**: System-preference-aware theme with manual toggle
 - **Responsive Design**: Mobile-first layout that works on all screen sizes
-- **Flutter Mobile App**: Full-featured Android/iOS app with Patrol E2E tests
+- **Flutter Mobile App**: Full-featured Android/iOS app with Bloc state management, GoRouter navigation, and Patrol E2E tests
 
 ## Tech Stack
 
@@ -43,6 +53,7 @@ A full-featured multi-seller e-commerce application with a React web frontend, F
 | Framework | Flutter 3 + Dart |
 | State | Bloc / Cubit |
 | Navigation | GoRouter |
+| HTTP | Dio |
 | E2E Tests | Patrol |
 
 ### Backend (`backend/`)
@@ -52,6 +63,7 @@ A full-featured multi-seller e-commerce application with a React web frontend, F
 | Framework | Express.js |
 | Database | MongoDB + Mongoose |
 | Auth | JWT + bcryptjs |
+| File Upload | Multer |
 | Security | Helmet, CORS |
 
 ## Project Structure
@@ -62,7 +74,8 @@ shopping-app-automation/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── common/         # Button, Card, Input, Badge, Spinner
-│   │   │   └── layout/         # Navbar, Layout
+│   │   │   ├── layout/         # Navbar, Layout
+│   │   │   └── seller/         # ProductWizard (multi-step form)
 │   │   ├── pages/              # Cart, Checkout, Home, Login, Signup,
 │   │   │                       # Products, ProductDetails, OrderHistory,
 │   │   │                       # OrderDetail, Profile, SellerDashboard
@@ -81,12 +94,15 @@ shopping-app-automation/
 │   │   ├── core/               # Theme, constants, routing
 │   │   └── features/
 │   │       ├── auth/           # Login, Signup screens + Bloc
-│   │       ├── products/       # Product list + detail screens
+│   │       ├── products/       # Product list + detail screens + Bloc
 │   │       ├── cart/           # Cart screen + Bloc
 │   │       ├── orders/         # Checkout + order history + Bloc
 │   │       ├── profile/        # Profile screen
-│   │       ├── seller/         # Seller dashboard
-│   │       └── wishlist/       # Wishlist feature
+│   │       ├── seller/         # Seller dashboard + AddEditProductScreen
+│   │       └── wishlist/       # Wishlist feature + Bloc
+│   │   └── shared/
+│   │       ├── widgets/        # MainShell, AppButton, AppTextField
+│   │       └── services/       # NotificationService, MediaPermissionService
 │   ├── patrol_test/            # Patrol E2E tests
 │   └── pubspec.yaml
 │
@@ -94,7 +110,7 @@ shopping-app-automation/
 │   ├── src/
 │   │   ├── config/             # Database connection
 │   │   ├── controllers/        # auth, cart, order, product, review, seller
-│   │   ├── middleware/         # JWT auth guard
+│   │   ├── middleware/         # JWT auth guard, error handler, multer upload
 │   │   ├── models/             # User, Product, Order, Cart, Review
 │   │   ├── routes/             # Route definitions
 │   │   └── server.ts
@@ -206,7 +222,7 @@ patrol test           # Run E2E tests
 | Email | `test@example.com` |
 | Password | `password123` |
 
-Or register a new account via the Sign Up page.
+Or register a new account via the Sign Up page. To create a seller account, register and toggle the seller role in Profile.
 
 ## API Reference
 
@@ -258,11 +274,29 @@ All protected endpoints require `Authorization: Bearer <token>`.
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/api/seller/products` | Seller's products |
-| POST | `/api/seller/products` | Create product |
-| PUT | `/api/seller/products/:id` | Update product |
+| POST | `/api/seller/products` | Create product (multipart/form-data) |
+| PUT | `/api/seller/products/:id` | Update product (multipart/form-data) |
 | DELETE | `/api/seller/products/:id` | Delete product |
 | GET | `/api/seller/orders` | Seller's orders |
 | PUT | `/api/seller/orders/:id/status` | Update order status |
+
+#### Product Fields (create / update)
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `name` | string | yes | |
+| `description` | string | yes | max 200 chars |
+| `price` | number | yes | |
+| `category` | string | yes | must match enum |
+| `stock` | number | yes | |
+| `brand` | string | no | |
+| `condition` | `new` \| `used` | no | |
+| `sku` | string | no | |
+| `discount` | number | no | 0–100 (%) |
+| `tags` | JSON string array | no | e.g. `'["sale","new"]'` |
+| `shippingOptions` | JSON string array | no | `standard`, `express`, `pickup` |
+| `shippingFee` | `free` \| `buyer_pays` | no | |
+| `shippingFeeAmount` | number | no | required when `shippingFee=buyer_pays` |
+| `images` | file(s) | no | multipart field name `images` |
 
 ## Cart Behaviour
 
@@ -277,11 +311,25 @@ All protected endpoints require `Authorization: Bearer <token>`.
 - Tax: **8%** of the order subtotal, calculated per seller
 - Both are shown as a per-seller breakdown in the cart and checkout screens
 
+## Order Status Flow
+
+```
+pending → preparing → processing → shipped → delivered
+                ↘              ↘          ↘
+                           cancelled (from any non-terminal state)
+```
+
+Stock is restored automatically when an order is cancelled.
+
 ## Troubleshooting
 
 **Port already in use**
 ```bash
+# Web frontend
 cd frontend && npm run dev -- --port 3000
+
+# Kill Vite on port 5173 (Windows)
+Get-NetTCPConnection -LocalPort 5173 | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }
 ```
 
 **MongoDB not connecting**
@@ -291,6 +339,9 @@ cd frontend && npm run dev -- --port 3000
 **Cart not loading after login**
 - Open DevTools → Network tab and check `GET /api/cart` returns 200
 - Verify the backend is running and `VITE_API_BASE_URL` points to it
+
+**Flutter 401 errors on launch**
+- The app guards API calls behind `AuthStatus.authenticated` — errors on first launch indicate a stale token; log out and log back in
 
 **Clear local session**
 - DevTools → Application → Local Storage → delete all `shopping_app_*` keys
