@@ -1,5 +1,36 @@
 import 'package:equatable/equatable.dart';
 
+class ProductVariantAttribute extends Equatable {
+  final String name;
+  final List<String> values;
+
+  const ProductVariantAttribute({required this.name, required this.values});
+
+  @override
+  List<Object?> get props => [name, values];
+}
+
+class ProductVariant extends Equatable {
+  final Map<String, String> attributes;
+  final double price;
+  final int stock;
+  final String sku;
+  final String image;
+
+  const ProductVariant({
+    required this.attributes,
+    required this.price,
+    required this.stock,
+    this.sku = '',
+    this.image = '',
+  });
+
+  String get label => attributes.values.join(' / ');
+
+  @override
+  List<Object?> get props => [attributes, price, stock, sku, image];
+}
+
 class ProductEntity extends Equatable {
   final String id;
   final String name;
@@ -25,6 +56,8 @@ class ProductEntity extends Equatable {
   final List<String> shippingOptions;
   final String? shippingFee;
   final Map<String, double> shippingFeeAmounts;
+  final List<ProductVariantAttribute> variantAttributes;
+  final List<ProductVariant> variants;
 
   const ProductEntity({
     required this.id,
@@ -51,10 +84,13 @@ class ProductEntity extends Equatable {
     this.shippingOptions = const [],
     this.shippingFee,
     this.shippingFeeAmounts = const {},
+    this.variantAttributes = const [],
+    this.variants = const [],
   });
 
   bool get inStock => stock > 0;
   bool get lowStock => stock > 0 && stock <= 5;
+  bool get hasVariants => variantAttributes.isNotEmpty;
 
   @override
   List<Object?> get props => [id, name, price, category, stock, sellerId, sellerName, sellerAvatar];

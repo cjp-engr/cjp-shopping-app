@@ -1,5 +1,18 @@
 ﻿import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IVariantAttribute {
+  name: string;
+  values: string[];
+}
+
+export interface IProductVariant {
+  attributes: Map<string, string>;
+  price: number;
+  stock: number;
+  sku?: string;
+  image?: string;
+}
+
 export interface IProduct extends Document {
   name: string;
   description: string;
@@ -21,6 +34,8 @@ export interface IProduct extends Document {
   shippingOptions?: string[];
   shippingFee?: string;
   shippingFeeAmounts?: Record<string, number>;
+  variantAttributes?: IVariantAttribute[];
+  variants?: IProductVariant[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +65,17 @@ const ProductSchema = new Schema<IProduct>({
   shippingOptions: [{ type: String }],
   shippingFee: { type: String },
   shippingFeeAmounts: { type: Map, of: Number, default: {} },
+  variantAttributes: [{
+    name: { type: String, required: true, trim: true },
+    values: [{ type: String, trim: true }],
+  }],
+  variants: [{
+    attributes: { type: Map, of: String, default: {} },
+    price: { type: Number, min: 0, default: 0 },
+    stock: { type: Number, min: 0, default: 0 },
+    sku: { type: String, trim: true },
+    image: { type: String, default: '' },
+  }],
 }, { timestamps: true });
 
 ProductSchema.index({ name: 'text', description: 'text' });

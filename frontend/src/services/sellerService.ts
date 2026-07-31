@@ -2,6 +2,20 @@ import type { Product } from '../types/product';
 import type { Order } from '../types/order';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 
+function parseTags(raw: unknown): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    if (raw.length === 1 && typeof raw[0] === 'string' && raw[0].startsWith('[')) {
+      try { const p = JSON.parse(raw[0]); if (Array.isArray(p)) return p.map(String); } catch {}
+    }
+    return raw.map(String);
+  }
+  if (typeof raw === 'string' && raw.startsWith('[')) {
+    try { const p = JSON.parse(raw); if (Array.isArray(p)) return p.map(String); } catch {}
+  }
+  return [];
+}
+
 export interface ProductFormData {
   name: string;
   description: string;
@@ -17,6 +31,14 @@ export interface ProductFormData {
   shippingOptions?: Array<'standard' | 'express' | 'pickup'>;
   shippingFee?: 'free' | 'buyer_pays';
   shippingFeeAmounts?: Record<string, number>;
+  variantAttributes?: Array<{ name: string; values: string[] }>;
+  variants?: Array<{
+    attributes: Record<string, string>;
+    price: number;
+    stock: number;
+    sku?: string;
+    image?: string;
+  }>;
 }
 
 const adaptProduct = (p: any): Product => ({
@@ -30,7 +52,7 @@ const adaptProduct = (p: any): Product => ({
   stock: p.stock,
   rating: p.rating ?? 0,
   reviews: p.reviews ?? 0,
-  tags: p.tags,
+  tags: parseTags(p.tags),
   specifications: p.specifications ?? undefined,
   createdAt: p.createdAt,
   brand: p.brand,
@@ -40,6 +62,19 @@ const adaptProduct = (p: any): Product => ({
   shippingOptions: p.shippingOptions,
   shippingFee: p.shippingFee,
   shippingFeeAmounts: p.shippingFeeAmounts,
+  variantAttributes: p.variantAttributes,
+  variants: Array.isArray(p.variants)
+    ? p.variants.map((v: any) => ({
+        _id: v._id?.toString(),
+        attributes: v.attributes instanceof Map
+          ? Object.fromEntries(v.attributes)
+          : (v.attributes && typeof v.attributes === 'object' ? { ...v.attributes } : {}),
+        price: v.price ?? 0,
+        stock: v.stock ?? 0,
+        sku: v.sku,
+        image: v.image,
+      }))
+    : undefined,
 });
 
 const adaptOrder = (order: any): Order & { buyer?: { id: string; firstName: string; lastName: string; email: string } } => ({
@@ -119,10 +154,12 @@ class SellerService {
       if (form.condition)     fd.append('condition', form.condition);
       if (form.sku)           fd.append('sku', form.sku);
       if (form.discount != null) fd.append('discount', String(form.discount));
-      if (form.tags?.length)       fd.append('tags', JSON.stringify(form.tags));
+      form.tags?.forEach(t => fd.append('tags', t));
       if (form.shippingOptions?.length) fd.append('shippingOptions', JSON.stringify(form.shippingOptions));
       if (form.shippingFee)        fd.append('shippingFee', form.shippingFee);
       if (form.shippingFeeAmounts && Object.keys(form.shippingFeeAmounts).length > 0) fd.append('shippingFeeAmounts', JSON.stringify(form.shippingFeeAmounts));
+      if (form.variantAttributes?.length) fd.append('variantAttributes', JSON.stringify(form.variantAttributes));
+      if (form.variants?.length) fd.append('variants', JSON.stringify(form.variants));
       imageFiles.forEach(f => fd.append('images', f));
       body = fd;
       headers = getAuthHeadersNoContentType();
@@ -156,10 +193,12 @@ class SellerService {
       if (form.condition)     fd.append('condition', form.condition);
       if (form.sku)           fd.append('sku', form.sku);
       if (form.discount != null) fd.append('discount', String(form.discount));
-      if (form.tags?.length)       fd.append('tags', JSON.stringify(form.tags));
+      form.tags?.forEach(t => fd.append('tags', t));
       if (form.shippingOptions?.length) fd.append('shippingOptions', JSON.stringify(form.shippingOptions));
       if (form.shippingFee)        fd.append('shippingFee', form.shippingFee);
       if (form.shippingFeeAmounts && Object.keys(form.shippingFeeAmounts).length > 0) fd.append('shippingFeeAmounts', JSON.stringify(form.shippingFeeAmounts));
+      if (form.variantAttributes?.length) fd.append('variantAttributes', JSON.stringify(form.variantAttributes));
+      if (form.variants?.length) fd.append('variants', JSON.stringify(form.variants));
       imageFiles.forEach(f => fd.append('images', f));
       body = fd;
       headers = getAuthHeadersNoContentType();

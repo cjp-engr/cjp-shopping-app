@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../domain/entities/product_entity.dart';
 import '../bloc/product_bloc.dart';
 import '../bloc/product_event.dart';
 import '../bloc/product_state.dart';
@@ -40,6 +41,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _previewMode = false;
   bool _descExpanded = false;
   late final PageController _imageController;
+  Map<String, String> _selectedAttrs = {};
 
   @override
   void initState() {
@@ -52,6 +54,38 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void dispose() {
     _imageController.dispose();
     super.dispose();
+  }
+
+  bool _allVariantAttrsSelected(dynamic product) {
+    if (!product.hasVariants) return true;
+    return (product.variantAttributes as List).every(
+      (a) => _selectedAttrs.containsKey(a.name),
+    );
+  }
+
+  ProductVariant? _findSelectedVariant(dynamic product) {
+    if (!product.hasVariants) return null;
+    if (!_allVariantAttrsSelected(product)) return null;
+    try {
+      return (product.variants as List<ProductVariant>).firstWhere(
+        (v) => (product.variantAttributes as List).every(
+          (a) => v.attributes[a.name] == _selectedAttrs[a.name],
+        ),
+      );
+    } catch (_) { return null; }
+  }
+
+  bool _isValueAvailable(dynamic product, String attrName, String value) {
+    return (product.variants as List<ProductVariant>).any((v) {
+      if ((v.stock) <= 0) return false;
+      if (v.attributes[attrName] != value) return false;
+      for (final a in (product.variantAttributes as List)) {
+        if (a.name == attrName) continue;
+        final sel = _selectedAttrs[a.name];
+        if (sel != null && v.attributes[a.name] != sel) return false;
+      }
+      return true;
+    });
   }
 
   @override
@@ -85,12 +119,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               product.sellerId != null &&
               product.sellerId == authUser.id;
 
-          final hasDiscount = (product.discount ?? 0) > 0;
+          final hasDiscount = (product.discount ?? 0) > 0 && !product.hasVariants;
           final discountPct = hasDiscount ? product.discount!.round() : 0;
-          final discountedPrice = hasDiscount
-              ? product.price * (1 - product.discount! / 100)
+          // For variant products, price shown in header adapts to selection state
+          final variantSelected = _findSelectedVariant(product);
+          final displayPrice = product.hasVariants && variantSelected != null
+              ? variantSelected.price
               : product.price;
-          final originalPrice = hasDiscount ? product.price : product.price * 1.4;
+          final discountedPrice = hasDiscount
+              ? displayPrice * (1 - product.discount! / 100)
+              : displayPrice;
+          final originalPrice = hasDiscount ? displayPrice : displayPrice * 1.4;
+          final minVariantPrice = product.hasVariants && product.variants.isNotEmpty
+              ? product.variants.map((v) => v.price).reduce((a, b) => a < b ? a : b)
+              : product.price;
           final images = product.images.isNotEmpty
               ? product.images
               : [product.image];
@@ -345,7 +387,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               ),
                               if (hasDiscount) const SizedBox(height: 2),
                               Text(
-                                '\$${discountedPrice.toStringAsFixed(2)}',
+                                product.hasVariants && variantSelected == null
+                                    ? 'From \$${minVariantPrice.toStringAsFixed(2)}'
+                                    : '\$${discountedPrice.toStringAsFixed(2)}',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900,
@@ -377,6 +421,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                           if (isOwn && !_previewMode) return const SizedBox.shrink();
 
+                          final selectedVariant = _findSelectedVariant(product);
+                          final effectiveStock = selectedVariant?.stock ?? product.stock;
+
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -400,6 +447,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   ),
                                 ],
                               ),
+                              if (product.hasVariants) ...[
+                                const SizedBox(height: AppSizes.md),
+                                _VariantSelector(
+                                  product: product,
+                                  selectedAttrs: _selectedAttrs,
+                                  isValueAvailable: (attrName, value) =>
+                                      _isValueAvailable(product, attrName, value),
+                                  onAttrSelected: (attrName, value) {
+                                    setState(() {
+                                      _selectedAttrs = {
+                                        ..._selectedAttrs,
+                                        attrName: value,
+                                      };
+                                      _quantity = 1;
+                                    });
+                                  },
+                                  selectedVariant: selectedVariant,
+                                ),
+                              ],
                               const SizedBox(height: AppSizes.md),
                               Row(
                                 children: [
@@ -439,7 +505,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         ),
                                         _QtyBtn(
                                           icon: Icons.add,
-                                          onPressed: _quantity < product.stock
+                                          onPressed: _quantity < effectiveStock
                                               ? () =>
                                                   setState(() => _quantity++)
                                               : null,
@@ -572,45 +638,72 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 );
               }
 
+              final selectedVariant = _findSelectedVariant(product);
+              final variantReady = !product.hasVariants || _allVariantAttrsSelected(product);
+              final effectiveStock = selectedVariant?.stock ?? product.stock;
+              final canAdd = effectiveStock > 0 && !isOwnProduct && variantReady;
+
               return Container(
                 padding: padding,
                 decoration: BoxDecoration(
                   color: context.surfaceColor,
                   border: Border(top: BorderSide(color: context.borderColor)),
                 ),
-                child: Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: product.inStock && !isOwnProduct
-                            ? () {
-                                context.read<CartBloc>().add(CartItemAdded(
-                                    product: product, quantity: _quantity));
-                              }
-                            : null,
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, AppSizes.buttonHeight),
+                    if (product.hasVariants && !variantReady)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Select all options to continue',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.onSurfaceSecondary,
+                          ),
                         ),
-                        icon: const Icon(Icons.shopping_bag_outlined, size: 18),
-                        label: const Text(AppStrings.addToCart),
                       ),
-                    ),
-                    const SizedBox(width: AppSizes.sm),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: product.inStock && !isOwnProduct
-                            ? () {
-                                context.read<CartBloc>().add(CartItemAdded(
-                                    product: product, quantity: _quantity));
-                                context.push('/cart');
-                              }
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(0, AppSizes.buttonHeight),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: canAdd
+                                ? () {
+                                    context.read<CartBloc>().add(CartItemAdded(
+                                      product: product,
+                                      quantity: _quantity,
+                                      selectedVariant: selectedVariant,
+                                    ));
+                                  }
+                                : null,
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, AppSizes.buttonHeight),
+                            ),
+                            icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+                            label: const Text(AppStrings.addToCart),
+                          ),
                         ),
-                        icon: const Icon(Icons.flash_on_rounded, size: 18),
-                        label: const Text(AppStrings.buyNow),
-                      ),
+                        const SizedBox(width: AppSizes.sm),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: canAdd
+                                ? () {
+                                    context.read<CartBloc>().add(CartItemAdded(
+                                      product: product,
+                                      quantity: _quantity,
+                                      selectedVariant: selectedVariant,
+                                    ));
+                                    context.push('/cart');
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(0, AppSizes.buttonHeight),
+                            ),
+                            icon: const Icon(Icons.flash_on_rounded, size: 18),
+                            label: const Text(AppStrings.buyNow),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -619,6 +712,150 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+// ── Variant Selector ──────────────────────────────────────────────────────────
+
+class _VariantSelector extends StatelessWidget {
+  final dynamic product;
+  final Map<String, String> selectedAttrs;
+  final bool Function(String attrName, String value) isValueAvailable;
+  final void Function(String attrName, String value) onAttrSelected;
+  final ProductVariant? selectedVariant;
+
+  const _VariantSelector({
+    required this.product,
+    required this.selectedAttrs,
+    required this.isValueAvailable,
+    required this.onAttrSelected,
+    this.selectedVariant,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final attrs = product.variantAttributes as List<ProductVariantAttribute>;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...attrs.map((attr) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    attr.name,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: context.onSurfaceColor,
+                    ),
+                  ),
+                  if (selectedAttrs[attr.name] != null) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      ': ${selectedAttrs[attr.name]}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: context.onSurfaceSecondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: attr.values.map((value) {
+                  final available = isValueAvailable(attr.name, value);
+                  final selected = selectedAttrs[attr.name] == value;
+                  return GestureDetector(
+                    onTap: available ? () => onAttrSelected(attr.name, value) : null,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? AppColors.primary
+                            : available
+                                ? context.cardColor
+                                : context.surfaceVariantColor,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                        border: Border.all(
+                          color: selected
+                              ? AppColors.primary
+                              : available
+                                  ? context.borderColor
+                                  : context.borderColor.withAlpha(80),
+                          width: selected ? 2 : 1,
+                        ),
+                      ),
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                          color: selected
+                              ? Colors.white
+                              : available
+                                  ? context.onSurfaceColor
+                                  : context.onSurfaceMuted,
+                          decoration: !available ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        )),
+        if (selectedVariant != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha(15),
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              border: Border.all(color: AppColors.primary.withAlpha(50)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  selectedVariant!.stock > 0
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.remove_circle_outline_rounded,
+                  size: 14,
+                  color: selectedVariant!.stock > 0 ? AppColors.primary : AppColors.danger,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  selectedVariant!.stock > 0
+                      ? '${selectedVariant!.stock} in stock'
+                      : 'Out of stock',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: selectedVariant!.stock > 0 ? AppColors.primary : AppColors.danger,
+                  ),
+                ),
+                if (selectedVariant!.sku.isNotEmpty) ...[
+                  const SizedBox(width: 12),
+                  Text(
+                    'SKU: ${selectedVariant!.sku}',
+                    style: TextStyle(fontSize: 11, color: context.onSurfaceMuted),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

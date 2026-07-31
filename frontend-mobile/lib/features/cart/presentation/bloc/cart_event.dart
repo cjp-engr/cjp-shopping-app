@@ -13,10 +13,11 @@ final class CartLoadRequested extends CartEvent {}
 final class CartItemAdded extends CartEvent {
   final ProductEntity product;
   final int quantity;
-  CartItemAdded({required this.product, this.quantity = 1});
+  final ProductVariant? selectedVariant;
+  CartItemAdded({required this.product, this.quantity = 1, this.selectedVariant});
 
   @override
-  List<Object?> get props => [product.id, quantity];
+  List<Object?> get props => [product.id, selectedVariant?.label, quantity];
 }
 
 final class CartItemRemoved extends CartEvent {

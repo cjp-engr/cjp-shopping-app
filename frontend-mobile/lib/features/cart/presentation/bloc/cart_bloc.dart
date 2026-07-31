@@ -32,17 +32,27 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   // ── Local mutations + background sync ────────────────────────────────────
 
   Future<void> _onAdd(CartItemAdded event, Emitter<CartState> emit) async {
+    final newLabel = event.selectedVariant?.label ?? '';
     final existing = state.items.indexWhere(
-        (i) => i.product.id == event.product.id);
+      (i) => i.product.id == event.product.id &&
+             (i.selectedVariant?.label ?? '') == newLabel,
+    );
+    final effectiveStock = event.selectedVariant?.stock ?? event.product.stock;
     final List<CartItemEntity> updated;
     if (existing >= 0) {
       updated = List.from(state.items);
-      updated[existing] =
-          updated[existing].copyWith(quantity: updated[existing].quantity + event.quantity);
+      final prev = updated[existing];
+      updated[existing] = prev.copyWith(
+        quantity: (prev.quantity + event.quantity).clamp(0, effectiveStock),
+      );
     } else {
       updated = [
         ...state.items,
-        CartItemEntity(product: event.product, quantity: event.quantity),
+        CartItemEntity(
+          product: event.product,
+          quantity: event.quantity.clamp(1, effectiveStock),
+          selectedVariant: event.selectedVariant,
+        ),
       ];
     }
     emit(state.copyWith(items: updated));
@@ -69,13 +79,9 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     _syncInBackground(updated);
   }
 
-  Future<void> _onClear(CartCleared event, Emitter<CartState> emit) async {
+  Future<void> _onClear(CartCleared event, Emitter<CartState> emit) {
     emit(const CartState());
-    try {
-      await _remote.clearCart();
-    } catch (_) {
-      // Best-effort — order flow already succeeded
-    }
+    return Future.value();
   }
 
   Future<void> _onCheckedOut(

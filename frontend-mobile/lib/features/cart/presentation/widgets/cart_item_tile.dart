@@ -195,6 +195,19 @@ class _CartItemTileState extends State<CartItemTile>
                                 color: onSurface,
                               ),
                             ),
+                            if (item.selectedVariant != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                item.selectedVariant!.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: muted,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 4),
                             Row(
                               children: [
@@ -216,7 +229,7 @@ class _CartItemTileState extends State<CartItemTile>
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  '\$${item.product.price.toStringAsFixed(0)}',
+                                  '\$${item.effectivePrice.toStringAsFixed(0)}',
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w800,
@@ -261,7 +274,7 @@ class _CartItemTileState extends State<CartItemTile>
                                         activeColor: onSurface,
                                         mutedColor: muted,
                                         onPressed:
-                                            item.quantity < item.product.stock
+                                            item.quantity < item.effectiveStock
                                                 ? () => context
                                                     .read<CartBloc>()
                                                     .add(CartItemQuantityChanged(

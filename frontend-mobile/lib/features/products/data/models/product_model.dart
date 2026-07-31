@@ -1,4 +1,76 @@
+import 'dart:convert';
 import '../../domain/entities/product_entity.dart';
+
+List<String> _parseTags(dynamic value) {
+  if (value == null) return [];
+  if (value is List) {
+    if (value.isEmpty) return [];
+    final first = value.first;
+    // Detect legacy JSON-stringified array stored as a single list element
+    if (value.length == 1 && first is String && first.startsWith('[')) {
+      try {
+        final decoded = jsonDecode(first);
+        if (decoded is List) return decoded.map((e) => e.toString()).toList();
+      } catch (_) {}
+    }
+    return value.map((e) => e.toString()).toList();
+  }
+  if (value is String) {
+    if (value.startsWith('[')) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is List) return decoded.map((e) => e.toString()).toList();
+      } catch (_) {}
+    }
+    return [value];
+  }
+  return [];
+}
+
+class ProductVariantAttributeModel extends ProductVariantAttribute {
+  const ProductVariantAttributeModel({required super.name, required super.values});
+
+  factory ProductVariantAttributeModel.fromJson(Map<String, dynamic> json) =>
+      ProductVariantAttributeModel(
+        name: json['name']?.toString() ?? '',
+        values: (json['values'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      );
+
+  Map<String, dynamic> toJson() => {'name': name, 'values': values};
+}
+
+class ProductVariantModel extends ProductVariant {
+  const ProductVariantModel({
+    required super.attributes,
+    required super.price,
+    required super.stock,
+    super.sku,
+    super.image,
+  });
+
+  factory ProductVariantModel.fromJson(Map<String, dynamic> json) =>
+      ProductVariantModel(
+        attributes: json['attributes'] is Map
+            ? Map<String, String>.fromEntries(
+                (json['attributes'] as Map).entries.map(
+                  (e) => MapEntry(e.key.toString(), e.value.toString()),
+                ),
+              )
+            : {},
+        price: (json['price'] as num?)?.toDouble() ?? 0.0,
+        stock: (json['stock'] as num?)?.toInt() ?? 0,
+        sku: json['sku']?.toString() ?? '',
+        image: json['image']?.toString() ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+    'attributes': attributes,
+    'price': price,
+    'stock': stock,
+    'sku': sku,
+    'image': image,
+  };
+}
 
 class ProductModel extends ProductEntity {
   const ProductModel({
@@ -26,6 +98,8 @@ class ProductModel extends ProductEntity {
     super.shippingOptions,
     super.shippingFee,
     super.shippingFeeAmounts,
+    super.variantAttributes,
+    super.variants,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -54,7 +128,7 @@ class ProductModel extends ProductEntity {
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       reviews: (json['reviews'] as num?)?.toInt() ?? 0,
       soldCount: (json['soldCount'] as num?)?.toInt() ?? 0,
-      tags: (json['tags'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      tags: _parseTags(json['tags']),
       specifications: json['specifications'] != null
           ? Map<String, String>.from(json['specifications'] as Map)
           : {},
@@ -75,6 +149,12 @@ class ProductModel extends ProductEntity {
                   ),
             )
           : const {},
+      variantAttributes: (json['variantAttributes'] as List?)
+          ?.map((e) => ProductVariantAttributeModel.fromJson(e as Map<String, dynamic>))
+          .toList() ?? [],
+      variants: (json['variants'] as List?)
+          ?.map((e) => ProductVariantModel.fromJson(e as Map<String, dynamic>))
+          .toList() ?? [],
     );
   }
 }

@@ -37,6 +37,8 @@ export const Products: React.FC = () => {
 
   const { products, loading } = useProducts(filters, sortBy);
 
+  const visibleProducts = products.filter(p => p.sellerId !== user?.id);
+
   const categories = ['All', 'Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports & Outdoors'];
 
   const handleResetFilters = () => {
@@ -55,7 +57,7 @@ export const Products: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">All Products</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {loading ? 'Loading…' : `${products.length} products found`}
+            {loading ? 'Loading…' : `${visibleProducts.length} products found`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -179,7 +181,7 @@ export const Products: React.FC = () => {
             <div className="flex items-center justify-center min-h-[400px]">
               <Spinner size="lg" />
             </div>
-          ) : products.length === 0 ? (
+          ) : visibleProducts.length === 0 ? (
             <Card className="text-center py-16">
               <Search className="w-12 h-12 mx-auto text-gray-300 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
@@ -188,8 +190,7 @@ export const Products: React.FC = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {products
-                .filter(p => p.sellerId !== user?.id)
+              {visibleProducts
                 .map(product => (
                   <ProductCard
                     key={product.id}

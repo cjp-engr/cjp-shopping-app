@@ -1,7 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../models/product_model.dart';
 import '../../domain/entities/seller_profile_entity.dart';
 import '../../../../core/network/api_client.dart';
+
+List<ProductModel> _parseProductList(List<dynamic> list) =>
+    list.map((e) => ProductModel.fromJson(e as Map<String, dynamic>)).toList();
 
 class ProductRemoteDataSource {
   final Dio _dio;
@@ -29,7 +33,7 @@ class ProductRemoteDataSource {
       final response = await _dio.get('/products', queryParameters: params);
       final data = response.data;
       final List list = data is List ? data : (data['products'] ?? data['data'] ?? []);
-      return list.map((e) => ProductModel.fromJson(e as Map<String, dynamic>)).toList();
+      return compute(_parseProductList, list);
     } on DioException catch (e) {
       throw mapDioError(e);
     }
@@ -73,9 +77,7 @@ class ProductRemoteDataSource {
         avatar: avatar?.isNotEmpty == true ? avatar : null,
       );
       final List productList = data['products'] ?? [];
-      final products = productList
-          .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final products = await compute(_parseProductList, productList);
       return SellerProfileEntity(seller: seller, products: products);
     } on DioException catch (e) {
       throw mapDioError(e);

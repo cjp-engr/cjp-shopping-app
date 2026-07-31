@@ -1,10 +1,21 @@
 import type { Product } from './product';
 
+export interface SelectedVariant {
+  _id?: string;
+  attributes: Record<string, string>;
+  price: number;
+  stock: number;
+  sku?: string;
+  /** Stable composite key: "Attr1:Val1|Attr2:Val2" (sorted) */
+  key: string;
+}
+
 export interface CartItem {
   product: Product;
   quantity: number;
   sellerId?: string;
   sellerName?: string;
+  selectedVariant?: SelectedVariant;
 }
 
 export interface Cart {

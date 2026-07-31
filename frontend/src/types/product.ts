@@ -1,3 +1,17 @@
+export interface VariantAttribute {
+  name: string;
+  values: string[];
+}
+
+export interface ProductVariant {
+  _id?: string;
+  attributes: Record<string, string>;
+  price: number;
+  stock: number;
+  sku?: string;
+  image?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -21,6 +35,8 @@ export interface Product {
   shippingOptions?: Array<'standard' | 'express' | 'pickup'>;
   shippingFee?: 'free' | 'buyer_pays';
   shippingFeeAmounts?: Record<string, number>;
+  variantAttributes?: VariantAttribute[];
+  variants?: ProductVariant[];
 }
 
 export interface ProductFilters {

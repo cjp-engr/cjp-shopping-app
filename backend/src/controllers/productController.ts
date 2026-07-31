@@ -5,6 +5,16 @@ import cloudinary from '../config/cloudinary.js';
 import { AuthRequest } from '../middleware/auth.js';
 import * as sellerService from '../services/sellerService.js';
 
+function parseTags(tags: unknown): string[] | undefined {
+  if (!tags) return undefined;
+  if (Array.isArray(tags)) return tags.map(String);
+  if (typeof tags === 'string') {
+    try { const parsed = JSON.parse(tags); if (Array.isArray(parsed)) return parsed.map(String); } catch {}
+    return [tags];
+  }
+  return undefined;
+}
+
 // @desc    Get all products with filters
 // @route   GET /api/products
 // @access  Public
@@ -128,14 +138,30 @@ export const getProduct = async (req: Request, res: Response) => {
 // @desc    Create product
 // @route   POST /api/products
 // @access  Private (seller)
+function parseJsonField(raw: unknown): any | undefined {
+  if (!raw) return undefined;
+  if (typeof raw === 'string') {
+    try { return JSON.parse(raw); } catch { return undefined; }
+  }
+  return raw;
+}
+
 export const createProduct = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, description, price, category, stock, tags } = req.body;
+    const { name, description, price, category, stock, tags, brand, condition, sku, discount, shippingOptions, shippingFee, shippingFeeAmounts, variantAttributes, variants } = req.body;
     const files = (req.files as Express.Multer.File[]) ?? [];
     const imageUrls = files.map(f => (f as Express.Multer.File & { path: string }).path || f.filename);
     const product = await sellerService.createSellerProduct(
       req.user!.id,
-      { name, description, price: Number(price), category, stock: Number(stock ?? 0), tags },
+      {
+        name, description, price: Number(price), category, stock: Number(stock ?? 0),
+        tags: parseTags(tags), brand, condition, sku,
+        discount: discount != null ? Number(discount) : undefined,
+        shippingOptions: parseJsonField(shippingOptions),
+        shippingFee, shippingFeeAmounts: parseJsonField(shippingFeeAmounts),
+        variantAttributes: parseJsonField(variantAttributes),
+        variants: parseJsonField(variants),
+      },
       imageUrls,
     );
     res.status(201).json({ success: true, product });
@@ -149,13 +175,24 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
 // @access  Private (seller)
 export const updateProduct = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, description, price, category, stock, tags } = req.body;
+    const { name, description, price, category, stock, tags, brand, condition, sku, discount, shippingOptions, shippingFee, shippingFeeAmounts, variantAttributes, variants } = req.body;
     const files = (req.files as Express.Multer.File[]) ?? [];
     const imageUrls = files.length > 0 ? files.map(f => (f as Express.Multer.File & { path: string }).path || f.filename) : undefined;
     const product = await sellerService.updateSellerProduct(
       req.params.id,
       req.user!.id,
-      { name, description, price: price != null ? Number(price) : undefined, category, stock: stock != null ? Number(stock) : undefined, tags },
+      {
+        name, description,
+        price: price != null ? Number(price) : undefined,
+        category,
+        stock: stock != null ? Number(stock) : undefined,
+        tags: parseTags(tags), brand, condition, sku,
+        discount: discount != null ? Number(discount) : undefined,
+        shippingOptions: parseJsonField(shippingOptions),
+        shippingFee, shippingFeeAmounts: parseJsonField(shippingFeeAmounts),
+        variantAttributes: parseJsonField(variantAttributes),
+        variants: parseJsonField(variants),
+      },
       imageUrls,
     );
     res.status(200).json({ success: true, product });

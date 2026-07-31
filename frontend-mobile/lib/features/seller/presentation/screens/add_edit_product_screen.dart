@@ -52,7 +52,12 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   late List<String> _existingImageUrls;
   final _picker = ImagePicker();
 
-  // Step 4 — Shipping
+  // Step 4 — Variants
+  bool _hasVariants = false;
+  final List<_VariantAttr> _variantAttrs = [];
+  final List<_VariantRow> _variantRows = [];
+
+  // Step 5 — Shipping
   final Set<String> _shippingOptions = {'standard'};
   String _shippingFee = 'free';
   final Map<String, TextEditingController> _shippingFeeAmountCtrls = {};
@@ -64,6 +69,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     AppStrings.stepPricing,
     AppStrings.stepDescription,
     AppStrings.stepImages,
+    'Variants',
     AppStrings.stepShipping,
     AppStrings.stepReview,
   ];
@@ -73,6 +79,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     Icons.attach_money,
     Icons.notes_outlined,
     Icons.photo_outlined,
+    Icons.tune_outlined,
     Icons.local_shipping_outlined,
     Icons.fact_check_outlined,
   ];
@@ -98,6 +105,21 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           ..addAll(p.shippingOptions);
       }
       if (p.tags.isNotEmpty) _tags.addAll(p.tags);
+      if (p.variantAttributes.isNotEmpty) {
+        _hasVariants = true;
+        for (final attr in p.variantAttributes) {
+          _variantAttrs.add(_VariantAttr(name: attr.name, values: List.from(attr.values)));
+        }
+        for (final v in p.variants) {
+          _variantRows.add(_VariantRow(
+            attributes: Map.from(v.attributes),
+            price: v.price > 0 ? v.price.toStringAsFixed(2) : '',
+            stock: v.stock > 0 ? '${v.stock}' : '',
+            sku: v.sku,
+            imageUrl: v.image,
+          ));
+        }
+      }
     }
     for (final opt in ['standard', 'express', 'pickup']) {
       final existingAmount = p?.shippingFeeAmounts[opt];
@@ -123,6 +145,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     _discountCtrl.dispose();
     _descCtrl.dispose();
     _tagCtrl.dispose();
+    for (final row in _variantRows) {
+      row.dispose();
+    }
     for (final ctrl in _shippingFeeAmountCtrls.values) {
       ctrl.dispose();
     }
@@ -148,6 +173,15 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           return 'Please add at least one product image.';
         }
       case 4:
+        if (_hasVariants) {
+          final validAttrs = _variantAttrs
+              .where((a) => a.name.trim().isNotEmpty && a.values.isNotEmpty)
+              .toList();
+          if (validAttrs.isEmpty) {
+            return 'Add at least one attribute with values, or disable variants.';
+          }
+        }
+      case 5:
         if (_shippingOptions.isEmpty) return 'Please select at least one delivery option.';
     }
     return null;
@@ -165,7 +199,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       ));
       return;
     }
-    if (_currentPage < 5) {
+    if (_currentPage < 6) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -213,6 +247,33 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               opt: double.tryParse(_shippingFeeAmountCtrls[opt]!.text.trim()) ?? 0.0,
         },
     };
+
+    if (_hasVariants && _variantAttrs.any((a) => a.name.trim().isNotEmpty && a.values.isNotEmpty)) {
+      final validAttrs = _variantAttrs
+          .where((a) => a.name.trim().isNotEmpty && a.values.isNotEmpty)
+          .toList();
+      data['variantAttributes'] = validAttrs
+          .map((a) => {'name': a.name.trim(), 'values': a.values})
+          .toList();
+      data['variants'] = _variantRows.map((r) => {
+        'attributes': r.attributes,
+        'price': double.tryParse(r.priceCtrl.text.trim()) ?? 0.0,
+        'stock': int.tryParse(r.stockCtrl.text.trim()) ?? 0,
+        'sku': r.skuCtrl.text.trim(),
+        'image': r.imageUrl,
+      }).toList();
+      // Base stock = sum of all variant stocks
+      final totalStock = _variantRows.fold<int>(
+          0, (s, r) => s + (int.tryParse(r.stockCtrl.text.trim()) ?? 0));
+      if (totalStock > 0) data['stock'] = totalStock;
+      // Base price = min variant price
+      final prices = _variantRows
+          .map((r) => double.tryParse(r.priceCtrl.text.trim()) ?? 0.0)
+          .where((p) => p > 0)
+          .toList();
+      if (prices.isNotEmpty) data['price'] = prices.reduce((a, b) => a < b ? a : b);
+    }
+
     final imagePaths = _pickedFiles.map((f) => f.path).toList();
     if (_isEditing) {
       context.read<SellerBloc>().add(
@@ -223,6 +284,159 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         SellerProductCreateRequested(data, imagePaths: imagePaths),
       );
     }
+  }
+
+  // ── Variant helpers ─────────────────────────────────────────────────────────
+
+  void _regenerateVariantRows() {
+    final validAttrs = _variantAttrs
+        .where((a) => a.name.trim().isNotEmpty && a.values.isNotEmpty)
+        .toList();
+
+    if (validAttrs.isEmpty) {
+      for (final row in _variantRows) {
+        row.dispose();
+      }
+      _variantRows.clear();
+      return;
+    }
+
+    // Cartesian product of all attribute values
+    List<Map<String, String>> combos = [{}];
+    for (final attr in validAttrs) {
+      final expanded = <Map<String, String>>[];
+      for (final combo in combos) {
+        for (final value in attr.values) {
+          expanded.add({...combo, attr.name: value});
+        }
+      }
+      combos = expanded;
+    }
+
+    // Preserve existing price/stock/sku by label
+    final existing = {for (final row in _variantRows) row.label: row};
+
+    final newRows = combos.map((combo) {
+      final label = combo.values.join(' / ');
+      final prev = existing[label];
+      return _VariantRow(
+        attributes: combo,
+        price: prev?.priceCtrl.text ?? '',
+        stock: prev?.stockCtrl.text ?? '',
+        sku: prev?.skuCtrl.text ?? '',
+        imageUrl: prev?.imageUrl ?? '',
+      );
+    }).toList();
+
+    // Dispose rows no longer in use
+    for (final row in _variantRows) {
+      if (!newRows.any((r) => r.label == row.label)) {
+        row.dispose();
+      }
+    }
+
+    _variantRows
+      ..clear()
+      ..addAll(newRows);
+  }
+
+  void _showAddAttributeDialog() {
+    final nameCtrl = TextEditingController();
+    final valueCtrl = TextEditingController();
+    final values = <String>[];
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          void addValue() {
+            final v = valueCtrl.text.trim();
+            if (v.isEmpty || values.contains(v)) return;
+            setDialogState(() { values.add(v); valueCtrl.clear(); });
+          }
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusLg)),
+            title: const Text('Add Attribute', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppTextField(
+                      label: 'Attribute Name',
+                      controller: nameCtrl,
+                      hint: 'e.g. Color, Size, RAM…',
+                      prefixIcon: Icons.tune_outlined,
+                    ),
+                    const SizedBox(height: AppSizes.sm),
+                    Row(children: [
+                      Expanded(child: AppTextField(
+                        label: 'Add Value',
+                        controller: valueCtrl,
+                        hint: 'e.g. Red, Small, 8GB…',
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) => addValue(),
+                      )),
+                      const SizedBox(width: AppSizes.sm),
+                      GestureDetector(
+                        onTap: addValue,
+                        child: Container(
+                          width: 44, height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                          ),
+                          child: const Icon(Icons.add, color: Colors.white),
+                        ),
+                      ),
+                    ]),
+                    if (values.isNotEmpty) ...[
+                      const SizedBox(height: AppSizes.sm),
+                      Wrap(
+                        spacing: 6, runSpacing: 6,
+                        children: values.map((v) => Chip(
+                          label: Text(v, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          backgroundColor: AppColors.primary.withAlpha(20),
+                          labelStyle: const TextStyle(color: AppColors.primary),
+                          deleteIconColor: AppColors.primary,
+                          onDeleted: () => setDialogState(() => values.remove(v)),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: EdgeInsets.zero,
+                        )).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                onPressed: () {
+                  final name = nameCtrl.text.trim();
+                  if (name.isEmpty || values.isEmpty) return;
+                  if (_variantAttrs.any((a) => a.name.toLowerCase() == name.toLowerCase())) return;
+                  setState(() {
+                    _variantAttrs.add(_VariantAttr(name: name, values: List.from(values)));
+                    _regenerateVariantRows();
+                  });
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Add Attribute', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   // ── Image helpers ───────────────────────────────────────────────────────────
@@ -392,8 +606,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   _buildPage1(),
                   _buildPage2(),
                   _buildPage3(),
-                  _buildPage4(),
-                  _buildPage5(),
+                  _buildPage4Variants(),
+                  _buildPage5Shipping(),
+                  _buildPage6Review(),
                 ],
               ),
             ),
@@ -628,9 +843,248 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     );
   }
 
-  // ── Step 4: Shipping ────────────────────────────────────────────────────────
+  // ── Step 4: Variants ────────────────────────────────────────────────────────
 
-  Widget _buildPage4() {
+  Widget _buildPage4Variants() {
+    final validAttrs = _variantAttrs
+        .where((a) => a.name.trim().isNotEmpty && a.values.isNotEmpty)
+        .toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSizes.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _PageHeader(
+            title: 'Variants',
+            subtitle: 'Offer multiple options like size, color, or material',
+          ),
+          const SizedBox(height: AppSizes.md),
+
+          // Enable/disable toggle
+          _FormCard(child: Row(children: [
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Enable Variants', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.onSurfaceColor)),
+                const SizedBox(height: 2),
+                Text('Let buyers choose from different options', style: TextStyle(fontSize: 12, color: context.onSurfaceMuted)),
+              ],
+            )),
+            Switch(
+              value: _hasVariants,
+              onChanged: (val) => setState(() => _hasVariants = val),
+              activeColor: AppColors.primary,
+            ),
+          ])),
+
+          if (_hasVariants) ...[
+            const SizedBox(height: AppSizes.md),
+
+            // Section header + Add button
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              const _SectionLabel('Attributes'),
+              GestureDetector(
+                onTap: _showAddAttributeDialog,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.add, color: Colors.white, size: 14),
+                    SizedBox(width: 4),
+                    Text('Add', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                  ]),
+                ),
+              ),
+            ]),
+            const SizedBox(height: AppSizes.sm),
+
+            if (_variantAttrs.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(AppSizes.lg),
+                decoration: BoxDecoration(
+                  color: context.surfaceVariantColor,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  border: Border.all(color: context.borderColor.withAlpha(60)),
+                ),
+                child: Center(child: Text(
+                  'No attributes yet.\nTap "+ Add" to create one (e.g. Color, Size, RAM)',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: context.onSurfaceMuted),
+                )),
+              )
+            else
+              for (int i = 0; i < _variantAttrs.length; i++)
+                _buildAttributeCard(i),
+
+            if (validAttrs.isNotEmpty) ...[
+              const SizedBox(height: AppSizes.md),
+              Row(children: [
+                const _SectionLabel('Generated Variants'),
+                const SizedBox(width: AppSizes.sm),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(20),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text('${_variantRows.length}', style: const TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary,
+                  )),
+                ),
+              ]),
+              const SizedBox(height: 4),
+              Text('Set price, stock, and SKU for each combination',
+                  style: TextStyle(fontSize: 11, color: context.onSurfaceMuted)),
+              const SizedBox(height: AppSizes.sm),
+              _buildVariantsTable(),
+            ],
+          ] else ...[
+            const SizedBox(height: AppSizes.md),
+            Container(
+              padding: const EdgeInsets.all(AppSizes.lg),
+              decoration: BoxDecoration(
+                color: context.surfaceVariantColor,
+                borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+              ),
+              child: Column(children: [
+                Icon(Icons.tune_outlined, size: 40, color: context.onSurfaceMuted),
+                const SizedBox(height: AppSizes.sm),
+                Text('No Variants', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.onSurfaceColor)),
+                const SizedBox(height: 4),
+                Text(
+                  'Enable variants if your product comes in different options such as size, color, or material.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: context.onSurfaceMuted),
+                ),
+              ]),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAttributeCard(int i) {
+    final attr = _variantAttrs[i];
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.sm),
+      padding: const EdgeInsets.all(AppSizes.md),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        border: Border.all(color: context.borderColor.withAlpha(80)),
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(6), blurRadius: 8, offset: const Offset(0, 1))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 8, height: 8,
+            decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(attr.name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.onSurfaceColor))),
+          GestureDetector(
+            onTap: () => setState(() {
+              _variantAttrs.removeAt(i);
+              _regenerateVariantRows();
+            }),
+            child: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
+          ),
+        ]),
+        const SizedBox(height: AppSizes.xs),
+        Wrap(
+          spacing: 6, runSpacing: 6,
+          children: [
+            ...attr.values.map((v) => _ValueChip(
+              label: v,
+              onDelete: () => setState(() {
+                attr.values.remove(v);
+                _regenerateVariantRows();
+              }),
+            )),
+            _AddValueChip(
+              key: ValueKey('add_${attr.name}'),
+              onAdd: (newVal) {
+                if (newVal.isNotEmpty && !attr.values.contains(newVal)) {
+                  setState(() {
+                    attr.values.add(newVal);
+                    _regenerateVariantRows();
+                  });
+                }
+              },
+            ),
+          ],
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildVariantsTable() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: context.borderColor.withAlpha(80)),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        ),
+        child: Column(children: [
+          // Header
+          Container(
+            color: context.surfaceVariantColor,
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.xs),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: 420,
+                child: Row(children: [
+                  SizedBox(width: 120, child: Text('Variant', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.onSurfaceMuted))),
+                  SizedBox(width: 90, child: Text('Price', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.onSurfaceMuted))),
+                  SizedBox(width: 70, child: Text('Stock', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.onSurfaceMuted))),
+                  SizedBox(width: 110, child: Text('SKU', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.onSurfaceMuted))),
+                ]),
+              ),
+            ),
+          ),
+          for (int i = 0; i < _variantRows.length; i++) ...[
+            if (i > 0) Divider(height: 1, color: context.borderColor.withAlpha(60)),
+            _buildVariantRow(_variantRows[i]),
+          ],
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildVariantRow(_VariantRow row) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 6),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SizedBox(
+          width: 420,
+          child: Row(children: [
+            SizedBox(width: 120, child: Text(
+              row.label,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.onSurfaceColor),
+              overflow: TextOverflow.ellipsis,
+            )),
+            SizedBox(width: 90, child: _InlineField(ctrl: row.priceCtrl, prefix: '\$', hint: '0.00', numeric: true)),
+            const SizedBox(width: 0),
+            SizedBox(width: 70, child: _InlineField(ctrl: row.stockCtrl, hint: '0', numeric: true)),
+            const SizedBox(width: 0),
+            SizedBox(width: 110, child: _InlineField(ctrl: row.skuCtrl, hint: 'Optional')),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  // ── Step 5: Shipping ────────────────────────────────────────────────────────
+
+  Widget _buildPage5Shipping() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSizes.md),
       child: Column(
@@ -725,9 +1179,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     );
   }
 
-  // ── Step 5: Review ──────────────────────────────────────────────────────────
+  // ── Step 6: Review ──────────────────────────────────────────────────────────
 
-  Widget _buildPage5() {
+  Widget _buildPage6Review() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSizes.md),
       child: Column(
@@ -761,11 +1215,18 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 onEdit: () => _goToPage(3),
               ),
               _ReviewRow(
+                label: 'Variants',
+                value: _hasVariants && _variantRows.isNotEmpty
+                    ? '${_variantRows.length} combination(s)'
+                    : 'None',
+                onEdit: () => _goToPage(4),
+              ),
+              _ReviewRow(
                 label: AppStrings.deliveryOption,
                 value: _shippingOptions.isEmpty
                     ? '—'
                     : _shippingOptions.map((o) => o[0].toUpperCase() + o.substring(1)).join(', '),
-                onEdit: () => _goToPage(4),
+                onEdit: () => _goToPage(5),
               ),
               _ReviewRow(
                 label: AppStrings.shippingFee,
@@ -778,7 +1239,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                             .toList();
                         return parts.isEmpty ? AppStrings.feeByBuyer : parts.join(', ');
                       }(),
-                onEdit: () => _goToPage(4),
+                onEdit: () => _goToPage(5),
                 last: true,
               ),
             ],
@@ -806,7 +1267,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             onPressed: _prevPage,
           )),
           const SizedBox(width: AppSizes.sm),
-          if (_currentPage < 5)
+          if (_currentPage < 6)
             Expanded(child: AppButton(label: 'Next', onPressed: _nextPage))
           else
             Expanded(
@@ -1344,5 +1805,174 @@ class _ImageTile extends StatelessWidget {
         ),
       ),
     ]);
+  }
+}
+
+// ── Variant helpers ───────────────────────────────────────────────────────────
+
+class _VariantAttr {
+  String name;
+  List<String> values;
+  _VariantAttr({required this.name, List<String>? values}) : values = values ?? [];
+}
+
+class _VariantRow {
+  final Map<String, String> attributes;
+  final TextEditingController priceCtrl;
+  final TextEditingController stockCtrl;
+  final TextEditingController skuCtrl;
+  String imageUrl;
+
+  _VariantRow({
+    required this.attributes,
+    String price = '',
+    String stock = '',
+    String sku = '',
+    this.imageUrl = '',
+  })  : priceCtrl = TextEditingController(text: price),
+        stockCtrl = TextEditingController(text: stock),
+        skuCtrl   = TextEditingController(text: sku);
+
+  String get label => attributes.values.join(' / ');
+
+  void dispose() {
+    priceCtrl.dispose();
+    stockCtrl.dispose();
+    skuCtrl.dispose();
+  }
+}
+
+// ── Value chip ────────────────────────────────────────────────────────────────
+
+class _ValueChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onDelete;
+  const _ValueChip({required this.label, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 5, 6, 5),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withAlpha(18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withAlpha(60)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+        const SizedBox(width: 4),
+        GestureDetector(
+          onTap: onDelete,
+          child: const Icon(Icons.close, size: 13, color: AppColors.primary),
+        ),
+      ]),
+    );
+  }
+}
+
+// ── Add-value chip (inline input) ─────────────────────────────────────────────
+
+class _AddValueChip extends StatefulWidget {
+  final void Function(String) onAdd;
+  const _AddValueChip({super.key, required this.onAdd});
+
+  @override
+  State<_AddValueChip> createState() => _AddValueChipState();
+}
+
+class _AddValueChipState extends State<_AddValueChip> {
+  bool _editing = false;
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final v = _ctrl.text.trim();
+    widget.onAdd(v);
+    _ctrl.clear();
+    setState(() => _editing = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_editing) {
+      return SizedBox(
+        width: 110,
+        child: TextField(
+          controller: _ctrl,
+          autofocus: true,
+          style: const TextStyle(fontSize: 12),
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: AppColors.primary)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: AppColors.primary)),
+            hintText: 'Value…',
+            hintStyle: TextStyle(fontSize: 11, color: context.onSurfaceMuted),
+            suffixIcon: GestureDetector(
+              onTap: _submit,
+              child: const Icon(Icons.check, size: 15, color: AppColors.primary),
+            ),
+          ),
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _submit(),
+          onTapOutside: (_) => setState(() { _editing = false; _ctrl.clear(); }),
+        ),
+      );
+    }
+    return GestureDetector(
+      onTap: () => setState(() => _editing = true),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: context.surfaceVariantColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: context.borderColor),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.add, size: 13, color: context.onSurfaceMuted),
+          const SizedBox(width: 3),
+          Text('Add value', style: TextStyle(fontSize: 11, color: context.onSurfaceMuted)),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Inline table cell field ───────────────────────────────────────────────────
+
+class _InlineField extends StatelessWidget {
+  final TextEditingController ctrl;
+  final String hint;
+  final String? prefix;
+  final bool numeric;
+  const _InlineField({required this.ctrl, required this.hint, this.prefix, this.numeric = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: TextField(
+        controller: ctrl,
+        keyboardType: numeric ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+        style: const TextStyle(fontSize: 12),
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.borderColor)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.primary)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.borderColor.withAlpha(100))),
+          prefixText: prefix,
+          prefixStyle: TextStyle(fontSize: 12, color: context.onSurfaceMuted),
+          hintText: hint,
+          hintStyle: TextStyle(fontSize: 11, color: context.onSurfaceMuted),
+        ),
+      ),
+    );
   }
 }

@@ -1,6 +1,21 @@
 import type { Product, ProductFilters, SortOption } from '../types/product';
 import { API_ENDPOINTS, getHeaders } from '../config/api';
 
+function parseTags(raw: unknown): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    // Legacy: array with a single JSON-stringified element e.g. ['["a","b"]']
+    if (raw.length === 1 && typeof raw[0] === 'string' && raw[0].startsWith('[')) {
+      try { const p = JSON.parse(raw[0]); if (Array.isArray(p)) return p.map(String); } catch {}
+    }
+    return raw.map(String);
+  }
+  if (typeof raw === 'string' && raw.startsWith('[')) {
+    try { const p = JSON.parse(raw); if (Array.isArray(p)) return p.map(String); } catch {}
+  }
+  return [];
+}
+
 const adaptProduct = (p: any): Product => ({
   id: p._id,
   name: p.name,
@@ -12,7 +27,7 @@ const adaptProduct = (p: any): Product => ({
   stock: p.stock,
   rating: p.rating,
   reviews: p.reviews,
-  tags: p.tags,
+  tags: parseTags(p.tags),
   specifications: p.specifications,
   createdAt: p.createdAt,
   sellerId: p.sellerId?._id ?? p.sellerId ?? undefined,
@@ -26,6 +41,19 @@ const adaptProduct = (p: any): Product => ({
   shippingOptions: p.shippingOptions,
   shippingFee: p.shippingFee,
   shippingFeeAmounts: p.shippingFeeAmounts,
+  variantAttributes: p.variantAttributes,
+  variants: Array.isArray(p.variants)
+    ? p.variants.map((v: any) => ({
+        _id: v._id?.toString(),
+        attributes: v.attributes instanceof Map
+          ? Object.fromEntries(v.attributes)
+          : (v.attributes && typeof v.attributes === 'object' ? { ...v.attributes } : {}),
+        price: v.price ?? 0,
+        stock: v.stock ?? 0,
+        sku: v.sku,
+        image: v.image,
+      }))
+    : undefined,
 });
 
 class ProductService {

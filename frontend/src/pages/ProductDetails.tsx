@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import type { Product } from '../types/product';
+import type { SelectedVariant } from '../types/cart';
 import productService from '../services/productService';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -60,6 +61,52 @@ export const ProductDetails: React.FC = () => {
   const [reviewTotal, setReviewTotal] = useState(0);
   const [sellerProfile, setSellerProfile] = useState<PublicUser | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
+  const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
+
+  const hasVariants = !!(product?.variantAttributes?.length && product.variants?.length);
+
+  const selectedVariant = useMemo(() => {
+    if (!hasVariants || !product?.variantAttributes || !product.variants) return null;
+    const allSelected = product.variantAttributes.every(a => selectedAttrs[a.name] != null);
+    if (!allSelected) return null;
+    return product.variants.find(v =>
+      product.variantAttributes!.every(a => v.attributes[a.name] === selectedAttrs[a.name])
+    ) ?? null;
+  }, [hasVariants, product, selectedAttrs]);
+
+  const allVariantAttrsSelected = hasVariants
+    ? product!.variantAttributes!.every(a => selectedAttrs[a.name] != null)
+    : true;
+
+  const effectivePrice = selectedVariant?.price ?? product?.price ?? 0;
+  const effectiveStock = selectedVariant?.stock ?? product?.stock ?? 0;
+  const effectiveSku = selectedVariant?.sku ?? product?.sku;
+
+  const isValueAvailable = useCallback(
+    (attrName: string, value: string): boolean => {
+      if (!product?.variants) return false;
+      return product.variants.some(v => {
+        if ((v.stock ?? 0) <= 0) return false;
+        if (v.attributes[attrName] !== value) return false;
+        for (const a of product.variantAttributes ?? []) {
+          if (a.name === attrName) continue;
+          const sel = selectedAttrs[a.name];
+          if (sel != null && v.attributes[a.name] !== sel) return false;
+        }
+        return true;
+      });
+    },
+    [product, selectedAttrs]
+  );
+
+  const buildSelectedVariant = (): SelectedVariant | undefined => {
+    if (!selectedVariant) return undefined;
+    const key = Object.entries(selectedVariant.attributes)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}:${v}`)
+      .join('|');
+    return { ...selectedVariant, key };
+  };
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -77,6 +124,7 @@ export const ProductDetails: React.FC = () => {
 
         setProduct(productData);
         setSelectedImage(0);
+        setSelectedAttrs({});
 
         // Load related products
         const related = await productService.getRelatedProductsAsync(id, 4);
@@ -130,13 +178,13 @@ export const ProductDetails: React.FC = () => {
 
   const handleAddToCart = () => {
     if (product && product.sellerId !== user?.id) {
-      addToCart(product, quantity);
+      addToCart(product, quantity, buildSelectedVariant());
       setQuantity(1);
     }
   };
 
   const incrementQuantity = () => {
-    if (product && quantity < product.stock) {
+    if (product && quantity < effectiveStock) {
       setQuantity((prev) => prev + 1);
     }
   };
@@ -175,7 +223,8 @@ export const ProductDetails: React.FC = () => {
   }
 
   const images = product.images || [product.image];
-  const cartQuantity = getItemQuantity(product.id);
+  const variantSV = buildSelectedVariant();
+  const cartQuantity = getItemQuantity(product.id, variantSV?.key);
   const isOwnProduct = !!user?.id && user.id === product.sellerId;
   const showBuyerUI = !isOwnProduct || previewMode;
 
@@ -283,21 +332,25 @@ export const ProductDetails: React.FC = () => {
 
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-6">
-              {product.discount && product.discount > 0 ? (
+              {!hasVariants && product.discount && product.discount > 0 ? (
                 <>
                   <span className="text-4xl font-bold text-primary-600">
-                    {formatCurrency(product.price * (1 - product.discount / 100))}
+                    {formatCurrency(effectivePrice * (1 - product.discount / 100))}
                   </span>
                   <span className="text-xl text-gray-400 line-through">
-                    {formatCurrency(product.price)}
+                    {formatCurrency(effectivePrice)}
                   </span>
                   <span className="px-2 py-0.5 text-sm font-bold text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg">
                     -{product.discount}%
                   </span>
                 </>
+              ) : hasVariants && !allVariantAttrsSelected ? (
+                <span className="text-4xl font-bold text-primary-600">
+                  {`From ${formatCurrency(Math.min(...(product.variants?.map(v => v.price) ?? [product.price])))}`}
+                </span>
               ) : (
                 <span className="text-4xl font-bold text-primary-600">
-                  {formatCurrency(product.price)}
+                  {formatCurrency(effectivePrice)}
                 </span>
               )}
             </div>
@@ -306,6 +359,72 @@ export const ProductDetails: React.FC = () => {
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
               {product.description}
             </p>
+
+            {/* Variant Selector */}
+            {hasVariants && showBuyerUI && (
+              <div className="space-y-4 mb-6">
+                {product.variantAttributes!.map(attr => (
+                  <div key={attr.name}>
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      {attr.name}
+                      {selectedAttrs[attr.name] && (
+                        <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
+                          : {selectedAttrs[attr.name]}
+                        </span>
+                      )}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {attr.values.map(value => {
+                        const available = isValueAvailable(attr.name, value);
+                        const selected = selectedAttrs[attr.name] === value;
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => {
+                              if (!available) return;
+                              setSelectedAttrs(prev => ({ ...prev, [attr.name]: value }));
+                              setQuantity(1);
+                            }}
+                            disabled={!available}
+                            className={`relative px-4 py-2 text-sm font-medium rounded-xl border-2 transition-all ${
+                              selected
+                                ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
+                                : available
+                                  ? 'border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 bg-white dark:bg-gray-800'
+                                  : 'border-gray-100 dark:border-gray-700 text-gray-300 dark:text-gray-600 bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed line-through'
+                            }`}
+                            title={!available ? 'Out of stock' : undefined}
+                          >
+                            {value}
+                            {!available && (
+                              <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-900" title="Out of stock" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Selected variant info */}
+                {selectedVariant && (
+                  <div className="flex items-center gap-3 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-100 dark:border-primary-800 text-sm">
+                    <span className="font-medium text-primary-700 dark:text-primary-300">
+                      {selectedVariant.stock > 0 ? `${selectedVariant.stock} in stock` : 'Out of stock'}
+                    </span>
+                    {selectedVariant.sku && (
+                      <span className="text-gray-500 dark:text-gray-400 font-mono">SKU: {selectedVariant.sku}</span>
+                    )}
+                  </div>
+                )}
+
+                {!allVariantAttrsSelected && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Please select all options to add to cart.
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Tags */}
             {product.tags && product.tags.length > 0 && (
@@ -337,24 +456,24 @@ export const ProductDetails: React.FC = () => {
                     <dd className="text-sm font-medium text-gray-900 dark:text-white capitalize">{product.condition}</dd>
                   </>
                 )}
-                {product.sku && (
+                {effectiveSku && (
                   <>
                     <dt className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">SKU</dt>
-                    <dd className="text-sm font-medium text-gray-900 dark:text-white font-mono">{product.sku}</dd>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-white font-mono">{effectiveSku}</dd>
                   </>
                 )}
               </dl>
             )}
 
-            {/* Stock Status */}
+            {/* Stock Status — only show when not using variant selector (which has its own inline stock info) */}
             <div className="mb-6">
-              {product.stock > 0 ? (
+              {!hasVariants && (effectiveStock > 0 ? (
                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                   <Package className="w-5 h-5" />
                   <span className="font-medium">
-                    {product.stock > 10
+                    {effectiveStock > 10
                       ? 'In Stock'
-                      : `Only ${product.stock} left in stock`}
+                      : `Only ${effectiveStock} left in stock`}
                   </span>
                 </div>
               ) : (
@@ -362,7 +481,7 @@ export const ProductDetails: React.FC = () => {
                   <Package className="w-5 h-5" />
                   <span className="font-medium">Out of Stock</span>
                 </div>
-              )}
+              ))}
 
               {cartQuantity > 0 && (
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
@@ -373,7 +492,7 @@ export const ProductDetails: React.FC = () => {
           </div>
 
           {/* Quantity + Add to Cart */}
-          {showBuyerUI && product.stock > 0 && (
+          {showBuyerUI && (!hasVariants ? effectiveStock > 0 : allVariantAttrsSelected && effectiveStock > 0) && (
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Quantity</label>
               <div className="flex items-center gap-3">
@@ -391,7 +510,7 @@ export const ProductDetails: React.FC = () => {
                   </span>
                   <button
                     onClick={incrementQuantity}
-                    disabled={quantity >= product.stock}
+                    disabled={quantity >= effectiveStock}
                     className="w-11 h-11 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
                     aria-label="Increase quantity"
                   >
@@ -403,6 +522,14 @@ export const ProductDetails: React.FC = () => {
                   Add to Cart
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Out of stock message when variant is selected but has 0 stock */}
+          {showBuyerUI && hasVariants && allVariantAttrsSelected && effectiveStock === 0 && (
+            <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <Package className="w-5 h-5" />
+              <span className="font-medium">Out of Stock</span>
             </div>
           )}
 

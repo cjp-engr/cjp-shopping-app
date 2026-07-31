@@ -18,8 +18,6 @@ class ProductCard extends StatelessWidget {
     required this.onTap,
   });
 
-  double get _originalPrice => product.price * 1.4;
-
   @override
   Widget build(BuildContext context) {
     final cardBg = context.cardColor;
@@ -185,15 +183,6 @@ class ProductCard extends StatelessWidget {
                                 fontSize: 15,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.primary,
-                              ),
-                            ),
-                            Text(
-                              '\$${_originalPrice.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w400,
-                                color: muted,
-                                decoration: TextDecoration.lineThrough,
                               ),
                             ),
                           ],

@@ -1,18 +1,30 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, Fragment } from 'react';
 import type { Product } from '../../types/product';
 import sellerService from '../../services/sellerService';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import {
   X, Upload, Plus, AlertCircle, ImageOff,
-  ChevronLeft, ChevronRight, Check, Tag, Truck, Package,
+  ChevronLeft, ChevronRight, Check, Tag, Truck, Package, Layers,
 } from 'lucide-react';
 
 const CATEGORIES = ['Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports & Outdoors'];
 
 const STEPS = [
-  'Basic Info', 'Pricing', 'Description', 'Images', 'Shipping', 'Review',
+  'Basic Info', 'Pricing', 'Description', 'Images', 'Variants', 'Shipping', 'Review',
 ];
+
+interface VariantAttribute {
+  name: string;
+  values: string[];
+}
+
+interface VariantRow {
+  attributes: Record<string, string>;
+  price: string;
+  stock: string;
+  sku: string;
+}
 
 interface WizardData {
   name: string;
@@ -27,6 +39,9 @@ interface WizardData {
   tags: string[];
   imageMode: 'upload' | 'url';
   imageUrl: string;
+  hasVariants: boolean;
+  variantAttributes: VariantAttribute[];
+  variants: VariantRow[];
   shippingOptions: Array<'standard' | 'express' | 'pickup'>;
   shippingFee: 'free' | 'buyer_pays';
   shippingFeeAmounts: Record<string, string>;
@@ -37,6 +52,7 @@ const EMPTY_DATA: WizardData = {
   price: '', stock: '', sku: '', discount: '',
   description: '', tags: [],
   imageMode: 'upload', imageUrl: '',
+  hasVariants: false, variantAttributes: [], variants: [],
   shippingOptions: ['standard'], shippingFee: 'free', shippingFeeAmounts: {},
 };
 
@@ -81,6 +97,14 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
           shippingFeeAmounts: product.shippingFeeAmounts
             ? Object.fromEntries(Object.entries(product.shippingFeeAmounts).map(([k, v]) => [k, String(v)]))
             : {},
+          hasVariants: !!(product.variantAttributes?.length && product.variants?.length),
+          variantAttributes: product.variantAttributes ?? [],
+          variants: product.variants?.map(v => ({
+            attributes: v.attributes,
+            price: String(v.price),
+            stock: String(v.stock),
+            sku: v.sku ?? '',
+          })) ?? [],
         }
       : EMPTY_DATA,
   );
@@ -91,12 +115,41 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
     if (!product) return [];
     return product.images?.length ? product.images : product.image ? [product.image] : [];
   });
+  const [variantValueInputs, setVariantValueInputs] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = <K extends keyof WizardData>(k: K, v: WizardData[K]) =>
     setData(prev => ({ ...prev, [k]: v }));
+
+  const regenerateVariants = (attrs: VariantAttribute[]) => {
+    const valid = attrs.filter(a => a.name.trim() && a.values.length > 0);
+    if (!valid.length) { set('variants', []); return; }
+    let combos: Record<string, string>[] = [{}];
+    for (const attr of valid) {
+      const expanded: Record<string, string>[] = [];
+      for (const combo of combos) {
+        for (const val of attr.values) {
+          expanded.push({ ...combo, [attr.name.trim()]: val });
+        }
+      }
+      combos = expanded;
+    }
+    setData(prev => {
+      const existingMap = new Map(prev.variants.map(v => [
+        Object.entries(v.attributes).map(([k, val]) => `${k}:${val}`).join('|'), v,
+      ]));
+      return {
+        ...prev,
+        variants: combos.map(attributes => {
+          const key = Object.entries(attributes).map(([k, v]) => `${k}:${v}`).join('|');
+          const ex = existingMap.get(key);
+          return { attributes, price: ex?.price ?? '', stock: ex?.stock ?? '', sku: ex?.sku ?? '' };
+        }),
+      };
+    });
+  };
 
   const validate = (): string | null => {
     if (step === 1) {
@@ -116,7 +169,11 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         : imageFiles.length > 0 || existingUrls.length > 0;
       if (!ok) return 'Please add at least one product image.';
     }
-    if (step === 5) {
+    if (step === 5 && data.hasVariants) {
+      const valid = data.variantAttributes.filter(a => a.name.trim() && a.values.length > 0);
+      if (valid.length === 0) return 'Add at least one attribute with values, or disable variants.';
+    }
+    if (step === 6) {
       if (data.shippingOptions.length === 0) return 'Please select at least one delivery option.';
     }
     return null;
@@ -157,12 +214,30 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
     setSubmitting(true);
     setError(null);
     try {
+      const validAttrs = data.variantAttributes.filter(a => a.name.trim() && a.values.length > 0);
+      const variantPayload = data.hasVariants && validAttrs.length > 0 ? {
+        variantAttributes: validAttrs,
+        variants: data.variants.map(v => ({
+          attributes: v.attributes,
+          price: Number(v.price) || 0,
+          stock: Number(v.stock) || 0,
+          sku: v.sku.trim() || undefined,
+        })),
+      } : {};
+
+      const variantStock = data.hasVariants && data.variants.length > 0
+        ? data.variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0)
+        : Number(data.stock);
+      const variantPrice = data.hasVariants && data.variants.length > 0
+        ? Math.min(...data.variants.map(v => Number(v.price) || 0).filter(p => p > 0))
+        : Number(data.price);
+
       const payload = {
         name: data.name.trim(),
         description: data.description.trim(),
-        price: Number(data.price),
+        price: variantPrice || Number(data.price),
         category: data.category,
-        stock: Number(data.stock),
+        stock: variantStock,
         image: data.imageMode === 'url' ? data.imageUrl : (existingUrls[0] ?? ''),
         brand: data.brand.trim() || undefined,
         condition: data.condition,
@@ -178,6 +253,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
                 .map(([k, v]) => [k, Number(v)])
             )
           : undefined,
+        ...variantPayload,
       };
       if (isEditing) {
         await sellerService.updateProduct(
@@ -196,15 +272,16 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
 
   // ── Step indicator ──────────────────────────────────────────────────────────
   const StepBar = () => (
-    <div className="flex items-center gap-0 px-6 py-3 border-b border-gray-100 dark:border-gray-700 overflow-x-auto">
+    <div className="flex items-center px-6 py-4 border-b border-gray-100 dark:border-gray-700">
       {STEPS.map((label, i) => {
         const n = i + 1;
         const done = n < step;
         const active = n === step;
         return (
-          <div key={n} className="flex items-center">
+          <Fragment key={n}>
+
             <div className="flex flex-col items-center gap-1 flex-shrink-0">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                 done ? 'bg-primary-600 text-white' :
                 active ? 'bg-primary-600 text-white ring-4 ring-primary-100 dark:ring-primary-900/40' :
                 'bg-gray-100 dark:bg-gray-700 text-gray-400'
@@ -217,9 +294,9 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
               }`}>{label}</span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`w-6 sm:w-10 h-0.5 mx-0.5 mb-4 flex-shrink-0 ${done ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+              <div className={`flex-1 h-0.5 mx-2 mb-4 ${done ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
             )}
-          </div>
+          </Fragment>
         );
       })}
     </div>
@@ -443,8 +520,222 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
     </div>
   );
 
-  // ── Step 5: Shipping ────────────────────────────────────────────────────────
-  const Step5 = () => {
+  // ── Step 5: Variants ────────────────────────────────────────────────────────
+  const Step5Variants = () => {
+    const updateAttrName = (i: number, name: string) => {
+      const attrs = data.variantAttributes.map((a, idx) => idx === i ? { ...a, name } : a);
+      set('variantAttributes', attrs);
+    };
+
+    const addValue = (i: number) => {
+      const val = (variantValueInputs[i] ?? '').trim();
+      if (!val) return;
+      const attrs = data.variantAttributes.map((a, idx) =>
+        idx === i && !a.values.includes(val) ? { ...a, values: [...a.values, val] } : a,
+      );
+      setVariantValueInputs(prev => ({ ...prev, [i]: '' }));
+      set('variantAttributes', attrs);
+      regenerateVariants(attrs);
+    };
+
+    const removeValue = (attrIdx: number, valIdx: number) => {
+      const attrs = data.variantAttributes.map((a, idx) =>
+        idx === attrIdx ? { ...a, values: a.values.filter((_, vi) => vi !== valIdx) } : a,
+      );
+      set('variantAttributes', attrs);
+      regenerateVariants(attrs);
+    };
+
+    const removeAttr = (i: number) => {
+      const attrs = data.variantAttributes.filter((_, idx) => idx !== i);
+      setVariantValueInputs(prev => {
+        const next: Record<number, string> = {};
+        Object.entries(prev).forEach(([k, v]) => {
+          const ki = Number(k);
+          if (ki < i) next[ki] = v;
+          else if (ki > i) next[ki - 1] = v;
+        });
+        return next;
+      });
+      set('variantAttributes', attrs);
+      regenerateVariants(attrs);
+    };
+
+    const addAttr = () => {
+      const attrs = [...data.variantAttributes, { name: '', values: [] }];
+      set('variantAttributes', attrs);
+    };
+
+    const updateVariantField = (rowIdx: number, field: 'price' | 'stock' | 'sku', value: string) => {
+      const variants = data.variants.map((v, i) => i === rowIdx ? { ...v, [field]: value } : v);
+      set('variants', variants);
+    };
+
+    return (
+      <div className="space-y-5">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Product Variants</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            Add variants like Size, Color, or Storage if your product comes in multiple options
+          </p>
+        </div>
+
+        {/* Toggle */}
+        <button
+          type="button"
+          onClick={() => {
+            set('hasVariants', !data.hasVariants);
+            if (!data.hasVariants) set('variantAttributes', []);
+          }}
+          className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl border-2 transition-all ${
+            data.hasVariants
+              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <Layers className={`w-5 h-5 ${data.hasVariants ? 'text-primary-600' : 'text-gray-400'}`} />
+            <div className="text-left">
+              <p className={`text-sm font-semibold ${data.hasVariants ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200'}`}>
+                This product has variants
+              </p>
+              <p className="text-xs text-gray-400">e.g. different sizes, colors, or storage options</p>
+            </div>
+          </div>
+          <div className={`w-11 h-6 rounded-full flex items-center transition-colors flex-shrink-0 ${data.hasVariants ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'}`}>
+            <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${data.hasVariants ? 'translate-x-5' : 'translate-x-0'}`} />
+          </div>
+        </button>
+
+        {data.hasVariants && (
+          <>
+            {/* Attribute cards */}
+            <div className="space-y-3">
+              {data.variantAttributes.map((attr, i) => (
+                <div key={i} className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl space-y-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={attr.name}
+                      onChange={e => updateAttrName(i, e.target.value)}
+                      placeholder="Attribute name (e.g. Color)"
+                      className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeAttr(i)}
+                      className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    {attr.values.map((val, vi) => (
+                      <span key={vi} className="inline-flex items-center gap-1 px-3 py-1 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-xs font-medium">
+                        {val}
+                        <button type="button" onClick={() => removeValue(i, vi)} className="hover:text-primary-900 ml-0.5">
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </span>
+                    ))}
+                    <div className="flex items-center gap-1">
+                      <input
+                        value={variantValueInputs[i] ?? ''}
+                        onChange={e => setVariantValueInputs(prev => ({ ...prev, [i]: e.target.value }))}
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addValue(i))}
+                        placeholder="Add value…"
+                        className="w-28 px-2 py-1 text-xs border border-dashed border-gray-300 dark:border-gray-600 rounded-full focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addValue(i)}
+                        className="p-1 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-full transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={addAttr}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-500 dark:text-gray-400 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Attribute
+            </button>
+
+            {/* Variants table */}
+            {data.variants.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Generated Combinations ({data.variants.length})
+                </p>
+                <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        <th className="px-3 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300">Variant</th>
+                        <th className="px-3 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 w-24">Price ($)</th>
+                        <th className="px-3 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 w-24">Stock</th>
+                        <th className="px-3 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 w-28">SKU</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {data.variants.map((row, ri) => (
+                        <tr key={ri} className="bg-white dark:bg-gray-900">
+                          <td className="px-3 py-2">
+                            <span className="font-medium text-gray-800 dark:text-gray-200">
+                              {Object.values(row.attributes).join(' / ')}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={row.price}
+                              onChange={e => updateVariantField(ri, 'price', e.target.value)}
+                              className="w-full px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={row.stock}
+                              onChange={e => updateVariantField(ri, 'stock', e.target.value)}
+                              className="w-full px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input
+                              type="text"
+                              placeholder="SKU-001"
+                              value={row.sku}
+                              onChange={e => updateVariantField(ri, 'sku', e.target.value)}
+                              className="w-full px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // ── Step 6: Shipping ────────────────────────────────────────────────────────
+  const Step6Shipping = () => {
     const toggleOption = (value: 'standard' | 'express' | 'pickup') => {
       const current = data.shippingOptions;
       const next = current.includes(value)
@@ -557,8 +848,8 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
     );
   };
 
-  // ── Step 6: Review ──────────────────────────────────────────────────────────
-  const Step6 = () => {
+  // ── Step 7: Review ──────────────────────────────────────────────────────────
+  const Step7Review = () => {
     const previewSrc = data.imageMode === 'url'
       ? data.imageUrl
       : imagePreviews[0] ?? existingUrls[0] ?? '';
@@ -619,15 +910,22 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
               <Row label="Tags" value={data.tags.join(', ')} onEdit={() => setStep(3)} />
             )}
             <Row label="Images" value={`${imgCount} photo${imgCount !== 1 ? 's' : ''}`} onEdit={() => setStep(4)} />
+            {data.hasVariants && data.variantAttributes.length > 0 && (
+              <Row
+                label="Variants"
+                value={`${data.variantAttributes.map(a => a.name).join(', ')} · ${data.variants.length} combos`}
+                onEdit={() => setStep(5)}
+              />
+            )}
             <Row
               label="Delivery"
               value={data.shippingOptions.map(o => o.charAt(0).toUpperCase() + o.slice(1)).join(', ') || '—'}
-              onEdit={() => setStep(5)}
+              onEdit={() => setStep(6)}
             />
             <Row
               label="Shipping Fee"
-              value={data.shippingFee === 'free' ? 'Free shipping' : data.shippingFeeAmount ? `Buyer pays $${data.shippingFeeAmount}` : 'Buyer pays'}
-              onEdit={() => setStep(5)}
+              value={data.shippingFee === 'free' ? 'Free shipping' : 'Buyer pays'}
+              onEdit={() => setStep(6)}
             />
           </div>
         </div>
@@ -643,8 +941,9 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
       case 2: return Step2();
       case 3: return Step3();
       case 4: return Step4();
-      case 5: return Step5();
-      case 6: return Step6();
+      case 5: return Step5Variants();
+      case 6: return Step6Shipping();
+      case 7: return Step7Review();
     }
   };
 
@@ -685,7 +984,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
             {step === 1 ? 'Cancel' : 'Back'}
           </Button>
 
-          {step < 6 ? (
+          {step < 7 ? (
             <Button onClick={next}>
               Next <ChevronRight className="w-4 h-4 ml-1" />
             </Button>

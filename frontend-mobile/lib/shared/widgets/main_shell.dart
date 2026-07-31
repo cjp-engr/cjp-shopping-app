@@ -40,9 +40,13 @@ class _MainShellState extends State<MainShell> {
     };
     WidgetsBinding.instance.addPostFrameCallback((_) {
       NotificationService.instance.requestPermissions();
-      // Auth bloc is guaranteed to have user data by first frame.
-      _maybeStartPolling();
-      _maybeFetchToReceiveCount();
+      // Defer polling start by 2s so the first-frame product/cart requests
+      // complete before we add seller-order or badge-count network traffic.
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        _maybeStartPolling();
+        _maybeFetchToReceiveCount();
+      });
     });
     _ordersBadgeTimer = Timer.periodic(
       const Duration(seconds: 60),
@@ -58,6 +62,7 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _maybeFetchToReceiveCount() {
+    if (!mounted) return;
     final authState = context.read<AuthBloc>().state;
     if (authState.status != AuthStatus.authenticated) return;
     if (authState.user?.isSeller ?? false) return; // sellers use the seller dashboard
@@ -77,6 +82,7 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _maybeStartPolling() {
+    if (!mounted) return;
     final authState = context.read<AuthBloc>().state;
     if (authState.status != AuthStatus.authenticated) return;
     if (authState.user?.isSeller != true) return;
