@@ -1499,10 +1499,12 @@ class _SellerOrderDetailSheet extends StatelessWidget {
     final cfg = _statusCfg(order.status);
     final addr = order.shippingAddress;
 
-    // Compute subtotal from items if backend value is 0
+    // Use stored values from the order — already reflect discounts and delivery
     final computedSubtotal = order.subtotal > 0
         ? order.subtotal
         : order.items.fold<double>(0, (s, i) => s + i.lineTotal);
+    final productDiscount = order.productDiscount;
+    final voucherDiscount = order.discount;
     final tax = order.tax > 0 ? order.tax : computedSubtotal * 0.08;
     final shipping =
         (order.shipping > 0 || computedSubtotal >= 50) ? order.shipping : 9.99;
@@ -1706,20 +1708,36 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                       child: Column(
                         children: [
                           _SummaryLine(
-                            label: AppStrings.subtotal,
+                            label: AppStrings.orderAmount,
                             value: '\$${computedSubtotal.toStringAsFixed(2)}',
                           ),
-                          const SizedBox(height: 8),
-                          _SummaryLine(
-                            label: AppStrings.tax,
-                            value: '\$${tax.toStringAsFixed(2)}',
-                          ),
+                          if (productDiscount > 0) ...[
+                            const SizedBox(height: 8),
+                            _SummaryLine(
+                              label: AppStrings.discount,
+                              value: '-\$${productDiscount.toStringAsFixed(2)}',
+                              valueColor: AppColors.success,
+                            ),
+                          ],
+                          if (voucherDiscount > 0) ...[
+                            const SizedBox(height: 8),
+                            _SummaryLine(
+                              label: 'Voucher',
+                              value: '-\$${voucherDiscount.toStringAsFixed(2)}',
+                              valueColor: AppColors.success,
+                            ),
+                          ],
                           const SizedBox(height: 8),
                           _SummaryLine(
                             label: AppStrings.shipping,
                             value: shipping == 0
                                 ? AppStrings.free
                                 : '\$${shipping.toStringAsFixed(2)}',
+                          ),
+                          const SizedBox(height: 8),
+                          _SummaryLine(
+                            label: AppStrings.tax,
+                            value: '\$${tax.toStringAsFixed(2)}',
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -2463,8 +2481,9 @@ class _SummaryLine extends StatelessWidget {
   final String label;
   final String value;
   final bool isTotal;
+  final Color? valueColor;
   const _SummaryLine(
-      {required this.label, required this.value, this.isTotal = false});
+      {required this.label, required this.value, this.isTotal = false, this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -2485,7 +2504,7 @@ class _SummaryLine extends StatelessWidget {
           style: TextStyle(
             fontSize: isTotal ? 16 : 13,
             fontWeight: isTotal ? FontWeight.w900 : FontWeight.w500,
-            color: isTotal ? AppColors.primary : context.onSurfaceColor,
+            color: valueColor ?? (isTotal ? AppColors.primary : context.onSurfaceColor),
           ),
         ),
       ],

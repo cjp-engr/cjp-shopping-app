@@ -90,6 +90,8 @@ class SellerOrderData {
   final String id;
   final String status;
   final double subtotal;
+  final double productDiscount;
+  final double discount;
   final double tax;
   final double shipping;
   final double total;
@@ -103,6 +105,8 @@ class SellerOrderData {
     required this.id,
     required this.status,
     required this.subtotal,
+    required this.productDiscount,
+    required this.discount,
     required this.tax,
     required this.shipping,
     required this.total,
@@ -128,6 +132,8 @@ class SellerOrderData {
         id: id,
         status: status ?? this.status,
         subtotal: subtotal,
+        productDiscount: productDiscount,
+        discount: discount,
         tax: tax,
         shipping: shipping,
         total: total,
@@ -164,6 +170,8 @@ class SellerOrderData {
         [];
 
     final sub = (json['subtotal'] as num?)?.toDouble() ?? 0;
+    final prodDisc = (json['productDiscount'] as num?)?.toDouble() ?? 0;
+    final disc = (json['discount'] as num?)?.toDouble() ?? 0;
     final tx = (json['tax'] as num?)?.toDouble() ?? 0;
     final sh = (json['shipping'] as num?)?.toDouble() ?? 0;
 
@@ -172,6 +180,8 @@ class SellerOrderData {
       status: json['status'] ?? 'pending',
       cancelReason: json['cancelReason'] as String?,
       subtotal: sub,
+      productDiscount: prodDisc,
+      discount: disc,
       tax: tx,
       shipping: sh,
       total: (json['total'] as num?)?.toDouble() ?? (sub + tx + sh),

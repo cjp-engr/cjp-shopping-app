@@ -80,6 +80,8 @@ const adaptOrder = (order: any): Order & { buyer?: { id: string; firstName: stri
   shippingAddress: order.shippingAddress,
   paymentMethod: order.paymentMethod,
   subtotal: order.subtotal,
+  productDiscount: order.productDiscount ?? 0,
+  discount: order.discount ?? 0,
   tax: order.tax,
   shipping: order.shipping,
   total: order.total,

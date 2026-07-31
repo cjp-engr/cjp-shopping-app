@@ -100,7 +100,6 @@ export const SellerOrderDetail: React.FC = () => {
 
   const addr = order.shippingAddress;
   const pay  = order.paymentMethod;
-  const itemsSubtotal = order.items.reduce((s, { product, quantity }) => s + product.price * quantity, 0);
   const buyerName = order.buyer ? `${order.buyer.firstName} ${order.buyer.lastName}` : null;
 
   return (
@@ -197,19 +196,21 @@ export const SellerOrderDetail: React.FC = () => {
         </div>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-gray-600 dark:text-gray-400">
-            <span>Items subtotal</span>
-            <span className="tabular-nums">{formatCurrency(itemsSubtotal)}</span>
+            <span>Order Amount</span>
+            <span className="tabular-nums">{formatCurrency(order.subtotal)}</span>
           </div>
-          {order.subtotal !== itemsSubtotal && (
-            <div className="flex justify-between text-gray-600 dark:text-gray-400">
-              <span>Order subtotal</span>
-              <span className="tabular-nums">{formatCurrency(order.subtotal)}</span>
+          {order.productDiscount > 0 && (
+            <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+              <span>Product Discount</span>
+              <span className="tabular-nums">-{formatCurrency(order.productDiscount)}</span>
             </div>
           )}
-          <div className="flex justify-between text-gray-600 dark:text-gray-400">
-            <span>Tax</span>
-            <span className="tabular-nums">{formatCurrency(order.tax)}</span>
-          </div>
+          {order.discount > 0 && (
+            <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+              <span>Voucher</span>
+              <span className="tabular-nums">-{formatCurrency(order.discount)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-gray-600 dark:text-gray-400">
             <span>Shipping</span>
             <span className="tabular-nums">
@@ -217,6 +218,10 @@ export const SellerOrderDetail: React.FC = () => {
                 ? <span className="text-green-600 dark:text-green-400 font-medium">Free</span>
                 : formatCurrency(order.shipping)}
             </span>
+          </div>
+          <div className="flex justify-between text-gray-600 dark:text-gray-400">
+            <span>Tax</span>
+            <span className="tabular-nums">{formatCurrency(order.tax)}</span>
           </div>
           <div className="flex justify-between font-bold text-gray-900 dark:text-gray-100 pt-2 border-t border-gray-100 dark:border-gray-700">
             <span>Total</span>
