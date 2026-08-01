@@ -983,13 +983,35 @@ class _OrderItemRow extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 4),
-                  Text(
-                    '\$${item.price.toStringAsFixed(2)} × ${item.quantity}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: context.onSurfaceSecondary,
-                    ),
-                  ),
+                  item.hasDiscount
+                      ? RichText(
+                          text: TextSpan(
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.onSurfaceSecondary,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: '\$${item.price.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: context.onSurfaceMuted,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                              TextSpan(
+                                text:
+                                    ' / \$${item.salePrice.toStringAsFixed(2)} × ${item.quantity}',
+                              ),
+                            ],
+                          ),
+                        )
+                      : Text(
+                          '\$${item.price.toStringAsFixed(2)} × ${item.quantity}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.onSurfaceSecondary,
+                          ),
+                        ),
                 ],
               ),
             ),
@@ -997,7 +1019,7 @@ class _OrderItemRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '\$${item.total.toStringAsFixed(2)}',
+                  '\$${item.saleTotal.toStringAsFixed(2)}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,

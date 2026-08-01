@@ -174,12 +174,15 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           }
         } else {
           if (_priceCtrl.text.trim().isEmpty) return 'Price is required.';
-          if (double.tryParse(_priceCtrl.text.trim()) == null)
+          if (double.tryParse(_priceCtrl.text.trim()) == null) {
             return 'Enter a valid price.';
-          if (_stockCtrl.text.trim().isEmpty)
+          }
+          if (_stockCtrl.text.trim().isEmpty) {
             return 'Stock quantity is required.';
-          if (int.tryParse(_stockCtrl.text.trim()) == null)
+          }
+          if (int.tryParse(_stockCtrl.text.trim()) == null) {
             return 'Enter a valid quantity.';
+          }
         }
       case 2:
         if (_descCtrl.text.trim().isEmpty) return 'Description is required.';
@@ -1206,7 +1209,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           ),
           child: Row(children: [
             Container(
-              width: 6, height: 6,
+              width: 6,
+              height: 6,
               margin: const EdgeInsets.only(right: 7, top: 1),
               decoration: const BoxDecoration(
                   color: AppColors.primary, shape: BoxShape.circle),
@@ -1242,36 +1246,51 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           child: Row(children: [
             Expanded(
               flex: 4,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('PRICE (\$)', style: labelStyle),
-                const SizedBox(height: 4),
-                _InlineField(ctrl: row.priceCtrl, prefix: '\$', hint: '0.00', numeric: true),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('PRICE (\$)', style: labelStyle),
+                    const SizedBox(height: 4),
+                    _InlineField(
+                        ctrl: row.priceCtrl,
+                        prefix: '\$',
+                        hint: '0.00',
+                        numeric: true),
+                  ]),
             ),
             const SizedBox(width: 8),
             Expanded(
               flex: 3,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('STOCK', style: labelStyle),
-                const SizedBox(height: 4),
-                _InlineField(ctrl: row.stockCtrl, hint: '0', numeric: true),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('STOCK', style: labelStyle),
+                    const SizedBox(height: 4),
+                    _InlineField(ctrl: row.stockCtrl, hint: '0', numeric: true),
+                  ]),
             ),
             const SizedBox(width: 8),
             Expanded(
               flex: 3,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('DISC %', style: labelStyle),
-                const SizedBox(height: 4),
-                _InlineField(ctrl: row.discountCtrl, suffix: '%', hint: '0', numeric: true),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('DISC %', style: labelStyle),
+                    const SizedBox(height: 4),
+                    _InlineField(
+                        ctrl: row.discountCtrl,
+                        suffix: '%',
+                        hint: '0',
+                        numeric: true),
+                  ]),
             ),
           ]),
         ),
         // Row 2: SKU full width
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('SKU (OPTIONAL)', style: labelStyle),
             const SizedBox(height: 4),
             _InlineField(ctrl: row.skuCtrl, hint: 'e.g. SKU-001'),
@@ -1290,16 +1309,23 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             return Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: Row(children: [
-                const Icon(Icons.local_offer_outlined, size: 13, color: AppColors.success),
+                const Icon(Icons.local_offer_outlined,
+                    size: 13, color: AppColors.success),
                 const SizedBox(width: 4),
                 Text(
                   'Sale: \$${salePrice.toStringAsFixed(2)}',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.success),
+                  style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.success),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   '\$${price.toStringAsFixed(2)}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade400, decoration: TextDecoration.lineThrough),
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade400,
+                      decoration: TextDecoration.lineThrough),
                 ),
                 const SizedBox(width: 4),
                 Text(

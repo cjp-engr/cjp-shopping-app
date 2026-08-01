@@ -53,6 +53,7 @@ class SellerOrderItemData {
   final String productName;
   final String productImage;
   final double price;
+  final double discountPercent;
   final int quantity;
   final Map<String, String> selectedAttributes;
 
@@ -61,11 +62,16 @@ class SellerOrderItemData {
     required this.productName,
     required this.productImage,
     required this.price,
+    this.discountPercent = 0,
     required this.quantity,
     this.selectedAttributes = const {},
   });
 
+  bool get hasDiscount => discountPercent > 0;
+  double get salePrice =>
+      hasDiscount ? price * (1 - discountPercent / 100) : price;
   double get lineTotal => price * quantity;
+  double get saleLineTotal => salePrice * quantity;
 
   static Map<String, String> _parseAttrs(dynamic raw) {
     if (raw is! Map) return const {};
@@ -79,12 +85,17 @@ class SellerOrderItemData {
     final attrs = _parseAttrs(json['selectedAttributes']);
     // productPrice is the variant price stored at order time — always prefer it
     final storedPrice = (json['productPrice'] as num?)?.toDouble();
+    final discountPercent =
+        (json['discountPercent'] as num?)?.toDouble() ??
+            (json['variantDiscount'] as num?)?.toDouble() ??
+            0;
     if (product is Map) {
       return SellerOrderItemData(
         productId: product['_id']?.toString() ?? '',
         productName: product['name'] ?? json['productName'] ?? '',
         productImage: product['image'] ?? json['productImage'] ?? '',
         price: storedPrice ?? (product['price'] as num?)?.toDouble() ?? 0,
+        discountPercent: discountPercent,
         quantity: (json['quantity'] as num?)?.toInt() ?? 1,
         selectedAttributes: attrs,
       );
@@ -94,6 +105,7 @@ class SellerOrderItemData {
       productName: json['productName'] ?? '',
       productImage: json['productImage'] ?? '',
       price: storedPrice ?? 0,
+      discountPercent: discountPercent,
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
       selectedAttributes: attrs,
     );

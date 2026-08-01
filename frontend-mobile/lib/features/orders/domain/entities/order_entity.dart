@@ -21,6 +21,7 @@ class OrderItemEntity {
   final String productName;
   final String productImage;
   final double price;
+  final double discountPercent;
   final int quantity;
   final String? sellerId;
   final String? sellerName;
@@ -31,13 +32,18 @@ class OrderItemEntity {
     required this.productName,
     required this.productImage,
     required this.price,
+    this.discountPercent = 0,
     required this.quantity,
     this.sellerId,
     this.sellerName,
     this.selectedAttributes = const {},
   });
 
+  bool get hasDiscount => discountPercent > 0;
+  double get salePrice =>
+      hasDiscount ? price * (1 - discountPercent / 100) : price;
   double get total => price * quantity;
+  double get saleTotal => salePrice * quantity;
 }
 
 class OrderEntity extends Equatable {

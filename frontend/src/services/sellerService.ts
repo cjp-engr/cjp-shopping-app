@@ -88,53 +88,59 @@ const adaptOrder = (order: any): Order & { buyer?: { id: string; firstName: stri
     lastName: order.userId.lastName,
     email: order.userId.email,
   } : undefined,
-  items: order.items.map((item: any) => ({
-    product: item.product?._id ? {
-      id: item.product._id,
-      name: item.productName || item.product.name,
-      description: item.product.description || '',
-      price: item.productPrice || item.product.price,
-      category: item.product.category || '',
-      image: item.productImage || item.product.image,
-      stock: item.product.stock ?? 0,
-      rating: item.product.rating ?? 0,
-      reviews: item.product.reviews ?? 0,
-      createdAt: item.product.createdAt || new Date().toISOString(),
-    } : {
-      id: item.product?.toString() || '',
-      name: item.productName,
-      description: '',
-      price: item.productPrice,
-      category: '',
-      image: item.productImage,
-      stock: 0,
-      rating: 0,
-      reviews: 0,
-      createdAt: new Date().toISOString(),
-    },
-    quantity: item.quantity,
-    selectedVariant: (() => {
-      const variantId: string | undefined = item.variantId;
-      const rawAttrs = item.selectedAttributes;
-      if (variantId && rawAttrs && typeof rawAttrs === 'object') {
-        const attributes: Record<string, string> = {};
-        for (const [k, v] of Object.entries(rawAttrs)) {
-          attributes[k] = String(v);
-        }
-        const variantPrice: number = item.productPrice ?? item.product?.price ?? 0;
-        return {
-          _id: variantId,
-          attributes,
-          price: variantPrice,
-          stock: 0,
-          sku: item.variantSku,
-          discount: item.variantDiscount,
-          key: Object.entries(attributes).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}:${v}`).join('|'),
-        };
+  items: order.items.map((item: any) => {
+    const variantId: string | undefined = item.variantId;
+    const discountPercent: number =
+      item.discountPercent ?? item.variantDiscount ?? 0;
+    const rawAttrs = item.selectedAttributes;
+    let selectedVariant: import('../types/cart').SelectedVariant | undefined;
+    if (variantId && rawAttrs && typeof rawAttrs === 'object') {
+      const attributes: Record<string, string> = {};
+      for (const [k, v] of Object.entries(rawAttrs)) {
+        attributes[k] = String(v);
       }
-      return undefined;
-    })(),
-  })),
+      const variantPrice: number = item.productPrice ?? item.product?.price ?? 0;
+      selectedVariant = {
+        _id: variantId,
+        attributes,
+        price: variantPrice,
+        stock: 0,
+        sku: item.variantSku,
+        discount: discountPercent,
+        key: Object.entries(attributes).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}:${v}`).join('|'),
+      };
+    }
+
+    return {
+      product: item.product?._id ? {
+        id: item.product._id,
+        name: item.productName || item.product.name,
+        description: item.product.description || '',
+        price: item.productPrice || item.product.price,
+        category: item.product.category || '',
+        image: item.productImage || item.product.image,
+        stock: item.product.stock ?? 0,
+        rating: item.product.rating ?? 0,
+        reviews: item.product.reviews ?? 0,
+        discount: variantId ? undefined : discountPercent,
+        createdAt: item.product.createdAt || new Date().toISOString(),
+      } : {
+        id: item.product?.toString() || '',
+        name: item.productName,
+        description: '',
+        price: item.productPrice,
+        category: '',
+        image: item.productImage,
+        stock: 0,
+        rating: 0,
+        reviews: 0,
+        discount: variantId ? undefined : discountPercent,
+        createdAt: new Date().toISOString(),
+      },
+      quantity: item.quantity,
+      selectedVariant,
+    };
+  }),
   shippingAddress: order.shippingAddress,
   paymentMethod: order.paymentMethod,
   subtotal: order.subtotal,

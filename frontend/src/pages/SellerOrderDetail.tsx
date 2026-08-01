@@ -162,11 +162,13 @@ export const SellerOrderDetail: React.FC = () => {
         </div>
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {order.items.map(({ product, quantity, selectedVariant }) => {
-            const effPrice = selectedVariant
-              ? (selectedVariant.discount && selectedVariant.discount > 0
-                  ? selectedVariant.price * (1 - selectedVariant.discount / 100)
-                  : selectedVariant.price)
-              : product.price;
+            const rawPrice = selectedVariant?.price ?? product.price;
+            const discountPercent =
+              selectedVariant?.discount ?? product.discount ?? 0;
+            const salePrice =
+              discountPercent > 0
+                ? rawPrice * (1 - discountPercent / 100)
+                : rawPrice;
             const itemKey = selectedVariant?.key ?? product.id;
             return (
               <button
@@ -191,9 +193,22 @@ export const SellerOrderDetail: React.FC = () => {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                    {formatCurrency(effPrice * quantity)}
+                    {formatCurrency(salePrice * quantity)}
                   </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(effPrice)} each</p>
+                  {discountPercent > 0 ? (
+                    <div className="mt-1 flex items-center justify-end gap-1.5 text-xs">
+                      <span className="text-gray-400 dark:text-gray-500 line-through">
+                        {formatCurrency(rawPrice)}
+                      </span>
+                      <span className="font-semibold text-primary-600 dark:text-primary-400">
+                        {formatCurrency(salePrice)} each
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      {formatCurrency(rawPrice)} each
+                    </p>
+                  )}
                 </div>
               </button>
             );

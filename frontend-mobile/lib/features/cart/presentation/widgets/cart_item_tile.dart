@@ -245,14 +245,49 @@ class _CartItemTileState extends State<CartItemTile>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  '\$${item.effectivePrice.toStringAsFixed(0)}',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800,
-                                    color: onSurface,
-                                  ),
-                                ),
+                                item.hasDiscount
+                                    ? RichText(
+                                        text: TextSpan(
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w800,
+                                            color: onSurface,
+                                          ),
+                                          children: [
+                                            TextSpan(
+                                              text:
+                                                  '\$${item.rawPrice.toStringAsFixed(2)}',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w500,
+                                                color: muted,
+                                                decoration:
+                                                    TextDecoration.lineThrough,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: ' / ',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w500,
+                                                color: muted,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text:
+                                                  '\$${item.effectivePrice.toStringAsFixed(2)}',
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    : Text(
+                                        '\$${item.effectivePrice.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                          color: onSurface,
+                                        ),
+                                      ),
                                 // Quantity stepper
                                 Container(
                                   decoration: BoxDecoration(

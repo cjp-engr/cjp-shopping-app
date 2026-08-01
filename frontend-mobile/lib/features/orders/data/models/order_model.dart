@@ -33,6 +33,7 @@ class OrderItemModel extends OrderItemEntity {
     required super.productName,
     required super.productImage,
     required super.price,
+    super.discountPercent,
     required super.quantity,
     super.sellerId,
     super.sellerName,
@@ -73,11 +74,16 @@ class OrderItemModel extends OrderItemEntity {
       }
 
       return OrderItemModel(
-        productId: product['_id']?.toString() ?? product['id']?.toString() ?? '',
+        productId:
+            product['_id']?.toString() ?? product['id']?.toString() ?? '',
         productName: product['name'] ?? json['productName'] ?? '',
         productImage: product['image'] ?? json['productImage'] ?? '',
         price: (json['productPrice'] as num?)?.toDouble() ??
-            (product['price'] as num?)?.toDouble() ?? 0,
+            (product['price'] as num?)?.toDouble() ??
+            0,
+        discountPercent: (json['discountPercent'] as num?)?.toDouble() ??
+            (json['variantDiscount'] as num?)?.toDouble() ??
+            0,
         quantity: (json['quantity'] as num?)?.toInt() ?? 1,
         sellerId: sellerId,
         sellerName: sellerName,
@@ -98,6 +104,9 @@ class OrderItemModel extends OrderItemEntity {
       productName: json['productName'] ?? '',
       productImage: json['productImage'] ?? '',
       price: (json['productPrice'] as num?)?.toDouble() ?? 0,
+      discountPercent: (json['discountPercent'] as num?)?.toDouble() ??
+          (json['variantDiscount'] as num?)?.toDouble() ??
+          0,
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
       selectedAttributes: selectedAttributes,
     );

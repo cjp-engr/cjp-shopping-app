@@ -130,6 +130,8 @@ class OrderService {
         }
 
         const variantId: string | undefined = item.variantId;
+        const discountPercent: number =
+          item.discountPercent ?? item.variantDiscount ?? 0;
         const rawAttrs = item.selectedAttributes;
         let selectedVariant: import('../types/cart').SelectedVariant | undefined;
         if (variantId && rawAttrs && typeof rawAttrs === 'object') {
@@ -144,7 +146,7 @@ class OrderService {
             price: variantPrice,
             stock: 0,
             sku: item.variantSku,
-            discount: item.variantDiscount,
+            discount: discountPercent,
             key: Object.entries(attributes).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}:${v}`).join('|'),
           };
         }
@@ -162,6 +164,7 @@ class OrderService {
             rating: item.product.rating || 0,
             reviews: item.product.reviews || 0,
             tags: item.product.tags,
+            discount: variantId ? undefined : discountPercent,
             specifications: item.product.specifications ?? undefined,
             createdAt: item.product.createdAt || new Date().toISOString(),
             sellerId,
@@ -175,6 +178,7 @@ class OrderService {
             stock: 0,
             rating: 0,
             reviews: 0,
+            discount: variantId ? undefined : discountPercent,
             createdAt: new Date().toISOString(),
           },
           quantity: item.quantity,

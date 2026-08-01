@@ -865,7 +865,12 @@ export const Checkout: React.FC = () => {
                               <p className="font-bold text-gray-900 dark:text-white">
                                 {formatCurrency(effPrice * quantity)}
                               </p>
-                              {selectedVariant ? (
+                              {selectedVariant?.discount && selectedVariant.discount > 0 ? (
+                                <>
+                                  <p className="text-xs text-gray-400 line-through">{formatCurrency(selectedVariant.price)} each</p>
+                                  <span className="text-xs font-semibold text-emerald-500">-{selectedVariant.discount}%</span>
+                                </>
+                              ) : selectedVariant ? (
                                 <p className="text-xs text-gray-500 dark:text-gray-400">{formatCurrency(effPrice)} each</p>
                               ) : product.discount && product.discount > 0 ? (
                                 <p className="text-xs text-gray-400 line-through">{formatCurrency(product.price * quantity)}</p>

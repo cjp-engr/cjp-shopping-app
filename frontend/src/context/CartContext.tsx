@@ -117,13 +117,17 @@ const loadFromBackend = async (): Promise<CartItem[] | null> => {
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([k, v]) => `${k}:${v}`)
             .join('|');
+          // Fall back to current product variant data if discount wasn't stored in cart
+          const productVariant = Array.isArray(p.variants)
+            ? p.variants.find((v: any) => v._id?.toString() === entry.variantId?.toString())
+            : undefined;
           selectedVariant = {
             _id: entry.variantId,
             attributes: attrs,
             price: entry.price ?? p.price ?? 0,
             stock: entry.stock ?? p.stock ?? 0,
             sku: entry.sku,
-            discount: entry.discount,
+            discount: entry.discount ?? productVariant?.discount,
             key,
           };
         }

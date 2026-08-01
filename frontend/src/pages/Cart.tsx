@@ -71,10 +71,16 @@ export const Cart: React.FC = () => {
       }
       const group = map.get(key)!;
       group.items.push(cartItem);
-      const effPrice = effectivePrice(cartItem.product);
+      const sv = cartItem.selectedVariant;
+      const variantEffPrice = sv
+        ? (sv.discount && sv.discount > 0 ? sv.price * (1 - sv.discount / 100) : sv.price)
+        : null;
+      const effPrice = variantEffPrice != null ? variantEffPrice : effectivePrice(cartItem.product);
       group.subtotal += effPrice * cartItem.quantity;
-      // Product-level discount savings
-      if (cartItem.product.discount && cartItem.product.discount > 0) {
+      // Track discount savings (variant or product level)
+      if (sv && sv.discount && sv.discount > 0) {
+        group.discount += (sv.price - effPrice) * cartItem.quantity;
+      } else if (!sv && cartItem.product.discount && cartItem.product.discount > 0) {
         group.discount += (cartItem.product.price - effPrice) * cartItem.quantity;
       }
       // Voucher discount (overrides each loop but same seller so idempotent)
@@ -216,7 +222,10 @@ export const Cart: React.FC = () => {
                       : selectedVariant.price)
                   : effectivePrice(product);
                 const effectiveStock = selectedVariant?.stock ?? product.stock;
-                const hasDiscount = !selectedVariant && product.discount && product.discount > 0;
+                const hasVariantDiscount = !!(selectedVariant?.discount && selectedVariant.discount > 0);
+                const hasDiscount = hasVariantDiscount || (!selectedVariant && !!(product.discount && product.discount > 0));
+                const originalPrice = hasVariantDiscount ? selectedVariant!.price : product.price;
+                const discountPct = hasVariantDiscount ? selectedVariant!.discount! : (product.discount ?? 0);
                 const displayImage = selectedVariant?.image || product.image;
                 return (
                   <Card key={variantKey ?? product.id} padding="none">
@@ -247,9 +256,9 @@ export const Cart: React.FC = () => {
                           <p className="text-base font-bold text-primary-600">{formatCurrency(effPrice)}</p>
                           {hasDiscount && (
                             <>
-                              <p className="text-xs text-gray-400 line-through">{formatCurrency(product.price)}</p>
+                              <p className="text-xs text-gray-400 line-through">{formatCurrency(originalPrice)}</p>
                               <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">
-                                -{product.discount}%
+                                -{discountPct}%
                               </span>
                             </>
                           )}

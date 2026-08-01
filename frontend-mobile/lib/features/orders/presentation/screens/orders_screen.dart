@@ -366,7 +366,9 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
         : '';
     final deliveryStr = formatOrderDate(order.estimatedDelivery);
     final isCancelled = order.status == 'cancelled';
-    final groupTotal = items.fold<double>(0, (s, i) => s + i.total);
+    // The API creates one order per seller. Use the persisted payable total,
+    // which includes discounts, vouchers, shipping, and tax.
+    final groupTotal = order.total;
     final itemCount = items.fold<int>(0, (s, i) => s + i.quantity);
 
     return InkWell(
@@ -734,14 +736,39 @@ class _OrderItemRow extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '\$${item.price.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
+                    item.hasDiscount
+                        ? RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: '\$${item.price.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: context.onSurfaceMuted,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text:
+                                      ' / \$${item.salePrice.toStringAsFixed(2)}',
+                                ),
+                              ],
+                            ),
+                          )
+                        : Text(
+                            '\$${item.price.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
                     Text(
                       'x${item.quantity}',
                       style: TextStyle(

@@ -11,6 +11,8 @@ export interface ICartItem {
   productPrice: number;
   productImage: string;
   variantSku?: string;
+  discountPercent?: number;
+  /** @deprecated Kept for compatibility with existing orders. */
   variantDiscount?: number;
   quantity: number;
 }
@@ -65,6 +67,7 @@ const CartItemSchema = new Schema<ICartItem>({
     required: true
   },
   variantSku: { type: String },
+  discountPercent: { type: Number, min: 0, max: 100 },
   variantDiscount: { type: Number },
   quantity: {
     type: Number,

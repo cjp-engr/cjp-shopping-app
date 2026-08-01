@@ -583,11 +583,13 @@ export const SellerDashboard: React.FC = () => {
                     {/* ── Items ── */}
                     <div className="space-y-1.5">
                       {order.items.map(({ product, quantity, selectedVariant }) => {
-                        const effPrice = selectedVariant
-                          ? (selectedVariant.discount && selectedVariant.discount > 0
-                              ? selectedVariant.price * (1 - selectedVariant.discount / 100)
-                              : selectedVariant.price)
-                          : product.price;
+                        const rawPrice = selectedVariant?.price ?? product.price;
+                        const discountPercent =
+                          selectedVariant?.discount ?? product.discount ?? 0;
+                        const salePrice =
+                          discountPercent > 0
+                            ? rawPrice * (1 - discountPercent / 100)
+                            : rawPrice;
                         const itemKey = selectedVariant?.key ?? product.id;
                         return (
                           <button
@@ -608,12 +610,23 @@ export const SellerDashboard: React.FC = () => {
                                   {Object.entries(selectedVariant.attributes).map(([k, v]) => `${k}: ${v}`).join(' / ')}
                                 </p>
                               )}
-                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                                Qty {quantity} × {formatCurrency(effPrice)}
-                              </p>
+                              {discountPercent > 0 ? (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                  Qty {quantity} ×{' '}
+                                  <span className="line-through">{formatCurrency(rawPrice)}</span>
+                                  {' / '}
+                                  <span className="font-semibold text-primary-600 dark:text-primary-400">
+                                    {formatCurrency(salePrice)}
+                                  </span>
+                                </p>
+                              ) : (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                  Qty {quantity} × {formatCurrency(rawPrice)}
+                                </p>
+                              )}
                             </div>
                             <p className="text-sm font-bold text-gray-900 dark:text-gray-100 flex-shrink-0 tabular-nums">
-                              {formatCurrency(effPrice * quantity)}
+                              {formatCurrency(salePrice * quantity)}
                             </p>
                           </button>
                         );

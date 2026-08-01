@@ -133,6 +133,7 @@ export async function createOrders(params: CreateOrderParams) {
         productPrice: unitPrice,
         productImage: variant?.image || productDoc.image,
         variantSku: variant?.sku,
+        discountPercent: discPct,
         variantDiscount: variant ? variant.discount : undefined,
         quantity,
       };
@@ -171,7 +172,9 @@ export async function createOrders(params: CreateOrderParams) {
     if (shippingFee === 'free') {
       shipping = 0;
     } else if (shippingFee === 'buyer_pays') {
-      shipping = (selectedDeliveryOption && shippingFeeAmounts[selectedDeliveryOption]) ?? Object.values(shippingFeeAmounts)[0] ?? 0;
+      shipping = (selectedDeliveryOption
+        ? shippingFeeAmounts[selectedDeliveryOption]
+        : undefined) ?? Object.values(shippingFeeAmounts)[0] ?? 0;
     } else {
       shipping = afterAllDiscounts >= 50 ? 0 : 9.99;
     }

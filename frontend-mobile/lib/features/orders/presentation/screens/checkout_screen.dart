@@ -24,8 +24,10 @@ import '../../../cart/presentation/bloc/cart_state.dart';
 class CheckoutScreen extends StatefulWidget {
   /// Product IDs of the items selected in the cart for this checkout.
   final Set<String> selectedIds;
+
   /// Pre-selected delivery options from the cart screen (seller key → option).
   final Map<String, String> initialDeliverySelections;
+
   /// Pre-applied vouchers from the cart screen (seller key → VoucherSelection).
   final Map<String, VoucherSelection> initialVoucherSelections;
 
@@ -77,7 +79,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    _deliverySelections = Map<String, String>.from(widget.initialDeliverySelections);
+    _deliverySelections =
+        Map<String, String>.from(widget.initialDeliverySelections);
     // Pre-populate voucher state from cart selections
     for (final entry in widget.initialVoucherSelections.entries) {
       _voucherDiscounts[entry.key] = entry.value.discountAmount;
@@ -167,14 +170,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         return d != null && d > 0 ? v.price * (1 - d / 100) : v.price;
       }
       final d = i.product.discount;
-      return d != null && d > 0 ? i.product.price * (1 - d / 100) : i.product.price;
+      return d != null && d > 0
+          ? i.product.price * (1 - d / 100)
+          : i.product.price;
     }
+
     final effectiveSubtotal = selectedItems.fold<double>(
         0, (s, i) => s + effectivePriceSubmit(i) * i.quantity);
     final voucherTotal =
         _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
     final totalShipping = cart.shippingFor(sellerDiscounts: _voucherDiscounts);
-    final afterDiscount = (effectiveSubtotal - voucherTotal).clamp(0.0, double.infinity);
+    final afterDiscount =
+        (effectiveSubtotal - voucherTotal).clamp(0.0, double.infinity);
     final totalTax = afterDiscount * 0.08;
     context.read<OrderBloc>().add(OrderCreateRequested({
           'userId': user.id,
@@ -249,9 +256,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   : i.product.price;
             }
 
-            // Gross = raw prices; effective = after product-level % discount
+            // Gross = selected variant/product raw prices; effective = after discount.
             final grossSubtotal = selectedItems.fold<double>(
-                0, (s, i) => s + i.product.price * i.quantity);
+                0, (s, i) => s + i.rawPrice * i.quantity);
             final effectiveSubtotal = selectedItems.fold<double>(
                 0, (s, i) => s + effectivePrice(i) * i.quantity);
             final productDiscountTotal = grossSubtotal - effectiveSubtotal;
@@ -267,12 +274,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               final grpEffective = entry.value.fold<double>(
                   0, (s, i) => s + effectivePrice(i) * i.quantity);
               final grpVoucher = _voucherDiscounts[entry.key] ?? 0;
-              final grpAfter = (grpEffective - grpVoucher).clamp(0.0, double.infinity);
+              final grpAfter =
+                  (grpEffective - grpVoucher).clamp(0.0, double.infinity);
               String? grpFee;
               Map<String, double> grpFeeAmounts = {};
               for (final item in entry.value) {
                 grpFee ??= item.product.shippingFee;
-                if (grpFeeAmounts.isEmpty) grpFeeAmounts = item.product.shippingFeeAmounts;
+                if (grpFeeAmounts.isEmpty) {
+                  grpFeeAmounts = item.product.shippingFeeAmounts;
+                }
               }
               final selectedOpt = _deliverySelections[entry.key] ??
                   entry.value.first.product.shippingOptions.firstOrNull;
@@ -322,13 +332,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             final items = entry.value;
                             final sellerName = items.first.product.sellerName;
                             final groupGross = items.fold<double>(
-                                0, (s, i) => s + i.product.price * i.quantity);
-                            final groupSubtotal = items.fold<double>(
-                                0, (s, i) => s + effectivePrice(i) * i.quantity);
-                            final groupProductDiscount = groupGross - groupSubtotal;
-                            final groupVoucherDiscount = _voucherDiscounts[sellerKey] ?? 0.0;
+                                0, (s, i) => s + i.rawPrice * i.quantity);
+                            final groupSubtotal = items.fold<double>(0,
+                                (s, i) => s + effectivePrice(i) * i.quantity);
+                            final groupProductDiscount =
+                                groupGross - groupSubtotal;
+                            final groupVoucherDiscount =
+                                _voucherDiscounts[sellerKey] ?? 0.0;
                             final afterDiscount =
-                                (groupSubtotal - groupVoucherDiscount).clamp(0.0, double.infinity);
+                                (groupSubtotal - groupVoucherDiscount)
+                                    .clamp(0.0, double.infinity);
 
                             // Collect shipping options across all products (union)
                             final shippingOptions = <String>[];
@@ -341,15 +354,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 }
                               }
                               shippingFee ??= item.product.shippingFee;
-                              if (shippingFeeAmounts.isEmpty) shippingFeeAmounts = item.product.shippingFeeAmounts;
+                              if (shippingFeeAmounts.isEmpty) {
+                                shippingFeeAmounts =
+                                    item.product.shippingFeeAmounts;
+                              }
                             }
 
-                            final sellerSelectedOpt = _deliverySelections[sellerKey] ?? shippingOptions.firstOrNull;
+                            final sellerSelectedOpt =
+                                _deliverySelections[sellerKey] ??
+                                    shippingOptions.firstOrNull;
                             double sellerShipping;
                             if (shippingFee == 'free') {
                               sellerShipping = 0.0;
                             } else if (shippingFee == 'buyer_pays') {
-                              sellerShipping = (sellerSelectedOpt != null ? shippingFeeAmounts[sellerSelectedOpt] : null) ?? shippingFeeAmounts.values.firstOrNull ?? 0.0;
+                              sellerShipping = (sellerSelectedOpt != null
+                                      ? shippingFeeAmounts[sellerSelectedOpt]
+                                      : null) ??
+                                  shippingFeeAmounts.values.firstOrNull ??
+                                  0.0;
                             } else {
                               sellerShipping = afterDiscount < 50 ? 9.99 : 0.0;
                             }
@@ -799,7 +821,6 @@ class _SellerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = sellerName?.isNotEmpty == true ? sellerName! : 'Store';
-    final itemCount = items.fold<int>(0, (s, i) => s + i.quantity);
 
     return Container(
       color: context.surfaceColor,
@@ -856,19 +877,6 @@ class _SellerCard extends StatelessWidget {
 
           // Message for seller
           _MessageRow(controller: messageCtrl),
-
-          const Divider(height: 1),
-
-          // Per-seller order breakdown
-          _SellerBreakdown(
-            itemCount: itemCount,
-            grossSubtotal: grossSubtotal,
-            productDiscount: productDiscount,
-            voucherDiscount: voucherDiscount,
-            shipping: sellerShipping,
-            tax: sellerTax,
-            total: storeTotal,
-          ),
         ],
       ),
     );
@@ -923,7 +931,8 @@ class _CheckoutItemRow extends StatelessWidget {
                     item.selectedVariant!.attributes.entries
                         .map((e) => '${e.key}: ${e.value}')
                         .join(' / '),
-                    style: TextStyle(fontSize: 11, color: context.onSurfaceMuted),
+                    style:
+                        TextStyle(fontSize: 11, color: context.onSurfaceMuted),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -932,46 +941,47 @@ class _CheckoutItemRow extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (item.selectedVariant != null)
-                          Text(
-                            '\$${item.selectedVariant!.price.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
+                    item.hasDiscount
+                        ? RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: '\$${item.rawPrice.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: context.onSurfaceMuted,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: ' / ',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: context.onSurfaceMuted,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text:
+                                      '\$${item.effectivePrice.toStringAsFixed(2)}',
+                                ),
+                              ],
                             ),
                           )
-                        else if (item.product.discount != null && item.product.discount! > 0) ...[
-                          Text(
-                            '\$${item.product.price.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              decoration: TextDecoration.lineThrough,
-                              color: context.onSurfaceMuted,
-                            ),
-                          ),
-                          Text(
-                            '\$${(item.product.price * (1 - item.product.discount! / 100)).toStringAsFixed(2)}',
+                        : Text(
+                            '\$${item.effectivePrice.toStringAsFixed(2)}',
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: AppColors.primary,
                             ),
                           ),
-                        ] else
-                          Text(
-                            '\$${item.product.price.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                      ],
-                    ),
                     Text(
                       'x${item.quantity}',
                       style: TextStyle(
@@ -2073,95 +2083,6 @@ class _TotalBreakdown extends StatelessWidget {
   }
 }
 
-// ── Per-seller order breakdown (inside seller card) ──────────────────────────
-
-class _SellerBreakdown extends StatelessWidget {
-  final int itemCount;
-  final double grossSubtotal;
-  final double productDiscount;
-  final double voucherDiscount;
-  final double shipping;
-  final double tax;
-  final double total;
-
-  const _SellerBreakdown({
-    required this.itemCount,
-    required this.grossSubtotal,
-    required this.productDiscount,
-    required this.voucherDiscount,
-    required this.shipping,
-    required this.tax,
-    required this.total,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(
-          horizontal: AppSizes.md, vertical: AppSizes.sm),
-      padding: const EdgeInsets.all(AppSizes.sm),
-      decoration: BoxDecoration(
-        color: context.surfaceVariantColor,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-      ),
-      child: Column(
-        children: [
-          _row('Order Amount', '\$${grossSubtotal.toStringAsFixed(2)}', context),
-          if (productDiscount > 0) ...[
-            const SizedBox(height: 4),
-            _row('Product Discount',
-                '-\$${productDiscount.toStringAsFixed(2)}', context,
-                valueColor: AppColors.success),
-          ],
-          if (voucherDiscount > 0) ...[
-            const SizedBox(height: 4),
-            _row('Voucher Savings',
-                '-\$${voucherDiscount.toStringAsFixed(2)}', context,
-                valueColor: AppColors.success),
-          ],
-          const SizedBox(height: 4),
-          _row(
-            'Shipping ($itemCount item${itemCount != 1 ? 's' : ''})',
-            shipping == 0 ? 'FREE' : '\$${shipping.toStringAsFixed(2)}',
-            context,
-            valueColor: shipping == 0 ? AppColors.success : null,
-          ),
-          const SizedBox(height: 4),
-          _row('Tax (8%)', '\$${tax.toStringAsFixed(2)}', context),
-          const Divider(height: 16),
-          _row('Store Total', '\$${total.toStringAsFixed(2)}', context,
-              bold: true),
-        ],
-      ),
-    );
-  }
-
-  Widget _row(String label, String value, BuildContext context,
-      {Color? valueColor, bool bold = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: context.onSurfaceSecondary,
-            fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: bold ? 15 : 13,
-            fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-            color: valueColor ?? context.onSurfaceColor,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ── Delivery option row ───────────────────────────────────────────────────────
 
 class _DeliveryOptionRow extends StatelessWidget {
@@ -2220,14 +2141,13 @@ class _DeliveryOptionRow extends StatelessWidget {
             spacing: 8,
             children: options.map((opt) {
               final isSelected = selected == opt;
-              final isDark =
-                  Theme.of(context).brightness == Brightness.dark;
+              final isDark = Theme.of(context).brightness == Brightness.dark;
               return GestureDetector(
                 onTap: () => onChanged(opt),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 7),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primary
@@ -2260,9 +2180,8 @@ class _DeliveryOptionRow extends StatelessWidget {
                         _label(opt),
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w400,
                           color: isSelected
                               ? AppColors.primary
                               : context.onSurfaceColor,

@@ -151,8 +151,8 @@ class _CartScreenState extends State<CartScreen> {
           final totalVoucherDiscount = _voucherSelections.entries
               .where((e) => sellerGroups.containsKey(e.key))
               .fold<double>(0, (s, e) => s + e.value.discountAmount);
-          final afterDiscount =
-              (selectedSubtotal - totalVoucherDiscount).clamp(0.0, double.infinity);
+          final afterDiscount = (selectedSubtotal - totalVoucherDiscount)
+              .clamp(0.0, double.infinity);
 
           final sellerSummaries = <String,
               ({
@@ -172,12 +172,12 @@ class _CartScreenState extends State<CartScreen> {
               if (sellerSelected.isEmpty) continue;
               final sub = sellerSelected.fold<double>(
                   0, (s, i) => s + _effectivePrice(i) * i.quantity);
-              final disc = sellerSelected.fold<double>(0.0, (s, i) {
-                final d = i.product.discount;
-                if (d == null || d <= 0) return s;
-                return s + (i.product.price - _effectivePrice(i)) * i.quantity;
-              });
-              final voucherDisc = _voucherSelections[entry.key]?.discountAmount ?? 0.0;
+              final disc = sellerSelected.fold<double>(
+                0,
+                (s, i) => s + (i.rawPrice - _effectivePrice(i)) * i.quantity,
+              );
+              final voucherDisc =
+                  _voucherSelections[entry.key]?.discountAmount ?? 0.0;
               final after = (sub - voucherDisc).clamp(0.0, double.infinity);
 
               // Collect delivery options across seller's selected items
@@ -189,15 +189,19 @@ class _CartScreenState extends State<CartScreen> {
               }
 
               // Determine shipping based on seller's configured fee
-              final sellerShippingFee = sellerSelected.first.product.shippingFee;
+              final sellerShippingFee =
+                  sellerSelected.first.product.shippingFee;
               final double ship;
               if (sellerShippingFee == 'free') {
                 ship = 0.0;
               } else if (sellerShippingFee == 'buyer_pays') {
                 // Use selected delivery option fee if available
-                final selectedOpt = _deliverySelections[entry.key] ?? opts.firstOrNull;
-                final feeAmounts = sellerSelected.first.product.shippingFeeAmounts;
-                if (selectedOpt != null && feeAmounts.containsKey(selectedOpt)) {
+                final selectedOpt =
+                    _deliverySelections[entry.key] ?? opts.firstOrNull;
+                final feeAmounts =
+                    sellerSelected.first.product.shippingFeeAmounts;
+                if (selectedOpt != null &&
+                    feeAmounts.containsKey(selectedOpt)) {
                   ship = feeAmounts[selectedOpt]!;
                 } else {
                   ship = -1.0; // sentinel: unknown
@@ -249,16 +253,23 @@ class _CartScreenState extends State<CartScreen> {
                         ),
                       ),
                       if (sellerSummaries.containsKey(entry.key)) ...[
-                        if (sellerSummaries[entry.key]!.shippingOptions.isNotEmpty &&
-                            sellerSummaries[entry.key]!.shipping != 0 ||
+                        if (sellerSummaries[entry.key]!
+                                    .shippingOptions
+                                    .isNotEmpty &&
+                                sellerSummaries[entry.key]!.shipping != 0 ||
                             sellerSummaries[entry.key]!.shipping == -1.0)
                           _DeliveryOptionSelector(
                             sellerKey: entry.key,
-                            options: sellerSummaries[entry.key]!.shippingOptions,
-                            feeAmounts: entry.value.first.product.shippingFeeAmounts,
+                            options:
+                                sellerSummaries[entry.key]!.shippingOptions,
+                            feeAmounts:
+                                entry.value.first.product.shippingFeeAmounts,
                             selected: _deliverySelections[entry.key] ??
-                                sellerSummaries[entry.key]!.shippingOptions.firstOrNull,
-                            onSelect: (opt) => setState(() => _deliverySelections[entry.key] = opt),
+                                sellerSummaries[entry.key]!
+                                    .shippingOptions
+                                    .firstOrNull,
+                            onSelect: (opt) => setState(
+                                () => _deliverySelections[entry.key] = opt),
                           ),
                         const SizedBox(height: AppSizes.xs),
                         _VoucherRow(
@@ -273,8 +284,10 @@ class _CartScreenState extends State<CartScreen> {
                           _SellerSummaryCard(
                             sellerName: sellerNames[entry.key] ?? 'Store',
                             subtotal: sellerSummaries[entry.key]!.subtotal,
-                            productDiscount: sellerSummaries[entry.key]!.discount,
-                            voucherDiscount: sellerSummaries[entry.key]!.voucherDiscount,
+                            productDiscount:
+                                sellerSummaries[entry.key]!.discount,
+                            voucherDiscount:
+                                sellerSummaries[entry.key]!.voucherDiscount,
                             shipping: sellerSummaries[entry.key]!.shipping,
                             tax: sellerSummaries[entry.key]!.tax,
                           ),
@@ -300,10 +313,13 @@ class _CartScreenState extends State<CartScreen> {
                 onCheckout: selectedCount == 0
                     ? null
                     : () => context.push('/checkout', extra: {
-                        'selected': Set<String>.from(_selected),
-                        'deliverySelections': Map<String, String>.from(_deliverySelections),
-                        'voucherSelections': Map<String, VoucherSelection>.from(_voucherSelections),
-                      }),
+                          'selected': Set<String>.from(_selected),
+                          'deliverySelections':
+                              Map<String, String>.from(_deliverySelections),
+                          'voucherSelections':
+                              Map<String, VoucherSelection>.from(
+                                  _voucherSelections),
+                        }),
               ),
             ],
           );
@@ -456,7 +472,8 @@ class _SellerSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // subtotal is already effective (product discount baked in); only subtract voucher
-    final afterDiscount = (subtotal - voucherDiscount).clamp(0.0, double.infinity);
+    final afterDiscount =
+        (subtotal - voucherDiscount).clamp(0.0, double.infinity);
     final storeTotal = afterDiscount + shipping + tax;
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.xs),
@@ -485,7 +502,8 @@ class _SellerSummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          _SummaryRow(AppStrings.orderAmount, '\$${(subtotal + productDiscount).toStringAsFixed(2)}'),
+          _SummaryRow(AppStrings.orderAmount,
+              '\$${(subtotal + productDiscount).toStringAsFixed(2)}'),
           if (productDiscount > 0) ...[
             const SizedBox(height: 4),
             _SummaryRow(
@@ -505,8 +523,14 @@ class _SellerSummaryCard extends StatelessWidget {
           const SizedBox(height: 4),
           _SummaryRow(
             AppStrings.shipping,
-            shipping < 0 ? 'At checkout' : (shipping == 0 ? AppStrings.freeShipping : '\$${shipping.toStringAsFixed(2)}'),
-            valueColor: shipping < 0 ? null : (shipping == 0 ? AppColors.success : null),
+            shipping < 0
+                ? 'At checkout'
+                : (shipping == 0
+                    ? AppStrings.freeShipping
+                    : '\$${shipping.toStringAsFixed(2)}'),
+            valueColor: shipping < 0
+                ? null
+                : (shipping == 0 ? AppColors.success : null),
             muted: shipping < 0,
           ),
           const SizedBox(height: 4),
@@ -584,7 +608,8 @@ class _OrderSummary extends StatelessWidget {
           const SizedBox(height: AppSizes.sm),
           const Divider(height: 1),
           const SizedBox(height: AppSizes.sm),
-          _SummaryRow(AppStrings.orderAmount, '\$${subtotal.toStringAsFixed(2)}'),
+          _SummaryRow(
+              AppStrings.orderAmount, '\$${subtotal.toStringAsFixed(2)}'),
           if (productDiscount > 0) ...[
             const SizedBox(height: AppSizes.sm),
             _SummaryRow(
@@ -606,8 +631,12 @@ class _OrderSummary extends StatelessWidget {
             AppStrings.shipping,
             shipping < 0
                 ? 'At checkout'
-                : (shipping == 0 ? AppStrings.freeShipping : '\$${shipping.toStringAsFixed(2)}'),
-            valueColor: shipping < 0 ? null : (shipping == 0 ? AppColors.success : null),
+                : (shipping == 0
+                    ? AppStrings.freeShipping
+                    : '\$${shipping.toStringAsFixed(2)}'),
+            valueColor: shipping < 0
+                ? null
+                : (shipping == 0 ? AppColors.success : null),
             muted: shipping < 0,
           ),
           const SizedBox(height: AppSizes.sm),
@@ -625,7 +654,10 @@ class _OrderSummary extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '* Excl. shipping, calculated at checkout',
-              style: TextStyle(fontSize: 10, color: context.onSurfaceMuted, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                  fontSize: 10,
+                  color: context.onSurfaceMuted,
+                  fontStyle: FontStyle.italic),
             ),
           ],
         ],
@@ -708,7 +740,9 @@ class _CheckoutBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    onCheckout != null ? AppStrings.checkout : AppStrings.selectItems,
+                    onCheckout != null
+                        ? AppStrings.checkout
+                        : AppStrings.selectItems,
                     style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.w700),
                   ),
@@ -756,7 +790,9 @@ class _VoucherRow extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                voucher != null ? 'Voucher: ${voucher!.code}' : 'Apply Shop Voucher',
+                voucher != null
+                    ? 'Voucher: ${voucher!.code}'
+                    : 'Apply Shop Voucher',
                 style: const TextStyle(
                   fontSize: 13,
                   color: AppColors.primary,
@@ -774,7 +810,8 @@ class _VoucherRow extends StatelessWidget {
                 ),
               )
             else
-              const Icon(Icons.chevron_right, size: 18, color: AppColors.primary),
+              const Icon(Icons.chevron_right,
+                  size: 18, color: AppColors.primary),
           ],
         ),
       ),
@@ -801,10 +838,14 @@ class _DeliveryOptionSelector extends StatelessWidget {
 
   String _label(String opt) {
     switch (opt) {
-      case 'standard': return 'Standard';
-      case 'express': return 'Express';
-      case 'pickup': return 'Pickup';
-      default: return opt[0].toUpperCase() + opt.substring(1);
+      case 'standard':
+        return 'Standard';
+      case 'express':
+        return 'Express';
+      case 'pickup':
+        return 'Pickup';
+      default:
+        return opt[0].toUpperCase() + opt.substring(1);
     }
   }
 
@@ -848,13 +889,16 @@ class _DeliveryOptionSelector extends StatelessWidget {
                 onTap: () => onSelect(opt),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primary.withAlpha(18)
                         : context.surfaceColor,
                     border: Border.all(
-                      color: isSelected ? AppColors.primary : context.onSurfaceMuted.withAlpha(60),
+                      color: isSelected
+                          ? AppColors.primary
+                          : context.onSurfaceMuted.withAlpha(60),
                       width: isSelected ? 1.5 : 1,
                     ),
                     borderRadius: BorderRadius.circular(AppSizes.radiusFull),
@@ -871,7 +915,8 @@ class _DeliveryOptionSelector extends StatelessWidget {
                         _label(opt),
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w500,
                           color: isSelected
                               ? AppColors.primary
                               : context.onSurfaceSecondary,
@@ -884,7 +929,9 @@ class _DeliveryOptionSelector extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: fee == 0 ? AppColors.success : context.onSurfaceMuted,
+                            color: fee == 0
+                                ? AppColors.success
+                                : context.onSurfaceMuted,
                           ),
                         ),
                       ],

@@ -168,6 +168,13 @@ export const OrderDetail: React.FC = () => {
               {sellerItems.map(({ product, quantity, selectedVariant }) => {
                 const existingReview = reviewMap.get(product.id);
                 const itemKey = selectedVariant?.key ?? product.id;
+                const rawPrice = selectedVariant?.price ?? product.price;
+                const discountPercent =
+                  selectedVariant?.discount ?? product.discount ?? 0;
+                const salePrice =
+                  discountPercent > 0
+                    ? rawPrice * (1 - discountPercent / 100)
+                    : rawPrice;
                 return (
                   <div key={itemKey} className="px-5 py-4">
                     <Link
@@ -187,8 +194,23 @@ export const OrderDetail: React.FC = () => {
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">x{quantity}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-sm font-semibold text-primary-600">{formatCurrency(product.price * quantity)}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(product.price)} each</p>
+                        <p className="text-sm font-semibold text-primary-600">
+                          {formatCurrency(salePrice * quantity)}
+                        </p>
+                        {discountPercent > 0 ? (
+                          <div className="mt-1 flex items-center justify-end gap-1.5 text-xs">
+                            <span className="text-gray-400 dark:text-gray-500 line-through">
+                              {formatCurrency(rawPrice)}
+                            </span>
+                            <span className="font-semibold text-primary-600 dark:text-primary-400">
+                              {formatCurrency(salePrice)} each
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            {formatCurrency(rawPrice)} each
+                          </p>
+                        )}
                       </div>
                     </Link>
 

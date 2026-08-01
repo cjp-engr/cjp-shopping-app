@@ -1167,16 +1167,40 @@ class _OrderItemRow extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 2),
-                Text(
-                  'Qty ${item.quantity} × \$${item.price.toStringAsFixed(2)}',
-                  style:
-                      const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                ),
+                item.hasDiscount
+                    ? RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textMuted,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'Qty ${item.quantity} × ',
+                            ),
+                            TextSpan(
+                              text: '\$${item.price.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                            TextSpan(
+                              text:
+                                  ' / \$${item.salePrice.toStringAsFixed(2)}',
+                            ),
+                          ],
+                        ),
+                      )
+                    : Text(
+                        'Qty ${item.quantity} × \$${item.price.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                            fontSize: 11, color: AppColors.textMuted),
+                      ),
               ],
             ),
           ),
           Text(
-            '\$${item.lineTotal.toStringAsFixed(2)}',
+            '\$${item.saleLineTotal.toStringAsFixed(2)}',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -1511,17 +1535,14 @@ class _SellerOrderDetailSheet extends StatelessWidget {
     final cfg = _statusCfg(order.status);
     final addr = order.shippingAddress;
 
-    // Use stored values from the order — already reflect discounts and delivery
-    final computedSubtotal = order.subtotal > 0
-        ? order.subtotal
-        : order.items.fold<double>(0, (s, i) => s + i.lineTotal);
+    // Use persisted order totals from the API — already reflect all discounts,
+    // shipping, and tax applied at checkout time.
+    final grossSubtotal = order.subtotal;
     final productDiscount = order.productDiscount;
     final voucherDiscount = order.discount;
-    final tax = order.tax > 0 ? order.tax : computedSubtotal * 0.08;
-    final shipping =
-        (order.shipping > 0 || computedSubtotal >= 50) ? order.shipping : 9.99;
-    final total =
-        order.total > 0 ? order.total : computedSubtotal + tax + shipping;
+    final tax = order.tax;
+    final shipping = order.shipping;
+    final total = order.total;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -1721,7 +1742,7 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                         children: [
                           _SummaryLine(
                             label: AppStrings.orderAmount,
-                            value: '\$${computedSubtotal.toStringAsFixed(2)}',
+                            value: '\$${grossSubtotal.toStringAsFixed(2)}',
                           ),
                           if (productDiscount > 0) ...[
                             const SizedBox(height: 8),
@@ -1893,16 +1914,37 @@ class _DetailItemRow extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 2),
-                Text(
-                  '\$${item.price.toStringAsFixed(2)} × ${item.quantity}',
-                  style:
-                      const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                ),
+                item.hasDiscount
+                    ? RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: '\$${item.price.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                            TextSpan(
+                              text:
+                                  ' / \$${item.salePrice.toStringAsFixed(2)} × ${item.quantity}',
+                            ),
+                          ],
+                        ),
+                      )
+                    : Text(
+                        '\$${item.price.toStringAsFixed(2)} × ${item.quantity}',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textMuted),
+                      ),
               ],
             ),
           ),
           Text(
-            '\$${item.lineTotal.toStringAsFixed(2)}',
+            '\$${item.saleLineTotal.toStringAsFixed(2)}',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
