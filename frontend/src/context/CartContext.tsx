@@ -32,9 +32,12 @@ interface CartProviderProps {
 const cartItemKey = (item: CartItem): string =>
   item.selectedVariant ? `${item.product.id}|${item.selectedVariant.key}` : item.product.id;
 
+const variantEffectivePrice = (v: SelectedVariant): number =>
+  v.discount ? v.price * (1 - v.discount / 100) : v.price;
+
 const calculateCartTotals = (items: CartItem[]): Cart => {
   const subtotal = items.reduce((sum, item) => {
-    const price = item.selectedVariant?.price ?? item.product.price;
+    const price = item.selectedVariant ? variantEffectivePrice(item.selectedVariant) : item.product.price;
     return sum + price * item.quantity;
   }, 0);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -42,7 +45,7 @@ const calculateCartTotals = (items: CartItem[]): Cart => {
 
   const sellerSubtotals = new Map<string, number>();
   for (const item of items) {
-    const price = item.selectedVariant?.price ?? item.product.price;
+    const price = item.selectedVariant ? variantEffectivePrice(item.selectedVariant) : item.product.price;
     const key = item.product.sellerId ?? '__unknown__';
     sellerSubtotals.set(key, (sellerSubtotals.get(key) ?? 0) + price * item.quantity);
   }
@@ -64,7 +67,17 @@ const syncToBackend = (items: CartItem[]) => {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({
-      items: items.map(i => ({ productId: i.product.id, quantity: i.quantity })),
+      items: items.map(i => ({
+        productId: i.product.id,
+        variantId: i.selectedVariant?._id,
+        selectedAttributes: i.selectedVariant?.attributes,
+        price: i.selectedVariant?.price ?? i.product.price,
+        stock: i.selectedVariant?.stock ?? i.product.stock,
+        image: i.selectedVariant?.image ?? i.product.image,
+        sku: i.selectedVariant?.sku ?? i.product.sku,
+        discount: i.selectedVariant?.discount,
+        quantity: i.quantity,
+      })),
     }),
   }).catch(() => {});
 };
@@ -92,6 +105,29 @@ const loadFromBackend = async (): Promise<CartItem[] | null> => {
       for (const entry of seller.items ?? []) {
         const p = entry.product;
         if (!p) continue;
+
+        // Reconstruct selectedVariant from stored cart data
+        let selectedVariant: import('../types/cart').SelectedVariant | undefined;
+        if (entry.variantId && entry.selectedAttributes) {
+          const attrs: Record<string, string> =
+            entry.selectedAttributes && typeof entry.selectedAttributes === 'object'
+              ? { ...entry.selectedAttributes }
+              : {};
+          const key = Object.entries(attrs)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([k, v]) => `${k}:${v}`)
+            .join('|');
+          selectedVariant = {
+            _id: entry.variantId,
+            attributes: attrs,
+            price: entry.price ?? p.price ?? 0,
+            stock: entry.stock ?? p.stock ?? 0,
+            sku: entry.sku,
+            discount: entry.discount,
+            key,
+          };
+        }
+
         items.push({
           product: {
             id: p._id?.toString() ?? p.id,
@@ -109,6 +145,7 @@ const loadFromBackend = async (): Promise<CartItem[] | null> => {
             createdAt: p.createdAt ?? '',
           },
           quantity: entry.quantity,
+          selectedVariant,
         });
       }
     }

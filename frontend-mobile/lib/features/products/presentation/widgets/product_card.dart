@@ -22,7 +22,6 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cardBg = context.cardColor;
     final onSurface = context.onSurfaceColor;
-    final muted = context.onSurfaceMuted;
 
     return GestureDetector(
       onTap: onTap,

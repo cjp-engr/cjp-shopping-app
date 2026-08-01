@@ -5,9 +5,13 @@ export type OrderStatus = 'pending' | 'preparing' | 'processing' | 'shipped' | '
 
 export interface ICartItem {
   product: mongoose.Types.ObjectId;
+  variantId?: string;
+  selectedAttributes?: Map<string, string>;
   productName: string;
   productPrice: number;
   productImage: string;
+  variantSku?: string;
+  variantDiscount?: number;
   quantity: number;
 }
 
@@ -46,6 +50,8 @@ const CartItemSchema = new Schema<ICartItem>({
     ref: 'Product',
     required: true
   },
+  variantId: { type: String },
+  selectedAttributes: { type: Map, of: String },
   productName: {
     type: String,
     required: true
@@ -58,6 +64,8 @@ const CartItemSchema = new Schema<ICartItem>({
     type: String,
     required: true
   },
+  variantSku: { type: String },
+  variantDiscount: { type: Number },
   quantity: {
     type: Number,
     required: true,

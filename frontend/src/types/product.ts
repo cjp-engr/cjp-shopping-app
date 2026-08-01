@@ -10,6 +10,7 @@ export interface ProductVariant {
   stock: number;
   sku?: string;
   image?: string;
+  discount?: number;
 }
 
 export interface Product {

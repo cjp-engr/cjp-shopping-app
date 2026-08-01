@@ -582,29 +582,42 @@ export const SellerDashboard: React.FC = () => {
 
                     {/* ── Items ── */}
                     <div className="space-y-1.5">
-                      {order.items.map(({ product, quantity }) => (
-                        <button
-                          key={product.id}
-                          type="button"
-                          onClick={() => navigate(`/products/${product.id}`)}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700/40 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors text-left group"
-                        >
-                          <div className="w-11 h-11 rounded-lg overflow-hidden bg-white dark:bg-gray-700 flex-shrink-0 border border-gray-100 dark:border-gray-600 shadow-sm">
-                            <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors">
-                              {product.name}
+                      {order.items.map(({ product, quantity, selectedVariant }) => {
+                        const effPrice = selectedVariant
+                          ? (selectedVariant.discount && selectedVariant.discount > 0
+                              ? selectedVariant.price * (1 - selectedVariant.discount / 100)
+                              : selectedVariant.price)
+                          : product.price;
+                        const itemKey = selectedVariant?.key ?? product.id;
+                        return (
+                          <button
+                            key={itemKey}
+                            type="button"
+                            onClick={() => navigate(`/products/${product.id}`)}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700/40 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors text-left group"
+                          >
+                            <div className="w-11 h-11 rounded-lg overflow-hidden bg-white dark:bg-gray-700 flex-shrink-0 border border-gray-100 dark:border-gray-600 shadow-sm">
+                              <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors">
+                                {product.name}
+                              </p>
+                              {selectedVariant && (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+                                  {Object.entries(selectedVariant.attributes).map(([k, v]) => `${k}: ${v}`).join(' / ')}
+                                </p>
+                              )}
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                Qty {quantity} × {formatCurrency(effPrice)}
+                              </p>
+                            </div>
+                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 flex-shrink-0 tabular-nums">
+                              {formatCurrency(effPrice * quantity)}
                             </p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                              Qty {quantity} × {formatCurrency(product.price)}
-                            </p>
-                          </div>
-                          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 flex-shrink-0 tabular-nums">
-                            {formatCurrency(product.price * quantity)}
-                          </p>
-                        </button>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 

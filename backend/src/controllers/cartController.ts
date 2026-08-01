@@ -33,24 +33,47 @@ export const getCart = async (req: AuthRequest, res: Response) => {
 // @access Private
 export const syncCart = async (req: AuthRequest, res: Response) => {
   try {
-    const { items } = req.body as { items: { productId: string; quantity: number }[] };
+    const { items } = req.body as {
+      items: {
+        productId: string;
+        variantId?: string;
+        selectedAttributes?: Record<string, string>;
+        price?: number;
+        stock?: number;
+        image?: string;
+        sku?: string;
+        quantity: number;
+      }[];
+    };
 
     // Group by sellerId — batch-fetch all products in one query
     const validItems = (items ?? []).filter(i => i.quantity > 0);
     const productIds = validItems.map(i => i.productId);
-    const products = await Product.find({ _id: { $in: productIds } }).select('sellerId');
-    const sellerById = new Map(products.map(p => [p._id.toString(), p.sellerId?.toString() ?? '__unknown__']));
+    const products = await Product.find({ _id: { $in: productIds } }).select('sellerId price');
+    const productById = new Map(products.map(p => [
+      p._id.toString(),
+      { sellerId: p.sellerId?.toString() ?? '__unknown__', price: (p as any).price as number },
+    ]));
 
-    const sellerMap = new Map<string, { productId: string; quantity: number }[]>();
+    const sellerMap = new Map<string, typeof validItems>();
     for (const item of validItems) {
-      const sellerKey = sellerById.get(item.productId) ?? '__unknown__';
+      const sellerKey = productById.get(item.productId)?.sellerId ?? '__unknown__';
       if (!sellerMap.has(sellerKey)) sellerMap.set(sellerKey, []);
       sellerMap.get(sellerKey)!.push(item);
     }
 
     const sellers = Array.from(sellerMap.entries()).map(([sellerKey, groupItems]) => ({
       sellerId: sellerKey === '__unknown__' ? null : sellerKey,
-      items: groupItems.map(i => ({ product: i.productId, quantity: i.quantity })),
+      items: groupItems.map(i => ({
+        product: i.productId,
+        variantId: i.variantId,
+        selectedAttributes: i.selectedAttributes,
+        price: i.price ?? productById.get(i.productId)?.price ?? 0,
+        stock: i.stock,
+        image: i.image,
+        sku: i.sku,
+        quantity: i.quantity,
+      })),
     }));
 
     const cart = await Cart.findOneAndUpdate(

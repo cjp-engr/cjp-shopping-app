@@ -161,30 +161,43 @@ export const SellerOrderDetail: React.FC = () => {
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Items Ordered</h2>
         </div>
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
-          {order.items.map(({ product, quantity }) => (
-            <button
-              key={product.id}
-              type="button"
-              onClick={() => navigate(`/products/${product.id}`)}
-              className="w-full flex gap-4 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors text-left group"
-            >
-              <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
-                <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                  {product.name}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">x{quantity}</p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                  {formatCurrency(product.price * quantity)}
-                </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(product.price)} each</p>
-              </div>
-            </button>
-          ))}
+          {order.items.map(({ product, quantity, selectedVariant }) => {
+            const effPrice = selectedVariant
+              ? (selectedVariant.discount && selectedVariant.discount > 0
+                  ? selectedVariant.price * (1 - selectedVariant.discount / 100)
+                  : selectedVariant.price)
+              : product.price;
+            const itemKey = selectedVariant?.key ?? product.id;
+            return (
+              <button
+                key={itemKey}
+                type="button"
+                onClick={() => navigate(`/products/${product.id}`)}
+                className="w-full flex gap-4 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors text-left group"
+              >
+                <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                  <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                    {product.name}
+                  </p>
+                  {selectedVariant && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {Object.entries(selectedVariant.attributes).map(([k, v]) => `${k}: ${v}`).join(' / ')}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">x{quantity}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-sm font-semibold text-primary-600 dark:text-primary-400">
+                    {formatCurrency(effPrice * quantity)}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(effPrice)} each</p>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </Card>
 

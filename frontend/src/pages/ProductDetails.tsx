@@ -78,7 +78,11 @@ export const ProductDetails: React.FC = () => {
     ? product!.variantAttributes!.every(a => selectedAttrs[a.name] != null)
     : true;
 
-  const effectivePrice = selectedVariant?.price ?? product?.price ?? 0;
+  const effectivePrice = selectedVariant
+    ? (selectedVariant.discount && selectedVariant.discount > 0
+        ? selectedVariant.price * (1 - selectedVariant.discount / 100)
+        : selectedVariant.price)
+    : product?.price ?? 0;
   const effectiveStock = selectedVariant?.stock ?? product?.stock ?? 0;
   const effectiveSku = selectedVariant?.sku ?? product?.sku;
 
@@ -332,13 +336,25 @@ export const ProductDetails: React.FC = () => {
 
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-6">
-              {!hasVariants && product.discount && product.discount > 0 ? (
+              {selectedVariant?.discount && selectedVariant.discount > 0 ? (
                 <>
                   <span className="text-4xl font-bold text-primary-600">
-                    {formatCurrency(effectivePrice * (1 - product.discount / 100))}
+                    {formatCurrency(effectivePrice)}
                   </span>
                   <span className="text-xl text-gray-400 line-through">
+                    {formatCurrency(selectedVariant.price)}
+                  </span>
+                  <span className="px-2 py-0.5 text-sm font-bold text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg">
+                    -{selectedVariant.discount}%
+                  </span>
+                </>
+              ) : !hasVariants && product.discount && product.discount > 0 ? (
+                <>
+                  <span className="text-4xl font-bold text-primary-600">
                     {formatCurrency(effectivePrice)}
+                  </span>
+                  <span className="text-xl text-gray-400 line-through">
+                    {formatCurrency(product.price)}
                   </span>
                   <span className="px-2 py-0.5 text-sm font-bold text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg">
                     -{product.discount}%
@@ -346,7 +362,7 @@ export const ProductDetails: React.FC = () => {
                 </>
               ) : hasVariants && !allVariantAttrsSelected ? (
                 <span className="text-4xl font-bold text-primary-600">
-                  {`From ${formatCurrency(Math.min(...(product.variants?.map(v => v.price) ?? [product.price])))}`}
+                  {`From ${formatCurrency(Math.min(...(product.variants?.map(v => v.discount && v.discount > 0 ? v.price * (1 - v.discount / 100) : v.price) ?? [product.price])))}`}
                 </span>
               ) : (
                 <span className="text-4xl font-bold text-primary-600">

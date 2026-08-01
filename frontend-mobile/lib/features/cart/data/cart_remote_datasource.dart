@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../domain/entities/cart_item_entity.dart';
 import '../../products/data/models/product_model.dart';
+import '../../products/domain/entities/product_entity.dart';
 import '../../../core/network/api_client.dart';
 
 class CartRemoteDataSource {
@@ -22,9 +23,23 @@ class CartRemoteDataSource {
   /// Replace the server cart with [items]. The backend groups them by seller.
   Future<List<CartItemEntity>> syncCart(List<CartItemEntity> items) async {
     try {
-      final payload = items
-          .map((i) => {'productId': i.product.id, 'quantity': i.quantity})
-          .toList();
+      final payload = items.map((i) {
+        final entry = <String, dynamic>{
+          'productId': i.product.id,
+          'quantity': i.quantity,
+        };
+        final v = i.selectedVariant;
+        if (v != null) {
+          if (v.variantId.isNotEmpty) entry['variantId'] = v.variantId;
+          entry['selectedAttributes'] = v.attributes;
+          entry['price'] = v.price;
+          entry['stock'] = v.stock;
+          if (v.sku.isNotEmpty) entry['sku'] = v.sku;
+          if (v.image.isNotEmpty) entry['image'] = v.image;
+          if (v.discount != null) entry['discount'] = v.discount;
+        }
+        return entry;
+      }).toList();
       final response = await _dio.put('/cart', data: {'items': payload});
       final sellers = response.data['sellers'] as List? ?? [];
       return _parseSellers(sellers);
@@ -55,7 +70,30 @@ class CartRemoteDataSource {
             ? ProductModel.fromJson(productJson)
             : ProductModel.fromJson({'_id': productJson?.toString() ?? ''});
         final quantity = (map['quantity'] as num?)?.toInt() ?? 1;
-        result.add(CartItemEntity(product: product, quantity: quantity));
+
+        ProductVariant? selectedVariant;
+        final variantId = map['variantId']?.toString();
+        final rawAttrs = map['selectedAttributes'];
+        if (variantId != null && variantId.isNotEmpty && rawAttrs is Map) {
+          final attrs = Map<String, String>.fromEntries(
+            rawAttrs.entries.map((e) => MapEntry(e.key.toString(), e.value.toString())),
+          );
+          selectedVariant = ProductVariantModel(
+            variantId: variantId,
+            attributes: attrs,
+            price: (map['price'] as num?)?.toDouble() ?? product.price,
+            stock: (map['stock'] as num?)?.toInt() ?? product.stock,
+            sku: map['sku']?.toString() ?? '',
+            image: map['image']?.toString() ?? '',
+            discount: (map['discount'] as num?)?.toDouble(),
+          );
+        }
+
+        result.add(CartItemEntity(
+          product: product,
+          quantity: quantity,
+          selectedVariant: selectedVariant,
+        ));
       }
     }
     return result;

@@ -41,15 +41,18 @@ class ProductVariantAttributeModel extends ProductVariantAttribute {
 
 class ProductVariantModel extends ProductVariant {
   const ProductVariantModel({
+    super.variantId,
     required super.attributes,
     required super.price,
     required super.stock,
     super.sku,
     super.image,
+    super.discount,
   });
 
   factory ProductVariantModel.fromJson(Map<String, dynamic> json) =>
       ProductVariantModel(
+        variantId: json['_id']?.toString() ?? json['variantId']?.toString() ?? '',
         attributes: json['attributes'] is Map
             ? Map<String, String>.fromEntries(
                 (json['attributes'] as Map).entries.map(
@@ -61,14 +64,17 @@ class ProductVariantModel extends ProductVariant {
         stock: (json['stock'] as num?)?.toInt() ?? 0,
         sku: json['sku']?.toString() ?? '',
         image: json['image']?.toString() ?? '',
+        discount: (json['discount'] as num?)?.toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
+    'variantId': variantId,
     'attributes': attributes,
     'price': price,
     'stock': stock,
     'sku': sku,
     'image': image,
+    if (discount != null) 'discount': discount,
   };
 }
 

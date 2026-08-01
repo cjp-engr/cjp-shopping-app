@@ -6,7 +6,9 @@ class OrderService {
   async createOrder(checkoutData: CheckoutData, cart: Cart, _userId: string, couponCodes?: Record<string, string>, deliverySelections?: Record<string, string>): Promise<Order[]> {
     const items = cart.items.map(item => ({
       productId: item.product.id,
-      quantity: item.quantity
+      variantId: item.selectedVariant?._id,
+      selectedAttributes: item.selectedVariant?.attributes,
+      quantity: item.quantity,
     }));
 
     const response = await fetch(API_ENDPOINTS.ORDERS, {
@@ -127,6 +129,26 @@ class OrderService {
           }
         }
 
+        const variantId: string | undefined = item.variantId;
+        const rawAttrs = item.selectedAttributes;
+        let selectedVariant: import('../types/cart').SelectedVariant | undefined;
+        if (variantId && rawAttrs && typeof rawAttrs === 'object') {
+          const attributes: Record<string, string> = {};
+          for (const [k, v] of Object.entries(rawAttrs)) {
+            attributes[k] = String(v);
+          }
+          const variantPrice: number = item.productPrice ?? item.product?.price ?? 0;
+          selectedVariant = {
+            _id: variantId,
+            attributes,
+            price: variantPrice,
+            stock: 0,
+            sku: item.variantSku,
+            discount: item.variantDiscount,
+            key: Object.entries(attributes).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}:${v}`).join('|'),
+          };
+        }
+
         return {
           product: item.product?._id ? {
             id: item.product._id,
@@ -158,6 +180,7 @@ class OrderService {
           quantity: item.quantity,
           sellerId,
           sellerName,
+          selectedVariant,
         };
       }),
       shippingAddress: order.shippingAddress,

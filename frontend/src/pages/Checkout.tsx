@@ -124,10 +124,18 @@ export const Checkout: React.FC = () => {
       }
       const group = map.get(key)!;
       group.items.push(cartItem);
-      const effPrice = effectivePrice(cartItem.product);
-      group.grossSubtotal += cartItem.product.price * cartItem.quantity;
+      const sv = cartItem.selectedVariant;
+      const variantPrice = sv?.price;
+      const variantEffPrice = sv
+        ? (sv.discount ? sv.price * (1 - sv.discount / 100) : sv.price)
+        : null;
+      const effPrice = variantEffPrice != null ? variantEffPrice : effectivePrice(cartItem.product);
+      const basePrice = variantPrice != null ? variantPrice : cartItem.product.price;
+      group.grossSubtotal += basePrice * cartItem.quantity;
       group.subtotal += effPrice * cartItem.quantity;
-      if (cartItem.product.discount && cartItem.product.discount > 0) {
+      if (sv && sv.discount && sv.discount > 0) {
+        group.productDiscount += (sv.price - effPrice) * cartItem.quantity;
+      } else if (variantPrice == null && cartItem.product.discount && cartItem.product.discount > 0) {
         group.productDiscount += (cartItem.product.price - effPrice) * cartItem.quantity;
       }
       for (const opt of (cartItem.product.shippingOptions ?? [])) {
@@ -827,32 +835,47 @@ export const Checkout: React.FC = () => {
                         </span>
                       </div>
                       <div className="space-y-3">
-                        {group.items.map(({ product, quantity }) => (
-                          <div key={product.id} className="flex gap-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+                        {group.items.map(({ product, quantity, selectedVariant }) => {
+                          const itemKey = selectedVariant?.key ?? product.id;
+                          const effPrice = selectedVariant
+                            ? (selectedVariant.discount && selectedVariant.discount > 0
+                                ? selectedVariant.price * (1 - selectedVariant.discount / 100)
+                                : selectedVariant.price)
+                            : effectivePrice(product);
+                          return (
+                          <div key={itemKey} className="flex gap-4 pb-3 border-b border-gray-100 dark:border-gray-700">
                             <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
                               <img
-                                src={product.image}
+                                src={selectedVariant?.image || product.image}
                                 alt={product.name}
                                 className="w-full h-full object-cover"
                               />
                             </div>
                             <div className="flex-1">
                               <h3 className="font-medium text-gray-900 dark:text-white">{product.name}</h3>
+                              {selectedVariant && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                  {Object.entries(selectedVariant.attributes).map(([k, v]) => `${k}: ${v}`).join(' / ')}
+                                </p>
+                              )}
                               <p className="text-sm text-gray-500 dark:text-gray-400">{product.category}</p>
                               <p className="text-sm text-gray-600 dark:text-gray-400">Qty: {quantity}</p>
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-gray-900 dark:text-white">
-                                {formatCurrency(effectivePrice(product) * quantity)}
+                                {formatCurrency(effPrice * quantity)}
                               </p>
-                              {product.discount && product.discount > 0 ? (
+                              {selectedVariant ? (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{formatCurrency(effPrice)} each</p>
+                              ) : product.discount && product.discount > 0 ? (
                                 <p className="text-xs text-gray-400 line-through">{formatCurrency(product.price * quantity)}</p>
                               ) : (
                                 <p className="text-xs text-gray-500 dark:text-gray-400">{formatCurrency(product.price)} each</p>
                               )}
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
                       {/* Delivery option picker */}

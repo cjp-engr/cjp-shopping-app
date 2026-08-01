@@ -24,6 +24,7 @@ class OrderItemEntity {
   final int quantity;
   final String? sellerId;
   final String? sellerName;
+  final Map<String, String> selectedAttributes;
 
   const OrderItemEntity({
     required this.productId,
@@ -33,6 +34,7 @@ class OrderItemEntity {
     required this.quantity,
     this.sellerId,
     this.sellerName,
+    this.selectedAttributes = const {},
   });
 
   double get total => price * quantity;

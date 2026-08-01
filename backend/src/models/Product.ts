@@ -11,6 +11,7 @@ export interface IProductVariant {
   stock: number;
   sku?: string;
   image?: string;
+  discount?: number;
 }
 
 export interface IProduct extends Document {
@@ -75,6 +76,7 @@ const ProductSchema = new Schema<IProduct>({
     stock: { type: Number, min: 0, default: 0 },
     sku: { type: String, trim: true },
     image: { type: String, default: '' },
+    discount: { type: Number, min: 0, max: 100 },
   }],
 }, { timestamps: true });
 

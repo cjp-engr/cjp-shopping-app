@@ -53,8 +53,13 @@ class _CartScreenState extends State<CartScreen> {
     });
   }
 
-  // Effective price after product-level percentage discount
+  // Effective price after variant or product-level percentage discount
   double _effectivePrice(CartItemEntity item) {
+    final v = item.selectedVariant;
+    if (v != null) {
+      final disc = v.discount;
+      return disc != null && disc > 0 ? v.price * (1 - disc / 100) : v.price;
+    }
     final disc = item.product.discount;
     if (disc == null || disc <= 0) return item.product.price;
     return item.product.price * (1 - disc / 100);
@@ -66,9 +71,15 @@ class _CartScreenState extends State<CartScreen> {
             (s, i) => s + _effectivePrice(i) * i.quantity,
           );
 
-  // Total product-level discount across selected items
+  // Total discount across selected items (variant or product level)
   double _totalDiscount(List<CartItemEntity> all) {
     return all.where((i) => _selected.contains(i.product.id)).fold(0.0, (s, i) {
+      final v = i.selectedVariant;
+      if (v != null) {
+        final disc = v.discount;
+        if (disc == null || disc <= 0) return s;
+        return s + (v.price - _effectivePrice(i)) * i.quantity;
+      }
       final disc = i.product.discount;
       if (disc == null || disc <= 0) return s;
       return s + (i.product.price - _effectivePrice(i)) * i.quantity;

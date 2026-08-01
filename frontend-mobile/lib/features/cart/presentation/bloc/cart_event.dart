@@ -22,19 +22,21 @@ final class CartItemAdded extends CartEvent {
 
 final class CartItemRemoved extends CartEvent {
   final String productId;
-  CartItemRemoved(this.productId);
+  final String? variantLabel;
+  CartItemRemoved(this.productId, {this.variantLabel});
 
   @override
-  List<Object?> get props => [productId];
+  List<Object?> get props => [productId, variantLabel];
 }
 
 final class CartItemQuantityChanged extends CartEvent {
   final String productId;
   final int quantity;
-  CartItemQuantityChanged(this.productId, this.quantity);
+  final String? variantLabel;
+  CartItemQuantityChanged(this.productId, this.quantity, {this.variantLabel});
 
   @override
-  List<Object?> get props => [productId, quantity];
+  List<Object?> get props => [productId, variantLabel, quantity];
 }
 
 final class CartCleared extends CartEvent {}

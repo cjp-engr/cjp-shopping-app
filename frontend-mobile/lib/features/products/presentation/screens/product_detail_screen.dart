@@ -119,19 +119,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               product.sellerId != null &&
               product.sellerId == authUser.id;
 
-          final hasDiscount = (product.discount ?? 0) > 0 && !product.hasVariants;
-          final discountPct = hasDiscount ? product.discount!.round() : 0;
           // For variant products, price shown in header adapts to selection state
           final variantSelected = _findSelectedVariant(product);
+          final variantDiscount = variantSelected?.discount;
+          final hasVariantDiscount = variantSelected != null && (variantDiscount ?? 0) > 0;
+          final hasProductDiscount = (product.discount ?? 0) > 0 && !product.hasVariants;
+          final hasDiscount = hasVariantDiscount || hasProductDiscount;
+          final discountPct = hasVariantDiscount
+              ? variantDiscount!.round()
+              : hasProductDiscount ? product.discount!.round() : 0;
           final displayPrice = product.hasVariants && variantSelected != null
               ? variantSelected.price
               : product.price;
-          final discountedPrice = hasDiscount
-              ? displayPrice * (1 - product.discount! / 100)
-              : displayPrice;
+          final discountedPrice = hasVariantDiscount
+              ? displayPrice * (1 - variantDiscount! / 100)
+              : hasProductDiscount
+                  ? displayPrice * (1 - product.discount! / 100)
+                  : displayPrice;
           final originalPrice = hasDiscount ? displayPrice : displayPrice * 1.4;
           final minVariantPrice = product.hasVariants && product.variants.isNotEmpty
-              ? product.variants.map((v) => v.price).reduce((a, b) => a < b ? a : b)
+              ? product.variants
+                  .map((v) => (v.discount ?? 0) > 0 ? v.price * (1 - v.discount! / 100) : v.price)
+                  .reduce((a, b) => a < b ? a : b)
               : product.price;
           final images = product.images.isNotEmpty
               ? product.images

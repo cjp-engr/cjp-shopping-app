@@ -5,6 +5,8 @@ import { AppError } from '../middleware/errorHandler.js';
 
 interface OrderItem {
   productId: string;
+  variantId?: string;
+  selectedAttributes?: Record<string, string>;
   quantity: number;
 }
 
@@ -54,10 +56,16 @@ async function applyCoupon(
   return { discount, couponCode: coupon.code };
 }
 
-async function restoreStock(items: Array<{ product: unknown; quantity: number }>) {
-  const updates = items.map(item =>
-    Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } }),
-  );
+async function restoreStock(items: Array<{ product: unknown; variantId?: string; quantity: number }>) {
+  const updates = items.map(item => {
+    if (item.variantId) {
+      return Product.findOneAndUpdate(
+        { _id: item.product as string, 'variants._id': item.variantId },
+        { $inc: { 'variants.$.stock': item.quantity } },
+      );
+    }
+    return Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } });
+  });
   await Promise.all(updates);
 }
 
@@ -65,16 +73,35 @@ export async function createOrders(params: CreateOrderParams) {
   const { userId, items, shippingAddress, paymentMethod, sellerMessages = {}, couponCodes = {}, deliverySelections = {} } = params;
 
   // Validate all products and group by seller in one pass
-  const sellerGroups = new Map<string, Array<{ productDoc: InstanceType<typeof Product>; quantity: number }>>();
+  const sellerGroups = new Map<string, Array<{
+    productDoc: InstanceType<typeof Product>;
+    variantId?: string;
+    selectedAttributes?: Record<string, string>;
+    quantity: number;
+  }>>();
 
   for (const item of items) {
     const product = await Product.findById(item.productId);
     if (!product) throw new AppError(404, `Product not found: ${item.productId}`);
-    if (product.stock < item.quantity) throw new AppError(400, `Insufficient stock for: ${product.name}`);
+
+    if (item.variantId) {
+      const variant = (product as any).variants?.id
+        ? (product as any).variants.id(item.variantId)
+        : (product as any).variants?.find((v: any) => v._id?.toString() === item.variantId);
+      if (!variant) throw new AppError(404, `Variant not found for: ${product.name}`);
+      if (variant.stock < item.quantity) throw new AppError(400, `Insufficient stock for variant of: ${product.name}`);
+    } else {
+      if (product.stock < item.quantity) throw new AppError(400, `Insufficient stock for: ${product.name}`);
+    }
 
     const sellerKey = product.sellerId?.toString() ?? '__unknown__';
     if (!sellerGroups.has(sellerKey)) sellerGroups.set(sellerKey, []);
-    sellerGroups.get(sellerKey)!.push({ productDoc: product, quantity: item.quantity });
+    sellerGroups.get(sellerKey)!.push({
+      productDoc: product,
+      variantId: item.variantId,
+      selectedAttributes: item.selectedAttributes,
+      quantity: item.quantity,
+    });
   }
 
   const estimatedDelivery = new Date();
@@ -86,28 +113,44 @@ export async function createOrders(params: CreateOrderParams) {
     let subtotal = 0;
     let productDiscount = 0;
 
-    const orderItems = groupItems.map(({ productDoc, quantity }) => {
-      const gross = productDoc.price * quantity;
-      const discPct = (productDoc.discount ?? 0);
+    const orderItems = groupItems.map(({ productDoc, variantId, selectedAttributes, quantity }) => {
+      const variant = variantId
+        ? ((productDoc as any).variants?.id
+          ? (productDoc as any).variants.id(variantId)
+          : (productDoc as any).variants?.find((v: any) => v._id?.toString() === variantId))
+        : undefined;
+      const unitPrice = variant?.price ?? productDoc.price;
+      const gross = unitPrice * quantity;
+      const discPct = variant ? (variant.discount ?? 0) : (productDoc.discount ?? 0);
       const itemDiscount = gross * (discPct / 100);
       subtotal += gross;
       productDiscount += itemDiscount;
       return {
         product: productDoc._id,
+        variantId,
+        selectedAttributes,
         productName: productDoc.name,
-        productPrice: productDoc.price,
-        productImage: productDoc.image,
+        productPrice: unitPrice,
+        productImage: variant?.image || productDoc.image,
+        variantSku: variant?.sku,
+        variantDiscount: variant ? variant.discount : undefined,
         quantity,
       };
     });
 
-    // Deduct stock in parallel
+    // Deduct stock in parallel — variant stock or product stock
     await Promise.all(
-      groupItems.map(({ productDoc, quantity }) =>
-        Product.findByIdAndUpdate(productDoc._id, {
+      groupItems.map(({ productDoc, variantId, quantity }) => {
+        if (variantId) {
+          return Product.findOneAndUpdate(
+            { _id: productDoc._id, 'variants._id': variantId },
+            { $inc: { 'variants.$.stock': -quantity, soldCount: quantity } },
+          );
+        }
+        return Product.findByIdAndUpdate(productDoc._id, {
           $inc: { stock: -quantity, soldCount: quantity },
-        }),
-      ),
+        });
+      }),
     );
 
     const effectiveSubtotal = subtotal - productDiscount;

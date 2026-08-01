@@ -36,6 +36,7 @@ class OrderItemModel extends OrderItemEntity {
     required super.quantity,
     super.sellerId,
     super.sellerName,
+    super.selectedAttributes = const {},
   });
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
@@ -63,25 +64,42 @@ class OrderItemModel extends OrderItemEntity {
           if (combined.isNotEmpty) sellerName = combined;
         }
       }
+      final rawAttrs = json['selectedAttributes'];
+      final Map<String, String> selectedAttributes = {};
+      if (rawAttrs is Map) {
+        rawAttrs.forEach((k, v) {
+          selectedAttributes[k.toString()] = v.toString();
+        });
+      }
+
       return OrderItemModel(
         productId: product['_id']?.toString() ?? product['id']?.toString() ?? '',
         productName: product['name'] ?? json['productName'] ?? '',
         productImage: product['image'] ?? json['productImage'] ?? '',
-        price: (product['price'] as num?)?.toDouble() ??
-            (json['productPrice'] as num?)?.toDouble() ?? 0,
+        price: (json['productPrice'] as num?)?.toDouble() ??
+            (product['price'] as num?)?.toDouble() ?? 0,
         quantity: (json['quantity'] as num?)?.toInt() ?? 1,
         sellerId: sellerId,
         sellerName: sellerName,
+        selectedAttributes: selectedAttributes,
       );
     }
 
     // product is an ObjectId string (from createOrder response, not populated)
+    final rawAttrs = json['selectedAttributes'];
+    final Map<String, String> selectedAttributes = {};
+    if (rawAttrs is Map) {
+      rawAttrs.forEach((k, v) {
+        selectedAttributes[k.toString()] = v.toString();
+      });
+    }
     return OrderItemModel(
       productId: product?.toString() ?? json['productId']?.toString() ?? '',
       productName: json['productName'] ?? '',
       productImage: json['productImage'] ?? '',
       price: (json['productPrice'] as num?)?.toDouble() ?? 0,
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      selectedAttributes: selectedAttributes,
     );
   }
 }

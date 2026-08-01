@@ -52,6 +52,7 @@ const adaptProduct = (p: any): Product => ({
         stock: v.stock ?? 0,
         sku: v.sku,
         image: v.image,
+        discount: v.discount,
       }))
     : undefined,
 });

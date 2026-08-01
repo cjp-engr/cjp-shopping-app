@@ -165,10 +165,11 @@ export const OrderDetail: React.FC = () => {
             </div>
 
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {sellerItems.map(({ product, quantity }) => {
+              {sellerItems.map(({ product, quantity, selectedVariant }) => {
                 const existingReview = reviewMap.get(product.id);
+                const itemKey = selectedVariant?.key ?? product.id;
                 return (
-                  <div key={product.id} className="px-5 py-4">
+                  <div key={itemKey} className="px-5 py-4">
                     <Link
                       to={`/products/${product.id}`}
                       className="flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-lg transition-colors -mx-2 px-2"
@@ -178,6 +179,11 @@ export const OrderDetail: React.FC = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2">{product.name}</p>
+                        {selectedVariant && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {Object.entries(selectedVariant.attributes).map(([k, v]) => `${k}: ${v}`).join(' / ')}
+                          </p>
+                        )}
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">x{quantity}</p>
                       </div>
                       <div className="text-right flex-shrink-0">

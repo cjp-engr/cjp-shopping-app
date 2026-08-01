@@ -38,6 +38,7 @@ export interface ProductFormData {
     stock: number;
     sku?: string;
     image?: string;
+    discount?: number;
   }>;
 }
 
@@ -73,6 +74,7 @@ const adaptProduct = (p: any): Product => ({
         stock: v.stock ?? 0,
         sku: v.sku,
         image: v.image,
+        discount: v.discount,
       }))
     : undefined,
 });
@@ -111,6 +113,27 @@ const adaptOrder = (order: any): Order & { buyer?: { id: string; firstName: stri
       createdAt: new Date().toISOString(),
     },
     quantity: item.quantity,
+    selectedVariant: (() => {
+      const variantId: string | undefined = item.variantId;
+      const rawAttrs = item.selectedAttributes;
+      if (variantId && rawAttrs && typeof rawAttrs === 'object') {
+        const attributes: Record<string, string> = {};
+        for (const [k, v] of Object.entries(rawAttrs)) {
+          attributes[k] = String(v);
+        }
+        const variantPrice: number = item.productPrice ?? item.product?.price ?? 0;
+        return {
+          _id: variantId,
+          attributes,
+          price: variantPrice,
+          stock: 0,
+          sku: item.variantSku,
+          discount: item.variantDiscount,
+          key: Object.entries(attributes).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}:${v}`).join('|'),
+        };
+      }
+      return undefined;
+    })(),
   })),
   shippingAddress: order.shippingAddress,
   paymentMethod: order.paymentMethod,

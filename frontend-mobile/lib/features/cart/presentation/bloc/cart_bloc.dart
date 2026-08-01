@@ -59,8 +59,17 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     _syncInBackground(updated);
   }
 
+  bool _matches(CartItemEntity i, String productId, String? variantLabel) {
+    if (i.product.id != productId) return false;
+    return variantLabel == null
+        ? i.selectedVariant == null
+        : (i.selectedVariant?.label ?? '') == variantLabel;
+  }
+
   Future<void> _onRemove(CartItemRemoved event, Emitter<CartState> emit) async {
-    final updated = state.items.where((i) => i.product.id != event.productId).toList();
+    final updated = state.items
+        .where((i) => !_matches(i, event.productId, event.variantLabel))
+        .toList();
     emit(state.copyWith(items: updated));
     _syncInBackground(updated);
   }
@@ -68,12 +77,14 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   Future<void> _onQuantityChanged(
       CartItemQuantityChanged event, Emitter<CartState> emit) async {
     if (event.quantity <= 0) {
-      add(CartItemRemoved(event.productId));
+      add(CartItemRemoved(event.productId, variantLabel: event.variantLabel));
       return;
     }
     final updated = state.items.map((i) {
-      if (i.product.id == event.productId) return i.copyWith(quantity: event.quantity);
-      return i;
+      if (!_matches(i, event.productId, event.variantLabel)) return i;
+      return i.copyWith(
+        quantity: event.quantity.clamp(1, i.effectiveStock),
+      );
     }).toList();
     emit(state.copyWith(items: updated));
     _syncInBackground(updated);

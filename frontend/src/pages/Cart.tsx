@@ -36,12 +36,12 @@ export const Cart: React.FC = () => {
     });
   };
 
-  const handleIncrement = (productId: string, currentQuantity: number, stock: number) => {
-    if (currentQuantity < stock) updateQuantity(productId, currentQuantity + 1);
+  const handleIncrement = (productId: string, currentQuantity: number, stock: number, variantKey?: string) => {
+    if (currentQuantity < stock) updateQuantity(productId, currentQuantity + 1, variantKey);
   };
 
-  const handleDecrement = (productId: string, currentQuantity: number) => {
-    if (currentQuantity > 1) updateQuantity(productId, currentQuantity - 1);
+  const handleDecrement = (productId: string, currentQuantity: number, variantKey?: string) => {
+    if (currentQuantity > 1) updateQuantity(productId, currentQuantity - 1, variantKey);
   };
 
   // Effective price after product-level % discount
@@ -207,18 +207,26 @@ export const Cart: React.FC = () => {
                 )}
               </div>
 
-              {group.items.map(({ product, quantity }) => {
-                const effPrice = effectivePrice(product);
-                const hasDiscount = product.discount && product.discount > 0;
+              {group.items.map((cartItem) => {
+                const { product, quantity, selectedVariant } = cartItem;
+                const variantKey = selectedVariant?.key;
+                const effPrice = selectedVariant
+                  ? (selectedVariant.discount && selectedVariant.discount > 0
+                      ? selectedVariant.price * (1 - selectedVariant.discount / 100)
+                      : selectedVariant.price)
+                  : effectivePrice(product);
+                const effectiveStock = selectedVariant?.stock ?? product.stock;
+                const hasDiscount = !selectedVariant && product.discount && product.discount > 0;
+                const displayImage = selectedVariant?.image || product.image;
                 return (
-                  <Card key={product.id} padding="none">
+                  <Card key={variantKey ?? product.id} padding="none">
                     <div className="flex gap-4 p-4">
                       {/* Image */}
                       <div
                         className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 cursor-pointer"
                         onClick={() => navigate(`/products/${product.id}`)}
                       >
-                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                        <img src={displayImage} alt={product.name} className="w-full h-full object-cover" />
                       </div>
 
                       {/* Info */}
@@ -229,6 +237,11 @@ export const Cart: React.FC = () => {
                         >
                           {product.name}
                         </h3>
+                        {selectedVariant && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">
+                            {Object.entries(selectedVariant.attributes).map(([k, v]) => `${k}: ${v}`).join(' / ')}
+                          </p>
+                        )}
                         <p className="text-xs text-gray-400 mb-1">{product.category}</p>
                         <div className="flex items-baseline gap-2">
                           <p className="text-base font-bold text-primary-600">{formatCurrency(effPrice)}</p>
@@ -241,15 +254,15 @@ export const Cart: React.FC = () => {
                             </>
                           )}
                         </div>
-                        {product.stock < 10 && product.stock > 0 && (
-                          <p className="text-xs text-orange-600 mt-0.5">Only {product.stock} left in stock</p>
+                        {effectiveStock < 10 && effectiveStock > 0 && (
+                          <p className="text-xs text-orange-600 mt-0.5">Only {effectiveStock} left in stock</p>
                         )}
                       </div>
 
                       {/* Controls */}
                       <div className="flex flex-col items-end justify-between gap-2">
                         <button
-                          onClick={() => removeFromCart(product.id)}
+                          onClick={() => removeFromCart(product.id, variantKey)}
                           className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           aria-label="Remove item"
                         >
@@ -258,7 +271,7 @@ export const Cart: React.FC = () => {
 
                         <div className="flex items-center border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
                           <button
-                            onClick={() => handleDecrement(product.id, quantity)}
+                            onClick={() => handleDecrement(product.id, quantity, variantKey)}
                             disabled={quantity <= 1}
                             className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             aria-label="Decrease quantity"
@@ -269,8 +282,8 @@ export const Cart: React.FC = () => {
                             {quantity}
                           </span>
                           <button
-                            onClick={() => handleIncrement(product.id, quantity, product.stock)}
-                            disabled={quantity >= product.stock}
+                            onClick={() => handleIncrement(product.id, quantity, effectiveStock, variantKey)}
+                            disabled={quantity >= effectiveStock}
                             className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             aria-label="Increase quantity"
                           >

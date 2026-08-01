@@ -74,7 +74,10 @@ class _CartItemTileState extends State<CartItemTile>
   void _delete() {
     _ctrl.reverse();
     _isOpen = false;
-    context.read<CartBloc>().add(CartItemRemoved(widget.item.product.id));
+    context.read<CartBloc>().add(CartItemRemoved(
+      widget.item.product.id,
+      variantLabel: widget.item.selectedVariant?.label,
+    ));
   }
 
   @override
@@ -162,7 +165,9 @@ class _CartItemTileState extends State<CartItemTile>
                         borderRadius:
                             BorderRadius.circular(AppSizes.radiusMd),
                         child: Image.network(
-                          item.product.image,
+                          (item.selectedVariant?.image.isNotEmpty == true
+                              ? item.selectedVariant!.image
+                              : item.product.image),
                           width: 80,
                           height: 90,
                           fit: BoxFit.cover,
@@ -195,6 +200,18 @@ class _CartItemTileState extends State<CartItemTile>
                                 color: onSurface,
                               ),
                             ),
+                            if (item.product.category.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                item.product.category,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: muted,
+                                ),
+                              ),
+                            ],
                             if (item.selectedVariant != null) ...[
                               const SizedBox(height: 2),
                               Text(
@@ -255,7 +272,8 @@ class _CartItemTileState extends State<CartItemTile>
                                             context.read<CartBloc>().add(
                                                 CartItemQuantityChanged(
                                                     item.product.id,
-                                                    item.quantity - 1)),
+                                                    item.quantity - 1,
+                                                    variantLabel: item.selectedVariant?.label)),
                                       ),
                                       Padding(
                                         padding: const EdgeInsets.symmetric(
@@ -279,7 +297,8 @@ class _CartItemTileState extends State<CartItemTile>
                                                     .read<CartBloc>()
                                                     .add(CartItemQuantityChanged(
                                                         item.product.id,
-                                                        item.quantity + 1))
+                                                        item.quantity + 1,
+                                                        variantLabel: item.selectedVariant?.label))
                                                 : null,
                                       ),
                                     ],

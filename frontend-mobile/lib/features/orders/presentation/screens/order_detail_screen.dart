@@ -968,6 +968,20 @@ class _OrderItemRow extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (item.selectedAttributes.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      item.selectedAttributes.entries
+                          .map((e) => '${e.key}: ${e.value}')
+                          .join(' / '),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: context.onSurfaceSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Text(
                     '\$${item.price.toStringAsFixed(2)} × ${item.quantity}',

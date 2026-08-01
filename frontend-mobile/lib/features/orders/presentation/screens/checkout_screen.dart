@@ -148,10 +148,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final selectedItems = selectedIds.isEmpty
         ? cart.items
         : cart.items.where((i) => selectedIds.contains(i.product.id)).toList();
-    final items = selectedItems
-        .map((i) => {'productId': i.product.id, 'quantity': i.quantity})
-        .toList();
+    final items = selectedItems.map((i) {
+      final entry = <String, dynamic>{
+        'productId': i.product.id,
+        'quantity': i.quantity,
+      };
+      final v = i.selectedVariant;
+      if (v != null && v.variantId.isNotEmpty) {
+        entry['variantId'] = v.variantId;
+        entry['selectedAttributes'] = v.attributes;
+      }
+      return entry;
+    }).toList();
     double effectivePriceSubmit(CartItemEntity i) {
+      final v = i.selectedVariant;
+      if (v != null) {
+        final d = v.discount;
+        return d != null && d > 0 ? v.price * (1 - d / 100) : v.price;
+      }
       final d = i.product.discount;
       return d != null && d > 0 ? i.product.price * (1 - d / 100) : i.product.price;
     }
@@ -224,6 +238,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             }
 
             double effectivePrice(CartItemEntity i) {
+              final v = i.selectedVariant;
+              if (v != null) {
+                final d = v.discount;
+                return d != null && d > 0 ? v.price * (1 - d / 100) : v.price;
+              }
               final d = i.product.discount;
               return d != null && d > 0
                   ? i.product.price * (1 - d / 100)
@@ -873,7 +892,9 @@ class _CheckoutItemRow extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
             child: Image.network(
-              item.product.image,
+              (item.selectedVariant?.image.isNotEmpty == true
+                  ? item.selectedVariant!.image
+                  : item.product.image),
               width: 72,
               height: 72,
               fit: BoxFit.cover,
@@ -896,6 +917,17 @@ class _CheckoutItemRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (item.selectedVariant != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    item.selectedVariant!.attributes.entries
+                        .map((e) => '${e.key}: ${e.value}')
+                        .join(' / '),
+                    style: TextStyle(fontSize: 11, color: context.onSurfaceMuted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 const SizedBox(height: 6),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -903,7 +935,16 @@ class _CheckoutItemRow extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (item.product.discount != null && item.product.discount! > 0) ...[
+                        if (item.selectedVariant != null)
+                          Text(
+                            '\$${item.selectedVariant!.price.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        else if (item.product.discount != null && item.product.discount! > 0) ...[
                           Text(
                             '\$${item.product.price.toStringAsFixed(2)}',
                             style: TextStyle(

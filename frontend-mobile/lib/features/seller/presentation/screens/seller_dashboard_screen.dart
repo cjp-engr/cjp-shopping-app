@@ -1154,6 +1154,18 @@ class _OrderItemRow extends StatelessWidget {
                     color: context.onSurfaceColor,
                   ),
                 ),
+                if (item.selectedAttributes.isNotEmpty) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    item.selectedAttributes.entries
+                        .map((e) => '${e.key}: ${e.value}')
+                        .join(' / '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 10, color: AppColors.textMuted),
+                  ),
+                ],
                 const SizedBox(height: 2),
                 Text(
                   'Qty ${item.quantity} × \$${item.price.toStringAsFixed(2)}',
@@ -1868,6 +1880,18 @@ class _DetailItemRow extends StatelessWidget {
                     color: context.onSurfaceColor,
                   ),
                 ),
+                if (item.selectedAttributes.isNotEmpty) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    item.selectedAttributes.entries
+                        .map((e) => '${e.key}: ${e.value}')
+                        .join(' / '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textMuted),
+                  ),
+                ],
                 const SizedBox(height: 2),
                 Text(
                   '\$${item.price.toStringAsFixed(2)} × ${item.quantity}',

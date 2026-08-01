@@ -54,6 +54,7 @@ class SellerOrderItemData {
   final String productImage;
   final double price;
   final int quantity;
+  final Map<String, String> selectedAttributes;
 
   const SellerOrderItemData({
     required this.productId,
@@ -61,27 +62,40 @@ class SellerOrderItemData {
     required this.productImage,
     required this.price,
     required this.quantity,
+    this.selectedAttributes = const {},
   });
 
   double get lineTotal => price * quantity;
 
+  static Map<String, String> _parseAttrs(dynamic raw) {
+    if (raw is! Map) return const {};
+    return Map.fromEntries(
+      raw.entries.map((e) => MapEntry(e.key.toString(), e.value.toString())),
+    );
+  }
+
   factory SellerOrderItemData.fromJson(Map<String, dynamic> json) {
     final product = json['product'];
+    final attrs = _parseAttrs(json['selectedAttributes']);
+    // productPrice is the variant price stored at order time — always prefer it
+    final storedPrice = (json['productPrice'] as num?)?.toDouble();
     if (product is Map) {
       return SellerOrderItemData(
         productId: product['_id']?.toString() ?? '',
-        productName: product['name'] ?? '',
-        productImage: product['image'] ?? '',
-        price: (product['price'] as num?)?.toDouble() ?? 0,
+        productName: product['name'] ?? json['productName'] ?? '',
+        productImage: product['image'] ?? json['productImage'] ?? '',
+        price: storedPrice ?? (product['price'] as num?)?.toDouble() ?? 0,
         quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+        selectedAttributes: attrs,
       );
     }
     return SellerOrderItemData(
       productId: product?.toString() ?? '',
       productName: json['productName'] ?? '',
       productImage: json['productImage'] ?? '',
-      price: (json['productPrice'] as num?)?.toDouble() ?? 0,
+      price: storedPrice ?? 0,
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      selectedAttributes: attrs,
     );
   }
 }
