@@ -51,7 +51,9 @@ const adaptProduct = (p: any): Product => ({
         price: v.price ?? 0,
         stock: v.stock ?? 0,
         sku: v.sku,
-        image: v.image,
+        images: Array.isArray(v.images)
+          ? v.images
+          : (v.image ? [v.image] : []),
         discount: v.discount,
       }))
     : undefined,

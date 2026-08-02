@@ -20,6 +20,7 @@ class OrderItemEntity {
   final String productId;
   final String productName;
   final String productImage;
+  final List<String> variantImages;
   final double price;
   final double discountPercent;
   final int quantity;
@@ -31,6 +32,7 @@ class OrderItemEntity {
     required this.productId,
     required this.productName,
     required this.productImage,
+    this.variantImages = const [],
     required this.price,
     this.discountPercent = 0,
     required this.quantity,
@@ -38,6 +40,9 @@ class OrderItemEntity {
     this.sellerName,
     this.selectedAttributes = const {},
   });
+
+  String get displayImage =>
+      variantImages.isNotEmpty ? variantImages[0] : productImage;
 
   bool get hasDiscount => discountPercent > 0;
   double get salePrice =>

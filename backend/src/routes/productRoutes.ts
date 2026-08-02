@@ -1,7 +1,8 @@
 import express from 'express';
 import {
   getProducts, getProduct, createProduct, updateProduct,
-  deleteProduct, getCategories, uploadProductImage, getSellerPublicProfile,
+  deleteProduct, getCategories, uploadProductImage, uploadVariantImage,
+  getSellerPublicProfile,
 } from '../controllers/productController.js';
 import { protect } from '../middleware/auth.js';
 import { requireSeller } from '../middleware/seller.js';
@@ -16,6 +17,7 @@ router.get('/', getProducts);
 router.get('/:id', getProduct);
 
 // Write routes require authentication + seller role
+router.post('/variant-image', protect, requireSeller, upload.single('image'), uploadVariantImage);
 router.post('/', protect, requireSeller, createProduct);
 router.put('/:id', protect, requireSeller, updateProduct);
 router.delete('/:id', protect, requireSeller, deleteProduct);

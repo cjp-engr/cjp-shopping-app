@@ -25,6 +25,7 @@ interface VariantRow {
   stock: string;
   sku: string;
   discount: string;
+  images: string[];
 }
 
 interface WizardData {
@@ -106,6 +107,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
             stock: String(v.stock),
             sku: v.sku ?? '',
             discount: v.discount != null ? String(v.discount) : '',
+            images: Array.isArray(v.images) ? v.images : [],
           })) ?? [],
         }
       : EMPTY_DATA,
@@ -122,8 +124,51 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [variantImageUploading, setVariantImageUploading] = useState<Record<number, boolean>>({});
+
   const set = <K extends keyof WizardData>(k: K, v: WizardData[K]) =>
     setData(prev => ({ ...prev, [k]: v }));
+
+  const handleVariantImagePick = async (variantIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setVariantImageUploading(prev => ({ ...prev, [variantIdx]: true }));
+    try {
+      const url = await sellerService.uploadVariantImage(file);
+      setData(prev => ({
+        ...prev,
+        variants: prev.variants.map((v, i) =>
+          i === variantIdx ? { ...v, images: [...v.images, url] } : v
+        ),
+      }));
+    } catch {
+      setError('Failed to upload variant image. Please try again.');
+    } finally {
+      setVariantImageUploading(prev => ({ ...prev, [variantIdx]: false }));
+    }
+  };
+
+  const removeVariantImage = (variantIdx: number, imgIdx: number) => {
+    setData(prev => ({
+      ...prev,
+      variants: prev.variants.map((v, i) =>
+        i === variantIdx ? { ...v, images: v.images.filter((_, j) => j !== imgIdx) } : v
+      ),
+    }));
+  };
+
+  const moveVariantImage = (variantIdx: number, imgIdx: number, dir: -1 | 1) => {
+    setData(prev => ({
+      ...prev,
+      variants: prev.variants.map((v, i) => {
+        if (i !== variantIdx) return v;
+        const imgs = [...v.images];
+        [imgs[imgIdx], imgs[imgIdx + dir]] = [imgs[imgIdx + dir], imgs[imgIdx]];
+        return { ...v, images: imgs };
+      }),
+    }));
+  };
 
   const regenerateVariants = (attrs: VariantAttribute[]) => {
     const valid = attrs.filter(a => a.name.trim() && a.values.length > 0);
@@ -147,7 +192,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         variants: combos.map(attributes => {
           const key = Object.entries(attributes).map(([k, v]) => `${k}:${v}`).join('|');
           const ex = existingMap.get(key);
-          return { attributes, price: ex?.price ?? '', stock: ex?.stock ?? '', sku: ex?.sku ?? '', discount: ex?.discount ?? '' };
+          return { attributes, price: ex?.price ?? '', stock: ex?.stock ?? '', sku: ex?.sku ?? '', discount: ex?.discount ?? '', images: ex?.images ?? [] };
         }),
       };
     });
@@ -225,6 +270,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
           price: Number(v.price) || 0,
           stock: Number(v.stock) || 0,
           sku: v.sku.trim() || undefined,
+          images: v.images,
           discount: v.discount && Number(v.discount) > 0 ? Number(v.discount) : undefined,
         })),
       } : {};
@@ -570,12 +616,57 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
                         </div>
                       </div>
                       {/* SKU full width */}
-                      <div className="px-3 pt-2 pb-2.5">
+                      <div className="px-3 pt-2">
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1">SKU (Optional)</p>
                         <input type="text" placeholder="e.g. SKU-001" value={row.sku}
                           onChange={e => updateVariantField(ri, 'sku', e.target.value)}
                           className="w-full px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-900 text-xs text-gray-900 dark:text-gray-100 font-mono"
                         />
+                      </div>
+                      {/* Variant images */}
+                      <div className="px-3 pt-2 pb-2.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1.5">
+                          Images <span className="normal-case font-normal">(optional — uses product images if empty)</span>
+                        </p>
+                        <div className="flex gap-2 flex-wrap items-center">
+                          {row.images.map((url, imgIdx) => (
+                            <div key={imgIdx} className="relative group w-14 h-14 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 flex-shrink-0">
+                              <img src={url} alt="" className="w-full h-full object-cover" />
+                              {imgIdx === 0 && (
+                                <span className="absolute top-0 left-0 text-[8px] font-bold bg-primary-600 text-white px-1 leading-4">Cover</span>
+                              )}
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-0.5">
+                                {imgIdx > 0 && (
+                                  <button type="button" onClick={() => moveVariantImage(ri, imgIdx, -1)}
+                                    className="w-5 h-5 bg-white/90 rounded-full flex items-center justify-center text-gray-700 hover:bg-white text-xs font-bold">
+                                    ‹
+                                  </button>
+                                )}
+                                <button type="button" onClick={() => removeVariantImage(ri, imgIdx)}
+                                  className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                  ×
+                                </button>
+                                {imgIdx < row.images.length - 1 && (
+                                  <button type="button" onClick={() => moveVariantImage(ri, imgIdx, 1)}
+                                    className="w-5 h-5 bg-white/90 rounded-full flex items-center justify-center text-gray-700 hover:bg-white text-xs font-bold">
+                                    ›
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {row.images.length < 5 && (
+                            <label className={`w-14 h-14 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors flex-shrink-0 ${variantImageUploading[ri] ? 'opacity-50 pointer-events-none' : ''}`}>
+                              <input type="file" accept="image/*" className="hidden"
+                                onChange={e => handleVariantImagePick(ri, e)}
+                                disabled={!!variantImageUploading[ri]} />
+                              {variantImageUploading[ri]
+                                ? <div className="w-4 h-4 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+                                : <Plus className="w-4 h-4 text-gray-400" />
+                              }
+                            </label>
+                          )}
+                        </div>
                       </div>
                       {/* Sale price preview */}
                       {row.price && row.discount && Number(row.price) > 0 && Number(row.discount) > 0 && (

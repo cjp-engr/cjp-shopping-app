@@ -38,7 +38,7 @@ export interface ProductFormData {
     price: number;
     stock: number;
     sku?: string;
-    image?: string;
+    images?: string[];
     discount?: number;
   }>;
 }
@@ -74,7 +74,7 @@ const adaptProduct = (p: any): Product => ({
         price: v.price ?? 0,
         stock: v.stock ?? 0,
         sku: v.sku,
-        image: v.image,
+        images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
         discount: v.discount,
       }))
     : undefined,
@@ -246,6 +246,19 @@ class SellerService {
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to update product'); }
     const data = await res.json();
     return adaptProduct(data.product);
+  }
+
+  async uploadVariantImage(file: File): Promise<string> {
+    const fd = new FormData();
+    fd.append('image', file);
+    const res = await fetch(API_ENDPOINTS.VARIANT_IMAGE_UPLOAD, {
+      method: 'POST',
+      headers: getAuthHeadersNoContentType(),
+      body: fd,
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Upload failed'); }
+    const data = await res.json();
+    return data.url as string;
   }
 
   async deleteProduct(id: string): Promise<void> {

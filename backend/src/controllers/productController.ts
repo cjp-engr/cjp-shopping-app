@@ -258,6 +258,24 @@ export const uploadProductImage = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// @desc    Upload a single image for a product variant to Cloudinary
+// @route   POST /api/products/variant-image
+// @access  Private (seller)
+export const uploadVariantImage = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No image file provided' });
+    }
+    const file = req.file as Express.Multer.File & { path: string };
+    res.status(200).json({ success: true, url: file.path });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Upload failed',
+    });
+  }
+};
+
 // @desc    Get public seller profile with their products
 // @route   GET /api/products/seller/:sellerId
 // @access  Public

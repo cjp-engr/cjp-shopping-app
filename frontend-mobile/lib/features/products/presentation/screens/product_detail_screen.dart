@@ -142,9 +142,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   .map((v) => (v.discount ?? 0) > 0 ? v.price * (1 - v.discount! / 100) : v.price)
                   .reduce((a, b) => a < b ? a : b)
               : product.price;
-          final images = product.images.isNotEmpty
-              ? product.images
-              : [product.image];
+          final baseImages = product.images.isNotEmpty ? product.images : [product.image];
+          final images = (variantSelected?.images.isNotEmpty == true)
+              ? variantSelected!.images
+              : baseImages;
 
           return CustomScrollView(
             slivers: [

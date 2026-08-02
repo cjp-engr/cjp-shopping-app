@@ -11,4 +11,5 @@ abstract class SellerRepository {
   Future<List<SellerOrderData>> getSellerOrders();
   Future<void> updateOrderStatus(String orderId, String status,
       {String? cancelReason});
+  Future<String> uploadVariantImage(String filePath);
 }

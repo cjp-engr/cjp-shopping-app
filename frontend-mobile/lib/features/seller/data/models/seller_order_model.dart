@@ -91,6 +91,7 @@ class SellerOrderItemData {
   final String productId;
   final String productName;
   final String productImage;
+  final List<String> variantImages;
   final double price;
   final double discountPercent;
   final int quantity;
@@ -100,6 +101,7 @@ class SellerOrderItemData {
     required this.productId,
     required this.productName,
     required this.productImage,
+    this.variantImages = const [],
     required this.price,
     this.discountPercent = 0,
     required this.quantity,
@@ -112,6 +114,9 @@ class SellerOrderItemData {
   double get lineTotal => price * quantity;
   double get saleLineTotal => salePrice * quantity;
 
+  String get displayImage =>
+      variantImages.isNotEmpty ? variantImages[0] : productImage;
+
   static Map<String, String> _parseAttrs(dynamic raw) {
     if (raw is! Map) return const {};
     return Map.fromEntries(
@@ -119,9 +124,17 @@ class SellerOrderItemData {
     );
   }
 
+  static List<String> _parseImages(dynamic raw) {
+    if (raw is List && raw.isNotEmpty) {
+      return raw.map((e) => e.toString()).toList();
+    }
+    return const [];
+  }
+
   factory SellerOrderItemData.fromJson(Map<String, dynamic> json) {
     final product = json['product'];
     final attrs = _parseAttrs(json['selectedAttributes']);
+    final variantImages = _parseImages(json['variantImages']);
     // productPrice is the variant price stored at order time — always prefer it
     final storedPrice = (json['productPrice'] as num?)?.toDouble();
     final discountPercent = (json['discountPercent'] as num?)?.toDouble() ??
@@ -132,6 +145,7 @@ class SellerOrderItemData {
         productId: product['_id']?.toString() ?? '',
         productName: product['name'] ?? json['productName'] ?? '',
         productImage: product['image'] ?? json['productImage'] ?? '',
+        variantImages: variantImages,
         price: storedPrice ?? (product['price'] as num?)?.toDouble() ?? 0,
         discountPercent: discountPercent,
         quantity: (json['quantity'] as num?)?.toInt() ?? 1,
@@ -142,6 +156,7 @@ class SellerOrderItemData {
       productId: product?.toString() ?? '',
       productName: json['productName'] ?? '',
       productImage: json['productImage'] ?? '',
+      variantImages: variantImages,
       price: storedPrice ?? 0,
       discountPercent: discountPercent,
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,

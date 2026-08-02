@@ -119,7 +119,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             sku: v.sku,
             discount:
                 v.discount != null && v.discount! > 0 ? '${v.discount}' : '',
-            imageUrl: v.image,
+            imageUrls: List<String>.from(v.images),
           ));
         }
       }
@@ -277,7 +277,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           'price': double.tryParse(r.priceCtrl.text.trim()) ?? 0.0,
           'stock': int.tryParse(r.stockCtrl.text.trim()) ?? 0,
           'sku': r.skuCtrl.text.trim(),
-          'image': r.imageUrl,
+          'images': r.imageUrls,
           if (disc != null && disc > 0) 'discount': disc,
         };
       }).toList();
@@ -347,7 +347,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         stock: prev?.stockCtrl.text ?? '',
         sku: prev?.skuCtrl.text ?? '',
         discount: prev?.discountCtrl.text ?? '',
-        imageUrl: prev?.imageUrl ?? '',
+        imageUrls: prev?.imageUrls ?? [],
       );
     }).toList();
 
@@ -1358,6 +1358,177 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             );
           },
         ),
+        // Variant images section
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(
+              'IMAGES',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: context.onSurfaceMuted,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(height: 6),
+            StatefulBuilder(
+              builder: (ctx, setRowState) {
+                return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  if (row.imageUrls.isNotEmpty)
+                    SizedBox(
+                      height: 72,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: row.imageUrls.length,
+                        itemBuilder: (ctx, imgIdx) {
+                          return Stack(children: [
+                            Container(
+                              width: 68,
+                              height: 68,
+                              margin: const EdgeInsets.only(right: 6),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: imgIdx == 0
+                                      ? AppColors.primary
+                                      : context.borderColor.withAlpha(80),
+                                  width: imgIdx == 0 ? 2 : 1,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(7),
+                                child: Image.network(
+                                  row.imageUrls[imgIdx],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 24,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (imgIdx == 0)
+                              Positioned(
+                                bottom: 4,
+                                left: 4,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                  child: const Text(
+                                    'Cover',
+                                    style: TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ),
+                            Positioned(
+                              top: 0,
+                              right: 6,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setRowState(() => row.imageUrls.removeAt(imgIdx));
+                                  setState(() {});
+                                },
+                                child: Container(
+                                  width: 18,
+                                  height: 18,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close, size: 11, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                            if (imgIdx > 0)
+                              Positioned(
+                                bottom: 4,
+                                left: 4,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setRowState(() {
+                                      final img = row.imageUrls.removeAt(imgIdx);
+                                      row.imageUrls.insert(imgIdx - 1, img);
+                                    });
+                                    setState(() {});
+                                  },
+                                  child: Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                    child: const Icon(Icons.chevron_left, size: 12, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            if (imgIdx < row.imageUrls.length - 1)
+                              Positioned(
+                                bottom: 4,
+                                right: 10,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setRowState(() {
+                                      final img = row.imageUrls.removeAt(imgIdx);
+                                      row.imageUrls.insert(imgIdx + 1, img);
+                                    });
+                                    setState(() {});
+                                  },
+                                  child: Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                    child: const Icon(Icons.chevron_right, size: 12, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                          ]);
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 6),
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await _picker.pickMultiImage(imageQuality: 85);
+                      if (picked.isEmpty) return;
+                      for (final file in picked) {
+                        try {
+                          final url = await context.read<SellerBloc>().uploadVariantImage(file.path);
+                          setRowState(() => row.imageUrls.add(url));
+                          setState(() {});
+                        } catch (_) {}
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.primary.withAlpha(100), width: 1.5),
+                        borderRadius: BorderRadius.circular(8),
+                        color: AppColors.primary.withAlpha(12),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.add_photo_alternate_outlined, size: 16, color: AppColors.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          row.imageUrls.isEmpty ? 'Add Images' : 'Add More',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                        ),
+                      ]),
+                    ),
+                  ),
+                ]);
+              },
+            ),
+          ]),
+        ),
       ]),
     );
   }
@@ -2308,7 +2479,7 @@ class _VariantRow {
   final TextEditingController stockCtrl;
   final TextEditingController skuCtrl;
   final TextEditingController discountCtrl;
-  String imageUrl;
+  List<String> imageUrls;
 
   _VariantRow({
     required this.attributes,
@@ -2316,8 +2487,9 @@ class _VariantRow {
     String stock = '',
     String sku = '',
     String discount = '',
-    this.imageUrl = '',
-  })  : priceCtrl = TextEditingController(text: price),
+    List<String>? imageUrls,
+  })  : imageUrls = imageUrls ?? [],
+        priceCtrl = TextEditingController(text: price),
         stockCtrl = TextEditingController(text: stock),
         skuCtrl = TextEditingController(text: sku),
         discountCtrl = TextEditingController(text: discount);

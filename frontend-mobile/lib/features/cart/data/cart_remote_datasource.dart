@@ -84,7 +84,15 @@ class CartRemoteDataSource {
             price: (map['price'] as num?)?.toDouble() ?? product.price,
             stock: (map['stock'] as num?)?.toInt() ?? product.stock,
             sku: map['sku']?.toString() ?? '',
-            image: map['image']?.toString() ?? '',
+            images: () {
+              final single = map['image']?.toString() ?? '';
+              if (single.isNotEmpty) return [single];
+              final raw = map['images'];
+              if (raw is List && raw.isNotEmpty) {
+                return raw.map((e) => e.toString()).toList();
+              }
+              return const <String>[];
+            }(),
             discount: (map['discount'] as num?)?.toDouble(),
           );
         }

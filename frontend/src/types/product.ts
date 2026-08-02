@@ -9,7 +9,7 @@ export interface ProductVariant {
   price: number;
   stock: number;
   sku?: string;
-  image?: string;
+  images?: string[];
   discount?: number;
 }
 

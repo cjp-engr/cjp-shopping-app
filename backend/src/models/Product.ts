@@ -10,7 +10,7 @@ export interface IProductVariant {
   price: number;
   stock: number;
   sku?: string;
-  image?: string;
+  images: string[];
   discount?: number;
 }
 
@@ -75,7 +75,7 @@ const ProductSchema = new Schema<IProduct>({
     price: { type: Number, min: 0, default: 0 },
     stock: { type: Number, min: 0, default: 0 },
     sku: { type: String, trim: true },
-    image: { type: String, default: '' },
+    images: { type: [String], default: [] },
     discount: { type: Number, min: 0, max: 100 },
   }],
 }, { timestamps: true });

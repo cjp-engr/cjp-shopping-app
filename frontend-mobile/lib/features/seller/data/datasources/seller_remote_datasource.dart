@@ -87,6 +87,19 @@ class SellerRemoteDataSource {
     }
   }
 
+  Future<String> uploadVariantImage(String filePath) async {
+    try {
+      final fileName = filePath.split(RegExp(r'[/\\]')).last;
+      final formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(filePath, filename: fileName),
+      });
+      final response = await _dio.post('/products/variant-image', data: formData);
+      return response.data['url'] as String;
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
   Future<dynamic> _buildPayload(
       Map<String, dynamic> data, List<String> imagePaths) async {
     if (imagePaths.isEmpty) return data;

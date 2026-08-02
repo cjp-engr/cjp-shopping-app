@@ -46,26 +46,35 @@ class ProductVariantModel extends ProductVariant {
     required super.price,
     required super.stock,
     super.sku,
-    super.image,
+    super.images,
     super.discount,
   });
 
-  factory ProductVariantModel.fromJson(Map<String, dynamic> json) =>
-      ProductVariantModel(
-        variantId: json['_id']?.toString() ?? json['variantId']?.toString() ?? '',
-        attributes: json['attributes'] is Map
-            ? Map<String, String>.fromEntries(
-                (json['attributes'] as Map).entries.map(
-                  (e) => MapEntry(e.key.toString(), e.value.toString()),
-                ),
-              )
-            : {},
-        price: (json['price'] as num?)?.toDouble() ?? 0.0,
-        stock: (json['stock'] as num?)?.toInt() ?? 0,
-        sku: json['sku']?.toString() ?? '',
-        image: json['image']?.toString() ?? '',
-        discount: (json['discount'] as num?)?.toDouble(),
-      );
+  factory ProductVariantModel.fromJson(Map<String, dynamic> json) {
+    List<String> images;
+    final rawImages = json['images'];
+    if (rawImages is List && rawImages.isNotEmpty) {
+      images = rawImages.map((e) => e.toString()).toList();
+    } else {
+      final legacy = json['image']?.toString() ?? '';
+      images = legacy.isNotEmpty ? [legacy] : [];
+    }
+    return ProductVariantModel(
+      variantId: json['_id']?.toString() ?? json['variantId']?.toString() ?? '',
+      attributes: json['attributes'] is Map
+          ? Map<String, String>.fromEntries(
+              (json['attributes'] as Map).entries.map(
+                (e) => MapEntry(e.key.toString(), e.value.toString()),
+              ),
+            )
+          : {},
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      stock: (json['stock'] as num?)?.toInt() ?? 0,
+      sku: json['sku']?.toString() ?? '',
+      images: images,
+      discount: (json['discount'] as num?)?.toDouble(),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'variantId': variantId,
@@ -73,7 +82,7 @@ class ProductVariantModel extends ProductVariant {
     'price': price,
     'stock': stock,
     'sku': sku,
-    'image': image,
+    'images': images,
     if (discount != null) 'discount': discount,
   };
 }

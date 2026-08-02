@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
   PRODUCTS: `${API_BASE_URL}/products`,
   PRODUCT: (id: string) => `${API_BASE_URL}/products/${id}`,
   CATEGORIES: `${API_BASE_URL}/products/categories/all`,
+  VARIANT_IMAGE_UPLOAD: `${API_BASE_URL}/products/variant-image`,
 
   // Orders
   ORDERS: `${API_BASE_URL}/orders`,

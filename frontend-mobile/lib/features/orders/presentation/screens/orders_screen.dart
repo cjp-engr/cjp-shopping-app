@@ -466,7 +466,7 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                                     productId: item.productId,
                                     orderId: order.id,
                                     productName: item.productName,
-                                    productImage: item.productImage,
+                                    productImage: item.displayImage,
                                     onSubmitted: () async {
                                       if (mounted) {
                                         setState(() => _reviewedProductIds
@@ -690,9 +690,9 @@ class _OrderItemRow extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-            child: item.productImage.isNotEmpty
+            child: item.displayImage.isNotEmpty
                 ? Image.network(
-                    item.productImage,
+                    item.displayImage,
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,

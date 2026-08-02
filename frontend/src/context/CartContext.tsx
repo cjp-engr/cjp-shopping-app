@@ -128,6 +128,9 @@ const loadFromBackend = async (): Promise<CartItem[] | null> => {
             stock: entry.stock ?? p.stock ?? 0,
             sku: entry.sku,
             discount: entry.discount ?? productVariant?.discount,
+            image: entry.image
+              ?? productVariant?.images?.[0]
+              ?? (productVariant as { image?: string } | undefined)?.image,
             key,
           };
         }

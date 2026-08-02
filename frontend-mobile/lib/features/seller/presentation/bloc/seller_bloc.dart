@@ -102,4 +102,7 @@ class SellerBloc extends Bloc<SellerEvent, SellerState> {
           errorMessage: e.toString()));
     }
   }
+
+  Future<String> uploadVariantImage(String filePath) =>
+      _repository.uploadVariantImage(filePath);
 }

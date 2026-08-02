@@ -31,4 +31,8 @@ class SellerRepositoryImpl implements SellerRepository {
   Future<void> updateOrderStatus(String orderId, String status,
           {String? cancelReason}) =>
       _dataSource.updateOrderStatus(orderId, status, cancelReason: cancelReason);
+
+  @override
+  Future<String> uploadVariantImage(String filePath) =>
+      _dataSource.uploadVariantImage(filePath);
 }

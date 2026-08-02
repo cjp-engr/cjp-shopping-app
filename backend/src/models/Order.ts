@@ -10,6 +10,7 @@ export interface ICartItem {
   productName: string;
   productPrice: number;
   productImage: string;
+  variantImages?: string[];
   variantSku?: string;
   discountPercent?: number;
   /** @deprecated Kept for compatibility with existing orders. */
@@ -67,6 +68,7 @@ const CartItemSchema = new Schema<ICartItem>({
     type: String,
     required: true
   },
+  variantImages: { type: [String], default: undefined },
   variantSku: { type: String },
   discountPercent: { type: Number, min: 0, max: 100 },
   variantDiscount: { type: Number },

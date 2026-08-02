@@ -1127,9 +1127,9 @@ class _OrderItemRow extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-            child: item.productImage.isNotEmpty
+            child: item.displayImage.isNotEmpty
                 ? Image.network(
-                    item.productImage,
+                    item.displayImage,
                     width: 42,
                     height: 42,
                     fit: BoxFit.cover,
@@ -1946,9 +1946,9 @@ class _DetailItemRow extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-            child: item.productImage.isNotEmpty
+            child: item.displayImage.isNotEmpty
                 ? Image.network(
-                    item.productImage,
+                    item.displayImage,
                     width: 50,
                     height: 50,
                     fit: BoxFit.cover,

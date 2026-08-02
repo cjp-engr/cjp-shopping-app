@@ -52,8 +52,13 @@ export async function createSellerProduct(
   data: { name: string; description: string; price: number; category: string; stock?: number; tags?: string[]; brand?: string; condition?: string; sku?: string; discount?: number; shippingOptions?: string[]; shippingFee?: string; shippingFeeAmounts?: Record<string, number>; image?: string; variantAttributes?: any[]; variants?: any[] },
   imageUrls: string[],
 ) {
+  const normalizedVariants = (data.variants ?? []).map((v: any) => ({
+    ...v,
+    images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
+  }));
   return Product.create({
     ...data,
+    variants: normalizedVariants,
     image: imageUrls[0] ?? data.image ?? '',
     images: imageUrls,
     sellerId,
@@ -70,8 +75,14 @@ export async function updateSellerProduct(
   if (!product) throw new AppError(404, 'Product not found');
   if (product.sellerId?.toString() !== sellerId) throw new AppError(403, 'Not authorized to update this product');
 
-  const { image: imageUrl, ...rest } = updates;
+  const { image: imageUrl, variants: rawVariants, ...rest } = updates;
   const defined = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined));
+  if (rawVariants !== undefined) {
+    defined.variants = rawVariants.map((v: any) => ({
+      ...v,
+      images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
+    }));
+  }
   Object.assign(product, defined);
   if (imageUrls && imageUrls.length > 0) {
     product.image = imageUrls[0];

@@ -27,3 +27,5 @@ dist-ssr
 .agents
 
 .patrol.env
+
+.cursorignore

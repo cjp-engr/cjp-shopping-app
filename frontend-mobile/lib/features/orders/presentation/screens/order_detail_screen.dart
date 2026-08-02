@@ -477,7 +477,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                               review: review,
                               productId: item.productId,
                               productName: item.productName,
-                              productImage: item.productImage,
+                              productImage: item.displayImage,
                               orderId: order.id,
                               onUpdated: (updated) => setState(
                                 () => _reviews[item.productId] = updated,
@@ -948,9 +948,9 @@ class _OrderItemRow extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-              child: item.productImage.isNotEmpty
+              child: item.displayImage.isNotEmpty
                   ? Image.network(
-                      item.productImage,
+                      item.displayImage,
                       width: 60,
                       height: 60,
                       fit: BoxFit.cover,

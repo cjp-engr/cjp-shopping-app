@@ -16,7 +16,7 @@ class ProductVariant extends Equatable {
   final double price;
   final int stock;
   final String sku;
-  final String image;
+  final List<String> images;
   final double? discount;
 
   const ProductVariant({
@@ -25,14 +25,15 @@ class ProductVariant extends Equatable {
     required this.price,
     required this.stock,
     this.sku = '',
-    this.image = '',
+    this.images = const [],
     this.discount,
   });
 
+  String get image => images.isNotEmpty ? images[0] : '';
   String get label => attributes.entries.map((e) => '${e.key}: ${e.value}').join(' / ');
 
   @override
-  List<Object?> get props => [variantId, attributes, price, stock, sku, image, discount];
+  List<Object?> get props => [variantId, attributes, price, stock, sku, images, discount];
 }
 
 class ProductEntity extends Equatable {

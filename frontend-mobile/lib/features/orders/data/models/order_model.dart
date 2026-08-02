@@ -32,6 +32,7 @@ class OrderItemModel extends OrderItemEntity {
     required super.productId,
     required super.productName,
     required super.productImage,
+    super.variantImages = const [],
     required super.price,
     super.discountPercent,
     required super.quantity,
@@ -39,6 +40,13 @@ class OrderItemModel extends OrderItemEntity {
     super.sellerName,
     super.selectedAttributes = const {},
   });
+
+  static List<String> _parseImages(dynamic raw) {
+    if (raw is List && raw.isNotEmpty) {
+      return raw.map((e) => e.toString()).toList();
+    }
+    return const [];
+  }
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
     final product = json['product'];
@@ -78,6 +86,7 @@ class OrderItemModel extends OrderItemEntity {
             product['_id']?.toString() ?? product['id']?.toString() ?? '',
         productName: product['name'] ?? json['productName'] ?? '',
         productImage: product['image'] ?? json['productImage'] ?? '',
+        variantImages: _parseImages(json['variantImages']),
         price: (json['productPrice'] as num?)?.toDouble() ??
             (product['price'] as num?)?.toDouble() ??
             0,
@@ -103,6 +112,7 @@ class OrderItemModel extends OrderItemEntity {
       productId: product?.toString() ?? json['productId']?.toString() ?? '',
       productName: json['productName'] ?? '',
       productImage: json['productImage'] ?? '',
+      variantImages: _parseImages(json['variantImages']),
       price: (json['productPrice'] as num?)?.toDouble() ?? 0,
       discountPercent: (json['discountPercent'] as num?)?.toDouble() ??
           (json['variantDiscount'] as num?)?.toDouble() ??

@@ -109,7 +109,16 @@ export const ProductDetails: React.FC = () => {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([k, v]) => `${k}:${v}`)
       .join('|');
-    return { ...selectedVariant, key };
+    return {
+      _id: selectedVariant._id,
+      attributes: selectedVariant.attributes,
+      price: selectedVariant.price,
+      stock: selectedVariant.stock,
+      sku: selectedVariant.sku,
+      discount: selectedVariant.discount,
+      image: selectedVariant.images?.[0],
+      key,
+    };
   };
 
   useEffect(() => {
@@ -180,6 +189,8 @@ export const ProductDetails: React.FC = () => {
     fetchReviews();
   }, [id, reviewPage]);
 
+  useEffect(() => { setSelectedImage(0); }, [selectedVariant]);
+
   const handleAddToCart = () => {
     if (product && product.sellerId !== user?.id) {
       addToCart(product, quantity, buildSelectedVariant());
@@ -226,7 +237,8 @@ export const ProductDetails: React.FC = () => {
     );
   }
 
-  const images = product.images || [product.image];
+  const baseImages = product.images?.length ? product.images : [product.image];
+  const displayImages = (selectedVariant?.images?.length ? selectedVariant.images : baseImages);
   const variantSV = buildSelectedVariant();
   const cartQuantity = getItemQuantity(product.id, variantSV?.key);
   const isOwnProduct = !!user?.id && user.id === product.sellerId;
@@ -274,16 +286,16 @@ export const ProductDetails: React.FC = () => {
           <Card padding="sm">
             <div className="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
               <img
-                src={images[selectedImage]}
+                src={displayImages[selectedImage] ?? displayImages[0]}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
             </div>
           </Card>
 
-          {images.length > 1 && (
+          {displayImages.length > 1 && (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-              {images.map((image, index) => (
+              {displayImages.map((image, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImage(index)}
