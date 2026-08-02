@@ -88,7 +88,7 @@ export const OrderDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[60vh]" data-testid="order-detail-loading">
         <Spinner size="lg" />
       </div>
     );
@@ -119,11 +119,12 @@ export const OrderDetail: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-6 max-w-2xl mx-auto" data-testid="order-detail-page">
       {/* Back link */}
       <Link
         to="/orders"
         className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+        data-testid="back-to-orders-btn"
       >
         <ArrowLeft className="w-4 h-4" />
         My Orders
@@ -137,7 +138,7 @@ export const OrderDetail: React.FC = () => {
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{formatDate(order.createdAt)}</p>
         </div>
-        <Badge variant={statusConfig.variant} className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
+        <Badge variant={statusConfig.variant} className="flex items-center gap-1.5 px-3 py-1.5 text-sm" data-testid="order-status-badge">
           <StatusIcon className="w-4 h-4" />
           {statusConfig.label}
         </Badge>
@@ -176,7 +177,7 @@ export const OrderDetail: React.FC = () => {
                     ? rawPrice * (1 - discountPercent / 100)
                     : rawPrice;
                 return (
-                  <div key={itemKey} className="px-5 py-4">
+                  <div key={itemKey} className="px-5 py-4" data-testid={`order-item-${product.id}`}>
                     <Link
                       to={`/products/${product.id}`}
                       className="flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-lg transition-colors -mx-2 px-2"
@@ -241,6 +242,8 @@ export const OrderDetail: React.FC = () => {
                                     initialComment: existingReview.comment,
                                   })}
                                   className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 transition-colors"
+                                  data-testid={`review-btn-${product.id}`}
+                                  aria-label={`Write review for ${product.name}`}
                                 >
                                   <Pencil className="w-3 h-3" />
                                   Edit
@@ -258,6 +261,8 @@ export const OrderDetail: React.FC = () => {
                               productImage: product.image,
                             })}
                             className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 transition-colors"
+                            data-testid={`review-btn-${product.id}`}
+                            aria-label={`Write review for ${product.name}`}
                           >
                             <Star className="w-3.5 h-3.5" />
                             Write a Review
@@ -369,6 +374,7 @@ export const OrderDetail: React.FC = () => {
             variant="success"
             loading={confirmingReceipt}
             onClick={handleConfirmReceived}
+            data-testid="confirm-received-btn"
           >
             <CheckCircle className="w-4 h-4 mr-1.5" />
             Order Received

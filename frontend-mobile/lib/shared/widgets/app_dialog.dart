@@ -46,9 +46,11 @@ class AppDialog extends StatelessWidget {
     String cancelLabel = 'Cancel',
     required String confirmLabel,
     Color? confirmColor,
+    bool useRootNavigator = false,
   }) {
     return showDialog<bool>(
       context: context,
+      useRootNavigator: useRootNavigator,
       barrierColor: Colors.black54,
       builder: (dialogContext) => AppDialog(
         icon: icon,

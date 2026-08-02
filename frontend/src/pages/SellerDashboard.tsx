@@ -215,7 +215,7 @@ export const SellerDashboard: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="seller-dashboard">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -295,6 +295,7 @@ export const SellerDashboard: React.FC = () => {
                       ? 'border-primary-600 text-primary-600'
                       : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
                   }`}
+                  data-testid={`seller-tab-${key}`}
                 >
                   <Icon className="w-4 h-4" />
                   {label}
@@ -343,7 +344,7 @@ export const SellerDashboard: React.FC = () => {
                 </div>
               );
             })()}
-            <Button onClick={openCreate}>
+            <Button onClick={openCreate} data-testid="add-product-btn">
               <Plus className="w-4 h-4 mr-2" />
               Add Product
             </Button>
@@ -360,7 +361,7 @@ export const SellerDashboard: React.FC = () => {
 
           {/* Products List */}
           {loadingProducts ? (
-            <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+            <div className="flex justify-center py-12" data-testid="seller-loading" aria-busy={loadingProducts}><Spinner size="lg" /></div>
           ) : products.length === 0 ? (
             <Card className="text-center py-12">
               <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-3" />
@@ -379,7 +380,7 @@ export const SellerDashboard: React.FC = () => {
             return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map(product => (
-                <Card key={product.id} padding="none" className="flex flex-col overflow-hidden">
+                <Card key={product.id} padding="none" className="flex flex-col overflow-hidden" data-testid={`product-item-${product.id}`}>
                   <div className="aspect-square bg-gray-100 dark:bg-gray-700 relative overflow-hidden">
                     <ImgWithFallback src={product.image} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
                     <span className={`absolute top-2 right-2 text-xs font-semibold px-2 py-1 rounded-full ${
@@ -402,14 +403,16 @@ export const SellerDashboard: React.FC = () => {
                         <button
                           onClick={() => openEdit(product)}
                           className="p-2 rounded-lg text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                          aria-label="Edit product"
+                          aria-label={`Edit ${product.name}`}
+                          data-testid={`edit-product-${product.id}`}
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(product.id)}
                           className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          aria-label="Delete product"
+                          aria-label={`Delete ${product.name}`}
+                          data-testid={`delete-product-${product.id}`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -505,7 +508,7 @@ export const SellerDashboard: React.FC = () => {
                 : '?';
 
               return (
-                <Card key={order.id} padding="none" className={`overflow-hidden border-l-4 ${borderClass}`}>
+                <Card key={order.id} padding="none" className={`overflow-hidden border-l-4 ${borderClass}`} data-testid={`seller-order-card-${order.id}`}>
                   {/* ── Header ── */}
                   <div className="flex items-center gap-3 px-5 py-3 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-700/60">
                     <span className="font-mono text-sm font-bold text-gray-800 dark:text-gray-100 tracking-wide">
@@ -636,22 +639,22 @@ export const SellerDashboard: React.FC = () => {
 
                   {/* ── Action footer ── */}
                   <div className="flex items-center gap-2 px-5 py-3 border-t border-gray-100 dark:border-gray-700/60 bg-gray-50/50 dark:bg-gray-800/30">
-                    <Button size="sm" variant="outline" onClick={() => navigate(`/seller/orders/${order.id}`, { state: { order } })} className="flex-shrink-0">
+                    <Button size="sm" variant="outline" onClick={() => navigate(`/seller/orders/${order.id}`, { state: { order } })} className="flex-shrink-0" data-testid={`view-order-${order.id}`}>
                       <Eye className="w-4 h-4 mr-1.5" /> View Details
                     </Button>
                     <div className="flex-1" />
                     {canAccept && (
-                      <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'preparing')}>
+                      <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'preparing')} data-testid={`order-action-${order.id}`} aria-label="Prepare order">
                         <ClipboardList className="w-4 h-4 mr-1.5" /> Prepare
                       </Button>
                     )}
                     {canToShip && (
-                      <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'processing')}>
+                      <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'processing')} data-testid={`order-action-${order.id}`} aria-label="Mark order to ship">
                         <Package className="w-4 h-4 mr-1.5" /> Mark to Ship
                       </Button>
                     )}
                     {canToReceive && (
-                      <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'shipped')}>
+                      <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'shipped')} data-testid={`order-action-${order.id}`} aria-label="Mark order shipped">
                         <Truck className="w-4 h-4 mr-1.5" /> Mark Shipped
                       </Button>
                     )}

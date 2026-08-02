@@ -97,7 +97,7 @@ export const Login: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5" data-testid="login-form">
             {apiError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3" role="alert">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3" role="alert" data-testid="login-error-alert">
                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" aria-hidden />
                 <div>
                   <p className="text-sm font-medium text-red-800">Login Failed</p>
@@ -158,7 +158,7 @@ export const Login: React.FC = () => {
               </a>
             </div>
 
-            <Button type="submit" fullWidth size="lg" loading={loading}>
+            <Button type="submit" fullWidth size="lg" loading={loading} data-testid="login-submit-btn">
               <LogIn className="w-5 h-5 mr-2" />
               Sign In
             </Button>
@@ -168,6 +168,7 @@ export const Login: React.FC = () => {
             <button
               onClick={() => navigate('/')}
               className="text-sm text-gray-400 hover:text-gray-300 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+              data-testid="back-to-home-btn"
             >
               ← Back to Home
             </button>

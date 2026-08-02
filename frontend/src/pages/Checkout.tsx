@@ -377,7 +377,7 @@ export const Checkout: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="checkout-page">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -452,7 +452,7 @@ export const Checkout: React.FC = () => {
         <div className="lg:col-span-2">
           {/* Shipping Information */}
           {step === 'shipping' && (
-            <Card padding="lg">
+            <Card padding="lg" data-testid="shipping-section">
               <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                 <MapPin className="w-6 h-6" />
                 Shipping Information
@@ -595,7 +595,7 @@ export const Checkout: React.FC = () => {
 
           {/* Payment Information */}
           {step === 'payment' && (
-            <Card padding="lg">
+            <Card padding="lg" data-testid="payment-section">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                 <CreditCard className="w-6 h-6" />
                 Payment Information
@@ -1092,7 +1092,7 @@ export const Checkout: React.FC = () => {
                 <Button variant="outline" onClick={() => setStep('payment')}>
                   Back
                 </Button>
-                <Button size="lg" onClick={handlePlaceOrder} loading={loading}>
+                <Button size="lg" onClick={handlePlaceOrder} loading={loading} data-testid="place-order-btn">
                   <Package className="w-5 h-5 mr-2" />
                   Place Order
                 </Button>
@@ -1103,7 +1103,7 @@ export const Checkout: React.FC = () => {
 
         {/* Order Summary Sidebar */}
         <div className="lg:col-span-1">
-          <Card padding="lg" className="sticky top-6">
+          <Card padding="lg" className="sticky top-6" data-testid="order-summary">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
 
             {sellerGroups.map((group) => (

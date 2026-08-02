@@ -503,9 +503,49 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     if (file != null) setState(() => _pickedFiles.add(file));
   }
 
-  void _showImageSourceSheet() {
-    showModalBottomSheet(
+  Future<void> _pickVariantFromGallery(
+    _VariantRow row,
+    StateSetter setRowState,
+  ) async {
+    final granted = await MediaPermissionService.requestGallery(context);
+    if (!granted || !mounted) return;
+    final files = await _picker.pickMultiImage(imageQuality: 85);
+    if (files.isEmpty) return;
+    await _uploadVariantFiles(files, row, setRowState);
+  }
+
+  Future<void> _pickVariantFromCamera(
+    _VariantRow row,
+    StateSetter setRowState,
+  ) async {
+    final granted = await MediaPermissionService.requestCamera(context);
+    if (!granted || !mounted) return;
+    final file =
+        await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+    if (file == null) return;
+    await _uploadVariantFiles([file], row, setRowState);
+  }
+
+  Future<void> _uploadVariantFiles(
+    List<XFile> files,
+    _VariantRow row,
+    StateSetter setRowState,
+  ) async {
+    for (final file in files) {
+      try {
+        final url =
+            await context.read<SellerBloc>().uploadVariantImage(file.path);
+        if (!mounted) return;
+        setRowState(() => row.imageUrls.add(url));
+        setState(() {});
+      } catch (_) {}
+    }
+  }
+
+  Future<String?> _pickImageSource() {
+    return showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -529,25 +569,49 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 title: const Text(AppStrings.chooseFromGallery,
                     style:
                         TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickFromGallery();
-                },
+                onTap: () => Navigator.pop(ctx, 'gallery'),
               ),
               ListTile(
                 leading: _iconBox(Icons.camera_alt_outlined),
                 title: const Text(AppStrings.takeAPhoto,
                     style:
                         TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickFromCamera();
-                },
+                onTap: () => Navigator.pop(ctx, 'camera'),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _handleImageSourcePick({
+    required Future<void> Function() onGallery,
+    required Future<void> Function() onCamera,
+  }) async {
+    final source = await _pickImageSource();
+    if (!mounted || source == null) return;
+    if (source == 'gallery') {
+      await onGallery();
+    } else {
+      await onCamera();
+    }
+  }
+
+  void _showProductImageSourceSheet() {
+    _handleImageSourcePick(
+      onGallery: _pickFromGallery,
+      onCamera: _pickFromCamera,
+    );
+  }
+
+  void _showVariantImageSourceSheet(
+    _VariantRow row,
+    StateSetter setRowState,
+  ) {
+    _handleImageSourcePick(
+      onGallery: () => _pickVariantFromGallery(row, setRowState),
+      onCamera: () => _pickVariantFromCamera(row, setRowState),
     );
   }
 
@@ -1113,7 +1177,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               child: _MultiImagePicker(
             existingUrls: _existingImageUrls,
             files: _pickedFiles,
-            onAdd: _showImageSourceSheet,
+            onAdd: _showProductImageSourceSheet,
             onRemoveExisting: (i) =>
                 setState(() => _existingImageUrls.removeAt(i)),
             onRemove: (i) => setState(() => _pickedFiles.removeAt(i)),
@@ -1496,17 +1560,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     ),
                   const SizedBox(height: 6),
                   GestureDetector(
-                    onTap: () async {
-                      final picked = await _picker.pickMultiImage(imageQuality: 85);
-                      if (picked.isEmpty) return;
-                      for (final file in picked) {
-                        try {
-                          final url = await context.read<SellerBloc>().uploadVariantImage(file.path);
-                          setRowState(() => row.imageUrls.add(url));
-                          setState(() {});
-                        } catch (_) {}
-                      }
-                    },
+                    onTap: () =>
+                        _showVariantImageSourceSheet(row, setRowState),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                       decoration: BoxDecoration(

@@ -41,6 +41,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
       padding="none"
       className="flex flex-col overflow-hidden group"
       onClick={() => navigate(`/products/${product.id}`)}
+      data-testid={`product-card-${product.id}`}
+      aria-label={`${product.name}, ${formatCurrency(effectivePrice)}`}
     >
       {/* Image */}
       <div className="relative aspect-square overflow-hidden bg-gray-50 dark:bg-gray-700">

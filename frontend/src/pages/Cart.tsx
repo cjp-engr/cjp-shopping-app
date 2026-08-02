@@ -122,7 +122,7 @@ export const Cart: React.FC = () => {
 
   if (cart.items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4" data-testid="cart-empty">
         <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-6">
           <ShoppingCart className="w-12 h-12 text-gray-300" />
         </div>
@@ -142,7 +142,7 @@ export const Cart: React.FC = () => {
 
   return (
     <>
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="cart-page">
       {/* Stale-item notice */}
       {removedCount > 0 && (
         <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm">
@@ -191,7 +191,7 @@ export const Cart: React.FC = () => {
           {sellerGroups.map((group) => {
             const activeVoucher = voucherSelections[group.key];
             return (
-            <div key={group.key} className="space-y-3">
+            <div key={group.key} className="space-y-3" data-testid={`cart-seller-group-${group.key}`}>
               {/* Seller header */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -228,7 +228,7 @@ export const Cart: React.FC = () => {
                 const discountPct = hasVariantDiscount ? selectedVariant!.discount! : (product.discount ?? 0);
                 const displayImage = selectedVariant?.image || product.image;
                 return (
-                  <Card key={variantKey ?? product.id} padding="none">
+                  <Card key={variantKey ?? product.id} padding="none" data-testid={`cart-item-${product.id}${selectedVariant ? `-${selectedVariant._id ?? selectedVariant.key}` : ''}`}>
                     <div className="flex gap-4 p-4">
                       {/* Image */}
                       <div
@@ -273,7 +273,8 @@ export const Cart: React.FC = () => {
                         <button
                           onClick={() => removeFromCart(product.id, variantKey)}
                           className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          aria-label="Remove item"
+                          aria-label={`Remove ${product.name} from cart`}
+                          data-testid="remove-item-btn"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -284,6 +285,7 @@ export const Cart: React.FC = () => {
                             disabled={quantity <= 1}
                             className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             aria-label="Decrease quantity"
+                            data-testid="qty-decrement"
                           >
                             <Minus className="w-3.5 h-3.5" />
                           </button>
@@ -295,6 +297,7 @@ export const Cart: React.FC = () => {
                             disabled={quantity >= effectiveStock}
                             className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             aria-label="Increase quantity"
+                            data-testid="qty-increment"
                           >
                             <Plus className="w-3.5 h-3.5" />
                           </button>
@@ -309,7 +312,7 @@ export const Cart: React.FC = () => {
 
               {/* Delivery option selector for buyer_pays sellers */}
               {group.shippingMode === 'buyer_pays' && group.shippingOptions.length > 0 && (
-                <div className="rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/40 px-4 py-3">
+                <div className="rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/40 px-4 py-3" data-testid={`delivery-select-${group.key}`}>
                   <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1.5">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12h12l1-12" />
@@ -349,6 +352,7 @@ export const Cart: React.FC = () => {
               <button
                 onClick={() => setVoucherModalKey(group.key)}
                 className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-dashed border-primary-300 dark:border-primary-700 bg-primary-50/40 dark:bg-primary-900/10 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                data-testid={`select-voucher-btn-${group.key}`}
               >
                 <span className="flex items-center gap-2 text-xs font-medium text-primary-600 dark:text-primary-400">
                   <Ticket className="w-3.5 h-3.5" />
@@ -409,7 +413,7 @@ export const Cart: React.FC = () => {
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
-          <Card padding="lg" className="sticky top-20">
+          <Card padding="lg" className="sticky top-20" data-testid="cart-summary">
             <h2 className="text-lg font-bold text-gray-900 mb-5">Order Summary</h2>
 
             <div className="space-y-3 text-sm mb-5">
@@ -446,7 +450,7 @@ export const Cart: React.FC = () => {
               )}
             </div>
 
-            <Button fullWidth size="lg" onClick={handleCheckout}>
+            <Button fullWidth size="lg" onClick={handleCheckout} data-testid="checkout-btn">
               Proceed to Checkout
             </Button>
 

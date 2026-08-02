@@ -29,7 +29,7 @@ export const MyProducts: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="my-products-page">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <Store className="w-6 h-6 text-primary-600" />
@@ -41,7 +41,7 @@ export const MyProducts: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+        <div className="flex justify-center py-16" data-testid="my-products-loading" aria-busy={loading}><Spinner size="lg" /></div>
       ) : products.length === 0 ? (
         <Card className="text-center py-16">
           <Package className="w-16 h-16 text-gray-300 mx-auto mb-3" />
@@ -65,6 +65,7 @@ export const MyProducts: React.FC = () => {
                       ? 'bg-primary-600 text-white border-primary-600'
                       : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400'
                   }`}
+                  data-testid={`my-products-category-filter-${cat.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   {cat}
                   <span className={`text-xs px-1.5 py-0.5 rounded-full ${

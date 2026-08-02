@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../widgets/app_dialog.dart';
@@ -30,6 +32,9 @@ class MediaPermissionService {
       title: 'Photo & Video Access',
       reason:
           'TokoMart needs access to your photos and videos to let you upload product images.',
+      // Android 13+ photo picker can work without READ_MEDIA_IMAGES once the
+      // seller consents in our rationale dialog.
+      allowAfterRationaleWithoutGrant: Platform.isAndroid,
     );
   }
 
@@ -39,45 +44,81 @@ class MediaPermissionService {
     required IconData icon,
     required String title,
     required String reason,
+    bool allowAfterRationaleWithoutGrant = false,
   }) async {
     var status = await permission.status;
 
-    if (status.isGranted) return true;
+    if (_isEffectivelyGranted(status)) return true;
 
-    if (status.isDenied) {
-      if (!context.mounted) return false;
-      final proceed = await AppDialog.show(
-        context,
-        icon: icon,
-        iconColor: AppColors.primary,
-        iconBackground: AppColors.primaryLight,
-        title: title,
-        body: reason,
-        cancelLabel: 'Not Now',
-        confirmLabel: 'Allow Access',
-      );
-      if (proceed != true) return false;
-
-      status = await permission.request();
-      if (status.isGranted) return true;
+    if (status.isPermanentlyDenied || status.isRestricted) {
+      return _promptOpenSettings(context, title: title);
     }
 
-    if (status.isPermanentlyDenied) {
-      if (!context.mounted) return false;
-      final openSettings = await AppDialog.show(
-        context,
-        icon: Icons.settings_outlined,
-        iconColor: AppColors.warning,
-        iconBackground: AppColors.warningSurface,
-        title: '$title Required',
-        body: 'Permission was denied. Please enable it in your device settings to continue.',
-        cancelLabel: 'Cancel',
-        confirmLabel: 'Open Settings',
-        confirmColor: AppColors.warning,
-      );
-      if (openSettings == true) openAppSettings();
+    if (!context.mounted) return false;
+    final proceed = await _showRationale(
+      context,
+      icon: icon,
+      title: title,
+      reason: reason,
+    );
+    if (proceed != true) return false;
+
+    status = await permission.request();
+    if (_isEffectivelyGranted(status)) return true;
+
+    if (allowAfterRationaleWithoutGrant) return true;
+
+    if (status.isPermanentlyDenied || status.isRestricted) {
+      return _promptOpenSettings(context, title: title);
     }
 
+    return false;
+  }
+
+  static bool _isEffectivelyGranted(PermissionStatus status) {
+    return status.isGranted || status.isLimited;
+  }
+
+  /// Shows rationale dialog; caller must await bottom sheet dismissal first.
+  static Future<bool?> _showRationale(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String reason,
+  }) async {
+    if (!context.mounted) return false;
+    return AppDialog.show(
+      context,
+      useRootNavigator: true,
+      icon: icon,
+      iconColor: AppColors.primary,
+      iconBackground: AppColors.primaryLight,
+      title: title,
+      body: reason,
+      cancelLabel: 'Not Now',
+      confirmLabel: 'Allow Access',
+    );
+  }
+
+  static Future<bool> _promptOpenSettings(
+    BuildContext context, {
+    required String title,
+  }) async {
+    if (!context.mounted) return false;
+    final openSettings = await AppDialog.show(
+      context,
+      useRootNavigator: true,
+      icon: Icons.settings_outlined,
+      iconColor: AppColors.warning,
+      iconBackground: AppColors.warningSurface,
+      title: '$title Required',
+      body:
+          'Permission was denied. Please enable it in your device settings to continue.',
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Open Settings',
+      confirmColor: AppColors.warning,
+    );
+    if (openSettings == true) await openAppSettings();
     return false;
   }
 }

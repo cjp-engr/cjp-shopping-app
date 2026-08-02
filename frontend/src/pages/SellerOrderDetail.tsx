@@ -130,11 +130,12 @@ export const SellerOrderDetail: React.FC = () => {
   const buyerName = order.buyer ? `${order.buyer.firstName} ${order.buyer.lastName}` : null;
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-6 max-w-2xl mx-auto" data-testid="seller-order-detail-page">
       {/* Back link */}
       <button
         onClick={() => navigate('/seller?tab=orders')}
         className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium transition-colors"
+        data-testid="back-to-seller-orders-btn"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Orders
@@ -148,7 +149,7 @@ export const SellerOrderDetail: React.FC = () => {
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{formatDate(order.createdAt)}</p>
         </div>
-        <Badge variant={statusConfig.variant} className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
+        <Badge variant={statusConfig.variant} className="flex items-center gap-1.5 px-3 py-1.5 text-sm" data-testid="seller-order-status-badge">
           <StatusIcon className="w-4 h-4" />
           {statusConfig.label}
         </Badge>
@@ -203,6 +204,7 @@ export const SellerOrderDetail: React.FC = () => {
                 type="button"
                 onClick={() => navigate(`/products/${product.id}`)}
                 className="w-full flex gap-4 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors text-left group"
+                data-testid={`seller-order-item-${product.id}`}
               >
                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
                   <ImgWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
@@ -361,17 +363,17 @@ export const SellerOrderDetail: React.FC = () => {
       {(canAccept || canToShip || canToReceive || canCancel) && (
         <div className="flex flex-wrap gap-3 pb-8">
           {canAccept && (
-            <Button loading={statusLoading} onClick={() => handleStatusUpdate('preparing')}>
+            <Button loading={statusLoading} onClick={() => handleStatusUpdate('preparing')} data-testid="seller-order-action-btn" aria-label="Prepare order">
               <ClipboardList className="w-4 h-4 mr-1.5" /> Prepare
             </Button>
           )}
           {canToShip && (
-            <Button loading={statusLoading} onClick={() => handleStatusUpdate('processing')}>
+            <Button loading={statusLoading} onClick={() => handleStatusUpdate('processing')} data-testid="seller-order-action-btn" aria-label="Mark order to ship">
               <Package className="w-4 h-4 mr-1.5" /> Mark to Ship
             </Button>
           )}
           {canToReceive && (
-            <Button loading={statusLoading} onClick={() => handleStatusUpdate('shipped')}>
+            <Button loading={statusLoading} onClick={() => handleStatusUpdate('shipped')} data-testid="seller-order-action-btn" aria-label="Mark order shipped">
               <Truck className="w-4 h-4 mr-1.5" /> Mark Shipped
             </Button>
           )}
@@ -380,6 +382,8 @@ export const SellerOrderDetail: React.FC = () => {
               variant="outline"
               onClick={() => setCancelDialog({ open: true, reason: '', loading: false })}
               className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+              data-testid="seller-cancel-order-btn"
+              aria-label="Cancel order"
             >
               <XCircle className="w-4 h-4 mr-1.5" /> Cancel Order
             </Button>

@@ -119,7 +119,7 @@ export const Signup: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="signup-form">
             {apiError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3" role="alert">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3" role="alert" data-testid="signup-error-alert">
                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" aria-hidden />
                 <div>
                   <p className="text-sm font-medium text-red-800">Signup Failed</p>
@@ -207,14 +207,14 @@ export const Signup: React.FC = () => {
               {errors.terms && <p className="mt-1 text-sm text-red-500">{errors.terms}</p>}
             </div>
 
-            <Button type="submit" fullWidth size="lg" loading={loading}>
+            <Button type="submit" fullWidth size="lg" loading={loading} data-testid="signup-submit-btn">
               <UserPlus className="w-5 h-5 mr-2" />
               Create Account
             </Button>
           </form>
 
           <div className="mt-6 text-center">
-            <button onClick={() => navigate('/')} className="text-sm text-gray-400 hover:text-gray-300 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">
+            <button onClick={() => navigate('/')} className="text-sm text-gray-400 hover:text-gray-300 dark:text-gray-500 dark:hover:text-gray-300 transition-colors" data-testid="back-to-home-btn">
               ← Back to Home
             </button>
           </div>

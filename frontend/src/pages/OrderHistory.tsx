@@ -132,14 +132,14 @@ export const OrderHistory: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[60vh]" data-testid="orders-loading" aria-busy={loading}>
         <Spinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="orders-page">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -170,7 +170,7 @@ export const OrderHistory: React.FC = () => {
       )}
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200" data-testid="order-tabs">
         <nav className="-mb-px flex gap-0 overflow-x-auto scrollbar-none" aria-label="Order status tabs">
           {TABS.map((tab) => {
             const count = tabCount(tab);
@@ -185,6 +185,7 @@ export const OrderHistory: React.FC = () => {
                     ? 'border-primary-600 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
+                data-testid={`order-tab-${tab.key}`}
               >
                 {tab.label}
                 <span
@@ -202,7 +203,7 @@ export const OrderHistory: React.FC = () => {
 
       {/* Orders list */}
       {filteredOrders.length === 0 ? (
-        <Card className="text-center py-16">
+        <Card className="text-center py-16" data-testid="orders-empty">
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
             <Package className="w-8 h-8 text-gray-300" />
           </div>
@@ -243,7 +244,7 @@ export const OrderHistory: React.FC = () => {
               const cardKey = `${order.id}-${sellerKey}`;
 
               return (
-                <Card key={cardKey} padding="none" className={`overflow-hidden ${successOrderId === order.id ? 'ring-2 ring-green-500' : ''}`}>
+                <Card key={cardKey} padding="none" className={`overflow-hidden ${successOrderId === order.id ? 'ring-2 ring-green-500' : ''}`} data-testid={`order-card-${order.id}`}>
                   {/* Seller header — navigates to order detail */}
                   <Link
                     to={`/orders/${order.id}`}
@@ -412,7 +413,7 @@ export const OrderHistory: React.FC = () => {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 px-5 py-3 border-t border-gray-100 dark:border-gray-700">
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/orders/${order.id}`)}>
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/orders/${order.id}`)} data-testid="view-order-btn" aria-label={`View order ${order.id}`}>
                       <Eye className="w-4 h-4 mr-1.5" /> View Details
                     </Button>
                     <div className="flex-1" />

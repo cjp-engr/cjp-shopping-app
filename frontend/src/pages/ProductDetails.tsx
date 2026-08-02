@@ -212,7 +212,7 @@ export const ProductDetails: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[60vh]" data-testid="product-detail-loading">
         <Spinner size="lg" />
       </div>
     );
@@ -245,7 +245,7 @@ export const ProductDetails: React.FC = () => {
   const showBuyerUI = !isOwnProduct || previewMode;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-testid="product-detail-page">
       {/* Breadcrumb + preview toggle */}
       <div className="flex items-center justify-between">
         <button
@@ -282,13 +282,14 @@ export const ProductDetails: React.FC = () => {
       {/* Product Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Image Gallery */}
-        <div className="space-y-4">
+        <div className="space-y-4" data-testid="product-image-gallery">
           <Card padding="sm">
             <div className="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
               <img
                 src={displayImages[selectedImage] ?? displayImages[0]}
                 alt={product.name}
                 className="w-full h-full object-cover"
+                data-testid="product-main-image"
               />
             </div>
           </Card>
@@ -322,7 +323,7 @@ export const ProductDetails: React.FC = () => {
             <Badge variant="primary" className="mb-3">
               {product.category}
             </Badge>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2" data-testid="product-name">
               {product.name}
             </h1>
 
@@ -347,7 +348,7 @@ export const ProductDetails: React.FC = () => {
             )}
 
             {/* Price */}
-            <div className="mb-6">
+            <div className="mb-6" data-testid="product-price">
               <div className="flex items-baseline gap-3">
                 {selectedVariant?.discount && selectedVariant.discount > 0 ? (
                   <>
@@ -405,7 +406,7 @@ export const ProductDetails: React.FC = () => {
             {hasVariants && showBuyerUI && (
               <div className="space-y-4 mb-6">
                 {product.variantAttributes!.map(attr => (
-                  <div key={attr.name}>
+                  <div key={attr.name} data-testid={`variant-attr-${attr.name}`}>
                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                       {attr.name}{selectedAttrs[attr.name] && (
                         <span className="font-normal text-gray-500 dark:text-gray-400">
@@ -426,6 +427,7 @@ export const ProductDetails: React.FC = () => {
                               setQuantity(1);
                             }}
                             disabled={!available}
+                            data-testid={`variant-value-${attr.name}-${value}`}
                             className={`relative px-4 py-2 text-sm font-medium rounded-xl border-2 transition-all ${
                               selected
                                 ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
@@ -506,7 +508,7 @@ export const ProductDetails: React.FC = () => {
             )}
 
             {/* Stock Status — only show when not using variant selector (which has its own inline stock info) */}
-            <div className="mb-6">
+            <div className="mb-6" data-testid="product-stock">
               {!hasVariants && (effectiveStock > 0 ? (
                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                   <Package className="w-5 h-5" />
@@ -542,6 +544,7 @@ export const ProductDetails: React.FC = () => {
                     disabled={quantity <= 1}
                     className="w-11 h-11 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
                     aria-label="Decrease quantity"
+                    data-testid="qty-decrement"
                   >
                     <Minus className="w-4 h-4" />
                   </button>
@@ -553,11 +556,12 @@ export const ProductDetails: React.FC = () => {
                     disabled={quantity >= effectiveStock}
                     className="w-11 h-11 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
                     aria-label="Increase quantity"
+                    data-testid="qty-increment"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
-                <Button size="lg" fullWidth onClick={handleAddToCart} className="flex-1">
+                <Button size="lg" fullWidth onClick={handleAddToCart} className="flex-1" data-testid="add-to-cart-btn">
                   <ShoppingCart className="w-5 h-5 mr-2" />
                   Add to Cart
                 </Button>
