@@ -23,13 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
-.claude
-.agents
+# Agent local state (skills live in /skills at repo root)
+.claude/
+.agents/
+.cursor/
 
 .patrol.env
 
-.cursorignore
-
 plans
-
-tokomart-details

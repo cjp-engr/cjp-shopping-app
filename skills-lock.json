@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "skillsRoot": "skills",
   "skills": {
     "backend-patterns": {
       "source": "affaan-m/ECC",
@@ -22,7 +23,7 @@
     "frontend-code-review": {
       "source": "langflow-ai/langflow",
       "sourceType": "github",
-      "skillPath": ".agents/skills/frontend-code-review/SKILL.md",
+      "skillPath": "skills/frontend-code-review/SKILL.md",
       "computedHash": "88e8443ae06325d11e172421a354b0151899239477820018c3f195fbaa777c3e"
     },
     "frontend-patterns": {
@@ -46,8 +47,38 @@
     "ui-ux-pro-max": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
       "sourceType": "github",
-      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "skillPath": "skills/ui-ux-pro-max/SKILL.md",
       "computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
+    },
+    "tokomart-domain": {
+      "source": "local",
+      "sourceType": "project",
+      "skillPath": "skills/tokomart-domain/SKILL.md"
+    },
+    "create-scenarios": {
+      "source": "local",
+      "sourceType": "project",
+      "skillPath": "skills/create-scenarios/SKILL.md"
+    },
+    "generate-tests": {
+      "source": "local",
+      "sourceType": "project",
+      "skillPath": "skills/generate-tests/SKILL.md"
+    },
+    "playwright-best-practices": {
+      "source": "local",
+      "sourceType": "project",
+      "skillPath": "skills/playwright-best-practices/SKILL.md"
+    },
+    "review-tests": {
+      "source": "local",
+      "sourceType": "project",
+      "skillPath": "skills/review-tests/SKILL.md"
+    },
+    "test-strategy": {
+      "source": "local",
+      "sourceType": "project",
+      "skillPath": "skills/test-strategy/SKILL.md"
     }
   }
 }
