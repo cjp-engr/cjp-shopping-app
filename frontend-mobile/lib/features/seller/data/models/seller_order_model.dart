@@ -14,11 +14,12 @@ class SellerOrderAddress {
   });
 
   String get formatted {
-    final line2 = [city, state, zipCode]
-        .where((s) => s.isNotEmpty)
-        .join(', ');
-    return [street, if (line2.isNotEmpty) line2, if (country.isNotEmpty) country]
-        .join('\n');
+    final line2 = [city, state, zipCode].where((s) => s.isNotEmpty).join(', ');
+    return [
+      street,
+      if (line2.isNotEmpty) line2,
+      if (country.isNotEmpty) country
+    ].join('\n');
   }
 
   factory SellerOrderAddress.fromJson(Map<String, dynamic> json) {
@@ -46,6 +47,44 @@ class SellerOrderBuyer {
   });
 
   String get fullName => '$firstName $lastName'.trim();
+}
+
+class SellerOrderPayment {
+  final String type;
+  final String last4;
+  final String cardHolder;
+
+  const SellerOrderPayment({
+    required this.type,
+    this.last4 = '',
+    this.cardHolder = '',
+  });
+
+  static const _labels = {
+    'credit-card': 'Credit Card',
+    'debit-card': 'Debit Card',
+    'paypal': 'PayPal',
+    'cash-on-delivery': 'Cash on Delivery',
+  };
+
+  String get methodLabel => _labels[type] ??
+      type
+          .split('-')
+          .map((part) => part.isEmpty
+              ? part
+              : '${part[0].toUpperCase()}${part.substring(1)}')
+          .join(' ');
+
+  String get maskedCard =>
+      last4.isEmpty ? methodLabel : '$methodLabel •••• $last4';
+
+  factory SellerOrderPayment.fromJson(Map<String, dynamic> json) {
+    return SellerOrderPayment(
+      type: json['type']?.toString() ?? '',
+      last4: json['last4']?.toString() ?? '',
+      cardHolder: json['cardHolder']?.toString() ?? '',
+    );
+  }
 }
 
 class SellerOrderItemData {
@@ -85,10 +124,9 @@ class SellerOrderItemData {
     final attrs = _parseAttrs(json['selectedAttributes']);
     // productPrice is the variant price stored at order time — always prefer it
     final storedPrice = (json['productPrice'] as num?)?.toDouble();
-    final discountPercent =
-        (json['discountPercent'] as num?)?.toDouble() ??
-            (json['variantDiscount'] as num?)?.toDouble() ??
-            0;
+    final discountPercent = (json['discountPercent'] as num?)?.toDouble() ??
+        (json['variantDiscount'] as num?)?.toDouble() ??
+        0;
     if (product is Map) {
       return SellerOrderItemData(
         productId: product['_id']?.toString() ?? '',
@@ -123,8 +161,10 @@ class SellerOrderData {
   final double total;
   final String createdAt;
   final String? cancelReason;
+  final String? selectedDeliveryOption;
   final SellerOrderBuyer? buyer;
   final SellerOrderAddress? shippingAddress;
+  final SellerOrderPayment? paymentMethod;
   final List<SellerOrderItemData> items;
 
   const SellerOrderData({
@@ -139,8 +179,10 @@ class SellerOrderData {
     required this.createdAt,
     required this.items,
     this.cancelReason,
+    this.selectedDeliveryOption,
     this.buyer,
     this.shippingAddress,
+    this.paymentMethod,
   });
 
   String get shortId =>
@@ -152,9 +194,13 @@ class SellerOrderData {
   bool get canMarkToShip => status == 'preparing';
   bool get canMarkShipped => status == 'processing';
   bool get canCancel =>
-      status == 'pending' || status == 'preparing' || status == 'processing' || status == 'shipped';
+      status == 'pending' ||
+      status == 'preparing' ||
+      status == 'processing' ||
+      status == 'shipped';
 
-  SellerOrderData copyWith({String? status, String? cancelReason}) => SellerOrderData(
+  SellerOrderData copyWith({String? status, String? cancelReason}) =>
+      SellerOrderData(
         id: id,
         status: status ?? this.status,
         subtotal: subtotal,
@@ -165,8 +211,10 @@ class SellerOrderData {
         total: total,
         createdAt: createdAt,
         cancelReason: cancelReason ?? this.cancelReason,
+        selectedDeliveryOption: selectedDeliveryOption,
         buyer: buyer,
         shippingAddress: shippingAddress,
+        paymentMethod: paymentMethod,
         items: items,
       );
 
@@ -185,13 +233,13 @@ class SellerOrderData {
     final addrJson = json['shippingAddress'];
     SellerOrderAddress? shippingAddress;
     if (addrJson is Map) {
-      shippingAddress = SellerOrderAddress.fromJson(
-          addrJson.cast<String, dynamic>());
+      shippingAddress =
+          SellerOrderAddress.fromJson(addrJson.cast<String, dynamic>());
     }
 
     final itemList = (json['items'] as List?)
-            ?.map((e) =>
-                SellerOrderItemData.fromJson(e as Map<String, dynamic>))
+            ?.map(
+                (e) => SellerOrderItemData.fromJson(e as Map<String, dynamic>))
             .toList() ??
         [];
 
@@ -201,10 +249,23 @@ class SellerOrderData {
     final tx = (json['tax'] as num?)?.toDouble() ?? 0;
     final sh = (json['shipping'] as num?)?.toDouble() ?? 0;
 
+    String? deliveryOption;
+    final ds = json['deliverySelections'];
+    if (ds is Map && ds.isNotEmpty) {
+      deliveryOption = ds.values.first?.toString();
+    }
+    deliveryOption ??= json['selectedDeliveryOption'] as String?;
+
+    final paymentJson = json['paymentMethod'];
+    final paymentMethod = paymentJson is Map
+        ? SellerOrderPayment.fromJson(paymentJson.cast<String, dynamic>())
+        : null;
+
     return SellerOrderData(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       status: json['status'] ?? 'pending',
       cancelReason: json['cancelReason'] as String?,
+      selectedDeliveryOption: deliveryOption,
       subtotal: sub,
       productDiscount: prodDisc,
       discount: disc,
@@ -214,6 +275,7 @@ class SellerOrderData {
       createdAt: json['createdAt'] ?? '',
       buyer: buyer,
       shippingAddress: shippingAddress,
+      paymentMethod: paymentMethod,
       items: itemList,
     );
   }

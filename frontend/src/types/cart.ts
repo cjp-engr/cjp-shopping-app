@@ -7,6 +7,7 @@ export interface SelectedVariant {
   stock: number;
   sku?: string;
   discount?: number;
+  image?: string;
   /** Stable composite key: "Attr1:Val1|Attr2:Val2" (sorted) */
   key: string;
 }

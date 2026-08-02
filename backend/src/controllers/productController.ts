@@ -291,13 +291,13 @@ export const getSellerPublicProfile = async (req: Request, res: Response) => {
 // @desc    Get product categories
 // @route   GET /api/products/categories/all
 // @access  Public
+const PREDEFINED_CATEGORIES = ['Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports & Outdoors'];
+
 export const getCategories = async (req: Request, res: Response) => {
   try {
-    const categories = await Product.distinct('category');
-
     res.status(200).json({
       success: true,
-      categories
+      categories: PREDEFINED_CATEGORIES
     });
   } catch (error) {
     res.status(500).json({

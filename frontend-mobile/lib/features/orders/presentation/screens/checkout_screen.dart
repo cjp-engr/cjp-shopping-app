@@ -151,6 +151,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final selectedItems = selectedIds.isEmpty
         ? cart.items
         : cart.items.where((i) => selectedIds.contains(i.product.id)).toList();
+    final deliverySelections = Map<String, String>.from(_deliverySelections);
+    for (final item in selectedItems) {
+      final sellerKey = item.product.sellerId ?? '__unknown__';
+      if (!deliverySelections.containsKey(sellerKey)) {
+        final defaultOption = item.product.shippingOptions.firstOrNull;
+        if (defaultOption != null) {
+          deliverySelections[sellerKey] = defaultOption;
+        }
+      }
+    }
+    final paymentMethod = _paymentSectionKey.currentState?.orderPaymentMethod ??
+        {'type': _paymentType};
     final items = selectedItems.map((i) {
       final entry = <String, dynamic>{
         'productId': i.product.id,
@@ -193,13 +205,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             'zipCode': _zipCtrl.text.trim(),
             'country': 'PH',
           },
-          'paymentMethod': {'type': _paymentType},
+          'paymentMethod': paymentMethod,
           'sellerMessages': {
             for (final e in _messageCtrls.entries)
               if (e.value.text.trim().isNotEmpty) e.key: e.value.text.trim(),
           },
           'couponCodes': Map<String, String>.from(_appliedVoucherCodes),
-          'deliverySelections': Map<String, String>.from(_deliverySelections),
+          'deliverySelections': deliverySelections,
           'contactEmail': user.email,
           'subtotal': afterDiscount,
           'tax': totalTax,
@@ -1252,6 +1264,28 @@ class _PaymentSectionState extends State<_PaymentSection> {
     }
   }
 
+  Map<String, dynamic> get orderPaymentMethod {
+    if (_mode == _CardMode.saved) {
+      final card =
+          widget.savedCards.where((c) => c.id == _selectedCardId).firstOrNull;
+      if (card != null) {
+        return {
+          'type': card.type,
+          'last4': card.last4,
+          'cardHolder': card.cardHolder,
+        };
+      }
+    }
+
+    final number = _cardNumberCtrl.text.replaceAll(' ', '');
+    return {
+      'type': widget.selected,
+      if (number.length >= 4) 'last4': number.substring(number.length - 4),
+      if (_cardHolderCtrl.text.trim().isNotEmpty)
+        'cardHolder': _cardHolderCtrl.text.trim(),
+    };
+  }
+
   Future<void> _savePaymentMethod() async {
     final num = _cardNumberCtrl.text.replaceAll(' ', '');
     if (num.length < 4) return;
@@ -1489,6 +1523,7 @@ class _PaymentSectionState extends State<_PaymentSection> {
               onMonthChanged: (v) => setState(() => _expiryMonth = v),
               onYearChanged: (v) => setState(() => _expiryYear = v),
             ),
+            if (widget.selected != 'cash-on-delivery') ...[
             const SizedBox(height: 10),
             Material(
               color: Colors.transparent,
@@ -1529,6 +1564,7 @@ class _PaymentSectionState extends State<_PaymentSection> {
                 ),
               ),
             ),
+            ], // end if not COD
           ],
         ],
       ),

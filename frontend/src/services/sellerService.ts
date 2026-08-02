@@ -1,6 +1,7 @@
 import type { Product } from '../types/product';
 import type { Order } from '../types/order';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
+import { resolveSelectedDeliveryOption } from '../utils/orderUtils';
 
 function parseTags(raw: unknown): string[] {
   if (!raw) return [];
@@ -152,6 +153,7 @@ const adaptOrder = (order: any): Order & { buyer?: { id: string; firstName: stri
   status: order.status,
   createdAt: order.createdAt,
   estimatedDelivery: order.estimatedDelivery,
+  selectedDeliveryOption: resolveSelectedDeliveryOption(order),
 });
 
 // Auth headers without Content-Type (browser sets it for multipart)

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import type { Order } from '../types/order';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { getStatusConfig } from '../utils/orderUtils';
+import { getStatusConfig, formatPaymentMethodType, formatDeliveryOption } from '../utils/orderUtils';
 import sellerService from '../services/sellerService';
 import {
   ArrowLeft,
@@ -24,12 +24,6 @@ type SellerOrder = Order & {
   buyer?: { id: string; firstName: string; lastName: string; email: string };
 };
 
-const PAYMENT_LABEL: Record<string, string> = {
-  'credit-card': 'Credit Card',
-  'debit-card':  'Debit Card',
-  'paypal':      'PayPal',
-};
-
 const ImgWithFallback: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className }) => {
   const [failed, setFailed] = useState(false);
   if (failed || !src) {
@@ -45,14 +39,47 @@ const ImgWithFallback: React.FC<{ src: string; alt: string; className?: string }
 export const SellerOrderDetail: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const order = (location.state as { order?: SellerOrder } | null)?.order ?? null;
+  const { id: orderIdParam } = useParams<{ id: string }>();
+  const initialOrder = (location.state as { order?: SellerOrder } | null)?.order ?? null;
 
+  const [order, setOrder] = useState<SellerOrder | null>(initialOrder);
+  const [loadingOrder, setLoadingOrder] = useState(!initialOrder);
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; reason: string; loading: boolean }>({
     open: false, reason: '', loading: false,
   });
-  const [currentStatus, setCurrentStatus] = useState(order?.status ?? '');
+  const [currentStatus, setCurrentStatus] = useState(initialOrder?.status ?? '');
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        setLoadingOrder(true);
+        const orders = await sellerService.getOrders() as SellerOrder[];
+        const match = orders.find(o => o.id === orderIdParam);
+        if (!cancelled && match) {
+          setOrder(match);
+          setCurrentStatus(match.status);
+        }
+      } catch {
+        // keep navigation state fallback
+      } finally {
+        if (!cancelled) setLoadingOrder(false);
+      }
+    };
+    if (orderIdParam) load();
+    return () => { cancelled = true; };
+  }, [orderIdParam]);
+
+  if (loadingOrder && !order) {
+    return (
+      <div className="text-center py-24">
+        <Package className="w-12 h-12 text-gray-300 mx-auto mb-4 animate-pulse" />
+        <p className="text-gray-500">Loading order...</p>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
@@ -240,6 +267,17 @@ export const SellerOrderDetail: React.FC = () => {
             </div>
           )}
           <div className="flex justify-between text-gray-600 dark:text-gray-400">
+            <span>Delivery Method</span>
+            <span className="capitalize font-medium text-gray-800 dark:text-gray-200">
+              {order.selectedDeliveryOption
+                ? formatDeliveryOption(order.selectedDeliveryOption)
+                : 'Standard'}
+              {order.shipping === 0
+                ? <span className="ml-1.5 text-xs text-emerald-600 dark:text-emerald-400">(Free shipping)</span>
+                : <span className="ml-1.5 text-xs text-gray-500">(Buyer pays)</span>}
+            </span>
+          </div>
+          <div className="flex justify-between text-gray-600 dark:text-gray-400">
             <span>Shipping</span>
             <span className="tabular-nums">
               {order.shipping === 0
@@ -288,7 +326,7 @@ export const SellerOrderDetail: React.FC = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {PAYMENT_LABEL[pay.type] ?? pay.type}
+                {formatPaymentMethodType(pay.type)}
                 {pay.last4 && <span className="ml-2 font-mono text-gray-500 dark:text-gray-400">•••• {pay.last4}</span>}
               </p>
               {pay.cardHolder && (

@@ -1,6 +1,7 @@
 import type { Order, CheckoutData, OrderStatus } from '../types/order';
 import type { Cart } from '../types/cart';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
+import { resolveSelectedDeliveryOption } from '../utils/orderUtils';
 
 class OrderService {
   async createOrder(checkoutData: CheckoutData, cart: Cart, _userId: string, couponCodes?: Record<string, string>, deliverySelections?: Record<string, string>): Promise<Order[]> {
@@ -199,7 +200,7 @@ class OrderService {
       cancelReason: order.cancelReason,
       createdAt: order.createdAt,
       estimatedDelivery: order.estimatedDelivery,
-      selectedDeliveryOption: order.selectedDeliveryOption,
+      selectedDeliveryOption: resolveSelectedDeliveryOption(order),
     };
   }
 }

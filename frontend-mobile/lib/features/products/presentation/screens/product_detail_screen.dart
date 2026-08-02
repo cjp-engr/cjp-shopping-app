@@ -414,6 +414,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   decoration: TextDecoration.lineThrough,
                                 ),
                               ),
+                              if (hasDiscount && variantSelected != null || hasProductDiscount)
+                              Text(
+                                'Save \$${(originalPrice - discountedPrice).toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF16A34A),
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -763,8 +772,7 @@ class _VariantSelector extends StatelessWidget {
                       color: context.onSurfaceColor,
                     ),
                   ),
-                  if (selectedAttrs[attr.name] != null) ...[
-                    const SizedBox(width: 6),
+                  if (selectedAttrs[attr.name] != null)
                     Text(
                       ': ${selectedAttrs[attr.name]}',
                       style: TextStyle(
@@ -773,7 +781,6 @@ class _VariantSelector extends StatelessWidget {
                         color: context.onSurfaceSecondary,
                       ),
                     ),
-                  ],
                 ],
               ),
               const SizedBox(height: 8),
@@ -856,8 +863,17 @@ class _VariantSelector extends StatelessWidget {
                 if (selectedVariant!.sku.isNotEmpty) ...[
                   const SizedBox(width: 12),
                   Text(
-                    'SKU: ${selectedVariant!.sku}',
+                    'SKU: ',
                     style: TextStyle(fontSize: 11, color: context.onSurfaceMuted),
+                  ),
+                  Text(
+                    selectedVariant!.sku,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: context.onSurfaceMuted,
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ],
@@ -941,7 +957,8 @@ class _ProductInfoTable extends StatelessWidget {
                           style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: context.onSurfaceColor)),
+                              color: context.onSurfaceColor,
+                              fontFamily: row.key == 'SKU' ? 'monospace' : null)),
                     ),
                   ],
                 ),

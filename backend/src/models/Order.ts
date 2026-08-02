@@ -18,7 +18,7 @@ export interface ICartItem {
 }
 
 export interface IPaymentMethod {
-  type: 'credit-card' | 'debit-card' | 'paypal';
+  type: 'credit-card' | 'debit-card' | 'paypal' | 'cash-on-delivery';
   last4?: string;
   cardHolder?: string;
 }
@@ -42,6 +42,7 @@ export interface IOrder extends Document {
   cancelReason?: string;
   sellerMessages?: Record<string, string>;
   deliverySelections?: Record<string, string>;
+  selectedDeliveryOption?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -87,7 +88,7 @@ const AddressSchema = new Schema<IAddress>({
 const PaymentMethodSchema = new Schema<IPaymentMethod>({
   type: {
     type: String,
-    enum: ['credit-card', 'debit-card', 'paypal'],
+    enum: ['credit-card', 'debit-card', 'paypal', 'cash-on-delivery'],
     required: true
   },
   last4: String,
@@ -124,6 +125,7 @@ const OrderSchema = new Schema<IOrder>({
     of: String,
     default: {}
   },
+  selectedDeliveryOption: { type: String },
   paymentMethod: {
     type: PaymentMethodSchema,
     required: true

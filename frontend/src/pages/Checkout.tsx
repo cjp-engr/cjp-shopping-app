@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SelectVoucherModal } from '../components/voucher/SelectVoucherModal';
 import { useCart } from '../context/CartContext';
@@ -154,7 +154,8 @@ export const Checkout: React.FC = () => {
       if (group.shippingFee === 'free') {
         group.shipping = 0;
       } else if (group.shippingFee === 'buyer_pays') {
-        group.shipping = (selectedOpt && group.shippingFeeAmounts[selectedOpt]) ?? Object.values(group.shippingFeeAmounts)[0] ?? 0;
+        const fee = selectedOpt != null ? group.shippingFeeAmounts[selectedOpt] : undefined;
+        group.shipping = fee ?? Object.values(group.shippingFeeAmounts)[0] ?? 0;
       } else {
         group.shipping = netSubtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 9.99;
       }
@@ -163,6 +164,21 @@ export const Checkout: React.FC = () => {
     }
     return Array.from(map.values());
   }, [cart.items, voucherSelections, deliverySelections]);
+
+  // Persist default delivery option in state (matches review UI default)
+  useEffect(() => {
+    setDeliverySelections(prev => {
+      const next = { ...prev };
+      let changed = false;
+      for (const group of sellerGroups) {
+        if (!next[group.sellerId] && group.shippingOptions[0]) {
+          next[group.sellerId] = group.shippingOptions[0];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [sellerGroups]);
 
   const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -203,6 +219,11 @@ export const Checkout: React.FC = () => {
   };
 
   const validatePayment = (): boolean => {
+    if (paymentData.type === 'cash-on-delivery') {
+      setPaymentErrors({});
+      return true;
+    }
+
     const errors: Record<string, string> = {};
 
     if (!paymentData.cardNumber.trim()) {
@@ -299,6 +320,29 @@ export const Checkout: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      const selectedCard = paymentMode === 'saved'
+        ? savedCards.find(c => c._id === selectedCardId)
+        : undefined;
+      const resolvedDeliverySelections = { ...deliverySelections };
+      for (const group of sellerGroups) {
+        if (!resolvedDeliverySelections[group.sellerId] && group.shippingOptions[0]) {
+          resolvedDeliverySelections[group.sellerId] = group.shippingOptions[0];
+        }
+      }
+      const paymentMethod: PaymentMethod = paymentData.type === 'cash-on-delivery'
+        ? { type: paymentData.type }
+        : paymentMode === 'saved' && selectedCard
+          ? {
+              type: selectedCard.type,
+              last4: selectedCard.last4,
+              cardHolder: selectedCard.cardHolder,
+            }
+          : {
+              type: paymentData.type,
+              last4: paymentData.cardNumber.slice(-4),
+              cardHolder: paymentData.cardHolder,
+            };
+
       const checkoutData: CheckoutData = {
         shippingAddress: {
           street: shippingData.street,
@@ -307,11 +351,7 @@ export const Checkout: React.FC = () => {
           zipCode: shippingData.zipCode,
           country: shippingData.country || 'PH',
         },
-        paymentMethod: {
-          type: paymentData.type,
-          last4: paymentData.cardNumber.slice(-4),
-          cardHolder: paymentData.cardHolder,
-        },
+        paymentMethod,
         contactEmail: shippingData.email,
         contactPhone: shippingData.phone,
       };
@@ -320,7 +360,7 @@ export const Checkout: React.FC = () => {
       for (const [sellerId, v] of Object.entries(voucherSelections)) {
         if (v.code) couponCodes[sellerId] = v.code;
       }
-      const orders = await orderService.createOrder(checkoutData, cart, user.id, couponCodes, deliverySelections);
+      const orders = await orderService.createOrder(checkoutData, cart, user.id, couponCodes, resolvedDeliverySelections);
       orderPlaced.current = true;
       clearCart();
       navigate(`/orders?success=${orders[0]?.id ?? ''}`);

@@ -1185,8 +1185,7 @@ class _OrderItemRow extends StatelessWidget {
                               ),
                             ),
                             TextSpan(
-                              text:
-                                  ' / \$${item.salePrice.toStringAsFixed(2)}',
+                              text: ' / \$${item.salePrice.toStringAsFixed(2)}',
                             ),
                           ],
                         ),
@@ -1703,6 +1702,70 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                       const SizedBox(height: AppSizes.sm),
                     ],
 
+                    if (order.selectedDeliveryOption != null) ...[
+                      _SheetSection(
+                        title: 'Delivery Method',
+                        icon: Icons.local_shipping_outlined,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _formatDeliveryOption(
+                                    order.selectedDeliveryOption!),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.onSurfaceColor,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              shipping == 0
+                                  ? AppStrings.free
+                                  : '\$${shipping.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.sm),
+                    ],
+
+                    if (order.paymentMethod != null) ...[
+                      _SheetSection(
+                        title: 'Payment Method',
+                        icon: Icons.credit_card_outlined,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              order.paymentMethod!.maskedCard,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: context.onSurfaceColor,
+                              ),
+                            ),
+                            if (order.paymentMethod!.cardHolder.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                order.paymentMethod!.cardHolder,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: context.onSurfaceMuted,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.sm),
+                    ],
+
                     // ── Items ───────────────────────────────────────────────
                     _SheetSection(
                       title: 'Items (${order.items.length})',
@@ -1815,6 +1878,15 @@ class _SellerOrderDetailSheet extends StatelessWidget {
       default:
         return _StatusConfig(status, AppColors.textMuted);
     }
+  }
+
+  String _formatDeliveryOption(String option) {
+    return option
+        .split(RegExp(r'[-_]'))
+        .map((part) => part.isEmpty
+            ? part
+            : '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
   }
 }
 
@@ -2549,7 +2621,10 @@ class _SummaryLine extends StatelessWidget {
   final bool isTotal;
   final Color? valueColor;
   const _SummaryLine(
-      {required this.label, required this.value, this.isTotal = false, this.valueColor});
+      {required this.label,
+      required this.value,
+      this.isTotal = false,
+      this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -2570,7 +2645,8 @@ class _SummaryLine extends StatelessWidget {
           style: TextStyle(
             fontSize: isTotal ? 16 : 13,
             fontWeight: isTotal ? FontWeight.w900 : FontWeight.w500,
-            color: valueColor ?? (isTotal ? AppColors.primary : context.onSurfaceColor),
+            color: valueColor ??
+                (isTotal ? AppColors.primary : context.onSurfaceColor),
           ),
         ),
       ],

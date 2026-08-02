@@ -11,6 +11,38 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   cancelled:  [],
 };
 
+function inferDeliveryFromShipping(
+  shipping: number,
+  shippingFee: string | undefined,
+  shippingFeeAmounts: Record<string, number>,
+): string | undefined {
+  if (shippingFee !== 'buyer_pays' || shipping <= 0) return undefined;
+  const match = Object.entries(shippingFeeAmounts).find(
+    ([, fee]) => Math.abs(Number(fee) - shipping) < 0.01,
+  );
+  return match?.[0];
+}
+
+function resolveStoredDeliveryOption(
+  doc: {
+    selectedDeliveryOption?: string;
+    deliverySelections?: Record<string, string>;
+    shipping?: number;
+  },
+  product: { shippingFee?: string; shippingFeeAmounts?: Record<string, number> } | undefined,
+): string | undefined {
+  const mapValues = doc.deliverySelections
+    ? Object.values(doc.deliverySelections).filter(v => typeof v === 'string' && v.length > 0)
+    : [];
+  if (mapValues.length > 0) return mapValues[0];
+
+  const feeAmounts = product?.shippingFeeAmounts ?? {};
+  const inferred = inferDeliveryFromShipping(Number(doc.shipping ?? 0), product?.shippingFee, feeAmounts);
+  if (inferred) return inferred;
+
+  return doc.selectedDeliveryOption;
+}
+
 export async function getSellerProducts(sellerId: string) {
   return Product.find({ sellerId }).sort({ createdAt: -1 });
 }
@@ -77,7 +109,27 @@ export async function getSellerOrders(sellerId: string) {
           : item.product?.toString();
       return productId ? sellerIdSet.has(productId) : false;
     });
-    return { ...order.toObject(), items: filteredItems };
+    const doc = order.toObject({ flattenMaps: true }) as Record<string, unknown> & {
+      deliverySelections?: Record<string, string>;
+      selectedDeliveryOption?: string;
+      shipping?: number;
+    };
+    const firstProduct = filteredItems[0]?.product as
+      | { shippingFee?: string; shippingFeeAmounts?: Record<string, number> }
+      | undefined;
+    const feeAmounts = firstProduct?.shippingFeeAmounts ?? {};
+    if (firstProduct?.shippingFeeAmounts && typeof (firstProduct.shippingFeeAmounts as any).toJSON === 'function') {
+      Object.assign(feeAmounts, (firstProduct.shippingFeeAmounts as any).toJSON());
+    }
+    doc.selectedDeliveryOption = resolveStoredDeliveryOption(
+      {
+        selectedDeliveryOption: doc.selectedDeliveryOption,
+        deliverySelections: doc.deliverySelections,
+        shipping: doc.shipping,
+      },
+      firstProduct ? { shippingFee: firstProduct.shippingFee, shippingFeeAmounts: feeAmounts } : undefined,
+    );
+    return { ...doc, items: filteredItems };
   });
 }
 

@@ -191,8 +191,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           return 'Please add at least one product image.';
         }
       case 4:
-        if (_shippingOptions.isEmpty)
+        if (_shippingOptions.isEmpty) {
           return 'Please select at least one delivery option.';
+        }
     }
     return null;
   }
@@ -289,8 +290,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           .map((r) => double.tryParse(r.priceCtrl.text.trim()) ?? 0.0)
           .where((p) => p > 0)
           .toList();
-      if (prices.isNotEmpty)
+      if (prices.isNotEmpty) {
         data['price'] = prices.reduce((a, b) => a < b ? a : b);
+      }
     }
 
     final imagePaths = _pickedFiles.map((f) => f.path).toList();
@@ -464,8 +466,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   final name = nameCtrl.text.trim();
                   if (name.isEmpty || values.isEmpty) return;
                   if (_variantAttrs
-                      .any((a) => a.name.toLowerCase() == name.toLowerCase()))
+                      .any((a) => a.name.toLowerCase() == name.toLowerCase())) {
                     return;
+                  }
                   setState(() {
                     _variantAttrs.add(
                         _VariantAttr(name: name, values: List.from(values)));
@@ -574,35 +577,54 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
 
   IconData _categoryIcon(String category) {
     final lower = category.toLowerCase();
-    if (lower.contains('book') || lower.contains('read'))
+    if (lower.contains('book') || lower.contains('read')) {
       return Icons.menu_book_outlined;
+    }
     if (lower.contains('cloth') ||
         lower.contains('fashion') ||
-        lower.contains('wear')) return Icons.checkroom_outlined;
+        lower.contains('wear')) {
+      return Icons.checkroom_outlined;
+    }
     if (lower.contains('sport') ||
         lower.contains('outdoor') ||
-        lower.contains('fitness')) return Icons.sports_basketball_outlined;
+        lower.contains('fitness')) {
+      return Icons.sports_basketball_outlined;
+    }
     if (lower.contains('electron') ||
         lower.contains('tech') ||
-        lower.contains('gadget')) return Icons.devices_outlined;
+        lower.contains('gadget')) {
+      return Icons.devices_outlined;
+    }
     if (lower.contains('food') ||
         lower.contains('grocery') ||
-        lower.contains('snack')) return Icons.lunch_dining_outlined;
+        lower.contains('snack')) {
+      return Icons.lunch_dining_outlined;
+    }
     if (lower.contains('beauty') ||
         lower.contains('cosmetic') ||
-        lower.contains('skin')) return Icons.face_retouching_natural_outlined;
+        lower.contains('skin')) {
+      return Icons.face_retouching_natural_outlined;
+    }
     if (lower.contains('home') ||
         lower.contains('furniture') ||
-        lower.contains('decor')) return Icons.chair_outlined;
+        lower.contains('decor')) {
+      return Icons.chair_outlined;
+    }
     if (lower.contains('toy') ||
         lower.contains('game') ||
-        lower.contains('kids')) return Icons.toys_outlined;
+        lower.contains('kids')) {
+      return Icons.toys_outlined;
+    }
     if (lower.contains('health') ||
         lower.contains('pharma') ||
-        lower.contains('medical')) return Icons.health_and_safety_outlined;
+        lower.contains('medical')) {
+      return Icons.health_and_safety_outlined;
+    }
     if (lower.contains('auto') ||
         lower.contains('car') ||
-        lower.contains('vehicle')) return Icons.directions_car_outlined;
+        lower.contains('vehicle')) {
+      return Icons.directions_car_outlined;
+    }
     return Icons.label_outlined;
   }
 
@@ -858,7 +880,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 Switch(
                   value: _hasVariants,
                   onChanged: (val) => setState(() => _hasVariants = val),
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                 ),
               ])),
 
@@ -1202,7 +1224,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
             color: context.surfaceVariantColor,
-            borderRadius: BorderRadius.only(
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(AppSizes.radiusMd),
               topRight: Radius.circular(AppSizes.radiusMd),
             ),

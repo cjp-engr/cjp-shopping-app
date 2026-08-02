@@ -167,7 +167,12 @@ export async function createOrders(params: CreateOrderParams) {
     const firstProduct = groupItems[0].productDoc as any;
     const shippingFee: string | undefined = firstProduct.shippingFee;
     const shippingFeeAmounts: Record<string, number> = firstProduct.shippingFeeAmounts?.toJSON?.() ?? firstProduct.shippingFeeAmounts ?? {};
-    const selectedDeliveryOption = deliverySelections[sellerKey];
+    const shippingOptions: string[] = Array.isArray(firstProduct.shippingOptions) ? firstProduct.shippingOptions : [];
+    const clientDelivery = deliverySelections[sellerKey]
+      ?? Object.values(deliverySelections).find(v => typeof v === 'string' && v.length > 0);
+    const selectedDeliveryOption = clientDelivery
+      ?? shippingOptions[0]
+      ?? Object.keys(shippingFeeAmounts)[0];
     let shipping: number;
     if (shippingFee === 'free') {
       shipping = 0;
@@ -196,6 +201,7 @@ export async function createOrders(params: CreateOrderParams) {
       estimatedDelivery,
       sellerMessages: sellerMessages[sellerKey] ? { [sellerKey]: sellerMessages[sellerKey] } : {},
       deliverySelections: selectedDeliveryOption ? { [sellerKey]: selectedDeliveryOption } : {},
+      selectedDeliveryOption,
     });
 
     createdOrders.push(order);

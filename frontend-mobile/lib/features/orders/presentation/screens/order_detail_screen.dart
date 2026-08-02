@@ -401,10 +401,12 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                   _InfoRow(
                     icon: Icons.payment_outlined,
                     label: AppStrings.paymentMethod,
-                    value: order.paymentType.isNotEmpty
-                        ? order.paymentType[0].toUpperCase() +
-                            order.paymentType.substring(1)
-                        : order.paymentType,
+                    value: order.paymentType
+                        .split(RegExp(r'[-_]'))
+                        .map((w) => w.isEmpty
+                            ? w
+                            : w[0].toUpperCase() + w.substring(1))
+                        .join(' '),
                   ),
                   if (order.selectedDeliveryOption != null) ...[
                     const SizedBox(height: AppSizes.sm),
@@ -413,7 +415,11 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                       label: 'Delivery Method',
                       value: () {
                         final opt = order.selectedDeliveryOption!;
-                        return opt[0].toUpperCase() + opt.substring(1);
+                        final name = opt[0].toUpperCase() + opt.substring(1);
+                        final shipping = displayShipping == 0
+                            ? ' (Free shipping)'
+                            : ' (Buyer pays)';
+                        return '$name$shipping';
                       }(),
                     ),
                   ],

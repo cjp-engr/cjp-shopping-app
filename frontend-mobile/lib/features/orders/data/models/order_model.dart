@@ -170,7 +170,15 @@ class OrderModel extends OrderEntity {
       createdAt: json['createdAt'] ?? '',
       estimatedDelivery: json['estimatedDelivery'],
       sellerMessages: sellerMessages,
-      selectedDeliveryOption: json['selectedDeliveryOption'] as String?,
+      selectedDeliveryOption: () {
+        final ds = json['deliverySelections'];
+        if (ds is Map && ds.isNotEmpty) {
+          return ds.values.first?.toString();
+        }
+        final direct = json['selectedDeliveryOption'] as String?;
+        if (direct != null) return direct;
+        return null;
+      }(),
     );
   }
 }

@@ -9,7 +9,7 @@ import { Button } from '../components/common/Button';
 import { Spinner } from '../components/common/Spinner';
 import { ReviewModal } from '../components/common/ReviewModal';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { getStatusConfig } from '../utils/orderUtils';
+import { getStatusConfig, formatPaymentMethodType, formatDeliveryOption } from '../utils/orderUtils';
 import { fetchReviewStatuses, fetchSingleReview } from '../utils/reviewUtils';
 import type { ReviewData } from '../utils/reviewUtils';
 import {
@@ -294,6 +294,17 @@ export const OrderDetail: React.FC = () => {
             </div>
           )}
           <div className="flex justify-between text-gray-600 dark:text-gray-400">
+            <span>Delivery Method</span>
+            <span className="capitalize font-medium text-gray-800 dark:text-gray-200">
+              {order.selectedDeliveryOption
+                ? formatDeliveryOption(order.selectedDeliveryOption)
+                : 'Standard'}
+              {order.shipping === 0
+                ? <span className="ml-1.5 text-xs text-emerald-600 dark:text-emerald-400">(Free shipping)</span>
+                : <span className="ml-1.5 text-xs text-gray-500">(Buyer pays)</span>}
+            </span>
+          </div>
+          <div className="flex justify-between text-gray-600 dark:text-gray-400">
             <span>Shipping</span>
             <span>{order.shipping === 0 ? 'Free' : formatCurrency(order.shipping)}</span>
           </div>
@@ -327,8 +338,8 @@ export const OrderDetail: React.FC = () => {
           <CreditCard className="w-4 h-4 text-gray-400" />
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Payment</h2>
         </div>
-        <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">
-          {order.paymentMethod.type.replace('-', ' ')}
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          {formatPaymentMethodType(order.paymentMethod.type)}
           {order.paymentMethod.last4 ? ` ending in ${order.paymentMethod.last4}` : ''}
         </p>
       </Card>

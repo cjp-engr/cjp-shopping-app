@@ -335,39 +335,52 @@ export const ProductDetails: React.FC = () => {
             )}
 
             {/* Price */}
-            <div className="flex items-baseline gap-3 mb-6">
-              {selectedVariant?.discount && selectedVariant.discount > 0 ? (
-                <>
+            <div className="mb-6">
+              <div className="flex items-baseline gap-3">
+                {selectedVariant?.discount && selectedVariant.discount > 0 ? (
+                  <>
+                    <span className="text-4xl font-bold text-primary-600">
+                      {formatCurrency(effectivePrice)}
+                    </span>
+                    <span className="text-xl text-gray-400 line-through">
+                      {formatCurrency(selectedVariant.price)}
+                    </span>
+                    <span className="px-2 py-0.5 text-sm font-bold text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg">
+                      -{selectedVariant.discount}%
+                    </span>
+                  </>
+                ) : !hasVariants && product.discount && product.discount > 0 ? (
+                  <>
+                    <span className="text-4xl font-bold text-primary-600">
+                      {formatCurrency(effectivePrice)}
+                    </span>
+                    <span className="text-xl text-gray-400 line-through">
+                      {formatCurrency(product.price)}
+                    </span>
+                    <span className="px-2 py-0.5 text-sm font-bold text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg">
+                      -{product.discount}%
+                    </span>
+                  </>
+                ) : hasVariants && !allVariantAttrsSelected ? (
+                  <span className="text-4xl font-bold text-primary-600">
+                    {`From ${formatCurrency(Math.min(...(product.variants?.map(v => v.discount && v.discount > 0 ? v.price * (1 - v.discount / 100) : v.price) ?? [product.price])))}`}
+                  </span>
+                ) : (
                   <span className="text-4xl font-bold text-primary-600">
                     {formatCurrency(effectivePrice)}
                   </span>
-                  <span className="text-xl text-gray-400 line-through">
-                    {formatCurrency(selectedVariant.price)}
-                  </span>
-                  <span className="px-2 py-0.5 text-sm font-bold text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg">
-                    -{selectedVariant.discount}%
-                  </span>
-                </>
-              ) : !hasVariants && product.discount && product.discount > 0 ? (
-                <>
-                  <span className="text-4xl font-bold text-primary-600">
-                    {formatCurrency(effectivePrice)}
-                  </span>
-                  <span className="text-xl text-gray-400 line-through">
-                    {formatCurrency(product.price)}
-                  </span>
-                  <span className="px-2 py-0.5 text-sm font-bold text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg">
-                    -{product.discount}%
-                  </span>
-                </>
-              ) : hasVariants && !allVariantAttrsSelected ? (
-                <span className="text-4xl font-bold text-primary-600">
-                  {`From ${formatCurrency(Math.min(...(product.variants?.map(v => v.discount && v.discount > 0 ? v.price * (1 - v.discount / 100) : v.price) ?? [product.price])))}`}
-                </span>
-              ) : (
-                <span className="text-4xl font-bold text-primary-600">
-                  {formatCurrency(effectivePrice)}
-                </span>
+                )}
+              </div>
+              {/* Savings label */}
+              {((selectedVariant?.discount && selectedVariant.discount > 0) ||
+                (!hasVariants && product.discount && product.discount > 0)) && (
+                <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">
+                  You save {formatCurrency(
+                    selectedVariant?.discount && selectedVariant.discount > 0
+                      ? selectedVariant.price - effectivePrice
+                      : product.price - effectivePrice
+                  )}
+                </p>
               )}
             </div>
 
@@ -382,9 +395,8 @@ export const ProductDetails: React.FC = () => {
                 {product.variantAttributes!.map(attr => (
                   <div key={attr.name}>
                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                      {attr.name}
-                      {selectedAttrs[attr.name] && (
-                        <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
+                      {attr.name}{selectedAttrs[attr.name] && (
+                        <span className="font-normal text-gray-500 dark:text-gray-400">
                           : {selectedAttrs[attr.name]}
                         </span>
                       )}

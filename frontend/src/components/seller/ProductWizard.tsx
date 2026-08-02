@@ -49,7 +49,7 @@ interface WizardData {
 }
 
 const EMPTY_DATA: WizardData = {
-  name: '', category: CATEGORIES[0], brand: '', condition: 'new',
+  name: '', category: '', brand: '', condition: 'new',
   price: '', stock: '', sku: '', discount: '',
   description: '', tags: [],
   imageMode: 'upload', imageUrl: '',
@@ -321,6 +321,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         </label>
         <select value={data.category} onChange={e => set('category', e.target.value)}
           className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+          <option value="" disabled>Select a category</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
