@@ -9,7 +9,7 @@ void main() {
   testApp('TC-090: seller creates simple product via wizard',
       ($, modules) async {
     await modules.auth.login(
-      email: const String.fromEnvironment('EMAIL'),
+      email: const String.fromEnvironment('SELLER_EMAIL'),
       password: const String.fromEnvironment('PASSWORD'),
     );
 

@@ -1,6 +1,7 @@
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:toko_mart/keys.dart';
 import 'package:go_router/go_router.dart';
 import 'package:toko_mart/shared/widgets/app_button.dart';
 import '../bloc/order_bloc.dart';
@@ -73,6 +74,7 @@ class _OrdersScreenState extends State<OrdersScreen>
         final orders = state.orders;
 
         return Scaffold(
+          key: keys.orders.ordersScreen,
           appBar: AppBar(
             title: const Text(AppStrings.orders),
             bottom: PreferredSize(

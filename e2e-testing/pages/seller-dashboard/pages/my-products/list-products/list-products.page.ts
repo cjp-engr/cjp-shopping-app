@@ -6,7 +6,7 @@ export class ListProductsPage {
     readonly page: Page;
 
     readonly listProductsSection: ListProductsSection;
-readonly deleteProductSection: DeleteProductSection;
+    readonly deleteProductSection: DeleteProductSection;
 
 
 

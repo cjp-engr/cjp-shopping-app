@@ -151,6 +151,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         label: AppStrings.openCart,
                         button: true,
                         child: IconButton(
+                          key: keys.products.cartIconButton,
                           icon: Icon(Icons.shopping_bag_outlined,
                               color: onSurface, size: 24),
                           onPressed: () => context.push('/cart'),
@@ -407,6 +408,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (_, i) => ProductCard(
+                        key: keys.products.productCard(visibleProducts[i].name),
                         product: visibleProducts[i],
                         onTap: () =>
                             context.push('/products/${visibleProducts[i].id}'),
@@ -606,6 +608,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             ),
                             itemCount: filtered.length,
                             itemBuilder: (_, i) => ProductCard(
+                              key: keys.products.productCard(filtered[i].name),
                               product: filtered[i],
                               onTap: () =>
                                   context.push('/products/${filtered[i].id}'),

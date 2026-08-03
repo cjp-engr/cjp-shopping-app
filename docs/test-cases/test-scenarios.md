@@ -902,9 +902,9 @@
 2. Click **Add product** (`add-product-btn`)
 3. **Step 1 — Basic Info:** enter product name (e.g. `E2E Simple Lamp`), select category (e.g. `Home & Garden`), optional brand/condition; click Next
 4. **Step 2 — Pricing:** enter price `29.99`, stock `10` (no variant rows); click Next
-5. **Step 3 — Description:** enter description ≤ 200 chars; click Next
+5. **Step 3 — Description:** enter description ≤ 200 chars; add ≥ 3 tags (e.g. `lamp`, `home-decor`, `lighting`); click Next
 6. **Step 4 — Images:** upload ≥ 1 product image; click Next
-7. **Step 5 — Shipping:** select ≥ 1 delivery option (`standard` / `express` / `pickup`); set shipping fee mode; click Next
+7. **Step 5 — Shipping:** enable all delivery options (`standard`, `express`, `pickup`); select **Buyer pays**; enter fees — standard `$10`, express `$15`, pickup `$5`; click Next
 8. **Step 6 — Review:** confirm summary; submit create
 9. Verify new card on seller dashboard (`product-item-{id}`)
 10. Open `/products/{id}` directly — product detail loads
@@ -913,8 +913,10 @@
 - Product appears on seller dashboard with `product-item-{id}`
 - Product detail page reachable at `/products/{id}` (`product-detail-page`, `product-name`)
 - Product has **no variants** — single price/stock on detail page
+- Shipping persisted: all three delivery options; `shippingFee` = `buyer_pays`; fee amounts standard `10`, express `15`, pickup `5`
+- Tags persisted: at least 3 tags saved on product (e.g. `lamp`, `home-decor`, `lighting`)
 **Business Rule**: §2 Product wizard (web 6-step), §2 Product fields  
-**Selectors/API**: `seller-dashboard`, `add-product-btn`, `product-item-{id}`, `product-detail-page`, `POST /api/products`  
+**Selectors/API**: `seller-dashboard`, `add-product-btn`, `wizard-tags-input`, `wizard-tags-add-btn`, `wizard-tag-{name}`, `product-item-{id}`, `product-detail-page`, `POST /api/products`  
 **Suggested Layer**: E2E Web
 
 ---

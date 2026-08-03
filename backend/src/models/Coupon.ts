@@ -36,6 +36,5 @@ const CouponSchema = new Schema<ICoupon>(
 );
 
 CouponSchema.index({ sellerId: 1 });
-CouponSchema.index({ code: 1 });
 
 export default mongoose.model<ICoupon>('Coupon', CouponSchema);

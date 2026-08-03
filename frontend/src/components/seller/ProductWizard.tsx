@@ -713,7 +713,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
         />
       </div>
-      <div>
+      <div data-testid="wizard-tags-section">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Tags <span className="text-xs text-gray-400 font-normal">(Optional)</span>
         </label>
@@ -721,18 +721,21 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
           <input value={tagInput} onChange={e => setTagInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
             placeholder="Add a tag and press Enter..."
+            data-testid="wizard-tags-input"
             className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
           />
-          <Button type="button" variant="outline" size="sm" onClick={addTag}>
+          <Button type="button" variant="outline" size="sm" onClick={addTag} data-testid="wizard-tags-add-btn">
             <Plus className="w-4 h-4" />
           </Button>
         </div>
         {data.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" data-testid="wizard-tags-list">
             {data.tags.map(t => (
-              <span key={t} className="inline-flex items-center gap-1 px-3 py-1 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium">
+              <span key={t} data-testid={`wizard-tag-${t}`}
+                className="inline-flex items-center gap-1 px-3 py-1 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium">
                 {t}
                 <button type="button" onClick={() => set('tags', data.tags.filter(x => x !== t))}
+                  data-testid={`wizard-tag-remove-${t}`}
                   className="hover:text-primary-900 transition-colors ml-0.5">
                   <X className="w-3 h-3" />
                 </button>
@@ -839,7 +842,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
       set('shippingOptions', next);
     };
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" data-testid="wizard-shipping-step">
         <div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Shipping</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Set delivery options for buyers</p>
@@ -847,7 +850,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Delivery Options</label>
           <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">Select all that apply — buyers choose one at checkout</p>
-          <div className="space-y-2">
+          <div className="space-y-2" data-testid="wizard-delivery-options">
             {([
               { value: 'standard', label: 'Standard', desc: '3–7 business days', Icon: Truck },
               { value: 'express',  label: 'Express',  desc: '1–2 business days', Icon: Package },
@@ -856,6 +859,8 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
               const checked = data.shippingOptions.includes(value);
               return (
                 <button key={value} type="button" onClick={() => toggleOption(value)}
+                  data-testid={`wizard-delivery-option-${value}`}
+                  aria-pressed={checked}
                   className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl border-2 transition-all text-left ${
                     checked
                       ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
@@ -884,12 +889,14 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Shipping Fee</label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3" data-testid="wizard-shipping-fee-options">
             {([
               { value: 'free',       label: 'Free Shipping', desc: 'You absorb the cost' },
               { value: 'buyer_pays', label: 'Buyer Pays',    desc: 'Fee added at checkout' },
             ] as const).map(({ value, label, desc }) => (
               <button key={value} type="button" onClick={() => set('shippingFee', value)}
+                data-testid={`wizard-shipping-fee-${value}`}
+                aria-pressed={data.shippingFee === value}
                 className={`flex items-start gap-3 px-4 py-3.5 rounded-xl border-2 transition-all text-left ${
                   data.shippingFee === value
                     ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
@@ -910,7 +917,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
             ))}
           </div>
           {data.shippingFee === 'buyer_pays' && (
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-3" data-testid="wizard-shipping-fee-amounts">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Shipping Fee per Delivery Option <span className="text-gray-400 font-normal">(optional)</span>
               </label>
@@ -928,6 +935,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
                       min="0"
                       step="0.01"
                       placeholder="0.00"
+                      data-testid={`wizard-shipping-fee-amount-${value}`}
                       value={data.shippingFeeAmounts[value] ?? ''}
                       onChange={e => set('shippingFeeAmounts', { ...data.shippingFeeAmounts, [value]: e.target.value })}
                       className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"

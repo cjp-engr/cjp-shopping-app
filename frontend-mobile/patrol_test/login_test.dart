@@ -5,7 +5,7 @@ import 'test_app.dart';
 void main() {
   testApp('logs in and verifies the home screen', ($, modules) async {
     await modules.auth.login(
-      email: const String.fromEnvironment('EMAIL'),
+      email: const String.fromEnvironment('SELLER_EMAIL'),
       password: const String.fromEnvironment('PASSWORD'),
     );
 

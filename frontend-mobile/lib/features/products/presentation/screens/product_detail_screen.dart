@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../keys.dart';
 import '../../domain/entities/product_entity.dart';
 import '../bloc/product_bloc.dart';
 import '../bloc/product_event.dart';
@@ -686,6 +687,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
+                            key: keys.products.addToCartButton,
                             onPressed: canAdd
                                 ? () {
                                     context.read<CartBloc>().add(CartItemAdded(

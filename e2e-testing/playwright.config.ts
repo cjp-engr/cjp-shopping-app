@@ -1,7 +1,10 @@
 import { defineConfig } from '@playwright/test';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+const envDir = __dirname;
+dotenv.config({ path: path.join(envDir, '.env.dev') });
+dotenv.config({ path: path.join(envDir, '.env') });
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
 const WEB_URL = process.env.WEB_URL ?? 'http://localhost:5173';

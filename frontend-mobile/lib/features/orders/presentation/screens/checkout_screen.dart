@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../keys.dart';
 import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
@@ -596,6 +597,7 @@ class _AddressSectionState extends State<_AddressSection> {
               child: Column(
                 children: [
                   AppTextField(
+                    key: keys.orders.checkoutStreetField,
                     label: 'Street Address',
                     controller: widget.streetCtrl,
                     prefixIcon: Icons.home_outlined,
@@ -609,6 +611,7 @@ class _AddressSectionState extends State<_AddressSection> {
                     children: [
                       Expanded(
                         child: AppTextField(
+                          key: keys.orders.checkoutCityField,
                           label: 'City',
                           controller: widget.cityCtrl,
                           keyboardType: TextInputType.text,
@@ -620,6 +623,7 @@ class _AddressSectionState extends State<_AddressSection> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: AppTextField(
+                          key: keys.orders.checkoutStateField,
                           label: 'State / Province',
                           controller: widget.stateCtrl,
                           keyboardType: TextInputType.text,
@@ -632,6 +636,7 @@ class _AddressSectionState extends State<_AddressSection> {
                   ),
                   const SizedBox(height: 10),
                   AppTextField(
+                    key: keys.orders.checkoutZipField,
                     label: 'ZIP Code',
                     controller: widget.zipCtrl,
                     keyboardType: TextInputType.number,
@@ -1666,6 +1671,7 @@ class _NewCardForm extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
+                key: keys.orders.paymentOption(p.$1),
                 onTap: () => onTypeChanged(p.$1),
                 borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                 child: AnimatedContainer(
@@ -2297,6 +2303,7 @@ class _BottomBar extends StatelessWidget {
           const SizedBox(width: AppSizes.md),
           Expanded(
             child: AppButton(
+              key: keys.orders.placeOrderButton,
               label: 'Place Order',
               icon: Icons.lock_outline,
               loading: loading,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../keys.dart';
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_state.dart';
 import '../widgets/cart_item_tile.dart';
@@ -725,6 +726,7 @@ class _CheckoutBar extends StatelessWidget {
           const SizedBox(width: AppSizes.md),
           Expanded(
             child: ElevatedButton(
+              key: keys.cart.checkoutButton,
               onPressed: onCheckout,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(0, AppSizes.buttonHeight),

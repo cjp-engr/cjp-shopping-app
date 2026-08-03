@@ -20,7 +20,7 @@ cd frontend && npm run dev                  # :5173 (web tests only)
 
 ```bash
 cd e2e-testing
-cp .env.example .env
+cp .env.dev.example .env.dev   # seller + buyer credentials for local runs
 npm install
 npx playwright install chromium
 ```
