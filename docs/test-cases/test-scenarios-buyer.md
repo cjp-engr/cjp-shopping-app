@@ -3,11 +3,11 @@
 *Filtered view of `docs/test-cases/test-scenarios.md` — do not edit independently.*
 
 **Role filter:** Buyer | Both  
-**Platform:** Web (from web-only master)
+**Platform:** Web + Mobile
 
 ---
 
-## Buyer Scenario Index
+## Buyer Scenario Index — Web
 
 | TC ID | Title | Priority | Automation |
 |-------|-------|----------|------------|
@@ -26,8 +26,8 @@
 | TC-013 | Variant selection add to cart | P0 | Playwright |
 | TC-014 | Add blocked without variant | P1 | Playwright |
 | TC-015 | Own products hidden (seller view) | P1 | Playwright |
-| TC-065 | **Buyer sees new seller listing in catalog** | P0 | Playwright |
-| TC-066 | **Buyer finds listing via search/category** | P1 | Playwright |
+| TC-065 | Buyer sees new seller listing in catalog | P0 | Playwright |
+| TC-066 | Buyer finds listing via search/category | P1 | Playwright |
 | TC-016 | Cart qty update/remove | P0 | Playwright |
 | TC-017 | Qty capped at stock | P1 | Playwright |
 | TC-018 | Per-seller delivery | P0 | Playwright |
@@ -63,14 +63,56 @@
 | TC-062 | Wishlist N/A on web | P3 | Blocked |
 | TC-063 | All cart items checkout | P2 | Playwright |
 
-**Total buyer scenarios:** 50 (excludes seller-only TC-041–052, TC-054, TC-058, TC-061, TC-064)
+---
+
+## Buyer Scenario Index — Mobile
+
+| TC ID | Title | Priority | Automation |
+|-------|-------|----------|------------|
+| TC-067 | Mobile login smoke | P0 | Patrol |
+| TC-068 | Auth gate redirect | P0 | Patrol |
+| TC-069 | Redirect from login when authed | P1 | Patrol |
+| TC-070 | Mobile signup | P1 | Patrol |
+| TC-071 | Mobile logout | P1 | Patrol |
+| TC-607 | Cart restored on re-login | P1 | Patrol |
+| TC-072 | Browse products home | P0 | Patrol |
+| TC-073 | Open cart (S2 smoke) | P0 | Patrol |
+| TC-074 | Search products | P1 | Patrol |
+| TC-075 | Filter by category | P1 | Patrol |
+| TC-076 | Variant + add to cart | P0 | Patrol |
+| TC-609 | Sale strikethrough | P1 | Patrol |
+| TC-608 | Sees seller listing in catalog | P0 | Patrol |
+| TC-077 | Cart update/remove | P0 | Patrol |
+| TC-078 | Checkbox subset checkout | P0 | Patrol |
+| TC-079 | Checkout disabled — no selection | P1 | Patrol |
+| TC-080 | Select all / deselect all | P2 | Patrol |
+| TC-081 | Per-seller delivery | P0 | Patrol |
+| TC-082 | Voucher via route extra | P1 | Patrol |
+| TC-095 | COD checkout | P0 | Patrol |
+| TC-083 | Multi-seller → 2 orders | P0 | Patrol |
+| TC-084 | Order history + detail | P1 | Patrol |
+| TC-085 | Confirm receipt | P1 | Patrol |
+| TC-612 | Invalid login | P1 | Patrol |
+| TC-613 | Variant required | P1 | Patrol |
+| TC-614 | Qty stock cap | P1 | Patrol |
+| TC-086 | Wishlist add/remove | P1 | Patrol |
+| TC-087 | Wishlist clear all | P2 | Patrol |
+| TC-088 | Follow/unfollow seller | P2 | Patrol |
+| TC-611 | Blocked from seller routes | P0 | Patrol + API |
+| TC-600 | Auth gate (no guest browse) | P1 | Patrol |
+| TC-602 | Checkbox vs web all-items | P2 | Patrol |
+| TC-603 | Wishlist in-memory | P3 | Blocked |
+| TC-604 | Notifications bell stub | P3 | Manual |
+| TC-606 | 6-char password signup | P2 | Patrol |
+
+**Total buyer scenarios:** ~50 web + ~35 mobile (overlap via parity on shared business rules)
 
 Full steps and selectors: **`docs/test-cases/test-scenarios.md`**
 
 ---
 
-## P0 Buyer Smoke (Web)
+## P0 Buyer Smoke
 
-1. **TC-001** Login → **TC-013** add variant product → **TC-016** cart → **TC-022** checkout COD → verify order in **TC-030** history
-2. **TC-008** Guest browse (no auth) → **TC-007** checkout requires login
-3. **TC-021 + TC-025** Multi-seller cart → 2 orders with independent totals
+**Web:** TC-001 → TC-013 → TC-016 → TC-022 → TC-030  
+**Mobile:** TC-067 → TC-072 → TC-073 → TC-076 → TC-095 → TC-084  
+**Multi-seller:** Web TC-021+025 · Mobile TC-083

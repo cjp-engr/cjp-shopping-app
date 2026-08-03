@@ -360,12 +360,13 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Tell buyers about your product</p>
       </div>
       <Input label="Product Name" value={data.name} onChange={e => set('name', e.target.value)}
-        placeholder="e.g. Sony WH-1000XM5 Headphones" fullWidth required />
+        placeholder="e.g. Sony WH-1000XM5 Headphones" fullWidth required data-testid="wizard-name-input" />
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Category <span className="text-red-500">*</span>
         </label>
         <select value={data.category} onChange={e => set('category', e.target.value)}
+          data-testid="wizard-category-select"
           className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
           <option value="" disabled>Select a category</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -490,9 +491,9 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
           <>
             <div className="grid grid-cols-2 gap-4">
               <Input label="Price ($)" type="number" value={data.price} onChange={e => set('price', e.target.value)}
-                placeholder="0.00" fullWidth required />
+                placeholder="0.00" fullWidth required data-testid="wizard-price-input" />
               <Input label="Stock Quantity" type="number" value={data.stock} onChange={e => set('stock', e.target.value)}
-                placeholder="0" fullWidth required />
+                placeholder="0" fullWidth required data-testid="wizard-stock-input" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Input label="SKU (Optional)" value={data.sku} onChange={e => set('sku', e.target.value)}
@@ -708,6 +709,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         <textarea value={data.description} onChange={e => set('description', e.target.value)}
           rows={7} maxLength={200}
           placeholder="Describe your product's features, condition, and any relevant details..."
+          data-testid="wizard-description-textarea"
           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
         />
       </div>
@@ -752,6 +754,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
       <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 w-fit">
         {(['upload', 'url'] as const).map(mode => (
           <button key={mode} type="button" onClick={() => set('imageMode', mode)}
+            data-testid={`wizard-image-${mode}-tab`}
             className={`px-4 py-2 text-sm font-medium transition-colors ${
               data.imageMode === mode
                 ? 'bg-primary-600 text-white'
@@ -765,7 +768,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
       {data.imageMode === 'url' ? (
         <div className="space-y-3">
           <Input label="Image URL" value={data.imageUrl} onChange={e => set('imageUrl', e.target.value)}
-            placeholder="https://example.com/product.jpg" fullWidth />
+            placeholder="https://example.com/product.jpg" fullWidth data-testid="wizard-image-url-input" />
           {data.imageUrl && (
             <div className="w-28 h-28 rounded-xl overflow-hidden bg-gray-100">
               <ImgFallback src={data.imageUrl} alt="preview" className="w-full h-full object-cover" />
@@ -1039,7 +1042,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" data-testid="product-wizard">
       <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
@@ -1060,7 +1063,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-5 py-5">
           {error && (
-            <div className="flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl mb-4">
+            <div className="flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl mb-4" data-testid="wizard-error">
               <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
               <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
             </div>
@@ -1076,13 +1079,13 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
           </Button>
 
           {step < 6 ? (
-            <Button onClick={next}>
+            <Button data-testid="wizard-next-btn" onClick={next}>
               Next <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>Save Draft</Button>
-              <Button onClick={submit} loading={submitting}>
+              <Button data-testid="wizard-publish-btn" onClick={submit} loading={submitting}>
                 {isEditing ? 'Save Changes' : 'Publish Listing'}
               </Button>
             </div>

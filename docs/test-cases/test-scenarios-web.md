@@ -3,7 +3,7 @@
 *Filtered view of `docs/test-cases/test-scenarios.md` — do not edit independently.*
 
 **Platform filter:** Web | Both  
-**Scope:** All 66 scenarios in the master doc are web-applicable (master generated as web-only suite).
+**Scope:** 66 web-applicable TCs; mobile-native TCs excluded (see `test-scenarios-mobile.md`).
 
 ---
 

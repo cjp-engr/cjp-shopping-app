@@ -229,6 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: AppSizes.md),
                       Center(
                         child: TextButton(
+                          key: keys.auth.loginSignUpLink,
                           onPressed: () => context.push('/signup'),
                           child: RichText(
                             text: TextSpan(

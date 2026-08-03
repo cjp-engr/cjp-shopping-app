@@ -2,7 +2,8 @@
 
 *Filtered view of `docs/test-strategies/test-strategy.md` — do not edit independently.*
 
-**Platform filter:** Web | Both
+**Platform filter:** Web | Both  
+**Note:** Mobile assignments in `test-strategy-mobile.md`. Web counts unchanged.
 
 ---
 

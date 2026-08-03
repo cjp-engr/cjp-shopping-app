@@ -15,6 +15,17 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [['html', { open: 'never' }], ['line']],
   projects: [
+    // --- Setup projects (run once, save auth state) ---
+    {
+      name: 'seller-setup',
+      testMatch: /tests\/auth\/seller\.setup\.ts/,
+      use: {
+        baseURL: WEB_URL,
+        channel: 'chrome',
+      },
+    },
+
+    // --- Test projects ---
     {
       name: 'api',
       testMatch: /.*\.api\.spec\.ts/,
@@ -25,8 +36,10 @@ export default defineConfig({
     {
       name: 'web',
       testMatch: /tests\/web\/.*\.spec\.ts/,
+      dependencies: ['seller-setup'],
       use: {
         baseURL: WEB_URL,
+        storageState: '.auth/seller.json',
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',

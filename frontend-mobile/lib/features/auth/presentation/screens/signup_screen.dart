@@ -8,6 +8,7 @@ import '../bloc/auth_state.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../keys.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 
@@ -217,6 +218,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               children: [
                                 Expanded(
                                   child: AppTextField(
+                                    key: keys.auth.signupFirstNameField,
                                     label: AppStrings.firstName,
                                     controller: _firstCtrl,
                                     prefixIcon: Icons.person_outline,
@@ -232,6 +234,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 const SizedBox(width: AppSizes.sm),
                                 Expanded(
                                   child: AppTextField(
+                                    key: keys.auth.signupLastNameField,
                                     label: AppStrings.lastName,
                                     controller: _lastCtrl,
                                     prefixIcon: Icons.person_outline,
@@ -248,6 +251,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             const SizedBox(height: AppSizes.md),
                             AppTextField(
+                              key: keys.auth.signupEmailField,
                               label: AppStrings.email,
                               controller: _emailCtrl,
                               keyboardType: TextInputType.emailAddress,
@@ -265,6 +269,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             const SizedBox(height: AppSizes.md),
                             AppTextField(
+                              key: keys.auth.signupPasswordField,
                               label: AppStrings.password,
                               controller: _passCtrl,
                               obscure: true,
@@ -282,6 +287,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             const SizedBox(height: AppSizes.md),
                             AppTextField(
+                              key: keys.auth.signupConfirmPasswordField,
                               label: AppStrings.confirmPassword,
                               controller: _confirmCtrl,
                               obscure: true,
@@ -299,6 +305,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               buildWhen: (p, c) => p.status != c.status,
                               builder: (context, state) {
                                 return AppButton(
+                                  key: keys.auth.signupButton,
                                   label: AppStrings.signup,
                                   loading: state.status == AuthStatus.loading,
                                   onPressed: _submit,
@@ -311,6 +318,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: AppSizes.lg),
                       Center(
                         child: TextButton(
+                          key: keys.auth.signupSignInLink,
                           onPressed: () => context.pop(),
                           child: RichText(
                             text: TextSpan(

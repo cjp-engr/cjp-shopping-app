@@ -3,18 +3,18 @@
 *Filtered view of `docs/test-cases/test-scenarios.md` — do not edit independently.*
 
 **Role filter:** Seller | Both  
-**Platform:** Web (from web-only master)
+**Platform:** Web + Mobile
 
 ---
 
-## Seller Scenario Index
+## Seller Scenario Index — Web
 
 | TC ID | Title | Priority | Automation |
 |-------|-------|----------|------------|
 | TC-015 | Own products hidden from listing | P1 | Playwright |
 | TC-041 | Become seller | P0 | Playwright |
-| TC-042 | **Seller creates simple product listing** (6-step wizard) | P0 | Playwright |
-| TC-064 | **Seller creates variant product listing** | P0 | Playwright |
+| TC-042 | **Simple product listing** (6-step wizard) | P0 | Playwright |
+| TC-064 | **Variant product listing** | P0 | Playwright |
 | TC-043 | Wizard validation | P1 | Playwright |
 | TC-044 | Edit product price/stock | P1 | Playwright |
 | TC-045 | My Products preview | P2 | Playwright |
@@ -29,39 +29,52 @@
 | TC-058 | Description max 200 chars | P2 | Playwright-API |
 | TC-061 | Web 6-step wizard parity | P2 | Playwright |
 
-**Total seller scenarios:** 17
+---
+
+## Seller Scenario Index — Mobile
+
+| TC ID | Title | Priority | Automation |
+|-------|-------|----------|------------|
+| TC-610 | Own products hidden (mobile) | P1 | Patrol |
+| TC-089 | Become seller | P0 | Patrol |
+| TC-090 | **Simple product — 7-step wizard** | P0 | Patrol |
+| TC-091 | **Variant product — 7-step wizard** | P0 | Patrol |
+| TC-092 | Order status pipeline | P0 | Patrol |
+| TC-093 | Voucher CRUD + buyer apply | P1 | Patrol |
+| TC-094 | Preview as buyer (`hideEdit=1`) | P2 | Patrol |
+| TC-601 | 7-step wizard step count | P2 | Patrol |
+| TC-605 | Local order notification + deep link | P2 | Manual / Patrol |
+
+**Total seller scenarios:** 17 web + 9 mobile
 
 Full steps, expected results, and selectors: **`docs/test-cases/test-scenarios.md`**
 
 ---
 
-## P0 Seller Smoke (Web)
+## P0 Seller Smoke
 
-1. **TC-041** Become seller → **TC-042** create **simple** product listing → verify `product-item-{id}` on dashboard
-2. **TC-064** Create **variant** product listing → verify variant selectors on detail page
-3. **TC-047** Advance buyer order: pending → preparing → processing → shipped
+**Web:** TC-041 → TC-042 → TC-064 → TC-047  
+**Mobile:** TC-089 → TC-090 → TC-091 → TC-092
 
 ---
 
 ## Product listing coverage
 
-| TC ID | What it verifies |
-|-------|------------------|
-| TC-042 | Simple product — full 6-step wizard, dashboard + direct URL |
-| TC-064 | Variant product — attributes, per-variant price/stock |
-| TC-043 | Wizard validation failures |
-| TC-044 | Edit existing listing |
-| TC-045 | Preview as buyer (`/my-products`) |
-| TC-046 | Delete listing |
+| Platform | Simple listing | Variant listing | Preview |
+|----------|----------------|-----------------|---------|
+| Web | TC-042 (6-step) | TC-064 | TC-045 `/my-products` |
+| Mobile | TC-090 (7-step) | TC-091 | TC-094 `?hideEdit=1` |
 
-**Buyer visibility** (separate buyer TCs): TC-065 catalog grid, TC-066 search/filter — see `test-scenarios-buyer.md`.
+**Buyer visibility:** TC-065/066 (web) · TC-608 (mobile)
 
 ---
 
-## Web-only seller features
+## Platform-specific seller features
 
-| TC ID | Feature |
-|-------|---------|
-| TC-045 | `/my-products` buyer-view preview |
-| TC-052 | In-app toast for new orders (polling) |
-| TC-061 | 6-step wizard (mobile has 7 steps) |
+| TC ID | Platform | Feature |
+|-------|----------|---------|
+| TC-045 | Web | `/my-products` buyer-view preview |
+| TC-052 | Web | In-app toast for new orders (polling) |
+| TC-061 | Web | 6-step wizard |
+| TC-601 | Mobile | 7-step wizard (variants separate) |
+| TC-605 | Mobile | Local notification → `/seller?tab=orders` |

@@ -11,6 +11,7 @@ void testApp(
 ) {
   patrolTest(description, ($) async {
     final storage = await StorageService.init();
+    await storage.clear();
 
     // Initialise the notification plugin so MainShell doesn't throw when it
     // calls requestPermissions() during widget pump.
