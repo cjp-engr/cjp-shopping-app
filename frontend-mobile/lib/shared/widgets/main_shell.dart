@@ -12,6 +12,7 @@ import '../../features/wishlist/presentation/bloc/wishlist_state.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../services/notification_service.dart';
+import '../../keys.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
@@ -216,6 +217,7 @@ class _MainShellState extends State<MainShell> {
                               ),
                               if (isSeller)
                                 _NavItem(
+                                  key: keys.seller.sellerNavTab,
                                   icon: Icons.storefront_outlined,
                                   activeIcon: Icons.storefront_rounded,
                                   isActive: index == 3,
@@ -251,6 +253,7 @@ class _NavItem extends StatelessWidget {
   final VoidCallback onTap;
 
   const _NavItem({
+    super.key,
     required this.icon,
     required this.activeIcon,
     required this.isActive,

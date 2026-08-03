@@ -12,7 +12,7 @@ void main() {
       firstName: 'Test',
       lastName: 'User',
       email: email,
-      password: 'Test750!!',
+      password: const String.fromEnvironment('PASSWORD'),
     );
 
     await $(keys.products.homeScreen).waitUntilVisible();

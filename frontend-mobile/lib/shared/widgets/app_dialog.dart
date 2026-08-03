@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+import '../../keys.dart';
 
 /// Branded dialog used throughout the app.
 ///
@@ -153,6 +154,7 @@ class AppDialog extends StatelessWidget {
 
             // ── Actions (stacked vertically for clarity) ───────────────────
             _ActionButton(
+              key: keys.widgets.dialogConfirmButton,
               label: confirmLabel,
               color: actionColor,
               filled: true,
@@ -166,6 +168,7 @@ class AppDialog extends StatelessWidget {
                   : AppColors.border,
             ),
             _ActionButton(
+              key: keys.widgets.dialogCancelButton,
               label: cancelLabel,
               color: isDark ? const Color(0xFF64748B) : AppColors.textSecondary,
               filled: false,
@@ -181,6 +184,7 @@ class AppDialog extends StatelessWidget {
 
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
+    super.key,
     required this.label,
     required this.color,
     required this.filled,

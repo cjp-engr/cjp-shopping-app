@@ -17,6 +17,7 @@ import '../bloc/seller_event.dart';
 import '../bloc/seller_state.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../../../keys.dart';
 
 class AddEditProductScreen extends StatefulWidget {
   final ProductEntity? product;
@@ -565,6 +566,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 ),
               ),
               ListTile(
+                key: keys.seller.wizardGalleryOption,
                 leading: _iconBox(Icons.photo_library_outlined),
                 title: const Text(AppStrings.chooseFromGallery,
                     style:
@@ -572,6 +574,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 onTap: () => Navigator.pop(ctx, 'gallery'),
               ),
               ListTile(
+                key: keys.seller.wizardCameraOption,
                 leading: _iconBox(Icons.camera_alt_outlined),
                 title: const Text(AppStrings.takeAPhoto,
                     style:
@@ -723,6 +726,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               ),
               for (final cat in categories)
                 ListTile(
+                  key: keys.seller.categorySheetItem(cat),
                   leading: Container(
                     width: 40,
                     height: 40,
@@ -824,6 +828,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           _FormCard(
               child: Column(children: [
             AppTextField(
+              key: keys.seller.wizardProductNameField,
               label: AppStrings.productName,
               controller: _nameCtrl,
               prefixIcon: Icons.inventory_2_outlined,
@@ -840,6 +845,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   });
                 }
                 return GestureDetector(
+                  key: keys.seller.wizardCategorySelector,
                   onTap: () => _showCategorySheet(context, categories),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -954,6 +960,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 _FormCard(
                     child: Column(children: [
                   AppTextField(
+                    key: keys.seller.wizardPriceField,
                     label: AppStrings.priceLabel,
                     controller: _priceCtrl,
                     keyboardType:
@@ -962,6 +969,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   ),
                   const SizedBox(height: AppSizes.sm),
                   AppTextField(
+                    key: keys.seller.wizardStockField,
                     label: AppStrings.stock,
                     controller: _stockCtrl,
                     keyboardType: TextInputType.number,
@@ -1096,6 +1104,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppTextField(
+                key: keys.seller.wizardDescriptionField,
                 label: AppStrings.description,
                 controller: _descCtrl,
                 maxLines: 5,
@@ -1849,12 +1858,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           )),
           const SizedBox(width: AppSizes.sm),
           if (_currentPage < 5)
-            Expanded(child: AppButton(label: 'Next', onPressed: _nextPage))
+            Expanded(child: AppButton(key: keys.seller.wizardNextButton, label: 'Next', onPressed: _nextPage))
           else
             Expanded(
               child: BlocBuilder<SellerBloc, SellerState>(
                 buildWhen: (p, c) => p.status != c.status,
                 builder: (context, state) => AppButton(
+                  key: keys.seller.wizardPublishButton,
                   label: _isEditing
                       ? AppStrings.saveChanges
                       : AppStrings.publishListing,
@@ -2403,7 +2413,7 @@ class _MultiImagePicker extends StatelessWidget {
           if (ni < files.length) {
             return _ImageTile(file: files[ni], onRemove: () => onRemove(ni));
           }
-          return _AddTile(onTap: onAdd);
+          return _AddTile(key: keys.seller.wizardAddImageTile, onTap: onAdd);
         },
       ),
     );
@@ -2414,7 +2424,7 @@ class _MultiImagePicker extends StatelessWidget {
 
 class _AddTile extends StatelessWidget {
   final VoidCallback onTap;
-  const _AddTile({required this.onTap});
+  const _AddTile({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

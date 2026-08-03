@@ -15,6 +15,7 @@ import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../voucher/data/voucher_repository.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../keys.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   final String? initialTab;
@@ -153,6 +154,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: keys.seller.dashboardScreen,
       backgroundColor: context.bgColor,
       appBar: AppBar(
         backgroundColor: AppColors.bannerStart,
@@ -305,6 +307,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
         builder: (context, _) {
           if (_tabController.index == 0) {
             return FloatingActionButton(
+              key: keys.seller.addProductFab,
               onPressed: () => context.push('/seller/add'),
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
