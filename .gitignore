@@ -23,11 +23,31 @@ dist-ssr
 *.sln
 *.sw?
 
-# Agent local state (skills live in /skills at repo root)
-.claude/
-.agents/
-.cursor/
+# Agent local state — .claude/skills/ is the single source; cursor/agents use junctions
+.claude/*
+!.claude/settings.json
+!.claude/skills
+!.claude/skills/**
+!.claude/commands
+!.claude/commands/**
+
+.cursor/*
+!.cursor/skills
+
+.agents/*
+!.agents/skills
 
 .patrol.env
 
+plans
+
+tokomart-details
+frontend/node_modules
+frontend/dist
+
+.claude
+.agents
+.cursor
+
+docs/superpowers/
 plans

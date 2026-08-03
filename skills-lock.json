@@ -1,84 +1,11 @@
 {
   "version": 1,
-  "skillsRoot": "skills",
   "skills": {
     "backend-patterns": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/backend-patterns/SKILL.md",
       "computedHash": "82ef426e6923d9ede1213e2062a0f069071afa3013f61b96d57db93d2dc2410c"
-    },
-    "flutter-dart-code-review": {
-      "source": "affaan-m/ECC",
-      "sourceType": "github",
-      "skillPath": "skills/flutter-dart-code-review/SKILL.md",
-      "computedHash": "1867d8498fdc3cd1c5652dd5538c9d1db6e80fbda9eb3e28082542630503487b"
-    },
-    "flutter-dev": {
-      "source": "MiniMax-AI/skills",
-      "sourceType": "github",
-      "skillPath": "skills/flutter-dev/SKILL.md",
-      "computedHash": "bfdcb3982bd4da9d0d33d6c7cceb51cd035e76a460edfc029e4a87dd56a5d2bd"
-    },
-    "frontend-code-review": {
-      "source": "langflow-ai/langflow",
-      "sourceType": "github",
-      "skillPath": "skills/frontend-code-review/SKILL.md",
-      "computedHash": "88e8443ae06325d11e172421a354b0151899239477820018c3f195fbaa777c3e"
-    },
-    "frontend-patterns": {
-      "source": "affaan-m/ECC",
-      "sourceType": "github",
-      "skillPath": "skills/frontend-patterns/SKILL.md",
-      "computedHash": "f5cc422ee17ead99553f253a83ffadade138abc4e0834aa67fb887ee66d14d63"
-    },
-    "patrol-test-architecture": {
-      "source": "leancodepl/patrol",
-      "sourceType": "github",
-      "skillPath": "skills/patrol-test-architecture/SKILL.md",
-      "computedHash": "1debd0ac05c0b773ad2d58a53c17073d402ec4780dee356661695b2c0252e9d4"
-    },
-    "patrol-write-test": {
-      "source": "leancodepl/patrol",
-      "sourceType": "github",
-      "skillPath": "skills/patrol-write-test/SKILL.md",
-      "computedHash": "3c42f3b5f9a073c2af91caa2ae4431185f4729c78de4bd673a7519b7e6811612"
-    },
-    "ui-ux-pro-max": {
-      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
-      "sourceType": "github",
-      "skillPath": "skills/ui-ux-pro-max/SKILL.md",
-      "computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
-    },
-    "tokomart-domain": {
-      "source": "local",
-      "sourceType": "project",
-      "skillPath": "skills/tokomart-domain/SKILL.md"
-    },
-    "create-scenarios": {
-      "source": "local",
-      "sourceType": "project",
-      "skillPath": "skills/create-scenarios/SKILL.md"
-    },
-    "generate-tests": {
-      "source": "local",
-      "sourceType": "project",
-      "skillPath": "skills/generate-tests/SKILL.md"
-    },
-    "playwright-best-practices": {
-      "source": "local",
-      "sourceType": "project",
-      "skillPath": "skills/playwright-best-practices/SKILL.md"
-    },
-    "review-tests": {
-      "source": "local",
-      "sourceType": "project",
-      "skillPath": "skills/review-tests/SKILL.md"
-    },
-    "test-strategy": {
-      "source": "local",
-      "sourceType": "project",
-      "skillPath": "skills/test-strategy/SKILL.md"
     }
   }
 }
