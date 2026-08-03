@@ -15,7 +15,7 @@ A full-featured multi-seller e-commerce application with a React web frontend, F
 - **Wishlist**: Save products for later; wishlist count shown in bottom navigation
 
 ### Seller Dashboard
-- **Multi-Step Product Wizard**: 6-step form (Basic Info → Pricing → Description → Images → Shipping → Review) for creating and editing listings on both web and mobile
+- **Multi-Step Product Wizard**: 7-step form (Basic Info → Pricing → Description → Variants → Images → Shipping → Review) for creating and editing listings on both web and mobile
 - **Multi-Select Delivery Options**: Sellers pick Standard, Express, and/or Pickup — buyers choose one at checkout
 - **Shipping Fee Configuration**: Sellers set Free Shipping or Buyer Pays; entering Buyer Pays reveals a fee amount field
 - **Product Fields**: Name, Category, Brand, Condition (New/Used), Price, Stock, SKU, Discount %, Description, Tags, and Images
@@ -117,6 +117,23 @@ shopping-app-automation/
 │   ├── .env
 │   └── package.json
 │
+├── e2e-testing/                # Playwright test suite
+│   ├── fixtures/               # base-fixture.ts (page object fixtures)
+│   ├── helpers/                # api-client.ts (login, authHeaders)
+│   ├── pages/                  # Page Object Model classes
+│   │   ├── cart.page.ts
+│   │   ├── checkout.page.ts
+│   │   ├── login.page.ts
+│   │   ├── product-detail.page.ts
+│   │   ├── product-list.page.ts
+│   │   └── seller-dashboard/   # Seller wizard + orders + vouchers POMs
+│   ├── tests/
+│   │   ├── auth/               # seller.setup.ts (auth state fixture)
+│   │   ├── api/                # *.api.spec.ts (HTTP layer tests)
+│   │   └── web/                # *.spec.ts (browser E2E tests)
+│   ├── playwright.config.ts
+│   └── package.json
+│
 └── README.md
 ```
 
@@ -173,7 +190,34 @@ npm run dev
 
 Frontend runs at `http://localhost:5173`.
 
-### 3. Mobile App Setup
+### 3. E2E Test Suite Setup
+
+```bash
+cd e2e-testing
+npm install
+npx playwright install chromium
+```
+
+Create `e2e-testing/.env` (optional — defaults shown):
+```
+API_URL=http://localhost:5000
+WEB_URL=http://localhost:5173
+BUYER_EMAIL=buyer@test.com
+SELLER_EMAIL=seller@test.com
+PASSWORD=Test750!!
+```
+
+Run all tests (requires backend + frontend running):
+```bash
+cd e2e-testing
+npm test               # all projects
+npm run test:web       # browser E2E only
+npm run test:api       # API tests only
+npm run test:ui        # interactive Playwright UI
+npm run report         # open last HTML report
+```
+
+### 4. Mobile App Setup
 
 ```bash
 cd frontend-mobile
@@ -188,6 +232,16 @@ patrol test
 ```
 
 ### Available Scripts
+
+#### E2E Tests
+```bash
+cd e2e-testing
+npm test               # Run all Playwright projects
+npm run test:web       # Browser E2E (Chrome)
+npm run test:api       # API tests (no browser)
+npm run test:ui        # Playwright interactive UI mode
+npm run report         # Show last HTML report
+```
 
 #### Web Frontend
 ```bash
@@ -210,19 +264,56 @@ npm run seed      # Seed database
 #### Mobile
 ```bash
 cd frontend-mobile
-flutter run           # Run on connected device/emulator
-flutter build apk     # Build Android APK
-patrol test           # Run E2E tests
+flutter run                          # Run on connected device/emulator
+flutter build apk                    # Build Android APK
+patrol test                          # Run all Patrol E2E tests
+patrol test --target patrol_test/login_test.dart \
+  --dart-define=EMAIL=buyer@test.com \
+  --dart-define=PASSWORD=Test750!!   # Run a single test
 ```
 
 ## Test Credentials
 
-| Field | Value |
-|---|---|
-| Email | `test@example.com` |
-| Password | `password123` |
+| Role | Email | Password |
+|---|---|---|
+| Buyer | `buyer@test.com` | `Test750!!` |
+| Seller | `seller@test.com` | `Test750!!` |
 
 Or register a new account via the Sign Up page. To create a seller account, register and toggle the seller role in Profile.
+
+> **E2E tests** use these same credentials. The seller account is promoted automatically by the `seller-setup` Playwright project before web tests run.
+
+## E2E Test Coverage
+
+### Playwright (web + API)
+
+| File | TC IDs | Layer |
+|---|---|---|
+| `tests/web/login.spec.ts` | TC-001 | E2E Web |
+| `tests/web/checkout.spec.ts` | TC-022 | E2E Web |
+| `tests/web/seller-product-wizard.spec.ts` | TC-041, TC-042 | E2E Web |
+| `tests/api/auth.api.spec.ts` | TC-001 (API layer) | API |
+| `tests/api/health.api.spec.ts` | — | API |
+
+### Patrol (mobile)
+
+| File | Covers |
+|---|---|
+| `patrol_test/login_test.dart` | S2 mobile login smoke |
+| `patrol_test/signup_test.dart` | TC-067 signup |
+| `patrol_test/add_product_simple_test.dart` | TC-089 simple product |
+| `patrol_test/cod_checkout_test.dart` | TC-095 COD checkout |
+
+### Page Object Model (`e2e-testing/pages/`)
+
+| Page Object | Wraps |
+|---|---|
+| `LoginPage` | `/login` form |
+| `ProductListPage` | `/products` grid + search |
+| `ProductDetailPage` | `/products/:id` + variant picker |
+| `CartPage` | `/cart` + checkout trigger |
+| `CheckoutPage` | `/checkout` 3-step wizard |
+| `SellerDashboardPage` | Seller dashboard + product wizard |
 
 ## API Reference
 
