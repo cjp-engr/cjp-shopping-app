@@ -18,35 +18,60 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [['html', { open: 'never' }], ['line']],
   projects: [
-    // --- Setup projects (run once, save auth state) ---
+    // ── Setup projects (serial, run once each) ──────────────────────────
+    {
+      name: 'buyer-setup',
+      testMatch: /tests\/auth\/buyer\.setup\.ts/,
+      use: { baseURL: WEB_URL, channel: 'chrome' },
+    },
     {
       name: 'seller-setup',
       testMatch: /tests\/auth\/seller\.setup\.ts/,
-      use: {
-        baseURL: WEB_URL,
-        channel: 'chrome',
-      },
+      use: { baseURL: WEB_URL, channel: 'chrome' },
     },
 
-    // --- Test projects ---
+    // ── Test projects ───────────────────────────────────────────────────
     {
       name: 'api',
-      testMatch: /.*\.api\.spec\.ts/,
+      testMatch: /tests\/api\/.*\.api\.spec\.ts/,
+      use: { baseURL: API_URL },
+    },
+    {
+      name: 'web-buyer',
+      testMatch: /tests\/web\/buyer\/.*\.spec\.ts/,
+      dependencies: ['buyer-setup'],
       use: {
-        baseURL: API_URL,
+        baseURL: WEB_URL,
+        storageState: '.auth/buyer.json',
+        channel: 'chrome',
+        trace: 'on-first-retry',
+        screenshot: 'only-on-failure',
+        video: 'retain-on-failure',
       },
     },
     {
-      name: 'web',
-      testMatch: /tests\/web\/.*\.spec\.ts/,
+      name: 'web-seller',
+      testMatch: /tests\/web\/seller\/.*\.spec\.ts/,
       dependencies: ['seller-setup'],
       use: {
         baseURL: WEB_URL,
         storageState: '.auth/seller.json',
+        channel: 'chrome',
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',
+      },
+    },
+    {
+      name: 'web-mixed',
+      testMatch: /tests\/web\/mixed\/.*\.spec\.ts/,
+      dependencies: ['buyer-setup', 'seller-setup'],
+      use: {
+        baseURL: WEB_URL,
         channel: 'chrome',
+        trace: 'on-first-retry',
+        screenshot: 'only-on-failure',
+        video: 'retain-on-failure',
       },
     },
   ],
