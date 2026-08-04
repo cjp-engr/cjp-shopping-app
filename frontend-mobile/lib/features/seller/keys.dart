@@ -35,6 +35,7 @@ class SellerKeys {
   // Images
   final wizardAddImageTile = const _SellerKey('wizardAddImageTile');
   final wizardCameraOption = const _SellerKey('wizardCameraOption');
+  final wizardImageLinkOption = const _SellerKey('wizardImageLinkOption');
   final wizardGalleryOption = const _SellerKey('wizardGalleryOption');
 
   // Shipping

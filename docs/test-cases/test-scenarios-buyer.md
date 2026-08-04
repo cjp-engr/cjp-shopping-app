@@ -37,6 +37,9 @@
 | TC-022 | Checkout COD | P0 | Playwright |
 | TC-023 | Checkout saved card | P1 | Playwright |
 | TC-024 | Checkout new card | P1 | Playwright |
+| TC-098 | Checkout COD with variant product | P0 | Playwright |
+| TC-099 | Variant checkout insufficient stock | P1 | Playwright / Playwright-API |
+| TC-100 | Two variants same product in cart | P1 | Playwright |
 | TC-025 | Multi-seller → 2 orders | P0 | Playwright |
 | TC-026 | Order total formula | P0 | Playwright-API |
 | TC-027 | Shipping $9.99 under $50 | P1 | Playwright-API |
@@ -91,6 +94,8 @@
 | TC-095 | COD checkout | P0 | Patrol |
 | TC-096 | Checkout saved card | P1 | Patrol |
 | TC-097 | Checkout new card | P1 | Patrol |
+| TC-101 | COD checkout with variant product | P0 | Patrol |
+| TC-102 | Add blocked without variant (Patrol) | P1 | Patrol |
 | TC-083 | Multi-seller → 2 orders | P0 | Patrol |
 | TC-084 | Order history + detail | P1 | Patrol |
 | TC-085 | Confirm receipt | P1 | Patrol |
@@ -115,6 +120,6 @@ Full steps and selectors: **`docs/test-cases/test-scenarios.md`**
 
 ## P0 Buyer Smoke
 
-**Web:** TC-001 → TC-013 → TC-016 → TC-022 → TC-030  
-**Mobile:** TC-067 → TC-072 → TC-073 → TC-076 → TC-095 → TC-084  
+**Web:** TC-001 → TC-013 → TC-016 → TC-022 → TC-098 → TC-030  
+**Mobile:** TC-067 → TC-072 → TC-073 → TC-076 → TC-101 → TC-095 → TC-084  
 **Multi-seller:** Web TC-021+025 · Mobile TC-083

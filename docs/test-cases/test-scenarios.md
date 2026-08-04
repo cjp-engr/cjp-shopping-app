@@ -10,7 +10,7 @@
 
 | # | Platform | Flow | Automation |
 |---|----------|------|------------|
-| S1 | Web | Login → add to cart → checkout COD → order appears in history | Playwright — TC-001, TC-016, TC-022 |
+| S1 | Web | Login → add to cart → checkout COD → order appears in history | Playwright — TC-001, TC-016, TC-022, TC-098 |
 | S2 | Mobile | Login (reference `frontend-mobile/patrol_test/login_test.dart`) → browse → cart visible | Patrol — TC-067, TC-072, TC-073 |
 | S3 | Both | Become seller → create simple product → create variant product | Web: TC-041, TC-042, TC-064 · Mobile: TC-089, TC-090, TC-091 |
 | S4 | Both | Cart with items from 2 sellers → checkout → 2 separate orders in history | Web: TC-021, TC-025 · Mobile: TC-083 |
@@ -560,6 +560,82 @@
 
 ---
 
+### TC-098: Checkout COD with variant product (web)
+**Category**: Happy Path  
+**Priority**: P0  
+**Role**: Buyer  
+**Platform**: Web  
+**Parity**: Both (mobile TC-101)  
+**Automation**: Playwright  
+**Preconditions**: Buyer logged in; variant product in catalog with known attributes (e.g. Size S/M/L from TC-064 or API seed); cart empty  
+**Steps**:
+1. Open variant product detail `/products/{id}` (not seller's own listing — use buyer session or TC-065 flow)
+2. Select variant (e.g. `variant-value-Size-M`)
+3. Verify price/image update for selected variant
+4. Click Add to cart (`add-to-cart-btn`)
+5. Open cart → proceed to checkout
+6. Complete shipping address; select Cash on Delivery
+7. Place order
+8. Open order detail for created order
+**Expected Results**:
+- Cart line shows selected variant attributes and **variant-specific price** (not base product price)
+- `POST /api/orders` succeeds; order item includes `variantId`, `selectedAttributes` (e.g. `{ Size: 'M' }`)
+- Order detail displays variant label (e.g. `Size: M`) and correct unit price
+- Order item image uses variant cover image when variant has images
+- **Only selected variant stock** decrements (other sizes unchanged)
+- Cart cleared for checked-out items; order status `pending`, payment COD
+**Business Rule**: §2 Variant pricing, §4 Checkout, §4 Stock validation (variant-aware)  
+**Selectors/API**: `variant-value-{attr}-{value}`, `add-to-cart-btn`, `cart-page`, `checkout-page`, `place-order-btn`, `order-detail-page`, `GET /api/orders/:id`, `GET /api/products/:id`  
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-099: Variant checkout — insufficient stock (web)
+**Category**: Edge Case  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Web  
+**Parity**: Both  
+**Automation**: Playwright / Playwright-API  
+**Preconditions**: Variant product with Size L stock = 1 in cart; L stock depleted before checkout (second session, API, or concurrent order)  
+**Steps**:
+1. Add Size L variant to cart as Buyer A
+2. Deplete Size L stock (place order as Buyer B or `PATCH` via API)
+3. Attempt checkout as Buyer A
+**Expected Results**:
+- Order rejected with **400** `"Insufficient stock for variant of: ..."`
+- Cart item remains or user sees clear error; L stock not negative
+**Business Rule**: §4 Stock validation — variant-level  
+**Selectors/API**: `POST /api/orders`, `variants.$.stock`  
+**Suggested Layer**: E2E Web + API (extends TC-056)
+
+---
+
+### TC-100: Cart holds two variants of same product (web)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Web  
+**Parity**: Both  
+**Automation**: Playwright  
+**Preconditions**: Variant product with Size S and M in stock  
+**Steps**:
+1. Open product detail → select Size S → add to cart
+2. Select Size M → add to cart again
+3. Open cart — verify **two separate line items** (same product, different variants)
+4. Complete COD checkout
+5. Open created order detail
+**Expected Results**:
+- Cart shows 2 lines: S and M with distinct prices/attributes
+- Single order (one seller) with **2 items**, each with distinct `variantId` and `selectedAttributes`
+- Totals reflect sum of both variant line prices (+ tax/shipping)
+- Stock decremented for **both** S and M
+**Business Rule**: §2 Variants, §3 Cart line identity (product + variant key)  
+**Selectors/API**: `variant-value-Size-S`, `variant-value-Size-M`, `cart-page`, `POST /api/orders`  
+**Suggested Layer**: E2E Web
+
+---
+
 ### TC-025: Multi-seller checkout creates separate orders
 **Category**: Business Rule  
 **Priority**: P0  
@@ -928,24 +1004,25 @@
 **Platform**: Web  
 **Parity**: Divergent (mobile 7-step — dedicated Variants step + permission flow)  
 **Automation**: Playwright  
-**Preconditions**: Seller logged in  
+**Preconditions**: Seller logged in; backend image upload available  
 **Steps**:
 1. Open `/seller` → **Add product** (`add-product-btn`)
 2. **Step 1 — Basic Info:** name `E2E Variant Hoodie`, category `Clothing`; Next
-3. **Step 2 — Pricing:** enable/add variant attributes (e.g. Size: S, M, L); set per-variant price and stock (e.g. S `$49.99` stock `5`); Next
+3. **Step 2 — Pricing:** enable variants → attribute `Size` with `S`, `M`, `L`; set per-variant price/stock; upload **2 images per variant row** via `wizard-variant-row-{i}-image-input`; on row 0 reorder cover with `wizard-variant-row-0-image-0-move-right`; Next
 4. **Step 3 — Description:** fill description; Next
-5. **Step 4 — Images:** upload base product image(s); Next
-6. **Step 5 — Shipping:** select delivery options + fee mode; Next
+5. **Step 4 — Images:** add base product image (URL tab); Next
+6. **Step 5 — Shipping:** all delivery options + buyer pays (standard `$10`, express `$15`, pickup `$5`); Next
 7. **Step 6 — Review:** submit
-8. Open product detail `/products/{id}` as seller (direct URL)
-9. Select each variant option on detail page (`variant-value-{attr}-{value}`)
+8. Open product detail `/products/{id}` → **Preview as Buyer** (`preview-as-buyer-btn`)
+9. Select each size (`variant-value-Size-{S|M|L}`)
 **Expected Results**:
-- Product created with `variants[]` persisted (attributes, price, stock per variant)
+- Product created with `variants[]` persisted (attributes, price, stock, **2 images per variant**)
+- API: `variants[i].images.length === 2` for each row
 - Seller dashboard shows `product-item-{id}`
-- Detail page requires variant selection before add-to-cart (`variant-value-*`)
-- Price/image updates when variant selected
-**Business Rule**: §2 Variant pricing, §2 Product wizard  
-**Selectors/API**: `add-product-btn`, `product-item-{id}`, `variant-value-{attr}-{value}`, `add-to-cart-btn`, `POST /api/products`  
+- Detail page: price updates per variant; **main image src changes** when size changes; **2 gallery thumbnails** per selection
+- Add to cart available after variant selected (`add-to-cart-btn`)
+**Business Rule**: §2 Variant pricing, §2 Product wizard, variant image gallery  
+**Selectors/API**: `wizard-variant-row-{i}-image-input`, `wizard-variant-row-{i}-image-{j}`, `wizard-variant-row-{i}-image-{j}-cover`, `wizard-variant-row-{i}-image-{j}-move-right`, `preview-as-buyer-btn`, `product-main-image`, `variant-value-{attr}-{value}`, `POST /api/products`, `POST /api/products/variant-image`  
 **Suggested Layer**: E2E Web
 
 ---
@@ -1818,6 +1895,51 @@
 
 ---
 
+### TC-101: COD checkout with variant product (mobile)
+**Category**: Happy Path  
+**Priority**: P0  
+**Role**: Buyer  
+**Platform**: Mobile  
+**Parity**: Both (web TC-098)  
+**Automation**: Patrol  
+**Preconditions**: Buyer logged in (`buyer@test.com`); variant product in catalog (from TC-091 or seeded); cart empty  
+**Steps**:
+1. Open product detail → select required variant attributes (e.g. Size M)
+2. Verify variant price updates on detail screen
+3. Tap add to cart → open cart (checked items)
+4. Checkout → confirm address → select Cash on Delivery
+5. Place order → open order detail
+**Expected Results**:
+- Variant selection required before add succeeds (see TC-613)
+- Order item persists `variantId` and attributes; correct variant price on order detail
+- Variant stock decrements for selected size only
+- Order visible in `/orders`; checked-out items removed from cart
+**Business Rule**: §2 Variants, §6 Checkout, §7 Orders  
+**Selectors/API**: Product detail variant chips — **keys missing**; `cart_checkoutButton`, `orders_paymentOption_cash-on-delivery`, `orders_placeOrderButton`, `orders_ordersScreen`, `POST /api/orders`  
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-102: Add to cart blocked without variant — mobile guard (Patrol)
+**Category**: Negative  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Mobile  
+**Parity**: Both (web TC-014)  
+**Automation**: Patrol  
+**Preconditions**: Product requiring variant selection (same catalog as TC-101)  
+**Steps**:
+1. Open variant product detail without selecting size/color
+2. Attempt add to cart
+**Expected Results**:
+- Add blocked: disabled button, snackbar, or prompt to select variant
+- No cart line added; cart badge unchanged
+**Business Rule**: §2 Variant pricing — selection required  
+**Selectors/API**: Add-to-cart control on `/products/:id` — **keys missing**  
+**Suggested Layer**: E2E Mobile (implements TC-613 with Patrol automation)
+
+---
+
 ### TC-083: Multi-seller checkout creates separate orders (mobile)
 **Category**: Happy Path  
 **Priority**: P0  
@@ -2289,10 +2411,12 @@
 | TC-056–059 | 4 | Edge cases (web) |
 | TC-060–063 | 4 | Platform parity (web perspective) |
 | TC-064–066 | 3 | Seller variant listing + buyer catalog (web) |
+| TC-098–100 | 3 | Buyer variant checkout + cart (web) |
 | TC-067–094, TC-095–097 | 31 | Mobile happy path — auth, browse, cart, checkout, orders, wishlist, seller |
+| TC-101–102 | 2 | Buyer variant checkout + guard (mobile) |
 | TC-607–614 | 6 | Mobile session, UI, negative, edge |
 | TC-600–606, TC-608–611 | 11 | Mobile platform parity & security |
 | TC-604–605 | (in above) | Mobile-only notifications |
-| **Total** | **112** | Web (66) + Mobile-native (46) |
+| **Total** | **117** | Web (69) + Mobile-native (48) |
 
-**Automation split:** Playwright E2E (~48 web), Patrol E2E (~36 mobile, many blocked on missing keys), Playwright-API (~15), Manual/Blocked (~5)
+**Automation split:** Playwright E2E (~51 web), Patrol E2E (~38 mobile, many blocked on missing keys), Playwright-API (~15), Manual/Blocked (~5)

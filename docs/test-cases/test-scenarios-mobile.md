@@ -14,6 +14,7 @@
 | S2 | Login → browse → cart visible | TC-067, TC-072, TC-073 |
 | S3 | Become seller → simple + variant listing | TC-089, TC-090, TC-091 |
 | S4 | 2-seller cart → 2 orders | TC-083 |
+| S5 | Variant select → COD checkout | TC-076, TC-101 |
 
 **Patrol baseline:** `frontend-mobile/patrol_test/login_test.dart` (TC-067)
 
@@ -46,6 +47,8 @@
 | TC-095 | **COD checkout complete flow** | P0 | Buyer | Patrol |
 | TC-096 | **Checkout saved card** | P1 | Buyer | Patrol |
 | TC-097 | **Checkout new card entry** | P1 | Buyer | Patrol |
+| TC-101 | **COD checkout with variant product** | P0 | Buyer | Patrol |
+| TC-102 | **Add blocked without variant (Patrol)** | P1 | Buyer | Patrol |
 | TC-083 | Multi-seller → 2 orders | P0 | Buyer | Patrol |
 | TC-084 | Order history tabs + detail | P1 | Buyer | Patrol |
 | TC-085 | Confirm receipt (shipped) | P1 | Buyer | Patrol |
@@ -80,7 +83,7 @@ These web TCs have `Parity: Both` — implement as Patrol where keys exist:
 |------|------------|-------------|
 | Auth | TC-001–007 | TC-068 diverges on guest (no TC-008/009) |
 | Browse | TC-010–015, TC-065–066 | TC-074–076, TC-608 |
-| Cart/checkout | TC-016–029 | TC-077–097; TC-078 vs TC-063 |
+| Cart/checkout | TC-016–029, TC-098–100 | TC-077–097, TC-101–102; TC-078 vs TC-063 |
 | Orders/reviews | TC-030–037 | TC-084–085 |
 | Seller | TC-041–051 | TC-089–094; no TC-045/052 |
 | Security/API | TC-053–056 | TC-611 + shared API tests |
@@ -103,6 +106,6 @@ These web TCs have `Parity: Both` — implement as Patrol where keys exist:
 
 Cart, checkout, orders, seller wizard, and wishlist screens lack `ValueKey`s. Flag in `/generate-tests` Phase 1 — add keys per `ui-selectors.md` before full Patrol coverage.
 
-**Total mobile-native scenarios:** 33 (+ shared parity with ~40 web Both TCs)
+**Total mobile-native scenarios:** 35 (+ shared parity with ~43 web Both TCs)
 
 Full steps and selectors: **`docs/test-cases/test-scenarios.md`**

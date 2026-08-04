@@ -463,6 +463,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         {/* Variants toggle */}
         <button
           type="button"
+          data-testid="wizard-has-variants-toggle"
           onClick={() => {
             set('hasVariants', !data.hasVariants);
             if (!data.hasVariants) set('variantAttributes', []);
@@ -523,6 +524,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
                       value={attr.name}
                       onChange={e => updateAttrName(i, e.target.value)}
                       placeholder="Attribute name (e.g. Color)"
+                      data-testid={`wizard-variant-attr-name-${i}`}
                       className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                     />
                     <button
@@ -548,11 +550,13 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
                         onChange={e => setVariantValueInputs(prev => ({ ...prev, [i]: e.target.value }))}
                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addValue(i))}
                         placeholder="Add value…"
+                        data-testid={`wizard-variant-attr-value-input-${i}`}
                         className="w-28 px-2 py-1 text-xs border border-dashed border-gray-300 dark:border-gray-600 rounded-full focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       />
                       <button
                         type="button"
                         onClick={() => addValue(i)}
+                        data-testid={`wizard-variant-attr-add-value-${i}`}
                         className="p-1 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-full transition-colors"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -566,6 +570,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
             <button
               type="button"
               onClick={addAttr}
+              data-testid="wizard-add-variant-attr-btn"
               className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-500 dark:text-gray-400 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -598,6 +603,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1">Price ($)</p>
                           <input type="number" min="0" step="0.01" placeholder="0.00" value={row.price}
                             onChange={e => updateVariantField(ri, 'price', e.target.value)}
+                            data-testid={`wizard-variant-row-${ri}-price`}
                             className="w-full px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-900 text-xs text-gray-900 dark:text-gray-100"
                           />
                         </div>
@@ -605,6 +611,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1">Stock</p>
                           <input type="number" min="0" placeholder="0" value={row.stock}
                             onChange={e => updateVariantField(ri, 'stock', e.target.value)}
+                            data-testid={`wizard-variant-row-${ri}-stock`}
                             className="w-full px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-900 text-xs text-gray-900 dark:text-gray-100"
                           />
                         </div>
@@ -631,10 +638,10 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
                         </p>
                         <div className="flex gap-2 flex-wrap items-center">
                           {row.images.map((url, imgIdx) => (
-                            <div key={imgIdx} className="relative group w-14 h-14 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 flex-shrink-0">
+                            <div key={imgIdx} data-testid={`wizard-variant-row-${ri}-image-${imgIdx}`} className="relative group w-14 h-14 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 flex-shrink-0">
                               <img src={url} alt="" className="w-full h-full object-cover" />
                               {imgIdx === 0 && (
-                                <span className="absolute top-0 left-0 text-[8px] font-bold bg-primary-600 text-white px-1 leading-4">Cover</span>
+                                <span data-testid={`wizard-variant-row-${ri}-image-${imgIdx}-cover`} className="absolute top-0 left-0 text-[8px] font-bold bg-primary-600 text-white px-1 leading-4">Cover</span>
                               )}
                               <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-0.5">
                                 {imgIdx > 0 && (
@@ -644,11 +651,13 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
                                   </button>
                                 )}
                                 <button type="button" onClick={() => removeVariantImage(ri, imgIdx)}
+                                  data-testid={`wizard-variant-row-${ri}-image-${imgIdx}-remove`}
                                   className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                                   ×
                                 </button>
                                 {imgIdx < row.images.length - 1 && (
                                   <button type="button" onClick={() => moveVariantImage(ri, imgIdx, 1)}
+                                    data-testid={`wizard-variant-row-${ri}-image-${imgIdx}-move-right`}
                                     className="w-5 h-5 bg-white/90 rounded-full flex items-center justify-center text-gray-700 hover:bg-white text-xs font-bold">
                                     ›
                                   </button>
@@ -659,6 +668,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
                           {row.images.length < 5 && (
                             <label className={`w-14 h-14 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors flex-shrink-0 ${variantImageUploading[ri] ? 'opacity-50 pointer-events-none' : ''}`}>
                               <input type="file" accept="image/*" className="hidden"
+                                data-testid={`wizard-variant-row-${ri}-image-input`}
                                 onChange={e => handleVariantImagePick(ri, e)}
                                 disabled={!!variantImageUploading[ri]} />
                               {variantImageUploading[ri]

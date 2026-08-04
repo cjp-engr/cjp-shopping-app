@@ -1,6 +1,6 @@
 import { Locator, Page } from '@playwright/test';
 
-import type { SimpleProductOptions } from './product-wizard.types';
+import type { SimpleProductOptions, VariantProductOptions } from './product-wizard.types';
 import { BasicInfoSection } from './sections/01-basic-info.section';
 import { PricingSection } from './sections/02-pricing.section';
 import { DescriptionSection } from './sections/03-description.section';
@@ -64,6 +64,14 @@ export class ProductWizardPage {
     await this.review.publish();
   }
 
+  async fillPricingVariants(
+    attributes: VariantProductOptions['attributes'],
+    rows: VariantProductOptions['variantRows'],
+  ): Promise<void> {
+    await this.pricing.configureVariants(attributes, rows);
+    await this.pricing.continue();
+  }
+
   async createSimpleProduct(opts: SimpleProductOptions): Promise<void> {
     await this.fillBasicInfo({
       name: opts.name,
@@ -76,6 +84,23 @@ export class ProductWizardPage {
       sku: opts.sku,
       discount: opts.discount,
     });
+    await this.fillDescription(opts.description, opts.tags);
+    await this.addImageByUrl(opts.imageUrl);
+    if (opts.shipping) {
+      await this.shipping.configure(opts.shipping);
+    } else {
+      await this.shipping.acceptDefaultAndContinue();
+    }
+    await this.publish();
+  }
+
+  async createVariantProduct(opts: VariantProductOptions): Promise<void> {
+    await this.fillBasicInfo({
+      name: opts.name,
+      category: opts.category,
+      brand: opts.brand,
+    });
+    await this.fillPricingVariants(opts.attributes, opts.variantRows);
     await this.fillDescription(opts.description, opts.tags);
     await this.addImageByUrl(opts.imageUrl);
     if (opts.shipping) {

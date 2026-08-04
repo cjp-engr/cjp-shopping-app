@@ -260,6 +260,7 @@ export const ProductDetails: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPreviewMode(v => !v)}
+              data-testid="preview-as-buyer-btn"
               className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors ${
                 previewMode
                   ? 'bg-primary-600 text-white border-primary-600 hover:bg-primary-700'

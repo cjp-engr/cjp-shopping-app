@@ -51,6 +51,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   // Step 3 — Images
   final List<XFile> _pickedFiles = [];
   late List<String> _existingImageUrls;
+  final List<String> _enteredImageUrls = [];
   final _picker = ImagePicker();
 
   // Step 4 — Variants
@@ -188,7 +189,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       case 2:
         if (_descCtrl.text.trim().isEmpty) return 'Description is required.';
       case 3:
-        if (_pickedFiles.isEmpty && _existingImageUrls.isEmpty) {
+        if (_pickedFiles.isEmpty && _existingImageUrls.isEmpty && _enteredImageUrls.isEmpty) {
           return 'Please add at least one product image.';
         }
       case 4:
@@ -297,6 +298,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     }
 
     final imagePaths = _pickedFiles.map((f) => f.path).toList();
+    if (_enteredImageUrls.isNotEmpty) {
+      data['imageUrls'] = _enteredImageUrls;
+    }
     if (_isEditing) {
       context.read<SellerBloc>().add(
             SellerProductUpdateRequested(widget.product!.id, data,
@@ -581,6 +585,14 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                         TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                 onTap: () => Navigator.pop(ctx, 'camera'),
               ),
+              ListTile(
+                key: keys.seller.wizardImageLinkOption,
+                leading: _iconBox(Icons.link_outlined),
+                title: const Text('Paste image link',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                onTap: () => Navigator.pop(ctx, 'url'),
+              ),
             ],
           ),
         ),
@@ -591,13 +603,27 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   Future<void> _handleImageSourcePick({
     required Future<void> Function() onGallery,
     required Future<void> Function() onCamera,
+    Future<void> Function()? onUrl,
   }) async {
     final source = await _pickImageSource();
     if (!mounted || source == null) return;
     if (source == 'gallery') {
       await onGallery();
-    } else {
+    } else if (source == 'camera') {
       await onCamera();
+    } else if (source == 'url' && onUrl != null) {
+      await onUrl();
+    }
+  }
+
+  Future<void> _pickFromUrl() async {
+    final url = await showDialog<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (_) => const _ImageLinkDialog(),
+    );
+    if (url != null && url.isNotEmpty && mounted) {
+      setState(() => _enteredImageUrls.add(url));
     }
   }
 
@@ -605,6 +631,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     _handleImageSourcePick(
       onGallery: _pickFromGallery,
       onCamera: _pickFromCamera,
+      onUrl: _pickFromUrl,
     );
   }
 
@@ -1192,10 +1219,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           _FormCard(
               child: _MultiImagePicker(
             existingUrls: _existingImageUrls,
+            enteredUrls: _enteredImageUrls,
             files: _pickedFiles,
             onAdd: _showProductImageSourceSheet,
             onRemoveExisting: (i) =>
                 setState(() => _existingImageUrls.removeAt(i)),
+            onRemoveEntered: (i) =>
+                setState(() => _enteredImageUrls.removeAt(i)),
             onRemove: (i) => setState(() => _pickedFiles.removeAt(i)),
           )),
         ],
@@ -1824,7 +1854,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               _ReviewRow(
                 label: AppStrings.productImages,
                 value:
-                    '${_pickedFiles.length + _existingImageUrls.length} photo(s)',
+                    '${_pickedFiles.length + _existingImageUrls.length + _enteredImageUrls.length} photo(s)',
                 onEdit: () => _goToPage(3),
               ),
               _ReviewRow(
@@ -2434,20 +2464,24 @@ class _ReviewRow extends StatelessWidget {
 
 class _MultiImagePicker extends StatelessWidget {
   final List<String> existingUrls;
+  final List<String> enteredUrls;
   final List<XFile> files;
   final VoidCallback onAdd;
   final void Function(int) onRemoveExisting;
+  final void Function(int) onRemoveEntered;
   final void Function(int) onRemove;
   const _MultiImagePicker(
       {required this.existingUrls,
+      required this.enteredUrls,
       required this.files,
       required this.onAdd,
       required this.onRemoveExisting,
+      required this.onRemoveEntered,
       required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
-    final total = existingUrls.length + files.length + 1;
+    final total = existingUrls.length + enteredUrls.length + files.length + 1;
     return SizedBox(
       height: 96,
       child: ListView.separated(
@@ -2459,13 +2493,63 @@ class _MultiImagePicker extends StatelessWidget {
             return _NetworkImageTile(
                 url: existingUrls[i], onRemove: () => onRemoveExisting(i));
           }
-          final ni = i - existingUrls.length;
+          final ei = i - existingUrls.length;
+          if (ei < enteredUrls.length) {
+            return _NetworkImageTile(
+                url: enteredUrls[ei], onRemove: () => onRemoveEntered(ei));
+          }
+          final ni = ei - enteredUrls.length;
           if (ni < files.length) {
             return _ImageTile(file: files[ni], onRemove: () => onRemove(ni));
           }
           return _AddTile(key: keys.seller.wizardAddImageTile, onTap: onAdd);
         },
       ),
+    );
+  }
+}
+
+// ── Image link dialog ─────────────────────────────────────────────────────────
+
+class _ImageLinkDialog extends StatefulWidget {
+  const _ImageLinkDialog();
+
+  @override
+  State<_ImageLinkDialog> createState() => _ImageLinkDialogState();
+}
+
+class _ImageLinkDialogState extends State<_ImageLinkDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add image link'),
+      content: TextField(
+        controller: _ctrl,
+        autofocus: true,
+        decoration: const InputDecoration(
+          hintText: 'https://example.com/image.jpg',
+        ),
+        keyboardType: TextInputType.url,
+        onSubmitted: (v) => Navigator.pop(context, v.trim()),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _ctrl.text.trim()),
+          child: const Text('Add'),
+        ),
+      ],
     );
   }
 }

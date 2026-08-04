@@ -3,7 +3,7 @@
 *Filtered view of `docs/test-cases/test-scenarios.md` — do not edit independently.*
 
 **Platform filter:** Web | Both  
-**Scope:** 66 web-applicable TCs; mobile-native TCs excluded (see `test-scenarios-mobile.md`).
+**Scope:** 69 web-applicable TCs; mobile-native TCs excluded (see `test-scenarios-mobile.md`).
 
 ---
 
@@ -11,7 +11,7 @@
 
 | # | Flow | TC IDs |
 |---|------|--------|
-| S1 | Login → cart → checkout COD → order history | TC-001, TC-016, TC-022 |
+| S1 | Login → cart → checkout COD → order history | TC-001, TC-016, TC-022, TC-098 |
 | S3 | Become seller → simple listing (TC-042) → variant listing (TC-064) | TC-041, TC-042, TC-064 |
 | S4 | 2-seller cart → 2 orders | TC-021, TC-025 |
 
@@ -47,6 +47,9 @@
 | TC-022 | Checkout COD | P0 | Buyer | Playwright |
 | TC-023 | Checkout saved card | P1 | Buyer | Playwright |
 | TC-024 | Checkout new card | P1 | Buyer | Playwright |
+| TC-098 | Checkout COD with variant product | P0 | Buyer | Playwright |
+| TC-099 | Variant checkout insufficient stock | P1 | Buyer | Playwright / Playwright-API |
+| TC-100 | Two variants same product in cart | P1 | Buyer | Playwright |
 | TC-025 | Multi-seller → 2 orders | P0 | Buyer | Playwright |
 | TC-026 | Order total formula | P0 | Buyer | Playwright-API |
 | TC-027 | Shipping $9.99 under $50 | P1 | Buyer | Playwright-API |
