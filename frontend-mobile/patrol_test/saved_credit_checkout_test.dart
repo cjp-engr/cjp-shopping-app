@@ -1,6 +1,12 @@
 // TC-096: Checkout with saved credit card (mobile)
-// Tags: @checkout, @smoke
+// Tags: checkout, smoke
+//
+// Run (default — tags ignored):
+//   patrol test --target patrol_test/saved_credit_checkout_test.dart --device emulator-5554
+// Run (filtered):
+//   patrol test --target patrol_test/saved_credit_checkout_test.dart --tags checkout
 
+import 'package:flutter_test/flutter_test.dart' show find;
 import 'package:patrol/patrol.dart';
 import 'package:toko_mart/keys.dart';
 
@@ -10,7 +16,7 @@ import 'test_credentials.dart';
 void main() {
   testApp(
     'TC-096: buyer completes checkout with saved credit card',
-    tags: ['@checkout', '@smoke'],
+    tags: ['checkout-saved-cc', 'checkout', 'smoke'],
     ($, modules) async {
       await modules.auth.login(
         email: TestCredentials.buyerEmail,
@@ -18,7 +24,9 @@ void main() {
       );
 
       // Add a known seeded product to cart
-      await $(keys.products.productCard('E2E Test Lamp')).scrollTo().tap();
+      await $(keys.products.productCard('E2E Test Lamp'))
+          .scrollTo(view: find.byKey(keys.products.productList))
+          .tap();
       await $(keys.products.addToCartButton).tap();
 
       // Navigate to cart from product detail

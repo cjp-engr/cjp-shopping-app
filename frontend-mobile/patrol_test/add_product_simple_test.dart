@@ -41,7 +41,7 @@ final product = products.first;
 
 void main() {
   testApp('TC-090: seller creates simple product via wizard',
-      tags: ['@add_product', '@smoke'], ($, modules) async {
+      ($, modules) async {
     await modules.auth.login(
       email: TestCredentials.sellerEmail,
       password: TestCredentials.password,

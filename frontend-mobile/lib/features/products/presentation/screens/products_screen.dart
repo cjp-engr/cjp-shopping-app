@@ -358,6 +358,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           color: AppColors.primary,
           onRefresh: () async => _load(refresh: true),
           child: CustomScrollView(
+            key: keys.products.productList,
             slivers: [
               if (!_searchActive)
                 SliverToBoxAdapter(
@@ -598,6 +599,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           color: AppColors.primary,
                           onRefresh: () async => _load(refresh: true),
                           child: GridView.builder(
+                            key: keys.products.productList,
                             padding: const EdgeInsets.all(AppSizes.md),
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(

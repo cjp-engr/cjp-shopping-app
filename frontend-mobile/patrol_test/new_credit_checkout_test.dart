@@ -1,5 +1,6 @@
 // TC-097: Checkout with new card entry (mobile)
 
+import 'package:flutter_test/flutter_test.dart' show find;
 import 'package:patrol/patrol.dart';
 import 'package:toko_mart/keys.dart';
 
@@ -8,14 +9,16 @@ import 'test_credentials.dart';
 
 void main() {
   testApp('TC-097: buyer completes checkout with new credit card',
-      ($, modules) async {
+      tags: ['checkout-new-cc', 'checkout', 'smoke'], ($, modules) async {
     await modules.auth.login(
       email: TestCredentials.buyerEmail,
       password: TestCredentials.password,
     );
 
     // Add a known seeded product to cart
-    await $(keys.products.productCard('E2E Test Lamp')).scrollTo().tap();
+    await $(keys.products.productCard('E2E Test Lamp'))
+        .scrollTo(view: find.byKey(keys.products.productList))
+        .tap();
     await $(keys.products.addToCartButton).tap();
 
     // Navigate to cart from product detail
@@ -39,8 +42,12 @@ void main() {
     }
 
     // Fill new card details
-    await $(keys.orders.checkoutCardNumberField).scrollTo().enterText('4111111111111111');
-    await $(keys.orders.checkoutCardHolderField).scrollTo().enterText('Test Buyer');
+    await $(keys.orders.checkoutCardNumberField)
+        .scrollTo()
+        .enterText('4111111111111111');
+    await $(keys.orders.checkoutCardHolderField)
+        .scrollTo()
+        .enterText('Test Buyer');
 
     // Place the order
     await $(keys.orders.placeOrderButton).scrollTo().tap();

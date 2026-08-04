@@ -8,7 +8,7 @@ import 'modules/modules.dart';
 void testApp(
   String description,
   Future<void> Function(PatrolIntegrationTester $, Modules modules) test, {
-  List<dynamic>? tags,
+  List<String>? tags,
 }) {
   patrolTest(description, tags: tags, ($) async {
     final storage = await StorageService.init();
