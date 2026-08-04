@@ -230,6 +230,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       label: AppStrings.openCart,
                       button: true,
                       child: InkWell(
+                        key: keys.products.productDetailCartIconButton,
                         onTap: () => context.push('/cart'),
                         borderRadius: BorderRadius.circular(24),
                         child: BlocBuilder<CartBloc, CartState>(

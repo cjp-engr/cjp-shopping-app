@@ -9,7 +9,12 @@ import 'package:patrol/src/platform/contracts/contracts.dart';
 import 'package:test_api/src/backend/invoker.dart';
 
 // START: GENERATED TEST IMPORTS
+import 'add_product_simple_test.dart' as add_product_simple_test;
 import 'cod_checkout_test.dart' as cod_checkout_test;
+import 'login_test.dart' as login_test;
+import 'new_credit_checkout_test.dart' as new_credit_checkout_test;
+import 'saved_credit_checkout_test.dart' as saved_credit_checkout_test;
+import 'signup_test.dart' as signup_test;
 // END: GENERATED TEST IMPORTS
 
 Future<void> main() async {
@@ -63,7 +68,7 @@ Future<void> main() async {
     final topLevelGroup = Invoker.current!.liveTest.groups.first;
     final dartTestGroup = createDartTestGroup(
       topLevelGroup,
-      tags: null,
+      tags: 'add_product',
       excludeTags: null,
     );
     testExplorationCompleter.complete(dartTestGroup);
@@ -72,7 +77,12 @@ Future<void> main() async {
   });
 
 // START: GENERATED TEST GROUPS
+  group('add_product_simple_test', add_product_simple_test.main);
   group('cod_checkout_test', cod_checkout_test.main);
+  group('login_test', login_test.main);
+  group('new_credit_checkout_test', new_credit_checkout_test.main);
+  group('saved_credit_checkout_test', saved_credit_checkout_test.main);
+  group('signup_test', signup_test.main);
 // END: GENERATED TEST GROUPS
 
   final dartTestGroup = await testExplorationCompleter.future;

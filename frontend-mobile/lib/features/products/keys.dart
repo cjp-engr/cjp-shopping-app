@@ -8,6 +8,8 @@ class ProductsKeys {
   final addToCartButton = const _ProductsKey('addToCartButton');
   final cartIconButton = const _ProductsKey('cartIconButton');
   final homeScreen = const _ProductsKey('homeScreen');
+  final productDetailCartIconButton =
+      const _ProductsKey('productDetailCartIconButton');
   _ProductsKey productCard(String name) => _ProductsKey('productCard_$name');
   final searchField = const _ProductsKey('searchField');
 }

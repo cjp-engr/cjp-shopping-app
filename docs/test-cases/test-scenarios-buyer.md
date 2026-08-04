@@ -89,6 +89,8 @@
 | TC-081 | Per-seller delivery | P0 | Patrol |
 | TC-082 | Voucher via route extra | P1 | Patrol |
 | TC-095 | COD checkout | P0 | Patrol |
+| TC-096 | Checkout saved card | P1 | Patrol |
+| TC-097 | Checkout new card | P1 | Patrol |
 | TC-083 | Multi-seller → 2 orders | P0 | Patrol |
 | TC-084 | Order history + detail | P1 | Patrol |
 | TC-085 | Confirm receipt | P1 | Patrol |

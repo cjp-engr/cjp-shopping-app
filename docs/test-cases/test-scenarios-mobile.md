@@ -3,7 +3,7 @@
 *Filtered view of `docs/test-cases/test-scenarios.md` — do not edit independently.*
 
 **Platform filter:** Mobile | Both  
-**Scope:** 66 web TCs with `Parity: Both` apply to mobile via Patrol; 33 mobile-native TCs below.
+**Scope:** 66 web TCs with `Parity: Both` apply to mobile via Patrol; 35 mobile-native TCs below.
 
 ---
 
@@ -44,6 +44,8 @@
 | TC-081 | Per-seller delivery on cart | P0 | Buyer | Patrol |
 | TC-082 | Voucher via route `extra` | P1 | Buyer | Patrol |
 | TC-095 | **COD checkout complete flow** | P0 | Buyer | Patrol |
+| TC-096 | **Checkout saved card** | P1 | Buyer | Patrol |
+| TC-097 | **Checkout new card entry** | P1 | Buyer | Patrol |
 | TC-083 | Multi-seller → 2 orders | P0 | Buyer | Patrol |
 | TC-084 | Order history tabs + detail | P1 | Buyer | Patrol |
 | TC-085 | Confirm receipt (shipped) | P1 | Buyer | Patrol |
@@ -78,7 +80,7 @@ These web TCs have `Parity: Both` — implement as Patrol where keys exist:
 |------|------------|-------------|
 | Auth | TC-001–007 | TC-068 diverges on guest (no TC-008/009) |
 | Browse | TC-010–015, TC-065–066 | TC-074–076, TC-608 |
-| Cart/checkout | TC-016–029 | TC-077–095; TC-078 vs TC-063 |
+| Cart/checkout | TC-016–029 | TC-077–097; TC-078 vs TC-063 |
 | Orders/reviews | TC-030–037 | TC-084–085 |
 | Seller | TC-041–051 | TC-089–094; no TC-045/052 |
 | Security/API | TC-053–056 | TC-611 + shared API tests |
