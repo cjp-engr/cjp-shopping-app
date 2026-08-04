@@ -884,6 +884,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             ),
             const SizedBox(height: AppSizes.sm),
             AppTextField(
+              key: keys.seller.wizardBrandField,
               label: AppStrings.brandOptional,
               controller: _brandCtrl,
               prefixIcon: Icons.storefront_outlined,
@@ -895,6 +896,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           Row(children: [
             Expanded(
                 child: _ConditionCard(
+              key: keys.seller.wizardBrandNewButton,
               label: AppStrings.brandNew,
               icon: Icons.fiber_new_outlined,
               selected: _condition == 'new',
@@ -903,6 +905,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             const SizedBox(width: AppSizes.sm),
             Expanded(
                 child: _ConditionCard(
+              key: keys.seller.wizardUsedButton,
               label: AppStrings.usedCondition,
               icon: Icons.history_outlined,
               selected: _condition == 'used',
@@ -977,12 +980,14 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   ),
                   const SizedBox(height: AppSizes.sm),
                   AppTextField(
+                    key: keys.seller.wizardSkuField,
                     label: AppStrings.skuOptional,
                     controller: _skuCtrl,
                     prefixIcon: Icons.qr_code_outlined,
                   ),
                   const SizedBox(height: AppSizes.sm),
                   AppTextField(
+                    key: keys.seller.wizardDiscountField,
                     label: AppStrings.discountOptional,
                     controller: _discountCtrl,
                     keyboardType: TextInputType.number,
@@ -1121,6 +1126,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               Row(children: [
                 Expanded(
                     child: AppTextField(
+                  key: keys.seller.wizardTagsField,
                   label: AppStrings.addTag,
                   controller: _tagCtrl,
                   onFieldSubmitted: (_) => _addTag(),
@@ -1128,6 +1134,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 )),
                 const SizedBox(width: AppSizes.sm),
                 GestureDetector(
+                  key: keys.seller.wizardAddTagButton,
                   onTap: _addTag,
                   child: Container(
                     width: 44,
@@ -1434,7 +1441,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         // Variant images section
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(
               'IMAGES',
               style: TextStyle(
@@ -1447,148 +1455,169 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             const SizedBox(height: 6),
             StatefulBuilder(
               builder: (ctx, setRowState) {
-                return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  if (row.imageUrls.isNotEmpty)
-                    SizedBox(
-                      height: 72,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: row.imageUrls.length,
-                        itemBuilder: (ctx, imgIdx) {
-                          return Stack(children: [
-                            Container(
-                              width: 68,
-                              height: 68,
-                              margin: const EdgeInsets.only(right: 6),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: imgIdx == 0
-                                      ? AppColors.primary
-                                      : context.borderColor.withAlpha(80),
-                                  width: imgIdx == 0 ? 2 : 1,
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(7),
-                                child: Image.network(
-                                  row.imageUrls[imgIdx],
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.broken_image_outlined,
-                                    size: 24,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            if (imgIdx == 0)
-                              Positioned(
-                                bottom: 4,
-                                left: 4,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (row.imageUrls.isNotEmpty)
+                        SizedBox(
+                          height: 72,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: row.imageUrls.length,
+                            itemBuilder: (ctx, imgIdx) {
+                              return Stack(children: [
+                                Container(
+                                  width: 68,
+                                  height: 68,
+                                  margin: const EdgeInsets.only(right: 6),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    borderRadius: BorderRadius.circular(3),
-                                  ),
-                                  child: const Text(
-                                    'Cover',
-                                    style: TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.w700),
-                                  ),
-                                ),
-                              ),
-                            Positioned(
-                              top: 0,
-                              right: 6,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setRowState(() => row.imageUrls.removeAt(imgIdx));
-                                  setState(() {});
-                                },
-                                child: Container(
-                                  width: 18,
-                                  height: 18,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.close, size: 11, color: Colors.white),
-                                ),
-                              ),
-                            ),
-                            if (imgIdx > 0)
-                              Positioned(
-                                bottom: 4,
-                                left: 4,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setRowState(() {
-                                      final img = row.imageUrls.removeAt(imgIdx);
-                                      row.imageUrls.insert(imgIdx - 1, img);
-                                    });
-                                    setState(() {});
-                                  },
-                                  child: Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black54,
-                                      borderRadius: BorderRadius.circular(3),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: imgIdx == 0
+                                          ? AppColors.primary
+                                          : context.borderColor.withAlpha(80),
+                                      width: imgIdx == 0 ? 2 : 1,
                                     ),
-                                    child: const Icon(Icons.chevron_left, size: 12, color: Colors.white),
                                   ),
-                                ),
-                              ),
-                            if (imgIdx < row.imageUrls.length - 1)
-                              Positioned(
-                                bottom: 4,
-                                right: 10,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setRowState(() {
-                                      final img = row.imageUrls.removeAt(imgIdx);
-                                      row.imageUrls.insert(imgIdx + 1, img);
-                                    });
-                                    setState(() {});
-                                  },
-                                  child: Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black54,
-                                      borderRadius: BorderRadius.circular(3),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(7),
+                                    child: Image.network(
+                                      row.imageUrls[imgIdx],
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.broken_image_outlined,
+                                        size: 24,
+                                        color: Colors.grey,
+                                      ),
                                     ),
-                                    child: const Icon(Icons.chevron_right, size: 12, color: Colors.white),
                                   ),
                                 ),
-                              ),
-                          ]);
-                        },
-                      ),
-                    ),
-                  const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: () =>
-                        _showVariantImageSourceSheet(row, setRowState),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.primary.withAlpha(100), width: 1.5),
-                        borderRadius: BorderRadius.circular(8),
-                        color: AppColors.primary.withAlpha(12),
-                      ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.add_photo_alternate_outlined, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 6),
-                        Text(
-                          row.imageUrls.isEmpty ? 'Add Images' : 'Add More',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                                if (imgIdx == 0)
+                                  Positioned(
+                                    bottom: 4,
+                                    left: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 4, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary,
+                                        borderRadius: BorderRadius.circular(3),
+                                      ),
+                                      child: const Text(
+                                        'Cover',
+                                        style: TextStyle(
+                                            fontSize: 8,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700),
+                                      ),
+                                    ),
+                                  ),
+                                Positioned(
+                                  top: 0,
+                                  right: 6,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setRowState(
+                                          () => row.imageUrls.removeAt(imgIdx));
+                                      setState(() {});
+                                    },
+                                    child: Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.close,
+                                          size: 11, color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                                if (imgIdx > 0)
+                                  Positioned(
+                                    bottom: 4,
+                                    left: 4,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setRowState(() {
+                                          final img =
+                                              row.imageUrls.removeAt(imgIdx);
+                                          row.imageUrls.insert(imgIdx - 1, img);
+                                        });
+                                        setState(() {});
+                                      },
+                                      child: Container(
+                                        width: 18,
+                                        height: 18,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black54,
+                                          borderRadius:
+                                              BorderRadius.circular(3),
+                                        ),
+                                        child: const Icon(Icons.chevron_left,
+                                            size: 12, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                if (imgIdx < row.imageUrls.length - 1)
+                                  Positioned(
+                                    bottom: 4,
+                                    right: 10,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setRowState(() {
+                                          final img =
+                                              row.imageUrls.removeAt(imgIdx);
+                                          row.imageUrls.insert(imgIdx + 1, img);
+                                        });
+                                        setState(() {});
+                                      },
+                                      child: Container(
+                                        width: 18,
+                                        height: 18,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black54,
+                                          borderRadius:
+                                              BorderRadius.circular(3),
+                                        ),
+                                        child: const Icon(Icons.chevron_right,
+                                            size: 12, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                              ]);
+                            },
+                          ),
                         ),
-                      ]),
-                    ),
-                  ),
-                ]);
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: () =>
+                            _showVariantImageSourceSheet(row, setRowState),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color: AppColors.primary.withAlpha(100),
+                                width: 1.5),
+                            borderRadius: BorderRadius.circular(8),
+                            color: AppColors.primary.withAlpha(12),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.add_photo_alternate_outlined,
+                                size: 16, color: AppColors.primary),
+                            const SizedBox(width: 6),
+                            Text(
+                              row.imageUrls.isEmpty ? 'Add Images' : 'Add More',
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary),
+                            ),
+                          ]),
+                        ),
+                      ),
+                    ]);
               },
             ),
           ]),
@@ -1621,23 +1650,27 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               'standard',
               AppStrings.standardDelivery,
               '3–7 business days',
-              Icons.local_shipping_outlined
+              Icons.local_shipping_outlined,
+              keys.seller.wizardStandardButton
             ),
             (
               'express',
               AppStrings.expressDelivery,
               '1–2 business days',
-              Icons.electric_bolt_outlined
+              Icons.electric_bolt_outlined,
+              keys.seller.wizardExpressButton
             ),
             (
               'pickup',
               AppStrings.pickup,
               'Buyer collects in person',
-              Icons.storefront_outlined
+              Icons.storefront_outlined,
+              keys.seller.wizardPickupButton
             ),
           ]).map((o) => Padding(
                 padding: const EdgeInsets.only(bottom: AppSizes.xs),
                 child: _ShippingOptionCard(
+                  key: o.$5,
                   label: o.$2,
                   subtitle: o.$3,
                   icon: o.$4,
@@ -1657,6 +1690,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           Row(children: [
             Expanded(
                 child: _ShippingFeeCard(
+              key: keys.seller.wizardFreeShippingButton,
               label: AppStrings.freeShipping,
               subtitle: 'You absorb the cost',
               selected: _shippingFee == 'free',
@@ -1665,6 +1699,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             const SizedBox(width: AppSizes.sm),
             Expanded(
                 child: _ShippingFeeCard(
+              key: keys.seller.wizardBuyerPaysButton,
               label: AppStrings.feeByBuyer,
               subtitle: 'Added at checkout',
               selected: _shippingFee == 'buyer_pays',
@@ -1695,6 +1730,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                           ),
                           Expanded(
                             child: AppTextField(
+                              key: keys.seller.wizardShippingFeeField(opt),
                               label: '',
                               controller: _shippingFeeAmountCtrls[opt]!,
                               keyboardType:
@@ -1858,7 +1894,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           )),
           const SizedBox(width: AppSizes.sm),
           if (_currentPage < 5)
-            Expanded(child: AppButton(key: keys.seller.wizardNextButton, label: 'Next', onPressed: _nextPage))
+            Expanded(
+                child: AppButton(
+                    key: keys.seller.wizardNextButton,
+                    label: 'Next',
+                    onPressed: _nextPage))
           else
             Expanded(
               child: BlocBuilder<SellerBloc, SellerState>(
@@ -2168,17 +2208,20 @@ class _ConditionCard extends StatelessWidget {
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
+
   const _ConditionCard(
       {required this.label,
       required this.icon,
       required this.selected,
-      required this.onTap});
+      required this.onTap,
+      super.key});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
+        key: key,
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(AppSizes.sm),
         decoration: BoxDecoration(
@@ -2216,12 +2259,14 @@ class _ShippingOptionCard extends StatelessWidget {
   final IconData icon;
   final bool checked;
   final VoidCallback onTap;
-  const _ShippingOptionCard(
-      {required this.label,
-      required this.subtitle,
-      required this.icon,
-      required this.checked,
-      required this.onTap});
+  const _ShippingOptionCard({
+    super.key,
+    required this.label,
+    required this.subtitle,
+    required this.icon,
+    required this.checked,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2256,7 +2301,9 @@ class _ShippingOptionCard extends StatelessWidget {
               child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label,
+              Text(
+                  key: key,
+                  label,
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -2298,7 +2345,8 @@ class _ShippingFeeCard extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   const _ShippingFeeCard(
-      {required this.label,
+      {super.key,
+      required this.label,
       required this.subtitle,
       required this.selected,
       required this.onTap});
@@ -2320,7 +2368,9 @@ class _ShippingFeeCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
+            Text(
+                key: key,
+                label,
                 style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,

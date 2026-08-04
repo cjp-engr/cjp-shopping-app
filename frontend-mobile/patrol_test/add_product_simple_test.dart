@@ -41,7 +41,7 @@ final product = products.first;
 
 void main() {
   testApp('TC-090: seller creates simple product via wizard',
-      ($, modules) async {
+      tags: ['add-product-simple', 'seller', 'smoke'], ($, modules) async {
     await modules.auth.login(
       email: TestCredentials.sellerEmail,
       password: TestCredentials.password,
@@ -56,18 +56,23 @@ void main() {
 
     // Step 0 — Basic Info
     await $(keys.seller.wizardProductNameField)
-        .enterText('E2E Test ${product.name}');
+        .enterText('E2E Test ${product.name} - Test');
     await $(keys.seller.wizardCategorySelector).tap();
     await $(keys.seller.categorySheetItem(product.category)).tap();
+    await $(keys.seller.wizardBrandField).enterText('Brand Test');
     await $(keys.seller.wizardNextButton).tap();
 
     // Step 1 — Pricing
     await $(keys.seller.wizardPriceField).enterText('${product.price}');
     await $(keys.seller.wizardStockField).enterText('${product.stock}');
+    await $(keys.seller.wizardSkuField).enterText('E2E-${product.name}-SKU');
+    await $(keys.seller.wizardDiscountField).enterText('10');
     await $(keys.seller.wizardNextButton).tap();
 
     // Step 2 — Description
     await $(keys.seller.wizardDescriptionField).enterText(product.description);
+    await $(keys.seller.wizardTagsField).enterText('testTagOnly');
+    await $(keys.seller.wizardAddTagButton).tap();
     await $(keys.seller.wizardNextButton).tap();
 
     // Step 3 — Images: take a photo
@@ -81,7 +86,16 @@ void main() {
         .tap(Selector(resourceId: 'com.android.camera2:id/done_button'));
     await $(keys.seller.wizardNextButton).tap();
 
-    // Step 4 — Shipping (Standard pre-selected)
+    // Step 4 — Shipping
+    await $(keys.seller.wizardExpressButton).tap();
+    await $(keys.seller.wizardPickupButton).tap();
+
+    await $(keys.seller.wizardBuyerPaysButton).tap();
+
+    await $(keys.seller.wizardShippingFeeField('standard')).enterText('10');
+    await $(keys.seller.wizardShippingFeeField('express')).enterText('15');
+    await $(keys.seller.wizardShippingFeeField('pickup')).enterText('5');
+
     await $(keys.seller.wizardNextButton).tap();
 
     // Step 5 — Review: publish

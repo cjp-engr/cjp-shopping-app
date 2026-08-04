@@ -68,7 +68,7 @@ Future<void> main() async {
     final topLevelGroup = Invoker.current!.liveTest.groups.first;
     final dartTestGroup = createDartTestGroup(
       topLevelGroup,
-      tags: 'checkout-new-cc',
+      tags: 'add-product-simple',
       excludeTags: null,
     );
     testExplorationCompleter.complete(dartTestGroup);
