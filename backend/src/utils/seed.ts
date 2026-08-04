@@ -499,14 +499,31 @@ const seedDatabase = async () => {
     await Product.deleteMany({});
     await User.deleteMany({});
 
-    // Create test user
-    console.log('Creating test user...');
-    await User.create({
-      email: 'test@example.com',
-      password: 'password123',
-      firstName: 'Test',
-      lastName: 'User'
-    });
+    // Create test users
+    console.log('Creating test users...');
+    await User.create([
+      {
+        email: 'test@example.com',
+        password: 'password123',
+        firstName: 'Test',
+        lastName: 'User',
+        role: 'buyer',
+      },
+      {
+        email: 'buyer@test.com',
+        password: 'Test750!!',
+        firstName: 'Buyer',
+        lastName: 'Test',
+        role: 'buyer',
+      },
+      {
+        email: 'seller@test.com',
+        password: 'Test750!!',
+        firstName: 'Seller',
+        lastName: 'Test',
+        role: 'seller',
+      },
+    ]);
 
     // Insert products
     console.log('Seeding products...');
@@ -514,7 +531,10 @@ const seedDatabase = async () => {
 
     console.log(`✅ Database seeded successfully!`);
     console.log(`   - ${products.length} products added`);
-    console.log(`   - 1 test user created (test@example.com / password123)`);
+    console.log(`   - 3 test users created:`);
+    console.log(`       test@example.com / password123 (buyer)`);
+    console.log(`       buyer@test.com / Test750!! (buyer)`);
+    console.log(`       seller@test.com / Test750!! (seller)`);
 
     process.exit(0);
   } catch (error) {

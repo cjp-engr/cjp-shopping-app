@@ -1756,16 +1756,64 @@
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
-**Preconditions**: Selected cart items; saved or new shipping address  
+**Preconditions**: Buyer logged in (`buyer@test.com`); product in cart; saved or new shipping address  
 **Steps**:
-1. From cart with checked items → checkout
-2. Fill/confirm address; select Cash on Delivery
-3. Place order
+1. Open product detail → add to cart → tap product-detail cart icon (`products_productDetailCartIconButton`)
+2. From cart with checked items → checkout
+3. Fill/confirm address; select Cash on Delivery
+4. Place order
 **Expected Results**:
 - Order created; checked-out items removed from cart
 - Order visible in `/orders` history
 **Business Rule**: §6 Checkout, §7 Orders  
-**Selectors/API**: `CheckoutScreen`, `place-order` — **keys missing**  
+**Selectors/API**: `products_productDetailCartIconButton`, `cart_checkoutButton`, `orders_paymentOption_cash-on-delivery`, `orders_placeOrderButton`, `orders_ordersScreen`
+
+---
+
+### TC-096: Checkout with saved credit card (mobile)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Mobile  
+**Parity**: Both (web TC-023)  
+**Automation**: Patrol  
+**Preconditions**: Buyer logged in (`buyer@test.com`); ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); cart with checked items; shipping address saved or entered on checkout  
+**Steps**:
+1. From cart with checked items → tap checkout (`cart_checkoutButton`)
+2. Fill/confirm shipping address if not saved
+3. In **Payment Method**, verify **Saved Card** mode is active (default when saved cards exist)
+4. Select a saved card from the list
+5. Tap place order (`orders_placeOrderButton`)
+**Expected Results**:
+- `POST /api/orders` succeeds; order status `pending`
+- Order payment shows saved card type + last4 on order detail
+- Checked-out items removed from cart; order visible on `/orders` (`orders_ordersScreen`)
+**Business Rule**: §4 Payment methods, §8 Saved cards  
+**Selectors/API**: `cart_checkoutButton`, `orders_checkoutStreetField`, `orders_paymentNewCardTab`, `orders_placeOrderButton`, `orders_ordersScreen`, `POST /api/orders` — **saved card row keys missing**  
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-097: Checkout with new card entry (mobile)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Mobile  
+**Parity**: Both (web TC-024)  
+**Automation**: Patrol  
+**Preconditions**: Buyer logged in; cart with checked items; no saved card selected (tap **+ New Card** if saved cards exist)  
+**Steps**:
+1. From cart → checkout (`cart_checkoutButton`)
+2. Fill/confirm shipping address
+3. In **Payment Method**, select **Credit Card** (`orders_paymentOption_credit-card`); if saved cards exist, tap **+ New Card** (`orders_paymentNewCardTab`) first
+4. Enter card number (16 digits), cardholder name, expiry month/year
+5. Tap place order (`orders_placeOrderButton`)
+**Expected Results**:
+- Client validation passes for card fields before submit
+- Order created successfully; payment method persisted on order
+- Order visible in `/orders` history
+**Business Rule**: §4 Payment methods, §10 Checkout card validation  
+**Selectors/API**: `cart_checkoutButton`, `orders_paymentOption_credit-card`, `orders_paymentNewCardTab`, `orders_placeOrderButton`, `orders_ordersScreen` — **card field keys missing**  
 **Suggested Layer**: E2E Mobile
 
 ---
@@ -2241,10 +2289,10 @@
 | TC-056–059 | 4 | Edge cases (web) |
 | TC-060–063 | 4 | Platform parity (web perspective) |
 | TC-064–066 | 3 | Seller variant listing + buyer catalog (web) |
-| TC-067–094, TC-095 | 29 | Mobile happy path — auth, browse, cart, checkout, orders, wishlist, seller |
+| TC-067–094, TC-095–097 | 31 | Mobile happy path — auth, browse, cart, checkout, orders, wishlist, seller |
 | TC-607–614 | 6 | Mobile session, UI, negative, edge |
 | TC-600–606, TC-608–611 | 11 | Mobile platform parity & security |
 | TC-604–605 | (in above) | Mobile-only notifications |
-| **Total** | **110** | Web (66) + Mobile-native (44) |
+| **Total** | **112** | Web (66) + Mobile-native (46) |
 
 **Automation split:** Playwright E2E (~48 web), Patrol E2E (~36 mobile, many blocked on missing keys), Playwright-API (~15), Manual/Blocked (~5)

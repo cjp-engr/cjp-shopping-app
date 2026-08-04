@@ -1270,6 +1270,9 @@ class _PaymentSectionState extends State<_PaymentSection> {
   }
 
   Map<String, dynamic> get orderPaymentMethod {
+    if (widget.selected == 'cash-on-delivery') {
+      return {'type': 'cash-on-delivery'};
+    }
     if (_mode == _CardMode.saved) {
       final card =
           widget.savedCards.where((c) => c.id == _selectedCardId).firstOrNull;
@@ -1368,6 +1371,12 @@ class _PaymentSectionState extends State<_PaymentSection> {
           ),
           const SizedBox(height: 12),
 
+          _PaymentTypeOptions(
+            selected: widget.selected,
+            onChanged: widget.onChanged,
+          ),
+          const SizedBox(height: 12),
+
           // ── Mode toggle (only when saved cards exist) ──
           if (hasSaved) ...[
             Container(
@@ -1385,6 +1394,7 @@ class _PaymentSectionState extends State<_PaymentSection> {
                   onTap: () => setState(() => _mode = _CardMode.saved),
                 ),
                 _ModeChip(
+                  key: keys.orders.paymentNewCardTab,
                   label: '+ New Card',
                   selected: _mode == _CardMode.newCard,
                   onTap: () => setState(() => _mode = _CardMode.newCard),
@@ -1516,11 +1526,10 @@ class _PaymentSectionState extends State<_PaymentSection> {
               }).toList(),
             ),
 
-          // ── New card form ──
-          if (_mode == _CardMode.newCard) ...[
-            _NewCardForm(
-              paymentType: widget.selected,
-              onTypeChanged: widget.onChanged,
+          // ── New card details ──
+          if (_mode == _CardMode.newCard &&
+              widget.selected != 'cash-on-delivery') ...[
+            _CardDetailForm(
               cardNumberCtrl: _cardNumberCtrl,
               cardHolderCtrl: _cardHolderCtrl,
               expiryMonth: _expiryMonth,
@@ -1528,7 +1537,6 @@ class _PaymentSectionState extends State<_PaymentSection> {
               onMonthChanged: (v) => setState(() => _expiryMonth = v),
               onYearChanged: (v) => setState(() => _expiryYear = v),
             ),
-            if (widget.selected != 'cash-on-delivery') ...[
             const SizedBox(height: 10),
             Material(
               color: Colors.transparent,
@@ -1569,7 +1577,6 @@ class _PaymentSectionState extends State<_PaymentSection> {
                 ),
               ),
             ),
-            ], // end if not COD
           ],
         ],
       ),
@@ -1584,8 +1591,12 @@ class _ModeChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _ModeChip(
-      {required this.label, required this.selected, required this.onTap});
+  const _ModeChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1625,9 +1636,116 @@ class _ModeChip extends StatelessWidget {
   }
 }
 
-class _NewCardForm extends StatelessWidget {
-  final String paymentType;
-  final ValueChanged<String> onTypeChanged;
+class _PaymentTypeOptions extends StatelessWidget {
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  const _PaymentTypeOptions({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  static const _options = [
+    ('credit-card', 'Credit Card', Icons.credit_card_rounded),
+    ('debit-card', 'Debit Card', Icons.payment_rounded),
+    ('paypal', 'PayPal', Icons.account_balance_wallet_rounded),
+    ('cash-on-delivery', 'Cash on Delivery', Icons.payments_rounded),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _options.map((p) {
+        final isSelected = selected == p.$1;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              key: keys.orders.paymentOption(p.$1),
+              onTap: () => onChanged(p.$1),
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primary
+                          .withValues(alpha: isDark ? 0.15 : 0.06)
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.04)
+                          : Colors.grey.shade50),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.primary
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.1)
+                            : Colors.grey.shade200),
+                    width: isSelected ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primary
+                            : Colors.grey.shade400,
+                        width: isSelected ? 5.5 : 1.5,
+                      ),
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary.withValues(alpha: 0.12)
+                          : (isDark
+                              ? Colors.white.withValues(alpha: 0.06)
+                              : Colors.grey.shade100),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(p.$3,
+                        size: 17,
+                        color: isSelected
+                            ? AppColors.primary
+                            : context.onSurfaceMuted),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    p.$2,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.primary
+                          : context.onSurfaceColor,
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _CardDetailForm extends StatelessWidget {
   final TextEditingController cardNumberCtrl;
   final TextEditingController cardHolderCtrl;
   final String expiryMonth;
@@ -1635,9 +1753,7 @@ class _NewCardForm extends StatelessWidget {
   final ValueChanged<String> onMonthChanged;
   final ValueChanged<String> onYearChanged;
 
-  const _NewCardForm({
-    required this.paymentType,
-    required this.onTypeChanged,
+  const _CardDetailForm({
     required this.cardNumberCtrl,
     required this.cardHolderCtrl,
     required this.expiryMonth,
@@ -1648,141 +1764,48 @@ class _NewCardForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final options = [
-      ('credit-card', 'Credit Card', Icons.credit_card_rounded),
-      ('debit-card', 'Debit Card', Icons.payment_rounded),
-      ('paypal', 'PayPal', Icons.account_balance_wallet_rounded),
-      ('cash-on-delivery', 'Cash on Delivery', Icons.payments_rounded),
-    ];
     final months = List.generate(12, (i) => (i + 1).toString().padLeft(2, '0'));
     final years =
         List.generate(10, (i) => (DateTime.now().year + i).toString());
-    final isCod = paymentType == 'cash-on-delivery';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Payment type options
-        ...options.map((p) {
-          final selected = paymentType == p.$1;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                key: keys.orders.paymentOption(p.$1),
-                onTap: () => onTypeChanged(p.$1),
-                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOut,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.primary
-                            .withValues(alpha: isDark ? 0.15 : 0.06)
-                        : (isDark
-                            ? Colors.white.withValues(alpha: 0.04)
-                            : Colors.grey.shade50),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    border: Border.all(
-                      color: selected
-                          ? AppColors.primary
-                          : (isDark
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : Colors.grey.shade200),
-                      width: selected ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Row(children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selected
-                              ? AppColors.primary
-                              : Colors.grey.shade400,
-                          width: selected ? 5.5 : 1.5,
-                        ),
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? AppColors.primary.withValues(alpha: 0.12)
-                            : (isDark
-                                ? Colors.white.withValues(alpha: 0.06)
-                                : Colors.grey.shade100),
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      child: Icon(p.$3,
-                          size: 17,
-                          color: selected
-                              ? AppColors.primary
-                              : context.onSurfaceMuted),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      p.$2,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: selected
-                            ? AppColors.primary
-                            : context.onSurfaceColor,
-                      ),
-                    ),
-                  ]),
-                ),
-              ),
-            ),
-          );
-        }),
-        // Card detail fields
-        if (!isCod) ...[
-          const SizedBox(height: 4),
-          AppTextField(
-            label: 'Card Number',
-            controller: cardNumberCtrl,
-            keyboardType: TextInputType.number,
-            prefixIcon: Icons.credit_card_outlined,
-          ),
-          const SizedBox(height: 10),
-          AppTextField(
-            label: 'Cardholder Name',
-            controller: cardHolderCtrl,
-            prefixIcon: Icons.person_outline,
-            keyboardType: TextInputType.name,
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 10),
-          Row(children: [
-            Expanded(
-                child: _ExpiryPickerField(
-              label: 'Expiry Month',
-              value: expiryMonth,
-              items: months,
-              onChanged: onMonthChanged,
-            )),
-            const SizedBox(width: 10),
-            Expanded(
-                child: _ExpiryPickerField(
-              label: 'Expiry Year',
-              value: expiryYear,
-              items: years,
-              onChanged: onYearChanged,
-            )),
-          ]),
-        ],
+        const SizedBox(height: 4),
+        AppTextField(
+          key: keys.orders.checkoutCardNumberField,
+          label: 'Card Number',
+          controller: cardNumberCtrl,
+          keyboardType: TextInputType.number,
+          prefixIcon: Icons.credit_card_outlined,
+        ),
+        const SizedBox(height: 10),
+        AppTextField(
+          key: keys.orders.checkoutCardHolderField,
+          label: 'Cardholder Name',
+          controller: cardHolderCtrl,
+          prefixIcon: Icons.person_outline,
+          keyboardType: TextInputType.name,
+          textInputAction: TextInputAction.next,
+        ),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(
+              child: _ExpiryPickerField(
+            label: 'Expiry Month',
+            value: expiryMonth,
+            items: months,
+            onChanged: onMonthChanged,
+          )),
+          const SizedBox(width: 10),
+          Expanded(
+              child: _ExpiryPickerField(
+            label: 'Expiry Year',
+            value: expiryYear,
+            items: years,
+            onChanged: onYearChanged,
+          )),
+        ]),
       ],
     );
   }

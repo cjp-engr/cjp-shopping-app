@@ -1,12 +1,13 @@
 import 'package:toko_mart/keys.dart';
 
 import 'test_app.dart';
+import 'test_credentials.dart';
 
 void main() {
   testApp('logs in and verifies the home screen', ($, modules) async {
     await modules.auth.login(
-      email: const String.fromEnvironment('SELLER_EMAIL'),
-      password: const String.fromEnvironment('PASSWORD'),
+      email: TestCredentials.sellerEmail,
+      password: TestCredentials.password,
     );
 
     await $(keys.products.homeScreen).waitUntilVisible();
