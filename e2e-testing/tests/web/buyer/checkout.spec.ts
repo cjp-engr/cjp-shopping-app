@@ -1,6 +1,6 @@
 // TC coverage: TC-022 — Complete checkout with Cash on Delivery (S1)
 
-import { test, expect } from '../../fixtures/base-fixture';
+import { test, expect } from '../../../fixtures/base-fixture';
 
 const SHIPPING_ADDRESS = {
   street: '123 Test Street',
@@ -13,16 +13,12 @@ const SHIPPING_ADDRESS = {
 test.describe('TC-022: Checkout COD', () => {
   test('buyer completes checkout with Cash on Delivery', async ({
     page,
-    loginPage,
     productListPage,
     productDetailPage,
     cartPage,
     checkoutPage,
   }) => {
-    // Login and navigate to products
-    await loginPage.goto();
-    await loginPage.loginAsBuyer();
-    await page.waitForURL(/\/$/, { timeout: 15_000 });
+    // Auth already applied via .auth/buyer.json — no login step needed
     await productListPage.goto();
 
     // Add first available product to cart

@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/base-fixture';
+import { test, expect } from '../../../fixtures/base-fixture';
 
 // TC coverage: TC-001 — successful login (S1 partial)
 test.describe('Web login', () => {

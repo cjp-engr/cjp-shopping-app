@@ -1,7 +1,7 @@
-// TC-042: Seller creates simple product listing (web 6-step wizard)
+// TC-042: Seller creates simple product listing (web 7-step wizard)
 
-import { authHeaders } from '../../helpers/api-client';
-import { test, expect } from '../../fixtures/base-fixture';
+import { authHeaders } from '../../../helpers/api-client';
+import { test, expect } from '../../../fixtures/base-fixture';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
 
@@ -12,7 +12,7 @@ const PRODUCT_DESCRIPTION =
   'A beautiful E2E test lamp for home decor. Energy efficient and modern design.';
 const PRODUCT_TAGS = ['lamp', 'home-decor', 'lighting'];
 
-test('TC-042: seller creates simple product via 6-step wizard and verifies dashboard + direct URL', async ({
+test('TC-042: seller creates simple product via wizard and verifies dashboard + direct URL', async ({
   page,
   request,
   homePage,
