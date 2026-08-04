@@ -19,6 +19,49 @@ export class ProductDetailPage {
     this.imageGallery = page.getByTestId('product-image-gallery');
   }
 
+  async goto(productId: string): Promise<void> {
+    await this.page.goto(`/products/${productId}`);
+    await this.root.waitFor();
+  }
+
+  async expectNoVariantSelectors(): Promise<void> {
+    await expect(this.page.locator('[data-testid^="variant-attr-"]')).toHaveCount(0);
+  }
+
+  async expectSizeOptions(sizes: readonly string[]): Promise<void> {
+    await expect(this.variantAttr('Size')).toBeVisible();
+    for (const size of sizes) {
+      await expect(this.variantValue('Size', size)).toBeVisible();
+    }
+  }
+
+  /**
+   * Selects each size, asserts price + thumbnail count, and verifies main image changes.
+   */
+  async expectVariantSelectionCycle(
+    sizes: readonly string[],
+    priceBySize: Record<string, string>,
+    thumbnailCount = 2,
+  ): Promise<void> {
+    let previousSrc = '';
+    for (const size of sizes) {
+      await this.selectVariant('Size', size);
+      await this.expectDisplayedPrice(priceBySize[size]);
+      await this.expectThumbnailCount(thumbnailCount);
+      if (previousSrc) {
+        await this.expectMainImageSrcChanges(previousSrc);
+      }
+      previousSrc = await this.getMainImageSrc();
+    }
+    await expect(this.addToCartButton).toBeVisible();
+  }
+
+  async selectSizeAndAddToCart(size: string, expectedPrice: string): Promise<void> {
+    await this.selectVariant('Size', size);
+    await this.expectDisplayedPrice(expectedPrice);
+    await this.addCurrentSelectionToCart();
+  }
+
   async enterBuyerPreview(): Promise<void> {
     if (await this.previewAsBuyerButton.isVisible()) {
       await this.previewAsBuyerButton.click();

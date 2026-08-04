@@ -2,41 +2,16 @@
 //              TC-023 — Checkout with saved credit card
 //              TC-024 — Checkout with new card entry
 
-import * as fs from 'fs';
-import * as path from 'path';
+import { clearBuyerCart, getBuyerToken } from '../../../helpers/auth-state';
+import { API_URL, DEFAULT_SHIPPING_ADDRESS } from '../../../helpers/test-data';
 import { test, expect } from '../../../fixtures/base-fixture';
 
 // All tests mutate the same buyer's server-side cart — run sequentially to avoid races
 test.describe.configure({ mode: 'serial' });
 
-const API_URL = process.env.API_URL ?? 'http://localhost:5000';
-
-/** Read the buyer's auth token from the saved storageState on disk. */
-function getBuyerToken(): string {
-  const statePath = path.join(__dirname, '../../../.auth/buyer.json');
-  const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
-  const entry = state.origins?.[0]?.localStorage?.find(
-    (e: { name: string; value: string }) => e.name === 'shopping_app_auth_token',
-  );
-  if (!entry?.value) throw new Error('Buyer auth token not found in .auth/buyer.json');
-  return entry.value;
-}
-
-// Clear any leftover cart items before each test (cart persists across runs)
 test.beforeEach(async ({ request }) => {
-  const token = getBuyerToken();
-  await request.delete(`${API_URL}/api/cart`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  await clearBuyerCart(request, API_URL);
 });
-
-const SHIPPING_ADDRESS = {
-  street: '123 Test Street',
-  city: 'Manila',
-  state: 'Metro Manila',
-  zip: '1000',
-  phone: '+63 912 345 6789',
-};
 
 test.describe('TC-022: Checkout COD', () => {
   test('buyer completes checkout with Cash on Delivery',
@@ -64,7 +39,7 @@ test.describe('TC-022: Checkout COD', () => {
       await checkoutPage.root.waitFor();
 
       // Fill shipping, select COD, place order
-      await checkoutPage.fillNewShippingAddress(SHIPPING_ADDRESS);
+      await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
       await checkoutPage.continueToPayment();
       await checkoutPage.selectPaymentMethod('cash-on-delivery');
       await checkoutPage.continueToReview();
@@ -119,7 +94,7 @@ test.describe('TC-023: Checkout with saved credit card', () => {
       await checkoutPage.root.waitFor();
 
       // Fill shipping; payment section starts in saved-card mode (first card auto-selected)
-      await checkoutPage.fillNewShippingAddress(SHIPPING_ADDRESS);
+      await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
       await checkoutPage.continueToPayment();
       await checkoutPage.selectSavedCard();
       await checkoutPage.continueToReview();
@@ -157,7 +132,7 @@ test.describe('TC-024: Checkout with new card entry', () => {
       await checkoutPage.root.waitFor();
 
       // Fill shipping, enter new credit card details, place order
-      await checkoutPage.fillNewShippingAddress(SHIPPING_ADDRESS);
+      await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
       await checkoutPage.continueToPayment();
       await checkoutPage.fillNewCardForm({
         type: 'credit-card',

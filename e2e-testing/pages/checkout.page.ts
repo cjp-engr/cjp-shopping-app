@@ -89,4 +89,14 @@ export class CheckoutPage {
   async placeOrder(): Promise<void> {
     await this.placeOrderButton.click();
   }
+
+  /** Full COD path after landing on checkout-page. */
+  async completeCodCheckout(address: ShippingAddress): Promise<void> {
+    await this.root.waitFor();
+    await this.fillNewShippingAddress(address);
+    await this.continueToPayment();
+    await this.selectPaymentMethod('cash-on-delivery');
+    await this.continueToReview();
+    await this.placeOrder();
+  }
 }

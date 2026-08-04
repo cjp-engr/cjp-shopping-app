@@ -1,4 +1,4 @@
-import { Locator, Page } from '@playwright/test';
+import { expect, Locator, Page } from '@playwright/test';
 
 export class CartPage {
   readonly page: Page;
@@ -25,5 +25,17 @@ export class CartPage {
   cartItem(productId: string, variantId?: string): Locator {
     const suffix = variantId ? `-${variantId}` : '';
     return this.page.getByTestId(`cart-item-${productId}${suffix}`);
+  }
+
+  async expectVariantLineItem(
+    productId: string,
+    variantId: string,
+    size: string,
+    priceFragment: string,
+  ): Promise<void> {
+    const line = this.cartItem(productId, variantId);
+    await expect(line).toBeVisible();
+    await expect(line).toContainText(`Size: ${size}`);
+    await expect(line).toContainText(priceFragment);
   }
 }
