@@ -21,4 +21,9 @@ export class CartPage {
   async proceedToCheckout(): Promise<void> {
     await this.checkoutButton.click();
   }
+
+  cartItem(productId: string, variantId?: string): Locator {
+    const suffix = variantId ? `-${variantId}` : '';
+    return this.page.getByTestId(`cart-item-${productId}${suffix}`);
+  }
 }

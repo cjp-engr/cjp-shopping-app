@@ -31,6 +31,7 @@
 | TC-018 | E2E | Playwright | `cart.spec.ts` |
 | TC-021 | E2E | Playwright | `cart.spec.ts` |
 | TC-022 | E2E | Playwright | `checkout.spec.ts` |
+| TC-098 | E2E | Playwright | `variant-checkout.spec.ts` |
 | TC-025 | Multi | API + Playwright | `orders.api.spec.ts` + checkout |
 | TC-026 | API | Playwright-API | `orders.api.spec.ts` |
 | TC-053 | API | Playwright-API | `seller.api.spec.ts` |

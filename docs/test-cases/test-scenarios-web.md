@@ -45,6 +45,7 @@
 | TC-020 | Invalid voucher | P1 | Buyer | Playwright |
 | TC-021 | Multi-seller cart groups | P0 | Buyer | Playwright |
 | TC-022 | Checkout COD | P0 | Buyer | Playwright |
+| TC-098 | Checkout COD with variant product | P0 | Buyer | Playwright |
 | TC-023 | Checkout saved card | P1 | Buyer | Playwright |
 | TC-024 | Checkout new card | P1 | Buyer | Playwright |
 | TC-098 | Checkout COD with variant product | P0 | Buyer | Playwright |

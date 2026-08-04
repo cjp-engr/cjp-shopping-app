@@ -71,4 +71,10 @@ export class ProductDetailPage {
     await this.addToCartButton.waitFor();
     await this.addToCartButton.click();
   }
+
+  /** Adds to cart using the currently selected variant(s) without re-selecting. */
+  async addCurrentSelectionToCart(): Promise<void> {
+    await this.addToCartButton.waitFor();
+    await this.addToCartButton.click();
+  }
 }
