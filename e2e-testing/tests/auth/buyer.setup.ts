@@ -13,10 +13,16 @@ setup('authenticate as buyer', async ({ page, request }) => {
   if (!body.token) throw new Error(`Buyer login failed: ${JSON.stringify(body)}`);
   const { token, user } = body;
 
+  // Clear server-side cart so the saved storageState starts with an empty cart
+  await request.delete(`${API_URL}/api/cart`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
   await page.addInitScript(
     ({ t, u }) => {
       localStorage.setItem('shopping_app_auth_token', t);
       localStorage.setItem('shopping_app_user_data', JSON.stringify(u));
+      localStorage.removeItem('shopping_app_cart_data');
     },
     { t: token, u: user },
   );

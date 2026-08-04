@@ -8,6 +8,15 @@ export interface ShippingAddress {
   phone: string;
 }
 
+export interface NewCardData {
+  type?: string; // 'credit-card' | 'debit-card' | 'paypal' — defaults to 'credit-card'
+  cardNumber: string;
+  cardHolder: string;
+  expiryMonth: string; // zero-padded e.g. '12'
+  expiryYear: string;  // four-digit e.g. '2028'
+  cvv: string;
+}
+
 export class CheckoutPage {
   readonly page: Page;
   readonly root: Locator;
@@ -37,13 +46,39 @@ export class CheckoutPage {
     await this.paymentSection.waitFor();
   }
 
+  /** Use when buyer has saved cards and should pay with the default/first saved card. */
+  async selectSavedCard(): Promise<void> {
+    // Button accessible name is "Saved Card Use a saved card" (two text nodes) — use substring match
+    const savedCardBtn = this.page.getByRole('button', { name: /saved card/i });
+    if (await savedCardBtn.isVisible()) {
+      await savedCardBtn.click();
+    }
+    // First saved card is auto-selected by the UI — no further action needed
+  }
+
+  /** Use when buyer should pay with COD or enter a new card. */
   async selectPaymentMethod(method: string): Promise<void> {
-    // Switch to new card form if saved cards are shown (dropdown is hidden in saved-card mode)
+    // Button accessible name is "New Card Enter a different card" — use substring match
     const newCardBtn = this.page.getByRole('button', { name: /new card/i });
     if (await newCardBtn.isVisible()) {
       await newCardBtn.click();
     }
     await this.page.locator('select[name="type"]').selectOption(method);
+  }
+
+  /** Use when buyer should pay with a new card and fill all card fields. */
+  async fillNewCardForm(data: NewCardData): Promise<void> {
+    // Button accessible name is "New Card Enter a different card" — use substring match
+    const newCardBtn = this.page.getByRole('button', { name: /new card/i });
+    if (await newCardBtn.isVisible()) {
+      await newCardBtn.click();
+    }
+    await this.page.locator('select[name="type"]').selectOption(data.type ?? 'credit-card');
+    await this.page.getByLabel(/card number/i).fill(data.cardNumber);
+    await this.page.getByLabel(/cardholder name/i).fill(data.cardHolder);
+    await this.page.locator('select[name="expiryMonth"]').selectOption(data.expiryMonth);
+    await this.page.locator('select[name="expiryYear"]').selectOption(data.expiryYear);
+    await this.page.getByLabel(/cvv/i).fill(data.cvv);
   }
 
   async continueToReview(): Promise<void> {
