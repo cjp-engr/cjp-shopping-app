@@ -1,22 +1,22 @@
-// TC-097: Checkout with new card entry (mobile)
+// TC-095: Buyer places COD order via full checkout flow on mobile
 
 import 'package:flutter_test/flutter_test.dart' show find;
 import 'package:patrol/patrol.dart';
 import 'package:toko_mart/keys.dart';
 
-import 'test_app.dart';
-import 'test_credentials.dart';
+import '../test_app.dart';
+import '../test_credentials.dart';
 
 void main() {
-  testApp('TC-097: buyer completes checkout with new credit card',
-      tags: ['checkout-new-cc', 'checkout', 'smoke'], ($, modules) async {
+  testApp('TC-095: buyer completes COD checkout flow', tags: ['smoke'],
+      ($, modules) async {
     await modules.auth.login(
       email: TestCredentials.buyerEmail,
       password: TestCredentials.password,
     );
 
     // Add a known seeded product to cart
-    await $(keys.products.productCard('E2E Test Lamp'))
+    await $(keys.products.productCard('E2E Test Lamp - Test'))
         .scrollTo(view: find.byKey(keys.products.productList))
         .tap();
     await $(keys.products.addToCartButton).tap();
@@ -33,21 +33,8 @@ void main() {
     await $(keys.orders.checkoutStateField).enterText('Metro Manila');
     await $(keys.orders.checkoutZipField).enterText('1000');
 
-    // Select Credit Card payment type
-    await $(keys.orders.paymentOption('credit-card')).scrollTo().tap();
-
-    // Switch to new card mode — toggle only appears when buyer has saved cards
-    if ($(keys.orders.paymentNewCardTab).exists) {
-      await $(keys.orders.paymentNewCardTab).scrollTo().tap();
-    }
-
-    // Fill new card details
-    await $(keys.orders.checkoutCardNumberField)
-        .scrollTo()
-        .enterText('4111111111111111');
-    await $(keys.orders.checkoutCardHolderField)
-        .scrollTo()
-        .enterText('Test Buyer');
+    // Select Cash on Delivery
+    await $(keys.orders.paymentOption('cash-on-delivery')).scrollTo().tap();
 
     // Place the order
     await $(keys.orders.placeOrderButton).scrollTo().tap();

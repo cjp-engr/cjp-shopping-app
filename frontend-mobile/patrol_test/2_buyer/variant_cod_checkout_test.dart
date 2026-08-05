@@ -1,16 +1,16 @@
-// TC-104: Buyer places COD order with a variant product on mobile
+// TC-101: Buyer places COD order with a variant product on mobile
 
 import 'package:flutter_test/flutter_test.dart' show find;
 import 'package:patrol/patrol.dart';
 import 'package:toko_mart/keys.dart';
 
-import 'test_app.dart';
-import 'test_credentials.dart';
+import '../test_app.dart';
+import '../test_credentials.dart';
 
 void main() {
   testApp(
-    'TC-104: buyer completes saved credit checkout with variant product',
-    tags: ['checkout-variant-saved-cc', 'checkout', 'smoke'],
+    'TC-101: buyer completes COD checkout with variant product',
+    tags: ['checkout-variant-cod', 'smoke'],
     ($, modules) async {
       await modules.auth.login(
         email: TestCredentials.buyerEmail,
@@ -40,10 +40,8 @@ void main() {
       await $(keys.orders.checkoutStateField).enterText('Metro Manila');
       await $(keys.orders.checkoutZipField).enterText('1000');
 
-      // Select Credit Card payment type (default, but explicit)
-      // When buyer has saved cards the payment section auto-enters "Saved Card" mode —
-      // no mode-toggle tap needed; the first/default saved card is pre-selected.
-      await $(keys.orders.paymentOption('credit-card')).scrollTo().tap();
+      // Select Cash on Delivery
+      await $(keys.orders.paymentOption('cash-on-delivery')).scrollTo().tap();
 
       // Place order
       await $(keys.orders.placeOrderButton).scrollTo().tap();

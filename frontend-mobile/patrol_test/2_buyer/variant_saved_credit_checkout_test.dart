@@ -1,16 +1,16 @@
-// TC-103: Buyer places credit order with a variant product on mobile
+// TC-104: Buyer places COD order with a variant product on mobile
 
 import 'package:flutter_test/flutter_test.dart' show find;
 import 'package:patrol/patrol.dart';
 import 'package:toko_mart/keys.dart';
 
-import 'test_app.dart';
-import 'test_credentials.dart';
+import '../test_app.dart';
+import '../test_credentials.dart';
 
 void main() {
   testApp(
-    'TC-103: buyer completes new credit checkout with variant product',
-    tags: ['checkout-variant-new-cc', 'smoke'],
+    'TC-104: buyer completes saved credit checkout with variant product',
+    tags: ['checkout-variant-saved-cc', 'checkout', 'smoke'],
     ($, modules) async {
       await modules.auth.login(
         email: TestCredentials.buyerEmail,
@@ -40,21 +40,10 @@ void main() {
       await $(keys.orders.checkoutStateField).enterText('Metro Manila');
       await $(keys.orders.checkoutZipField).enterText('1000');
 
-      // Select Credit Card payment type
+      // Select Credit Card payment type (default, but explicit)
+      // When buyer has saved cards the payment section auto-enters "Saved Card" mode —
+      // no mode-toggle tap needed; the first/default saved card is pre-selected.
       await $(keys.orders.paymentOption('credit-card')).scrollTo().tap();
-
-      // Switch to new card mode — toggle only appears when buyer has saved cards
-      if ($(keys.orders.paymentNewCardTab).exists) {
-        await $(keys.orders.paymentNewCardTab).scrollTo().tap();
-      }
-
-      // Fill new card details
-      await $(keys.orders.checkoutCardNumberField)
-          .scrollTo()
-          .enterText('4111111111111111');
-      await $(keys.orders.checkoutCardHolderField)
-          .scrollTo()
-          .enterText('Test Buyer');
 
       // Place order
       await $(keys.orders.placeOrderButton).scrollTo().tap();

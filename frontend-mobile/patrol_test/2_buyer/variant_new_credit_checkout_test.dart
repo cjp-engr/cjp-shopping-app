@@ -1,16 +1,16 @@
-// TC-101: Buyer places COD order with a variant product on mobile
+// TC-103: Buyer places credit order with a variant product on mobile
 
 import 'package:flutter_test/flutter_test.dart' show find;
 import 'package:patrol/patrol.dart';
 import 'package:toko_mart/keys.dart';
 
-import 'test_app.dart';
-import 'test_credentials.dart';
+import '../test_app.dart';
+import '../test_credentials.dart';
 
 void main() {
   testApp(
-    'TC-101: buyer completes COD checkout with variant product',
-    tags: ['checkout-variant-cod', 'smoke'],
+    'TC-103: buyer completes new credit checkout with variant product',
+    tags: ['checkout-variant-new-cc', 'smoke'],
     ($, modules) async {
       await modules.auth.login(
         email: TestCredentials.buyerEmail,
@@ -40,8 +40,21 @@ void main() {
       await $(keys.orders.checkoutStateField).enterText('Metro Manila');
       await $(keys.orders.checkoutZipField).enterText('1000');
 
-      // Select Cash on Delivery
-      await $(keys.orders.paymentOption('cash-on-delivery')).scrollTo().tap();
+      // Select Credit Card payment type
+      await $(keys.orders.paymentOption('credit-card')).scrollTo().tap();
+
+      // Switch to new card mode — toggle only appears when buyer has saved cards
+      if ($(keys.orders.paymentNewCardTab).exists) {
+        await $(keys.orders.paymentNewCardTab).scrollTo().tap();
+      }
+
+      // Fill new card details
+      await $(keys.orders.checkoutCardNumberField)
+          .scrollTo()
+          .enterText('4111111111111111');
+      await $(keys.orders.checkoutCardHolderField)
+          .scrollTo()
+          .enterText('Test Buyer');
 
       // Place order
       await $(keys.orders.placeOrderButton).scrollTo().tap();

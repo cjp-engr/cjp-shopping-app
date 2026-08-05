@@ -1,9 +1,9 @@
 import 'package:toko_mart/keys.dart';
 
-import 'test_app.dart';
+import '../test_app.dart';
 
 void main() {
-  testApp('signs up with valid data and lands on home screen',
+  testApp('signs up with valid data and lands on home screen', tags: ['smoke'],
       ($, modules) async {
     final email = 'test+${DateTime.now().millisecondsSinceEpoch}@example.com';
 

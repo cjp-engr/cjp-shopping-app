@@ -9,16 +9,16 @@ import 'package:patrol/src/platform/contracts/contracts.dart';
 import 'package:test_api/src/backend/invoker.dart';
 
 // START: GENERATED TEST IMPORTS
-import 'add_product_simple_test.dart' as add_product_simple_test;
-import 'add_product_variant_test.dart' as add_product_variant_test;
-import 'cod_checkout_test.dart' as cod_checkout_test;
-import 'cod_variant_checkout_test.dart' as cod_variant_checkout_test;
-import 'login_test.dart' as login_test;
-import 'new_credit_checkout_test.dart' as new_credit_checkout_test;
-import 'new_credit_variant_checkout_test.dart' as new_credit_variant_checkout_test;
-import 'saved_credit_checkout_test.dart' as saved_credit_checkout_test;
-import 'saved_credit_variant_checkout_test.dart' as saved_credit_variant_checkout_test;
-import 'signup_test.dart' as signup_test;
+import '0_auth/login_test.dart' as _0_auth__login_test;
+import '0_auth/signup_test.dart' as _0_auth__signup_test;
+import '1_seller/add_product_simple_test.dart' as _1_seller__add_product_simple_test;
+import '1_seller/add_product_variant_test.dart' as _1_seller__add_product_variant_test;
+import '2_buyer/simple_cod_checkout_test.dart' as _2_buyer__simple_cod_checkout_test;
+import '2_buyer/simple_new_credit_checkout_test.dart' as _2_buyer__simple_new_credit_checkout_test;
+import '2_buyer/simple_saved_credit_checkout_test.dart' as _2_buyer__simple_saved_credit_checkout_test;
+import '2_buyer/variant_cod_checkout_test.dart' as _2_buyer__variant_cod_checkout_test;
+import '2_buyer/variant_new_credit_checkout_test.dart' as _2_buyer__variant_new_credit_checkout_test;
+import '2_buyer/variant_saved_credit_checkout_test.dart' as _2_buyer__variant_saved_credit_checkout_test;
 // END: GENERATED TEST IMPORTS
 
 Future<void> main() async {
@@ -72,7 +72,7 @@ Future<void> main() async {
     final topLevelGroup = Invoker.current!.liveTest.groups.first;
     final dartTestGroup = createDartTestGroup(
       topLevelGroup,
-      tags: 'checkout-variant-new-cc',
+      tags: 'smoke',
       excludeTags: null,
     );
     testExplorationCompleter.complete(dartTestGroup);
@@ -81,16 +81,16 @@ Future<void> main() async {
   });
 
 // START: GENERATED TEST GROUPS
-  group('add_product_simple_test', add_product_simple_test.main);
-  group('add_product_variant_test', add_product_variant_test.main);
-  group('cod_checkout_test', cod_checkout_test.main);
-  group('cod_variant_checkout_test', cod_variant_checkout_test.main);
-  group('login_test', login_test.main);
-  group('new_credit_checkout_test', new_credit_checkout_test.main);
-  group('new_credit_variant_checkout_test', new_credit_variant_checkout_test.main);
-  group('saved_credit_checkout_test', saved_credit_checkout_test.main);
-  group('saved_credit_variant_checkout_test', saved_credit_variant_checkout_test.main);
-  group('signup_test', signup_test.main);
+  group('_0_auth.login_test', _0_auth__login_test.main);
+  group('_0_auth.signup_test', _0_auth__signup_test.main);
+  group('_1_seller.add_product_simple_test', _1_seller__add_product_simple_test.main);
+  group('_1_seller.add_product_variant_test', _1_seller__add_product_variant_test.main);
+  group('_2_buyer.simple_cod_checkout_test', _2_buyer__simple_cod_checkout_test.main);
+  group('_2_buyer.simple_new_credit_checkout_test', _2_buyer__simple_new_credit_checkout_test.main);
+  group('_2_buyer.simple_saved_credit_checkout_test', _2_buyer__simple_saved_credit_checkout_test.main);
+  group('_2_buyer.variant_cod_checkout_test', _2_buyer__variant_cod_checkout_test.main);
+  group('_2_buyer.variant_new_credit_checkout_test', _2_buyer__variant_new_credit_checkout_test.main);
+  group('_2_buyer.variant_saved_credit_checkout_test', _2_buyer__variant_saved_credit_checkout_test.main);
 // END: GENERATED TEST GROUPS
 
   final dartTestGroup = await testExplorationCompleter.future;

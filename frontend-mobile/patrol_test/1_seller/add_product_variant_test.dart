@@ -4,8 +4,8 @@ import 'package:flutter/rendering.dart';
 import 'package:patrol/patrol.dart';
 import 'package:toko_mart/keys.dart';
 
-import 'test_app.dart';
-import 'test_credentials.dart';
+import '../test_app.dart';
+import '../test_credentials.dart';
 
 void main() {
   testApp(
