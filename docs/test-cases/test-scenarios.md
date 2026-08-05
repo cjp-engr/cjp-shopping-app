@@ -1969,6 +1969,55 @@
 
 ---
 
+### TC-105: Checkout with new card — variant product (web)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Web  
+**Parity**: TC-103 (mobile)  
+**Automation**: Playwright  
+**Preconditions**: Buyer logged in (`test@example.com`); variant product in catalog (seeded or created via API); cart empty; no saved card selected  
+**Steps**:
+1. Navigate to product detail; select a size variant (e.g. Size M)
+2. Add to cart; open cart; proceed to checkout
+3. Fill shipping address
+4. In **Payment Method**, select **Credit Card** from the type dropdown; if saved cards exist, click **New Card** first
+5. Enter card number `4111111111111111`, holder name, expiry, CVV
+6. Click **Review Order**, then **Place Order**
+**Expected Results**:
+- Order created with correct variant attributes (`selectedAttributes.Size = 'M'`) and variant price
+- Order detail shows card type and last 4 digits
+- Cart cleared; order visible in `/orders`
+**Business Rule**: §2 Variants, §4 Payment methods, §6 Checkout, §10 Web checkout card validation  
+**Selectors/API**: `variant-value-Size-M`, `checkout-btn`, `payment-section`, `place-order-btn`, `POST /api/orders`  
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-106: Checkout with saved card — variant product (web)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Web  
+**Parity**: TC-104 (mobile)  
+**Automation**: Playwright  
+**Preconditions**: Buyer logged in; ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); variant product in catalog; cart empty  
+**Steps**:
+1. Navigate to product detail; select a size variant (e.g. Size M)
+2. Add to cart; open cart; proceed to checkout
+3. Fill or confirm shipping address
+4. In **Payment Method**, verify **Saved Card** mode is active (default when saved cards exist); select a saved card
+5. Click **Review Order**, then **Place Order**
+**Expected Results**:
+- Order created with correct variant attributes and variant-specific price
+- Order detail shows saved card type + last4
+- Cart cleared; order visible in `/orders`
+**Business Rule**: §2 Variants, §4 Payment methods, §6 Checkout, §8 Saved cards  
+**Selectors/API**: `variant-value-Size-M`, `checkout-btn`, `payment-section`, `place-order-btn`, `POST /api/orders`  
+**Suggested Layer**: E2E Web
+
+---
+
 ### TC-102: Add to cart blocked without variant — mobile guard (Patrol)
 **Category**: Negative  
 **Priority**: P1  

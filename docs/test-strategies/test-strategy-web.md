@@ -59,6 +59,8 @@
 | TC-022 | E2E | Playwright | P0 |
 | TC-023 | E2E | Playwright | P1 |
 | TC-024 | E2E | Playwright | P1 |
+| TC-105 | E2E | Playwright | P1 |
+| TC-106 | E2E | Playwright | P1 |
 | TC-025 | Multi | API + Playwright | P0 |
 | TC-026 | API | Playwright-API | P0 |
 | TC-027 | API | Playwright-API | P1 |
