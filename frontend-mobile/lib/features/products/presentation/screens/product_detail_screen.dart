@@ -795,6 +795,7 @@ class _VariantSelector extends StatelessWidget {
                   final available = isValueAvailable(attr.name, value);
                   final selected = selectedAttrs[attr.name] == value;
                   return GestureDetector(
+                    key: keys.products.variantValue(attr.name, value),
                     onTap: available ? () => onAttrSelected(attr.name, value) : null,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),

@@ -136,6 +136,23 @@ const products = [
     ])
   },
   {
+    name: 'E2E Test Variant Tee',
+    description: 'A test t-shirt with size variants for automated testing.',
+    price: 25.00,
+    category: 'Clothing',
+    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500',
+    stock: 0,
+    rating: 4.0,
+    reviews: 1,
+    tags: ['e2e', 'test', 'variant'],
+    variantAttributes: [{ name: 'Size', values: ['S', 'M', 'L'] }],
+    variants: [
+      { attributes: new Map([['Size', 'S']]), price: 25.00, stock: 10, images: [] },
+      { attributes: new Map([['Size', 'M']]), price: 25.00, stock: 10, images: [] },
+      { attributes: new Map([['Size', 'L']]), price: 25.00, stock: 10, images: [] },
+    ],
+  },
+  {
     name: 'Denim Jeans - Slim Fit',
     description: 'Premium denim jeans with stretch comfort and modern slim fit.',
     price: 59.99,

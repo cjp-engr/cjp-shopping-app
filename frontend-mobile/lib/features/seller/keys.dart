@@ -38,6 +38,27 @@ class SellerKeys {
   final wizardImageLinkOption = const _SellerKey('wizardImageLinkOption');
   final wizardGalleryOption = const _SellerKey('wizardGalleryOption');
 
+  // Variants (Step 1)
+  final wizardAddAttributeButton = const _SellerKey('wizardAddAttributeButton');
+  final wizardAttrAddValueButton = const _SellerKey('wizardAttrAddValueButton');
+  final wizardAttrAddValueField = const _SellerKey('wizardAttrAddValueField');
+  final wizardAttrConfirmButton = const _SellerKey('wizardAttrConfirmButton');
+  final wizardAttrNameField = const _SellerKey('wizardAttrNameField');
+  final wizardVariantsToggle = const _SellerKey('wizardVariantsToggle');
+
+  // ignore: library_private_types_in_public_api
+  _SellerKey wizardVariantDiscountField(String label) =>
+      _SellerKey('wizardVariantDiscount_$label');
+  // ignore: library_private_types_in_public_api
+  _SellerKey wizardVariantPriceField(String label) =>
+      _SellerKey('wizardVariantPrice_$label');
+  // ignore: library_private_types_in_public_api
+  _SellerKey wizardVariantSkuField(String label) =>
+      _SellerKey('wizardVariantSku_$label');
+  // ignore: library_private_types_in_public_api
+  _SellerKey wizardVariantStockField(String label) =>
+      _SellerKey('wizardVariantStock_$label');
+
   // Shipping
   final wizardStandardButton = const _SellerKey('wizardStandardButton');
   final wizardExpressButton = const _SellerKey('wizardExpressButton');

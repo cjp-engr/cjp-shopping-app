@@ -56,7 +56,12 @@
 | TC-081 | Per-seller delivery | E2E | Patrol | P0 | `extra['deliverySelections']` | Multi-seller |
 | TC-082 | Voucher via route extra | E2E | Patrol | P1 | `extra['voucherSelections']` | Coupon UI |
 | TC-095 | **COD checkout** | E2E | Patrol | P0 | `CheckoutScreen` | P0 checkout smoke |
+| TC-101 | **COD checkout — variant product** | E2E | Patrol | P0 | `products_variantValue_*` | Variant path smoke |
 | TC-083 | Multi-seller → 2 orders | Multi | Patrol + API | P0 | `POST /api/orders` + checkout | S4 mobile |
+| TC-096 | Saved card checkout | E2E | Patrol | P1 | Saved card selector | Card payment |
+| TC-097 | New card checkout | E2E | Patrol | P1 | Card entry fields | Card entry |
+| TC-103 | New card checkout — variant | E2E | Patrol | P1 | `products_variantValue_*` + card entry | Variant + new card |
+| TC-104 | Saved card checkout — variant | E2E | Patrol | P1 | `products_variantValue_*` + saved card | Variant + saved card |
 | TC-084 | Order history + detail | E2E | Patrol | P1 | `/orders`, `/orders/:id` | Buyer orders |
 | TC-085 | Confirm receipt | E2E | Patrol | P1 | Confirm action | Post-shipped |
 | TC-612 | Invalid login | E2E | Patrol | P1 | `auth_loginButton` | Error UX |
@@ -108,13 +113,21 @@
 11. `multi_seller_checkout_test.dart` — **S4**: TC-083 (+ shared API TC-025)
 12. `catalog_test.dart` — TC-608, TC-610
 
+### Phase M4b — P1 variant checkout + card payments
+
+13. `checkout_variant_cod_test.dart` — TC-101
+14. `checkout_saved_credit_test.dart` — TC-096
+15. `checkout_new_credit_test.dart` — TC-097
+16. `checkout_variant_new_credit_test.dart` — TC-103
+17. `checkout_variant_saved_credit_test.dart` — TC-104
+
 ### Phase M5 — P1 Patrol remainder
 
-13. `auth_test.dart` — TC-069, TC-070, TC-071, TC-607, TC-612, TC-606
-14. `browse_test.dart` — TC-074, TC-075, TC-609
-15. `cart_delivery_voucher_test.dart` — TC-077, TC-081, TC-082
-16. `orders_test.dart` — TC-084, TC-085, TC-613, TC-614
-17. `wishlist_test.dart` — TC-086, TC-087
+18. `auth_test.dart` — TC-069, TC-070, TC-071, TC-607, TC-612, TC-606
+19. `browse_test.dart` — TC-074, TC-075, TC-609
+20. `cart_delivery_voucher_test.dart` — TC-077, TC-081, TC-082
+21. `orders_test.dart` — TC-084, TC-085, TC-613, TC-614
+22. `wishlist_test.dart` — TC-086, TC-087
 18. `seller/vouchers_test.dart` — TC-093
 19. `follow_test.dart` — TC-088
 20. `security_test.dart` — TC-611 (Patrol leg)

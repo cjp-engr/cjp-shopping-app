@@ -189,7 +189,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       case 2:
         if (_descCtrl.text.trim().isEmpty) return 'Description is required.';
       case 3:
-        if (_pickedFiles.isEmpty && _existingImageUrls.isEmpty && _enteredImageUrls.isEmpty) {
+        if (_pickedFiles.isEmpty &&
+            _existingImageUrls.isEmpty &&
+            _enteredImageUrls.isEmpty) {
           return 'Please add at least one product image.';
         }
       case 4:
@@ -400,6 +402,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppTextField(
+                      key: keys.seller.wizardAttrNameField,
                       label: 'Attribute Name',
                       controller: nameCtrl,
                       hint: 'e.g. Color, Size, RAM…',
@@ -409,6 +412,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     Row(children: [
                       Expanded(
                           child: AppTextField(
+                        key: keys.seller.wizardAttrAddValueField,
                         label: 'Add Value',
                         controller: valueCtrl,
                         hint: 'e.g. Red, Small, 8GB…',
@@ -417,6 +421,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       )),
                       const SizedBox(width: AppSizes.sm),
                       GestureDetector(
+                        key: keys.seller.wizardAttrAddValueButton,
                         onTap: addValue,
                         child: Container(
                           width: 44,
@@ -465,6 +470,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
+                key: keys.seller.wizardAttrConfirmButton,
                 style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary),
                 onPressed: () {
@@ -978,6 +984,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   ],
                 )),
                 Switch(
+                  key: keys.seller.wizardVariantsToggle,
                   value: _hasVariants,
                   onChanged: (val) => setState(() => _hasVariants = val),
                   activeThumbColor: AppColors.primary,
@@ -1038,6 +1045,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     children: [
                       const _SectionLabel('Attributes'),
                       GestureDetector(
+                        key: keys.seller.wizardAddAttributeButton,
                         onTap: _showAddAttributeDialog,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -1384,6 +1392,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     Text('PRICE (\$)', style: labelStyle),
                     const SizedBox(height: 4),
                     _InlineField(
+                        key: keys.seller.wizardVariantPriceField(row.label),
                         ctrl: row.priceCtrl,
                         prefix: '\$',
                         hint: '0.00',
@@ -1398,7 +1407,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   children: [
                     Text('STOCK', style: labelStyle),
                     const SizedBox(height: 4),
-                    _InlineField(ctrl: row.stockCtrl, hint: '0', numeric: true),
+                    _InlineField(
+                        key: keys.seller.wizardVariantStockField(row.label),
+                        ctrl: row.stockCtrl,
+                        hint: '0',
+                        numeric: true),
                   ]),
             ),
             const SizedBox(width: 8),
@@ -1410,6 +1423,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     Text('DISC %', style: labelStyle),
                     const SizedBox(height: 4),
                     _InlineField(
+                        key: keys.seller.wizardVariantDiscountField(row.label),
                         ctrl: row.discountCtrl,
                         suffix: '%',
                         hint: '0',
@@ -1425,7 +1439,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('SKU (OPTIONAL)', style: labelStyle),
             const SizedBox(height: 4),
-            _InlineField(ctrl: row.skuCtrl, hint: 'e.g. SKU-001'),
+            _InlineField(
+                key: keys.seller.wizardVariantSkuField(row.label),
+                ctrl: row.skuCtrl,
+                hint: 'e.g. SKU-001'),
           ]),
         ),
         // Sale price preview
@@ -2831,7 +2848,8 @@ class _InlineField extends StatelessWidget {
   final String? suffix;
   final bool numeric;
   const _InlineField(
-      {required this.ctrl,
+      {super.key,
+      required this.ctrl,
       required this.hint,
       this.prefix,
       this.suffix,

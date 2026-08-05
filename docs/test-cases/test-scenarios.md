@@ -1920,6 +1920,55 @@
 
 ---
 
+### TC-103: Checkout with new credit card — variant product (mobile)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Mobile  
+**Parity**: Both (web TC-024 + TC-098 combined)  
+**Automation**: Patrol  
+**Preconditions**: Buyer logged in (`buyer@test.com`); variant product in catalog (from TC-091 or seeded `E2E Test Variant Tee`); cart empty; no saved card selected  
+**Steps**:
+1. Open variant product detail → select required variant attributes (e.g. Size M)
+2. Tap add to cart → navigate to cart → proceed to checkout
+3. Fill/confirm shipping address
+4. In **Payment Method**, select **Credit Card** (`orders_paymentOption_credit-card`); tap **+ New Card** if saved cards exist
+5. Enter card number (16 digits), cardholder name, expiry month/year
+6. Tap place order (`orders_placeOrderButton`)
+**Expected Results**:
+- Order created successfully with correct variant attributes and variant-specific price
+- Payment method shows card type on order detail
+- Order visible in `/orders` history; cart items removed
+**Business Rule**: §2 Variants, §4 Payment methods, §6 Checkout, §10 Checkout card validation  
+**Selectors/API**: `products_variantValue_{attr}_{value}`, `cart_checkoutButton`, `orders_paymentOption_credit-card`, `orders_paymentNewCardTab`, `orders_placeOrderButton`, `orders_ordersScreen`, `POST /api/orders`  
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-104: Checkout with saved credit card — variant product (mobile)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Mobile  
+**Parity**: Both (web TC-023 + TC-098 combined)  
+**Automation**: Patrol  
+**Preconditions**: Buyer logged in (`buyer@test.com`); ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); variant product in catalog (from TC-091 or seeded `E2E Test Variant Tee`); cart empty  
+**Steps**:
+1. Open variant product detail → select required variant attributes (e.g. Size M)
+2. Tap add to cart → navigate to cart → proceed to checkout
+3. Fill/confirm shipping address
+4. In **Payment Method**, verify **Saved Card** mode is active; select a saved card
+5. Tap place order (`orders_placeOrderButton`)
+**Expected Results**:
+- Order created successfully with correct variant attributes and variant-specific price
+- Order payment shows saved card type + last4 on order detail
+- Checked-out items removed from cart; order visible in `/orders`
+**Business Rule**: §2 Variants, §4 Payment methods, §6 Checkout, §8 Saved cards  
+**Selectors/API**: `products_variantValue_{attr}_{value}`, `cart_checkoutButton`, `orders_paymentOption_credit-card`, `orders_placeOrderButton`, `orders_ordersScreen`, `POST /api/orders` — **saved card row keys missing**  
+**Suggested Layer**: E2E Mobile
+
+---
+
 ### TC-102: Add to cart blocked without variant — mobile guard (Patrol)
 **Category**: Negative  
 **Priority**: P1  
