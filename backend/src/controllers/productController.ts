@@ -3,6 +3,7 @@ import Product from '../models/Product.js';
 import User from '../models/User.js';
 import cloudinary from '../config/cloudinary.js';
 import { AuthRequest } from '../middleware/auth.js';
+import { AppError } from '../middleware/errorHandler.js';
 import * as sellerService from '../services/sellerService.js';
 
 function parseTags(tags: unknown): string[] | undefined {
@@ -204,6 +205,9 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
     );
     res.status(200).json({ success: true, product });
   } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
     res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Server error' });
   }
 };
