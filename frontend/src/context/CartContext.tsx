@@ -279,21 +279,34 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     const results = await Promise.allSettled(
       items.map(item =>
         fetch(API_ENDPOINTS.PRODUCT(item.product.id), { headers: getHeaders() })
-          .then(r => ({ id: item.product.id, ok: r.ok }))
-          .catch(() => ({ id: item.product.id, ok: false }))
+          .then(async r => {
+            if (!r.ok) return { id: item.product.id, remove: true };
+            const data = await r.json();
+            const p = data.product ?? data;
+            const variantKey = item.selectedVariant?.key;
+            const stock = variantKey
+              ? (p.variants?.find((v: { key?: string; _id?: string; stock?: number }) =>
+                  v.key === variantKey || v._id === variantKey)?.stock ?? 0)
+              : (p.stock ?? 0);
+            return { id: item.product.id, variantKey, remove: stock <= 0 };
+          })
+          .catch(() => ({ id: item.product.id, variantKey: undefined, remove: true }))
       )
     );
 
-    const deletedIds = new Set(
-      results
-        .filter(r => r.status === 'fulfilled' && !r.value.ok)
-        .map(r => (r as PromiseFulfilledResult<{ id: string; ok: boolean }>).value.id)
+    const staleItems = results
+      .filter(r => r.status === 'fulfilled' && r.value.remove)
+      .map(r => (r as PromiseFulfilledResult<{ id: string; variantKey?: string; remove: boolean }>).value);
+
+    if (staleItems.length === 0) return 0;
+
+    const staleKeys = new Set(
+      staleItems.map(s => s.variantKey ? `${s.id}|${s.variantKey}` : s.id)
     );
-
-    if (deletedIds.size === 0) return 0;
-
-    setCart(prev => calculateCartTotals(prev.items.filter(i => !deletedIds.has(i.product.id))));
-    return deletedIds.size;
+    setCart(prev => calculateCartTotals(
+      prev.items.filter(i => !staleKeys.has(i.selectedVariant ? `${i.product.id}|${i.selectedVariant.key}` : i.product.id))
+    ));
+    return staleItems.length;
   }, []);
 
   return (

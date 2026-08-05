@@ -89,9 +89,11 @@ export async function createOrders(params: CreateOrderParams) {
         ? (product as any).variants.id(item.variantId)
         : (product as any).variants?.find((v: any) => v._id?.toString() === item.variantId);
       if (!variant) throw new AppError(404, `Variant not found for: ${product.name}`);
-      if (variant.stock < item.quantity) throw new AppError(400, `Insufficient stock for variant of: ${product.name}`);
+      const variantStock = typeof variant.stock === 'number' ? variant.stock : 0;
+      if (variantStock < item.quantity) throw new AppError(400, `Insufficient stock for variant of: ${product.name}`);
     } else {
-      if (product.stock < item.quantity) throw new AppError(400, `Insufficient stock for: ${product.name}`);
+      const productStock = typeof product.stock === 'number' ? product.stock : 0;
+      if (productStock < item.quantity) throw new AppError(400, `Insufficient stock for: ${product.name}`);
     }
 
     const sellerKey = product.sellerId?.toString() ?? '__unknown__';

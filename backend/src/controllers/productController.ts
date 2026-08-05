@@ -57,6 +57,13 @@ export const getProducts = async (req: Request, res: Response) => {
       query.$text = { $search: search as string };
     }
 
+    // Exclude out-of-stock products from buyer listing.
+    // A product is in-stock when it has product-level stock OR at least one variant with stock.
+    query.$or = [
+      { stock: { $gt: 0 } },
+      { variants: { $elemMatch: { stock: { $gt: 0 } } } },
+    ];
+
     // Sort options
     let sortOption: any = {};
     switch (sort) {

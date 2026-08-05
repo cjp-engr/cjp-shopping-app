@@ -28,10 +28,14 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
     : product.price;
   const hasDiscount = !!(product.discount && product.discount > 0);
 
+  const totalStock = product.variants?.length
+    ? product.variants.reduce((sum, v) => sum + (v.stock ?? 0), 0)
+    : product.stock;
+
   const stockBadgeClass =
-    product.stock === 0
+    totalStock === 0
       ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-      : product.stock <= 5
+      : totalStock <= 5
       ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
       : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
 
@@ -57,7 +61,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             -{product.discount}%
           </span>
         )}
-        {product.stock === 0 && (
+        {totalStock === 0 && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <span className="text-xs font-bold text-white bg-black/60 px-2 py-1 rounded-md">Out of Stock</span>
           </div>
@@ -88,7 +92,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           <div className="flex items-center justify-between mt-auto pt-1">
             <p className="text-base font-bold text-primary-600">{formatCurrency(product.price)}</p>
             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${stockBadgeClass}`}>
-              {product.stock === 0 ? 'Out of stock' : `Stock: ${product.stock}`}
+              {totalStock === 0 ? 'Out of stock' : `Stock: ${totalStock}`}
             </span>
           </div>
         ) : (
@@ -99,9 +103,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 <p className="text-xs text-gray-400 line-through leading-none">{formatCurrency(product.price)}</p>
               )}
             </div>
-            {product.stock > 0 && product.stock < LOW_STOCK_THRESHOLD && (
+            {totalStock > 0 && totalStock < LOW_STOCK_THRESHOLD && (
               <span className="text-xs text-orange-500 dark:text-orange-400 font-medium">
-                {product.stock} left
+                {totalStock} left
               </span>
             )}
           </div>

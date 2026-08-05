@@ -93,8 +93,11 @@ class ProductEntity extends Equatable {
     this.variants = const [],
   });
 
-  bool get inStock => stock > 0;
-  bool get lowStock => stock > 0 && stock <= 5;
+  int get totalStock => variants.isNotEmpty
+      ? variants.fold(0, (sum, v) => sum + v.stock)
+      : stock;
+  bool get inStock => totalStock > 0;
+  bool get lowStock => totalStock > 0 && totalStock <= 5;
   bool get hasVariants => variantAttributes.isNotEmpty;
 
   @override

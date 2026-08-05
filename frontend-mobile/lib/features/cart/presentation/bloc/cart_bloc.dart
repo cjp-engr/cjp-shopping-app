@@ -38,12 +38,13 @@ class CartBloc extends Bloc<CartEvent, CartState> {
              (i.selectedVariant?.label ?? '') == newLabel,
     );
     final effectiveStock = event.selectedVariant?.stock ?? event.product.stock;
+    if (effectiveStock <= 0) return;
     final List<CartItemEntity> updated;
     if (existing >= 0) {
       updated = List.from(state.items);
       final prev = updated[existing];
       updated[existing] = prev.copyWith(
-        quantity: (prev.quantity + event.quantity).clamp(0, effectiveStock),
+        quantity: (prev.quantity + event.quantity).clamp(1, effectiveStock),
       );
     } else {
       updated = [
