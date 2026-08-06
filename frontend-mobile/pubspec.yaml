@@ -19,6 +19,8 @@ dependencies:
 
   # Networking
   dio: ^5.4.3+1
+  # Connectivity
+  connectivity_plus: ^6.0.0
 
   # Local Storage
   shared_preferences: ^2.5.5
