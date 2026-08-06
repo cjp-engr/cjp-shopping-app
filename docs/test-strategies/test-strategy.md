@@ -117,7 +117,7 @@ Test strategy for the **full scenario suite** (TC-001–TC-066 web, TC-067–TC-
 | TC-051 | Payment/delivery labels | E2E | Playwright | Web | P1 | `seller-order-detail-page` | Display formatting | |
 | TC-052 | New order toast | Manual | Manual | Web | P2 | `seller-dashboard` polling | Timing-sensitive; optional Playwright | yes |
 | TC-053 | Buyer blocked seller API | API | Playwright-API | Web | P0 | `PUT /api/seller/orders/:id/status` | 403 requireSeller | |
-| TC-054 | Cross-seller edit blocked | API | Playwright-API | Web | P1 | `PUT /api/products/:id` | 403 ownership | |
+| TC-054 | Cross-seller edit/delete blocked | API | Playwright-API | Web | P1 | `PUT /api/products/:id`, `DELETE /api/products/:id` | 403 ownership (edit + delete) | |
 | TC-055 | Protected routes auth | E2E | Playwright | Web | P0 | `/orders`, `/profile`, `/seller` | Auth gate | |
 | TC-056 | Insufficient stock 400 | API | Playwright-API | Web | P1 | `POST /api/orders` | Stock validation | |
 | TC-057 | Coupon min order 400 | API | Playwright-API | Web | P1 | `POST /api/coupons/validate` | Coupon rules | |
@@ -127,6 +127,12 @@ Test strategy for the **full scenario suite** (TC-001–TC-066 web, TC-067–TC-
 | TC-061 | Web 6-step wizard parity | E2E | Playwright | Web | P2 | `add-product-btn` | Parity doc only | |
 | TC-062 | Wishlist N/A on web | Blocked | — | Web | P3 | N/A | Mobile-only feature | |
 | TC-063 | All cart items checkout | E2E | Playwright | Web | P2 | `checkout-btn` | Web vs mobile parity | |
+| TC-107 | Cart GET returns own items | API | Playwright-API | Web | P1 | `GET /api/cart` | Server-side cart smoke | |
+| TC-108 | Cart isolation — buyer2 cannot see buyer1 items (API) | API | Playwright-API | Web | P1 | `GET /api/cart` | userId-scoped isolation | |
+| TC-109 | Cart isolation — buyer2 sees own empty cart in UI | E2E | Playwright | Web | P1 | `cart-empty`, `cart-item-{id}` | UI reflects server isolation | |
+| TC-110 | Order list isolation — buyer2 cannot see buyer1 orders (API) | API | Playwright-API | Web | P1 | `GET /api/orders` | userId-scoped order list | |
+| TC-111 | Order detail isolation — buyer2 gets 403 on buyer1 order (API) | API | Playwright-API | Web | P1 | `GET /api/orders/:id` | Ownership enforcement | |
+| TC-112 | Order history isolation — buyer2 sees only own orders in UI | E2E | Playwright | Web | P1 | `orders-page`, `order-card-{id}` | UI reflects server isolation | |
 
 ---
 

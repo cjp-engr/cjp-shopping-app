@@ -220,6 +220,9 @@ export const deleteProduct = async (req: AuthRequest, res: Response) => {
     await sellerService.deleteSellerProduct(req.params.id, req.user!.id);
     res.status(200).json({ success: true, message: 'Product deleted successfully' });
   } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
     res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Server error' });
   }
 };

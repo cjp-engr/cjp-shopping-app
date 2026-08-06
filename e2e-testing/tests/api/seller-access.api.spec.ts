@@ -1,5 +1,5 @@
 // TC coverage: TC-053 (buyer blocked from seller routes → 403),
-//              TC-054 (seller cannot edit another seller's product → 403),
+//              TC-054 (seller cannot edit or delete another seller's product → 403),
 //              TC-048 (invalid seller order status transition → 400)
 
 import { test, expect, request as pwRequest } from '@playwright/test';
@@ -110,6 +110,17 @@ test.describe('TC-054: Seller cannot edit another sellers product', () => {
       headers: authHeaders(seller1Token),
     });
     expect(res.status()).toBe(403);
+  });
+});
+
+test.describe('TC-054: Seller cannot delete another sellers product', () => {
+  test('DELETE /api/products/:id returns 403 when seller does not own the product', async ({ request }) => {
+    const res = await request.delete(`/api/products/${seller2ProductId}`, {
+      headers: authHeaders(seller1Token),
+    });
+    expect(res.status()).toBe(403);
+    const body = await res.json();
+    expect(body.message).toMatch(/not authorized/i);
   });
 });
 

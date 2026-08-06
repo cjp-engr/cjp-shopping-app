@@ -1,4 +1,4 @@
-import { Page } from "@playwright/test";
+import { expect, Locator, Page } from "@playwright/test";
 import { AllSection } from "./sections/01-all.section";
 import { PendingSection } from "./sections/02-pending.section";
 import { PreparingSection } from "./sections/03-preparing.section";
@@ -9,6 +9,7 @@ import { CancelledSection } from "./sections/07-cancelled.section";
 
 export class MyOrdersPage {
     readonly page: Page;
+    readonly root: Locator;
 
     readonly allSection: AllSection;
     readonly pendingSection: PendingSection;
@@ -20,6 +21,7 @@ export class MyOrdersPage {
 
     constructor(page: Page) {
         this.page = page;
+        this.root = page.getByTestId('orders-page');
         this.allSection = new AllSection(page);
         this.pendingSection = new PendingSection(page);
         this.preparingSection = new PreparingSection(page);
@@ -27,5 +29,18 @@ export class MyOrdersPage {
         this.toReceiveSection = new ToReceiveSection(page);
         this.completeSection = new CompleteSection(page);
         this.cancelledSection = new CancelledSection(page);
+    }
+
+    async open(): Promise<void> {
+        await this.page.goto('/orders');
+        await this.expectLoaded();
+    }
+
+    async expectLoaded(): Promise<void> {
+        await expect(this.root).toBeVisible({ timeout: 10_000 });
+    }
+
+    orderCard(orderId: string): Locator {
+        return this.page.getByTestId(`order-card-${orderId}`);
     }
 }
