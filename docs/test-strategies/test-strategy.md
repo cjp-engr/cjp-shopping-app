@@ -133,6 +133,7 @@ Test strategy for the **full scenario suite** (TC-001–TC-066 web, TC-067–TC-
 | TC-110 | Order list isolation — buyer2 cannot see buyer1 orders (API) | API | Playwright-API | Web | P1 | `GET /api/orders` | userId-scoped order list | |
 | TC-111 | Order detail isolation — buyer2 gets 403 on buyer1 order (API) | API | Playwright-API | Web | P1 | `GET /api/orders/:id` | Ownership enforcement | |
 | TC-112 | Order history isolation — buyer2 sees only own orders in UI | E2E | Playwright | Web | P1 | `orders-page`, `order-card-{id}` | UI reflects server isolation | |
+| TC-113 | User cannot follow themselves | API | Playwright-API | Web | P1 | `POST /api/users/:id/follow` | 400 self-follow guard | |
 
 ---
 

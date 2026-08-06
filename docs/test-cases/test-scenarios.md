@@ -985,6 +985,24 @@
 
 ---
 
+### TC-113: User cannot follow themselves (API)
+**Category**: Security  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Web  
+**Parity**: Both  
+**Automation**: Playwright-API  
+**Preconditions**: Authenticated user  
+**Steps**:
+1. `POST /api/users/:id/follow` using own user ID as `:id`
+**Expected Results**:
+- **400** — `"Cannot follow yourself"`
+**Business Rule**: §8 Follow system  
+**Selectors\API**: `POST /api/users/:id/follow`  
+**Suggested Layer**: API
+
+---
+
 ### TC-037: Follow and unfollow seller from public profile
 **Category**: Happy Path  
 **Priority**: P2  

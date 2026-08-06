@@ -120,12 +120,23 @@ No TC ID — auth baseline smoke.
 ### `order-isolation.api.spec.ts`
 **Order ownership isolation**
 
-| TC | Test | Endpoint | Status | Meaning |
-|----|------|----------|--------|---------|
+| TC | Test | Endpoint | Status | Backend message |
+|----|------|----------|--------|-----------------|
 | TC-110 | Order list isolation — buyer2 cannot see buyer1's orders | `GET /api/orders` | `200` | *(no error — buyer2's list is simply empty; server filters by `userId`)* |
 | TC-111 | Order detail isolation — buyer2 gets 403 on buyer1's order | `GET /api/orders/:id` | `403` | `"Not authorized to access this order"` |
 
 **Setup:** seller creates a product; buyer1 places an order. Buyer2 is a fresh account with no orders. Both tokens are used independently to assert server-side `userId` scoping.
+
+---
+
+### `users.api.spec.ts`
+**User social rules**
+
+| TC | Test | Endpoint | Status | Backend message |
+|----|------|----------|--------|-----------------|
+| TC-113 | User cannot follow themselves | `POST /api/users/:id/follow` | `400` | `"Cannot follow yourself"` |
+
+**Setup:** fresh account created via `/api/auth/signup`; own `userId` used as the follow target.
 
 ---
 
@@ -141,7 +152,8 @@ tests/api/
 ├── reviews.api.spec.ts             ← TC-035, TC-036
 ├── coupons.api.spec.ts             ← TC-057
 ├── cart.api.spec.ts                ← TC-107, TC-108
-└── order-isolation.api.spec.ts     ← TC-110, TC-111
+├── order-isolation.api.spec.ts     ← TC-110, TC-111
+└── users.api.spec.ts               ← TC-113
 ```
 
 ## Key notes
