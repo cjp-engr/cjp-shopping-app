@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { ShoppingBag, X } from 'lucide-react';
 import Navbar from './Navbar';
+import { OfflineBanner } from '../common/OfflineBanner';
 import { useSellerOrderNotifier } from '../../hooks/useSellerOrderNotifier';
 
 interface OrderToast {
@@ -29,6 +30,7 @@ const Layout = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       <Navbar />
+      <OfflineBanner />
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         <Outlet />
       </main>
