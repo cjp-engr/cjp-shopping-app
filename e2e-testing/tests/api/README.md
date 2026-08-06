@@ -100,6 +100,74 @@ Check `backend/NOTES.md` for the exact error string — never guess or paraphras
 | Review gate | `POST /api/reviews` before `delivered` status → 403 |
 | Seller status skip | `pending` → `shipped` skipping `preparing`/`processing` → 400 invalid transition |
 
+### Negative Test Cases
+
+Negative tests verify that the API rejects invalid or unauthorized requests with the correct error. They are as important as happy-path tests — a missing negative test means a business rule is untested.
+
+**Always assert all three layers on error responses:**
+
+```ts
+// Bad — status code alone does not prove the right rule fired
+expect(res.status()).toBe(400);
+
+// Good — all three layers confirm the exact rule
+expect(res.status()).toBe(400);
+const body = await res.json();
+expect(body.success).toBe(false);
+expect(body.message).toBe('Cannot follow yourself');   // exact string from backend/NOTES.md
+```
+
+**Set up the triggering condition explicitly.** Do not rely on the server being in the right state by accident. If the test needs an order in `processing` status to trigger the cancel guard, promote it there in `beforeAll`:
+
+```ts
+// Promote order to 'processing' so the cancel attempt fires the guard
+await ctx.put(`/api/seller/orders/${orderId}/status`, {
+  data: { status: 'processing' },
+  headers: authHeaders(sellerToken),
+});
+// Now assert the buyer cancel is rejected
+const res = await ctx.put(`/api/orders/${orderId}/status`, {
+  data: { status: 'cancelled' },
+  headers: authHeaders(buyerToken),
+});
+expect(res.status()).toBe(400);
+```
+
+**One rule per test.** Each negative test should cover exactly one boundary or rejection rule. Combining multiple rules in a single test makes it harder to know which one failed when the test breaks.
+
+**Pair negative tests with their positive counterpart.** If TC-027 asserts shipping is charged when subtotal < $50, TC-028 should assert it is free when subtotal ≥ $50. Both must be in the same file, under the same `describe` block.
+
+**Use `signupFreshUser` for permission tests.** When testing that a buyer is blocked from a seller route, use a freshly registered account — not the seeded buyer. A seeded account may have been promoted to seller in a prior run, making the test pass for the wrong reason:
+
+```ts
+// Fresh account guarantees non-seller status
+const { token } = await signupFreshUser(request, 'buyer-access');
+const res = await request.get('/api/seller/products', { headers: authHeaders(token) });
+expect(res.status()).toBe(403);
+```
+
+**Name the test after the rule it enforces, not the HTTP method:**
+
+```ts
+// Bad
+test('POST /api/users/:id/follow returns 400', async () => { ... });
+
+// Good
+test('TC-113: user cannot follow themselves', async () => { ... });
+```
+
+**Common negative test patterns in this project:**
+
+| Rule type | Status | What to check |
+|---|---|---|
+| Auth missing / invalid token | 401 | `body.success: false`, `body.message` from `backend/NOTES.md` |
+| Buyer accessing seller-only route | 403 | Same three-layer check |
+| Cross-seller resource access | 403 | Use a second seller account, not the owner |
+| Invalid business rule (self-follow, cancel guard, review gate) | 400 | Exact `body.message` string |
+| Invalid status transition | 400 | Current status + target status both matter — document both in the test name |
+| Insufficient stock | 400 | Place order for quantity > stock; assert stock is unchanged after rejection |
+| Coupon below minimum | 400 | Assert `body.message` matches the minimum-order error string exactly |
+
 ### Anti-Patterns
 
 | Anti-pattern | Fix |
