@@ -7,6 +7,7 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { formatCurrency } from '../utils/formatters';
+import { formatNetworkError } from '../utils/network';
 import type { CheckoutData, PaymentMethod } from '../types/order';
 import type { SavedCard, SavedAddress } from '../types/user';
 import orderService from '../services/orderService';
@@ -365,7 +366,7 @@ export const Checkout: React.FC = () => {
       clearCart();
       navigate(`/orders?success=${orders[0]?.id ?? ''}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to place order');
+      setError(formatNetworkError(err));
     } finally {
       setLoading(false);
     }
