@@ -1,4 +1,4 @@
-// TC-104: Buyer places COD order with a variant product on mobile
+// TC-104: Buyer places saved credit card order with a variant product on mobile
 
 import 'package:flutter_test/flutter_test.dart' show find;
 import 'package:patrol/patrol.dart';

@@ -162,6 +162,11 @@ Test strategy for the **full scenario suite** (TC-001–TC-066 web, TC-067–TC-
 | TC-081 | Per-seller delivery on cart | E2E | Patrol | Mobile | P0 | `extra['deliverySelections']` | Multi-seller cart | |
 | TC-082 | Voucher via route extra | E2E | Patrol | Mobile | P1 | `extra['voucherSelections']` | Coupon UI path | |
 | TC-095 | COD checkout complete | E2E | Patrol | Mobile | P0 | `CheckoutScreen` | P0 mobile checkout smoke | |
+| TC-096 | Checkout with saved credit card | E2E | Patrol | Mobile | P1 | `keys.orders.paymentOption` | Saved card path | |
+| TC-097 | Checkout with new card entry | E2E | Patrol | Mobile | P1 | `keys.orders.checkoutCardNumberField` | New card path | |
+| TC-101 | COD checkout with variant product | E2E | Patrol | Mobile | P1 | `keys.products.variantValue` | Variant + COD | |
+| TC-103 | Checkout new CC — variant product | E2E | Patrol | Mobile | P1 | `keys.orders.checkoutCardNumberField` | Variant + new card | |
+| TC-104 | Checkout saved CC — variant product | E2E | Patrol | Mobile | P1 | `keys.orders.paymentOption` | Variant + saved card | |
 | TC-083 | Multi-seller → 2 orders | Multi | Patrol + Playwright-API | Mobile | P0 | `POST /api/orders` + checkout UI | S4 mobile leg; API shared with TC-025 | |
 | TC-084 | Order history + detail | E2E | Patrol | Mobile | P1 | `/orders`, `/orders/:id` | Buyer orders — **keys missing** | |
 | TC-085 | Confirm receipt | E2E | Patrol | Mobile | P1 | Confirm received action | Buyer action — **keys missing** | |

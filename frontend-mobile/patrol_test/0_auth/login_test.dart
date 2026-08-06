@@ -1,3 +1,5 @@
+// TC coverage: TC-067 (S2 — mobile login smoke)
+
 import 'package:toko_mart/keys.dart';
 
 import '../test_app.dart';

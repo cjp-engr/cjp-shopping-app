@@ -1,6 +1,9 @@
+// TC coverage: TC-068 (signup with valid data lands on home screen)
+
 import 'package:toko_mart/keys.dart';
 
 import '../test_app.dart';
+import '../test_credentials.dart';
 
 void main() {
   testApp('signs up with valid data and lands on home screen', tags: ['smoke'],
@@ -12,7 +15,7 @@ void main() {
       firstName: 'Test',
       lastName: 'User',
       email: email,
-      password: const String.fromEnvironment('PASSWORD'),
+      password: TestCredentials.password,
     );
 
     await $(keys.products.homeScreen).waitUntilVisible();
