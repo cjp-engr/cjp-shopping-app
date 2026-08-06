@@ -9,6 +9,62 @@ Web UI and API tests for TokoMart in one Playwright project.
 
 Mobile tests remain in `frontend-mobile/patrol_test/` (Patrol).
 
+---
+
+## Best Practices
+
+### Storage State (auth setup)
+
+Auth is handled once per run via setup projects — never log in through the UI inside individual tests.
+
+- **`buyer.setup.ts`** logs in via API, injects token into `localStorage`, then saves `.auth/buyer.json`.
+- **`seller.setup.ts`** does the same for the seller account, promoting to seller role if needed.
+- Tests in `web-buyer` and `web-seller` projects receive the saved state automatically via `storageState` in `playwright.config.ts` — no login step needed in those test files.
+- **`web-mixed` project has no `storageState`** — tests that switch between buyer and seller (e.g. cart isolation, order isolation) must manage auth themselves using `signupFreshUser()` or the API login helper.
+- **Never call the login UI in a web E2E test.** Use the saved `storageState` or, for fresh accounts, `signupFreshUser()` from `helpers/api-client.ts`.
+- **Do not share `storageState` files between CI jobs** without clearing server-side state first. `buyer.setup.ts` clears the cart via API before saving so the snapshot starts clean.
+
+### Web E2E (`tests/web/`)
+
+**Structure**
+- TC-* ID in the file header comment on line 1.
+- Self-contained: rely on `storageState` for auth; no shared mutable state between tests.
+- No `test.only()` or `test.skip()` left in committed files.
+
+**Locator priority — scope first, then pick the most stable locator inside the scope**
+1. Structural anchor for repeated UI: `getByTestId('cart-seller-group-{sellerId}')`, `getByTestId('product-card-{id}')`, `getByTestId('order-card-{id}')`
+2. Inside a scope: role + accessible name: `sellerGroup.getByRole('button', { name: 'Apply voucher' })`
+3. Fallback: element testid when role/name is ambiguous: `getByTestId('select-voucher-btn-{sellerId}')`
+4. Scoped stable text only: `paymentSection.getByText('Cash on Delivery')`
+5. **Never:** XPath, CSS chains, `nth-child`, unscoped dynamic text (prices, order IDs, product names), `waitForTimeout`
+
+**Multi-seller scoping**
+Always anchor cart/checkout locators to `cart-seller-group-{sellerId}` before using role or text. Unscoped selectors in multi-seller UI are an [IMPORTANT] finding.
+
+**Waits**
+Never use `waitForTimeout`. Use `expect(locator).toBeVisible()` or Playwright's built-in auto-wait.
+
+**Assertions (domain rules)**
+- Use persisted `order.total` — not the sum of raw line prices.
+- Assert `"Cash on Delivery"` label, not the `"cash-on-delivery"` slug.
+- Per-seller tax and shipping lines must appear separately on multi-seller checkout.
+- Sale items: assert discounted price + strikethrough original.
+
+### API (`tests/api/`)
+
+**Structure**
+- File named `*.api.spec.ts`; uses `request` fixture only — no `page`.
+- Auth via `helpers/api-client.ts`: `login()`, `authHeaders()`, `signupFreshUser()`.
+- Each `test.describe` block maps to one or more `TC-*` IDs.
+
+**Fresh accounts**
+Use `signupFreshUser(request, 'prefix')` for tests that need a clean user. Never depend on shared seeded state changing between runs — use `beforeAll` to create what the test needs.
+
+**Assertions**
+Assert all three layers: status code + `body.success` + `body.message`. Check `backend/NOTES.md` for the exact error string from the backend source.
+
+---
+
 ## Prerequisites
 
 ```bash

@@ -2,6 +2,43 @@
 
 Patrol tests for the TokoMart Flutter mobile app.
 
+---
+
+## Best Practices
+
+### Structure
+
+- **One test per file.** Each `*_test.dart` contains exactly one `testApp()` call.
+- **Always use `testApp()`.** Never call `patrolTest()` directly — `testApp()` handles app boot, storage clear, and notification init.
+- **TC-* ID in the file header.** First line must be a comment: `// TC coverage: TC-XXX`.
+- **Write actions in the test file first.** Only extract to modules after the test passes. Rerun after every refactor to confirm it still passes.
+
+### Locators
+
+- **Always use `$(keys.feature.element)`.** Never hardcode strings or widget types.
+- **Parameterized keys for list items.** Use `keys.feature.element(value)` when widgets are generated from dynamic data (variant rows, cart items, category options).
+- **`find.text` only for assertions, never for taps.** If you need to tap something, it must have a key.
+- **Keys live in `lib/features/<feature>/keys.dart`**, alphabetically sorted, registered in `lib/keys.dart`.
+
+### Actions
+
+- **No waits before or after `tap`, `enterText`, `scrollTo`.** Patrol auto-waits — adding `waitUntilVisible` before these is redundant and slows the suite.
+- **Scroll before interacting with offscreen widgets.** Use `.scrollTo()` (or `.scrollTo(scrollDirection: AxisDirection.down)`) before tapping items below the fold.
+- **Handle native dialogs immediately** after the action that triggers them. Use `$.platform.mobile.grantPermissionWhenInUse()` over manual native taps.
+
+### Assertions
+
+- **Assert only at the end of the test.** Do not assert after every action.
+- **Prefer `waitUntilVisible` as the final assertion.** Use `expect()` only when visibility alone is not enough.
+
+### Modules
+
+- **Write to modules only after the test passes.** Premature extraction before a passing test adds risk.
+- **Use descriptive method names, not comments.** A well-named method documents itself.
+- **Split long module methods** when they represent multiple distinct logical steps that can each be named clearly.
+
+---
+
 ## Prerequisites
 
 - Flutter SDK installed
