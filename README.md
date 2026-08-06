@@ -31,6 +31,7 @@ A full-featured multi-seller e-commerce application with a React web frontend, F
 ### Technical
 - **Cart Persistence**: Cart is synced to MongoDB on every change and restored from the server on login — survives logout/re-login
 - **Cross-Account Isolation**: Cart is cleared locally on logout; each user loads only their own cart on login
+- **Offline Handling**: Yellow banner on web and mobile when network is lost; checkout shows a friendly "No internet connection" message instead of a raw fetch error
 - **Dark Mode**: System-preference-aware theme with manual toggle
 - **Responsive Design**: Mobile-first layout that works on all screen sizes
 - **Flutter Mobile App**: Full-featured Android/iOS app with Bloc state management, GoRouter navigation, and Patrol E2E tests
@@ -54,6 +55,7 @@ A full-featured multi-seller e-commerce application with a React web frontend, F
 | State | Bloc / Cubit |
 | Navigation | GoRouter |
 | HTTP | Dio |
+| Connectivity | connectivity_plus |
 | E2E Tests | Patrol |
 
 ### Backend (`backend/`)
@@ -73,9 +75,10 @@ shopping-app-automation/
 ├── frontend/                   # React web app
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── common/         # Button, Card, Input, Badge, Spinner
+│   │   │   ├── common/         # Button, Card, Input, Badge, Spinner, OfflineBanner
 │   │   │   ├── layout/         # Navbar, Layout
 │   │   │   └── seller/         # ProductWizard (multi-step form)
+│   │   ├── hooks/              # useOnlineStatus (network state)
 │   │   ├── pages/              # Cart, Checkout, Home, Login, Signup,
 │   │   │                       # Products, ProductDetails, OrderHistory,
 │   │   │                       # OrderDetail, Profile, SellerDashboard
@@ -83,7 +86,7 @@ shopping-app-automation/
 │   │   ├── services/           # authService, cartService, orderService,
 │   │   │                       # productService, sellerService, storageService
 │   │   ├── types/              # TypeScript interfaces (cart, product, order, user)
-│   │   ├── utils/              # constants, formatters
+│   │   ├── utils/              # constants, formatters, network (formatNetworkError)
 │   │   └── config/             # API endpoint definitions
 │   ├── index.html
 │   ├── vite.config.ts
@@ -91,7 +94,10 @@ shopping-app-automation/
 │
 ├── frontend-mobile/            # Flutter mobile app
 │   ├── lib/
-│   │   ├── core/               # Theme, constants, routing
+│   │   ├── core/
+│   │   │   ├── network/        # ConnectivityCubit (connectivity_plus stream)
+│   │   │   ├── widgets/        # OfflineBanner (animated, shown when offline)
+│   │   │   └── ...             # Theme, constants, routing
 │   │   └── features/
 │   │       ├── auth/           # Login, Signup screens + Bloc
 │   │       ├── products/       # Product list + detail screens + Bloc
@@ -119,7 +125,7 @@ shopping-app-automation/
 │
 ├── e2e-testing/                # Playwright test suite
 │   ├── fixtures/               # base-fixture.ts (page object fixtures)
-│   ├── helpers/                # api-client.ts (login, authHeaders)
+│   ├── helpers/                # api-client.ts (login, authHeaders, signupFreshUser)
 │   ├── pages/                  # Page Object Model classes
 │   │   ├── cart.page.ts
 │   │   ├── checkout.page.ts
@@ -128,7 +134,7 @@ shopping-app-automation/
 │   │   ├── product-list.page.ts
 │   │   └── seller-dashboard/   # Seller wizard + orders + vouchers POMs
 │   ├── tests/
-│   │   ├── auth/               # seller.setup.ts (auth state fixture)
+│   │   ├── auth/               # buyer.setup.ts, seller.setup.ts (storageState fixtures)
 │   │   ├── api/                # *.api.spec.ts (HTTP layer tests)
 │   │   └── web/                # *.spec.ts (browser E2E tests)
 │   ├── playwright.config.ts
@@ -136,6 +142,45 @@ shopping-app-automation/
 │
 └── README.md
 ```
+
+## How This Was Built
+
+This project was built using an AI-assisted workflow powered by Claude Code. Each feature started with a structured design session, was broken into a step-by-step implementation plan, then executed by fresh subagents — one per task — with automated review gates between them. The same pipeline drives the test suite: scenario design → strategy → code generation → review.
+
+### Agent Skills
+
+Invoked as slash commands to perform specific tasks:
+
+| Skill | What it did |
+|---|---|
+| `superpowers:brainstorming` | Turned feature ideas into reviewed design docs before any code was written |
+| `superpowers:writing-plans` | Produced detailed step-by-step implementation plans from approved specs |
+| `superpowers:subagent-driven-development` | Dispatched a fresh subagent per task with automated per-task review gates |
+| `superpowers:using-git-worktrees` | Created isolated worktrees so feature branches never touched `main` directly |
+| `superpowers:finishing-a-development-branch` | Verified tests, then pushed branches and opened GitHub PRs |
+| `ui-ux-pro-max` | Guided UI design decisions — color, layout, component patterns, and accessibility |
+| `frontend-patterns` | Applied React/TypeScript best practices during web feature development |
+| `frontend-code-review` | Reviewed React/TypeScript code for quality, correctness, and performance |
+| `backend-patterns` | Applied Node.js/Express architecture patterns during API development |
+| `flutter-dev` | Guided Flutter development — Bloc, GoRouter, Dio, and widget patterns |
+| `flutter-dart-code-review` | Reviewed Flutter/Dart code against widget, state, and performance best practices |
+| `create-scenarios` | Generated test scenarios across 7 lenses from domain knowledge |
+| `test-strategy` | Assigned each scenario to the correct test pyramid layer (Unit / API / E2E / Patrol) |
+| `generate-tests` | Generated Playwright and Patrol test files from strategy docs |
+| `review-tests` | Reviewed and refactored tests against scenarios, strategy, and domain rules |
+| `patrol-write-test` | Step-by-step guide for writing and running Patrol mobile E2E tests |
+| `patrol-test-architecture` | Defined structure, module patterns, and locator rules for the Patrol suite |
+| `playwright-best-practices` | Enforced locator strategy, assertion patterns, and anti-patterns for web tests |
+
+### Knowledge Skill
+
+Always-on reference loaded automatically by testing and review skills:
+
+| Skill | What it contains |
+|---|---|
+| `tokomart-domain` | Business rules, API reference, user flows, UI selectors, and error scenarios — the single source of truth consulted by all testing and review skills |
+
+---
 
 ## Getting Started
 
@@ -289,20 +334,41 @@ Or register a new account via the Sign Up page. To create a seller account, regi
 
 | File | TC IDs | Layer |
 |---|---|---|
-| `tests/web/login.spec.ts` | TC-001 | E2E Web |
-| `tests/web/checkout.spec.ts` | TC-022 | E2E Web |
-| `tests/web/seller-product-wizard.spec.ts` | TC-041, TC-042 | E2E Web |
-| `tests/api/auth.api.spec.ts` | TC-001 (API layer) | API |
+| `tests/web/buyer/login.spec.ts` | TC-001 | E2E Web |
+| `tests/web/buyer/checkout.spec.ts` | TC-022, TC-023, TC-024 | E2E Web |
+| `tests/web/buyer/variant-checkout.spec.ts` | TC-098, TC-105, TC-106 | E2E Web |
+| `tests/web/seller/seller-product-wizard.spec.ts` | TC-042, TC-064 | E2E Web |
+| `tests/web/seller/seller-access.spec.ts` | TC-054 | E2E Web |
+| `tests/web/mixed/cart-isolation.spec.ts` | TC-109 | E2E Web |
+| `tests/web/mixed/order-isolation.spec.ts` | TC-112 | E2E Web |
+| `tests/api/auth.api.spec.ts` | — | API |
 | `tests/api/health.api.spec.ts` | — | API |
+| `tests/api/orders.api.spec.ts` | TC-025, TC-026, TC-027, TC-028, TC-033, TC-056 | API |
+| `tests/api/seller-access.api.spec.ts` | TC-048, TC-053, TC-054 | API |
+| `tests/api/reviews.api.spec.ts` | TC-035, TC-036 | API |
+| `tests/api/coupons.api.spec.ts` | TC-057 | API |
+| `tests/api/cart.api.spec.ts` | TC-107, TC-108 | API |
+| `tests/api/order-isolation.api.spec.ts` | TC-110, TC-111 | API |
+| `tests/api/users.api.spec.ts` | TC-113 | API |
+
+Full coverage details: [`e2e-testing/README.md`](e2e-testing/README.md)
 
 ### Patrol (mobile)
 
-| File | Covers |
-|---|---|
-| `patrol_test/login_test.dart` | S2 mobile login smoke |
-| `patrol_test/signup_test.dart` | TC-067 signup |
-| `patrol_test/add_product_simple_test.dart` | TC-089 simple product |
-| `patrol_test/cod_checkout_test.dart` | TC-095 COD checkout |
+| File | TC ID | Description |
+|---|---|---|
+| `0_auth/login_test.dart` | S2 | Mobile login smoke |
+| `0_auth/signup_test.dart` | TC-068 | Signup with valid data |
+| `1_seller/add_product_simple_test.dart` | TC-090 | Seller creates simple product |
+| `1_seller/add_product_variant_test.dart` | TC-091 | Seller creates variant product |
+| `2_buyer/simple_cod_checkout_test.dart` | TC-095 | COD checkout — simple product |
+| `2_buyer/simple_saved_credit_checkout_test.dart` | TC-096 | Saved card checkout — simple product |
+| `2_buyer/simple_new_credit_checkout_test.dart` | TC-097 | New card checkout — simple product |
+| `2_buyer/variant_cod_checkout_test.dart` | TC-101 | COD checkout — variant product |
+| `2_buyer/variant_new_credit_checkout_test.dart` | TC-103 | New card checkout — variant product |
+| `2_buyer/variant_saved_credit_checkout_test.dart` | TC-104 | Saved card checkout — variant product |
+
+Full coverage details: [`frontend-mobile/patrol_test/README.md`](frontend-mobile/patrol_test/README.md)
 
 ### Page Object Model (`e2e-testing/pages/`)
 
