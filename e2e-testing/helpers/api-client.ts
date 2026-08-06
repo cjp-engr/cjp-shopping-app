@@ -24,3 +24,16 @@ export async function login(
 export function authHeaders(token: string): Record<string, string> {
   return { Authorization: `Bearer ${token}` };
 }
+
+export async function signupFreshUser(
+  request: APIRequestContext,
+  prefix = 'user',
+): Promise<{ token: string; userId: string }> {
+  const email = `${prefix}-${Date.now()}@test.com`;
+  const res = await request.post('/api/auth/signup', {
+    data: { email, password: PASSWORD, firstName: 'Test', lastName: 'User' },
+  });
+  if (!res.ok()) throw new Error(`Signup failed: ${res.status()}`);
+  const { token, user } = await res.json();
+  return { token, userId: user.id };
+}
