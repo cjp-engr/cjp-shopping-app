@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_cubit.dart';
 import 'core/network/api_client.dart';
+import 'core/network/connectivity_cubit.dart';
+import 'core/widgets/offline_banner.dart';
 import 'shared/services/storage_service.dart';
 import 'routes/app_router.dart';
 
@@ -102,6 +104,7 @@ class _TokoMartState extends State<TokoMart> {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => ThemeCubit()),
+        BlocProvider(create: (_) => ConnectivityCubit()),
         BlocProvider.value(value: _authBloc),
         BlocProvider.value(value: _productBloc),
         BlocProvider.value(value: _cartBloc),
@@ -157,6 +160,12 @@ class _RouterWrapperState extends State<_RouterWrapper> {
             routerConfig: router,
             debugShowCheckedModeBanner: false,
             scrollBehavior: const _NoStretchScrollBehavior(),
+            builder: (context, child) => Column(
+              children: [
+                const OfflineBanner(),
+                Expanded(child: child ?? const SizedBox.shrink()),
+              ],
+            ),
           );
         },
       ),
