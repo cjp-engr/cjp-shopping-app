@@ -6,13 +6,17 @@
   "scripts": {
     "test": "playwright test",
     "test:api": "playwright test --project=api",
-    "test:web": "playwright test --project=web",
+    "test:web": "playwright test --project=web-buyer --project=web-seller --project=web-mixed",
+    "test:web:buyer": "playwright test --project=web-buyer",
+    "test:web:seller": "playwright test --project=web-seller",
+    "test:web:mixed": "playwright test --project=web-mixed",
     "test:ui": "playwright test --ui",
     "report": "playwright show-report"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
     "@types/node": "^20.10.0",
+    "allure-playwright": "^3.10.2",
     "dotenv": "^16.3.1",
     "typescript": "^5.3.2"
   }
