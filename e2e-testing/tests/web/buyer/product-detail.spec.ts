@@ -25,19 +25,21 @@ test.describe('TC-012: Product detail — sale price strikethrough', () => {
     });
   });
 
-  test('TC-012: discounted product shows original price and discounted price', async ({
-    productDetailPage,
-  }) => {
-    await productDetailPage.goto(discountedProductId);
+  test(
+    'TC-012: discounted product shows original price and discounted price',
+    { tag: ['@TC-012', '@buyer', '@product-detail', '@simple'] },
+    async ({ productDetailPage }) => {
+      await productDetailPage.goto(discountedProductId);
 
-    const priceEl = productDetailPage.priceDisplay;
-    await expect(priceEl).toBeVisible();
+      const priceEl = productDetailPage.priceDisplay;
+      await expect(priceEl).toBeVisible();
 
-    // App renders the original price as a span with CSS line-through (not a <del>/<s> element).
-    // Asserting both prices appear in the price block confirms the sale state is displayed.
-    await expect(priceEl).toContainText('$80');   // discounted price (20% off $100)
-    await expect(priceEl).toContainText('$100');  // original price (shown struck-through via CSS)
-  });
+      // App renders the original price as a span with CSS line-through (not a <del>/<s> element).
+      // Asserting both prices appear in the price block confirms the sale state is displayed.
+      await expect(priceEl).toContainText('$80');   // discounted price (20% off $100)
+      await expect(priceEl).toContainText('$100');  // original price (shown struck-through via CSS)
+    },
+  );
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -52,30 +54,34 @@ test.describe('Product detail — variant selection (TC-013, TC-014)', () => {
     variantProductId = seed.productId;
   });
 
-  test('TC-013: selecting a variant updates price and image, enables Add to Cart', async ({
-    productDetailPage,
-  }) => {
-    await productDetailPage.goto(variantProductId);
+  test(
+    'TC-013: selecting a variant updates price and image, enables Add to Cart',
+    { tag: ['@TC-013', '@buyer', '@product-detail', '@variant'] },
+    async ({ productDetailPage }) => {
+      await productDetailPage.goto(variantProductId);
 
-    await productDetailPage.expectSizeOptions(['S', 'M', 'L']);
+      await productDetailPage.expectSizeOptions(['S', 'M', 'L']);
 
-    await productDetailPage.expectVariantSelectionCycle(
-      ['S', 'M', 'L'],
-      TC064_SIZE_VARIANTS.priceBySize,
-      2,
-    );
+      await productDetailPage.expectVariantSelectionCycle(
+        ['S', 'M', 'L'],
+        TC064_SIZE_VARIANTS.priceBySize,
+        2,
+      );
 
-    await expect(productDetailPage.addToCartButton).toBeVisible();
-    await expect(productDetailPage.addToCartButton).toBeEnabled();
-  });
+      await expect(productDetailPage.addToCartButton).toBeVisible();
+      await expect(productDetailPage.addToCartButton).toBeEnabled();
+    },
+  );
 
-  test('TC-014: Add to Cart is not shown when no variant is selected', async ({
-    productDetailPage,
-  }) => {
-    await productDetailPage.goto(variantProductId);
+  test(
+    'TC-014: Add to Cart is not shown when no variant is selected',
+    { tag: ['@TC-014', '@buyer', '@product-detail', '@variant'] },
+    async ({ productDetailPage }) => {
+      await productDetailPage.goto(variantProductId);
 
-    // The app conditionally renders add-to-cart-btn only when all variant attributes
-    // are selected AND stock > 0. With no selection made, the button is absent from the DOM.
-    await expect(productDetailPage.addToCartButton).not.toBeVisible();
-  });
+      // The app conditionally renders add-to-cart-btn only when all variant attributes
+      // are selected AND stock > 0. With no selection made, the button is absent from the DOM.
+      await expect(productDetailPage.addToCartButton).not.toBeVisible();
+    },
+  );
 });
