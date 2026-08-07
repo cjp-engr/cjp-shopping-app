@@ -38,110 +38,94 @@ async function openSellerWizard(
   return wizard;
 }
 
-test('TC-042: seller creates simple product via wizard and verifies dashboard + direct URL', async ({
-  page,
-  request,
-  homePage,
-  sellerDashboardPage,
-  productDetailPage,
-}) => {
-  const wizard = await openSellerWizard(page, homePage, sellerDashboardPage);
+test(
+  'TC-042: seller creates simple product via wizard and verifies dashboard + direct URL',
+  { tag: ['@TC-042', '@seller', '@product-create', '@simple', '@smoke'] },
+  async ({ page, request, homePage, sellerDashboardPage, productDetailPage }) => {
+    const wizard = await openSellerWizard(page, homePage, sellerDashboardPage);
 
-  await wizard.createSimpleProduct({
-    name: PRODUCT_NAME,
-    category: 'Electronics',
-    brand: 'Test Brand',
-    price: '29.99',
-    stock: '10',
-    sku: 'SKU-001',
-    discount: '10',
-    description: PRODUCT_DESCRIPTION,
-    tags: PRODUCT_TAGS,
-    imageUrl: PRODUCT_IMAGE_URL,
-    shipping: BUYER_PAYS_SHIPPING,
-  });
+    await wizard.createSimpleProduct({
+      name: PRODUCT_NAME,
+      category: 'Electronics',
+      brand: 'Test Brand',
+      price: '29.99',
+      stock: '10',
+      sku: 'SKU-001',
+      discount: '10',
+      description: PRODUCT_DESCRIPTION,
+      tags: PRODUCT_TAGS,
+      imageUrl: PRODUCT_IMAGE_URL,
+      shipping: BUYER_PAYS_SHIPPING,
+    });
 
-  await expect(wizard.root).not.toBeVisible();
-  await expect(wizard.errorAlert).not.toBeVisible().catch(() => {});
+    await expect(wizard.root).not.toBeVisible();
+    await expect(wizard.errorAlert).not.toBeVisible().catch(() => {});
 
-  const productId = await sellerDashboardPage.getProductIdFromCard(PRODUCT_NAME);
+    const productId = await sellerDashboardPage.getProductIdFromCard(PRODUCT_NAME);
 
-  const token = await page.evaluate(() =>
-    localStorage.getItem('shopping_app_auth_token'),
-  );
-  expect(token).toBeTruthy();
+    const token = await page.evaluate(() =>
+      localStorage.getItem('shopping_app_auth_token'),
+    );
+    expect(token).toBeTruthy();
 
-  const savedProduct = await fetchSavedProduct(
-    request,
-    API_URL,
-    productId,
-    token!,
-  );
-  assertBuyerPaysShipping(savedProduct as Parameters<typeof assertBuyerPaysShipping>[0]);
-  expect(savedProduct.tags).toEqual(expect.arrayContaining(PRODUCT_TAGS));
-  expect(savedProduct.tags).toHaveLength(PRODUCT_TAGS.length);
+    const savedProduct = await fetchSavedProduct(request, API_URL, productId, token!);
+    assertBuyerPaysShipping(savedProduct as Parameters<typeof assertBuyerPaysShipping>[0]);
+    expect(savedProduct.tags).toEqual(expect.arrayContaining(PRODUCT_TAGS));
+    expect(savedProduct.tags).toHaveLength(PRODUCT_TAGS.length);
 
-  await productDetailPage.goto(productId);
-  await expect(page.getByTestId('product-name')).toContainText(PRODUCT_NAME);
-  await productDetailPage.expectNoVariantSelectors();
-});
+    await productDetailPage.goto(productId);
+    await expect(page.getByTestId('product-name')).toContainText(PRODUCT_NAME);
+    await productDetailPage.expectNoVariantSelectors();
+  },
+);
 
-test('TC-064: seller creates variant product via wizard and verifies variants on detail page', async ({
-  page,
-  request,
-  homePage,
-  sellerDashboardPage,
-  productDetailPage,
-}) => {
-  const productName = `E2E Variant Hoodie ${Date.now()}`;
-  const productImageUrl =
-    'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400';
-  const productDescription =
-    'E2E variant hoodie with Size options S, M, and L.';
+test(
+  'TC-064: seller creates variant product via wizard and verifies variants on detail page',
+  { tag: ['@TC-064', '@seller', '@product-create', '@variant', '@smoke'] },
+  async ({ page, request, homePage, sellerDashboardPage, productDetailPage }) => {
+    const productName = `E2E Variant Hoodie ${Date.now()}`;
+    const productImageUrl =
+      'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400';
+    const productDescription =
+      'E2E variant hoodie with Size options S, M, and L.';
 
-  const wizard = await openSellerWizard(page, homePage, sellerDashboardPage);
+    const wizard = await openSellerWizard(page, homePage, sellerDashboardPage);
 
-  await wizard.createVariantProduct({
-    name: productName,
-    category: 'Clothing',
-    attributes: [TC064_SIZE_VARIANTS.attribute],
-    variantRows: [...TC064_SIZE_VARIANTS.rows],
-    description: productDescription,
-    imageUrl: productImageUrl,
-    shipping: BUYER_PAYS_SHIPPING,
-  });
+    await wizard.createVariantProduct({
+      name: productName,
+      category: 'Clothing',
+      attributes: [TC064_SIZE_VARIANTS.attribute],
+      variantRows: [...TC064_SIZE_VARIANTS.rows],
+      description: productDescription,
+      imageUrl: productImageUrl,
+      shipping: BUYER_PAYS_SHIPPING,
+    });
 
-  await expect(wizard.root).not.toBeVisible();
+    await expect(wizard.root).not.toBeVisible();
 
-  const productId = await sellerDashboardPage.getProductIdFromCard(productName);
+    const productId = await sellerDashboardPage.getProductIdFromCard(productName);
 
-  const token = await page.evaluate(() =>
-    localStorage.getItem('shopping_app_auth_token'),
-  );
-  expect(token).toBeTruthy();
+    const token = await page.evaluate(() =>
+      localStorage.getItem('shopping_app_auth_token'),
+    );
+    expect(token).toBeTruthy();
 
-  const savedProduct = await fetchSavedProduct(
-    request,
-    API_URL,
-    productId,
-    token!,
-  );
-  expect(savedProduct.variants).toHaveLength(3);
-  assertVariantAttributes(
-    savedProduct as { variantAttributes: { name: string; values: string[] }[] },
-    'Size',
-    ['S', 'M', 'L'],
-  );
-  assertBuyerPaysShipping(savedProduct as Parameters<typeof assertBuyerPaysShipping>[0]);
-  assertTwoImagesPerVariant(
-    savedProduct.variants as { images: string[] }[],
-  );
+    const savedProduct = await fetchSavedProduct(request, API_URL, productId, token!);
+    expect(savedProduct.variants).toHaveLength(3);
+    assertVariantAttributes(
+      savedProduct as { variantAttributes: { name: string; values: string[] }[] },
+      'Size',
+      ['S', 'M', 'L'],
+    );
+    assertBuyerPaysShipping(savedProduct as Parameters<typeof assertBuyerPaysShipping>[0]);
+    assertTwoImagesPerVariant(savedProduct.variants as { images: string[] }[]);
 
-  await productDetailPage.goto(productId);
-  await productDetailPage.enterBuyerPreview();
-  await productDetailPage.expectSizeOptions(TC064_SIZE_VARIANTS.attribute.values);
-  await productDetailPage.expectVariantSelectionCycle(
-    TC064_SIZE_VARIANTS.attribute.values,
-    TC064_SIZE_VARIANTS.priceBySize,
-  );
-});
+    await productDetailPage.goto(productId);
+    await productDetailPage.enterBuyerPreview();
+    await productDetailPage.expectSizeOptions(TC064_SIZE_VARIANTS.attribute.values);
+    await productDetailPage.expectVariantSelectionCycle(
+      TC064_SIZE_VARIANTS.attribute.values,
+      TC064_SIZE_VARIANTS.priceBySize,
+    );
+  },
+);

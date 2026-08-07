@@ -24,9 +24,7 @@ test.describe('TC-098: Checkout COD with variant product', () => {
   });
 
   test('buyer selects variant M, checks out COD, and order persists variant data',
-    {
-      tag: ['@smoke', '@checkout', '@variant'],
-    },
+    { tag: ['@TC-098', '@buyer', '@checkout', '@variant', '@smoke'] },
     async ({
       page,
       request,
@@ -112,9 +110,7 @@ test.describe('TC-105: Checkout New card with variant product',
     });
 
     test('buyer selects variant M, checks out with new credit card, and order persists variant data',
-      {
-        tag: ['@smoke', '@checkout', '@variant'],
-      },
+      { tag: ['@TC-105', '@buyer', '@checkout', '@variant', '@smoke'] },
       async ({
         page,
         request,
@@ -214,9 +210,7 @@ test.describe('TC-106: Checkout Saved card with variant product',
     });
 
     test('buyer selects variant M, checks out with saved credit card, and order persists variant data',
-      {
-        tag: ['@smoke', '@checkout', '@variant'],
-      },
+      { tag: ['@TC-106', '@buyer', '@checkout', '@variant', '@smoke'] },
       async ({
         page,
         request,

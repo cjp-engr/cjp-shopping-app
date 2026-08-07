@@ -15,9 +15,7 @@ test.beforeEach(async ({ request }) => {
 
 test.describe('TC-022: Checkout COD', () => {
   test('buyer completes checkout with Cash on Delivery',
-    {
-      tag: ['@smoke', '@checkout'],
-    },
+    { tag: ['@TC-022', '@buyer', '@checkout', '@simple', '@smoke'] },
     async ({
       page,
       productListPage,
@@ -54,9 +52,7 @@ test.describe('TC-022: Checkout COD', () => {
 
 test.describe('TC-023: Checkout with saved credit card', () => {
   test('buyer completes checkout with saved credit card',
-    {
-      tag: ['@smoke', '@checkout'],
-    },
+    { tag: ['@TC-023', '@buyer', '@checkout', '@simple', '@smoke'] },
     async ({
       page,
       request,
@@ -108,9 +104,7 @@ test.describe('TC-023: Checkout with saved credit card', () => {
 
 test.describe('TC-024: Checkout with new card entry', () => {
   test('buyer completes checkout with new card entry',
-    {
-      tag: ['@smoke', '@checkout'],
-    },
+    { tag: ['@TC-024', '@buyer', '@checkout', '@simple', '@smoke'] },
     async ({
       page,
       productListPage,

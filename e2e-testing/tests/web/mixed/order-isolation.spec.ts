@@ -66,12 +66,16 @@ test.beforeAll(async () => {
 });
 
 test.describe('TC-112: Order history isolation — buyer2 sees only own orders in UI', () => {
-  test('buyer2 cannot see buyer1 order on the orders page', async ({ page, myOrdersPage }) => {
-    await page.goto('/');
-    await injectAuth(page, buyer2Token, buyer2UserData);
+  test(
+    'buyer2 cannot see buyer1 order on the orders page',
+    { tag: ['@TC-112', '@buyer', '@order'] },
+    async ({ page, myOrdersPage }) => {
+      await page.goto('/');
+      await injectAuth(page, buyer2Token, buyer2UserData);
 
-    await myOrdersPage.open();
+      await myOrdersPage.open();
 
-    await expect(myOrdersPage.orderCard(buyer1OrderId)).not.toBeVisible();
-  });
+      await expect(myOrdersPage.orderCard(buyer1OrderId)).not.toBeVisible();
+    },
+  );
 });
