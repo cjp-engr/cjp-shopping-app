@@ -112,8 +112,19 @@ export class ProductDetailPage {
   async addToCart(): Promise<void> {
     await this.selectFirstAvailableVariants();
     await this.addToCartButton.waitFor();
+    // Wait for a PUT /api/cart response that has at least one item — the
+    // CartContext debounce also fires a spurious empty-cart PUT on mount,
+    // so we must ignore responses with an empty sellers list.
     const cartSync = this.page.waitForResponse(
-      res => res.url().includes('/api/cart') && res.request().method() === 'PUT',
+      async res => {
+        if (!res.url().includes('/api/cart') || res.request().method() !== 'PUT') return false;
+        try {
+          const body = await res.json();
+          return (body?.sellers ?? []).some((s: { items?: unknown[] }) => (s.items ?? []).length > 0);
+        } catch {
+          return false;
+        }
+      },
       { timeout: 10_000 },
     );
     await this.addToCartButton.click();
@@ -123,8 +134,19 @@ export class ProductDetailPage {
   /** Adds to cart using the currently selected variant(s) without re-selecting. */
   async addCurrentSelectionToCart(): Promise<void> {
     await this.addToCartButton.waitFor();
+    // Wait for a PUT /api/cart response that has at least one item — the
+    // CartContext debounce also fires a spurious empty-cart PUT on mount,
+    // so we must ignore responses with an empty sellers list.
     const cartSync = this.page.waitForResponse(
-      res => res.url().includes('/api/cart') && res.request().method() === 'PUT',
+      async res => {
+        if (!res.url().includes('/api/cart') || res.request().method() !== 'PUT') return false;
+        try {
+          const body = await res.json();
+          return (body?.sellers ?? []).some((s: { items?: unknown[] }) => (s.items ?? []).length > 0);
+        } catch {
+          return false;
+        }
+      },
       { timeout: 10_000 },
     );
     await this.addToCartButton.click();

@@ -14,16 +14,18 @@ export class CartPage {
   }
 
   async open(): Promise<void> {
-    await this.cartLink.click();
-    await this.root.waitFor();
-  }
-
-  async proceedToCheckout(): Promise<void> {
-    // Wait for the server cart fetch to complete so the page stops re-rendering
-    await this.page.waitForResponse(
+    // Register the GET wait before clicking so we catch the cart page's load request.
+    const cartLoad = this.page.waitForResponse(
       res => res.url().includes('/api/cart') && res.request().method() === 'GET',
       { timeout: 10_000 },
     );
+    await this.cartLink.click();
+    await this.root.waitFor();
+    await cartLoad;
+  }
+
+  async proceedToCheckout(): Promise<void> {
+    await this.checkoutButton.waitFor();
     await this.checkoutButton.click();
   }
 
