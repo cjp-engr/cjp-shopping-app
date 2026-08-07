@@ -112,14 +112,22 @@ export class ProductDetailPage {
   async addToCart(): Promise<void> {
     await this.selectFirstAvailableVariants();
     await this.addToCartButton.waitFor();
+    const cartSync = this.page.waitForResponse(
+      res => res.url().includes('/api/cart') && res.request().method() === 'PUT',
+      { timeout: 10_000 },
+    );
     await this.addToCartButton.click();
-    await this.page.getByTestId('cart-link').filter({ hasText: /[1-9]/ }).waitFor({ timeout: 5_000 });
+    await cartSync;
   }
 
   /** Adds to cart using the currently selected variant(s) without re-selecting. */
   async addCurrentSelectionToCart(): Promise<void> {
     await this.addToCartButton.waitFor();
+    const cartSync = this.page.waitForResponse(
+      res => res.url().includes('/api/cart') && res.request().method() === 'PUT',
+      { timeout: 10_000 },
+    );
     await this.addToCartButton.click();
-    await this.page.getByTestId('cart-link').filter({ hasText: /[1-9]/ }).waitFor({ timeout: 5_000 });
+    await cartSync;
   }
 }

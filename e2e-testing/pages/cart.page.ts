@@ -19,8 +19,11 @@ export class CartPage {
   }
 
   async proceedToCheckout(): Promise<void> {
-    // Wait for cart items to finish loading before clicking — cart re-renders on data fetch
-    await this.page.locator('[data-testid^="cart-item-"]').first().waitFor({ timeout: 10_000 });
+    // Wait for the server cart fetch to complete so the page stops re-rendering
+    await this.page.waitForResponse(
+      res => res.url().includes('/api/cart') && res.request().method() === 'GET',
+      { timeout: 10_000 },
+    );
     await this.checkoutButton.click();
   }
 
