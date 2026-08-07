@@ -113,11 +113,13 @@ export class ProductDetailPage {
     await this.selectFirstAvailableVariants();
     await this.addToCartButton.waitFor();
     await this.addToCartButton.click();
+    await this.page.getByTestId('cart-link').filter({ hasText: /[1-9]/ }).waitFor({ timeout: 5_000 });
   }
 
   /** Adds to cart using the currently selected variant(s) without re-selecting. */
   async addCurrentSelectionToCart(): Promise<void> {
     await this.addToCartButton.waitFor();
     await this.addToCartButton.click();
+    await this.page.getByTestId('cart-link').filter({ hasText: /[1-9]/ }).waitFor({ timeout: 5_000 });
   }
 }
