@@ -7,16 +7,24 @@ import { authHeaders, PASSWORD, SELLER_EMAIL } from './api-client';
 
 const AUTH_DIR = path.join(__dirname, '..', '.auth');
 
-export function getBuyerToken(): string {
-  const statePath = path.join(AUTH_DIR, 'buyer.json');
+function readTokenFromAuthFile(role: 'buyer' | 'seller'): string {
+  const statePath = path.join(AUTH_DIR, `${role}.json`);
   const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
   const entry = state.origins?.[0]?.localStorage?.find(
     (e: { name: string; value: string }) => e.name === 'shopping_app_auth_token',
   );
   if (!entry?.value) {
-    throw new Error('Buyer auth token not found in .auth/buyer.json');
+    throw new Error(`${role} auth token not found in .auth/${role}.json`);
   }
   return entry.value;
+}
+
+export function getBuyerToken(): string {
+  return readTokenFromAuthFile('buyer');
+}
+
+export function getSellerToken(): string {
+  return readTokenFromAuthFile('seller');
 }
 
 export async function clearBuyerCart(
