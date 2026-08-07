@@ -29,12 +29,15 @@ connectDB();
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
-const isTest = process.env.NODE_ENV === 'test';
+// 0 = unlimited. Defaults: auth 10/15 min, api 100/min.
+// Override via env vars to use small values in rate-limit tests.
+const authMax = parseInt(process.env.RATE_LIMIT_AUTH_MAX ?? '10');
+const apiMax  = parseInt(process.env.RATE_LIMIT_API_MAX  ?? '100');
 
 // Stricter limit for auth endpoints — prevents brute-force and signup spam
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: isTest ? 0 : 10,       // 0 = unlimited in test env
+  windowMs: 15 * 60 * 1000,
+  max: authMax,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
@@ -42,8 +45,8 @@ const authLimiter = rateLimit({
 
 // General limit for all other API routes
 const apiLimiter = rateLimit({
-  windowMs: 60 * 1000,        // 1 minute
-  max: isTest ? 0 : 100,
+  windowMs: 60 * 1000,
+  max: apiMax,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },

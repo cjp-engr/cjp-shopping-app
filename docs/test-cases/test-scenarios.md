@@ -2627,6 +2627,129 @@
 
 ---
 
+## Security & Infrastructure — Rate Limiting
+
+### TC-114: Auth route response includes rate limit headers
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Any
+**Platform**: Web
+**Parity**: Web (backend shared with mobile)
+**Automation**: Playwright-API
+**Preconditions**: Backend running with rate limiting middleware active
+**Steps**:
+1. `POST /api/auth/login` with any credentials
+**Expected Results**:
+- Response includes `RateLimit-Limit` header
+- Response includes `RateLimit-Remaining` header
+- Response includes `RateLimit-Reset` header
+**Business Rule**: §12 Rate Limiting
+**Selectors/API**: `POST /api/auth/login`
+**Suggested Layer**: API
+
+---
+
+### TC-115: API route response includes rate limit headers
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Any
+**Platform**: Web
+**Parity**: Web (backend shared with mobile)
+**Automation**: Playwright-API
+**Preconditions**: Backend running with rate limiting middleware active
+**Steps**:
+1. `GET /api/products`
+**Expected Results**:
+- Response includes `RateLimit-Limit` header
+- Response includes `RateLimit-Remaining` header
+- Response includes `RateLimit-Reset` header
+**Business Rule**: §12 Rate Limiting
+**Selectors/API**: `GET /api/products`
+**Suggested Layer**: API
+
+---
+
+### TC-116: RateLimit-Remaining decrements with each request
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Any
+**Platform**: Web
+**Parity**: Web (backend shared with mobile)
+**Automation**: Playwright-API
+**Preconditions**: Backend running; window not exhausted
+**Steps**:
+1. `GET /api/products` — record `RateLimit-Remaining` value
+2. `GET /api/products` again immediately
+**Expected Results**:
+- `RateLimit-Remaining` on second response is exactly 1 less than first
+**Business Rule**: §12 Rate Limiting
+**Selectors/API**: `GET /api/products`
+**Suggested Layer**: API
+
+---
+
+### TC-117: Auth route returns 429 after limit is exhausted
+**Category**: Negative
+**Priority**: P1
+**Role**: Any
+**Platform**: Web
+**Parity**: Web (backend shared with mobile)
+**Automation**: Playwright-API
+**Preconditions**: Backend started with `RATE_LIMIT_AUTH_MAX=3` (low-limit mode)
+**Steps**:
+1. `POST /api/auth/login` with bad credentials — repeat until limit reached (3×)
+2. `POST /api/auth/login` one more time (4th request)
+**Expected Results**:
+- **429** on the 4th request
+- `body.success` → `false`
+- `body.message` → `"Too many requests, please try again later."`
+**Business Rule**: §12 Rate Limiting
+**Selectors/API**: `POST /api/auth/login`
+**Suggested Layer**: API
+
+---
+
+### TC-118: 429 response includes Retry-After header
+**Category**: Negative
+**Priority**: P1
+**Role**: Any
+**Platform**: Web
+**Parity**: Web (backend shared with mobile)
+**Automation**: Playwright-API
+**Preconditions**: Backend started with `RATE_LIMIT_AUTH_MAX=3` (low-limit mode)
+**Steps**:
+1. Exhaust the auth limit (3 requests)
+2. Send one more `POST /api/auth/login`
+**Expected Results**:
+- **429** status
+- Response includes `Retry-After` header with a positive integer value
+**Business Rule**: §12 Rate Limiting
+**Selectors/API**: `POST /api/auth/login`
+**Suggested Layer**: API
+
+---
+
+### TC-119: General API route returns 429 after limit is exhausted
+**Category**: Negative
+**Priority**: P1
+**Role**: Any
+**Platform**: Web
+**Parity**: Web (backend shared with mobile)
+**Automation**: Playwright-API
+**Preconditions**: Backend started with `RATE_LIMIT_API_MAX=5` (low-limit mode)
+**Steps**:
+1. `GET /api/products` — repeat until limit reached (5×)
+2. `GET /api/products` one more time (6th request)
+**Expected Results**:
+- **429** on the 6th request
+- `body.success` → `false`
+- `body.message` → `"Too many requests, please try again later."`
+**Business Rule**: §12 Rate Limiting
+**Selectors/API**: `GET /api/products`
+**Suggested Layer**: API
+
+---
+
 ## Domain Doc Gaps
 
 | Gap | Code behavior | Doc location |
@@ -2645,6 +2768,7 @@
 | TC-001–040 | 40 | Buyer auth, browse, cart, checkout, orders, reviews, UI (web) |
 | TC-041–052 | 12 | Seller orders, vouchers, wizard (web) |
 | TC-053–055 | 3 | Security (web/API) |
+| TC-114–119 | 6 | Rate limiting — headers, decrement, 429 enforcement |
 | TC-056–059 | 4 | Edge cases (web) |
 | TC-060–063 | 4 | Platform parity (web perspective) |
 | TC-064–066 | 3 | Seller variant listing + buyer catalog (web) |
@@ -2654,6 +2778,6 @@
 | TC-607–614 | 6 | Mobile session, UI, negative, edge |
 | TC-600–606, TC-608–611 | 11 | Mobile platform parity & security |
 | TC-604–605 | (in above) | Mobile-only notifications |
-| **Total** | **117** | Web (69) + Mobile-native (48) |
+| **Total** | **123** | Web (75) + Mobile-native (48) |
 
 **Automation split:** Playwright E2E (~51 web), Patrol E2E (~38 mobile, many blocked on missing keys), Playwright-API (~15), Manual/Blocked (~5)

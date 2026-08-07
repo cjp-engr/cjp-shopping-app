@@ -34,7 +34,7 @@ Test strategy for the **full scenario suite** (TC-001–TC-066 web, TC-067–TC-
 | Layer | Count | Focus | Est. run time | Tool |
 |-------|-------|-------|---------------|------|
 | Unit | 0 | Tax/discount pure math | — | Vitest/Jest (**Blocked**) |
-| API | 15 | Orders, coupons, auth, reviews, products | ~2–4 min | Playwright `request` |
+| API | 21 | Orders, coupons, auth, reviews, products, rate limiting | ~2–4 min | Playwright `request` |
 | Component | 0 | Sale strikethrough tiles | — | Vitest/RTL (**Blocked**) |
 | E2E Web | 49 | Auth, cart, checkout, seller wizard, catalog | ~15–25 min | Playwright `page` |
 | E2E Mobile | 38 | Auth gate, cart checkbox, checkout, 7-step wizard | ~20–30 min | Patrol |
@@ -134,6 +134,12 @@ Test strategy for the **full scenario suite** (TC-001–TC-066 web, TC-067–TC-
 | TC-111 | Order detail isolation — buyer2 gets 403 on buyer1 order (API) | API | Playwright-API | Web | P1 | `GET /api/orders/:id` | Ownership enforcement | |
 | TC-112 | Order history isolation — buyer2 sees only own orders in UI | E2E | Playwright | Web | P1 | `orders-page`, `order-card-{id}` | UI reflects server isolation | |
 | TC-113 | User cannot follow themselves | API | Playwright-API | Web | P1 | `POST /api/users/:id/follow` | 400 self-follow guard | |
+| TC-114 | Auth route includes RateLimit headers | API | Playwright-API | Web | P1 | `POST /api/auth/login` | Middleware wired up | |
+| TC-115 | API route includes RateLimit headers | API | Playwright-API | Web | P1 | `GET /api/products` | Middleware wired up | |
+| TC-116 | RateLimit-Remaining decrements per request | API | Playwright-API | Web | P1 | `GET /api/products` | Counter behaviour | |
+| TC-117 | Auth route returns 429 after limit exhausted | API | Playwright-API | Web | P1 | `POST /api/auth/login` | Brute-force guard | Requires `RATE_LIMIT_AUTH_MAX=3` on backend |
+| TC-118 | 429 includes Retry-After header | API | Playwright-API | Web | P1 | `POST /api/auth/login` | Client back-off signal | Requires `RATE_LIMIT_AUTH_MAX=3` on backend |
+| TC-119 | General API route returns 429 after limit exhausted | API | Playwright-API | Web | P1 | `GET /api/products` | General throttle | Requires `RATE_LIMIT_API_MAX=5` on backend |
 
 ---
 

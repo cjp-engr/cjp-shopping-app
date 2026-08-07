@@ -194,3 +194,4 @@ test('TC-113: user cannot follow themselves', async () => { ... });
 | `cart.api.spec.ts` | TC-107, TC-108 | Cart returns buyer's own items, cart isolation between buyers |
 | `order-isolation.api.spec.ts` | TC-110, TC-111 | Order list isolation, order detail ownership (403) |
 | `users.api.spec.ts` | TC-113 | User cannot follow themselves |
+| `rate-limit.api.spec.ts` | TC-114, TC-115, TC-116, TC-117, TC-118, TC-119 | Rate limit headers present; 429 enforcement (low-limit mode) |
