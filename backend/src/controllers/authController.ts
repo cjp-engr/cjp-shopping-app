@@ -50,12 +50,10 @@ export const updateProfile = async (req: AuthRequest, res: Response, next: NextF
 
 export const getPaymentMethods = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { savedCards } = (await import('../models/User.js')).default
-      .findById(req.user!.id).select('savedCards').then(u => {
-        if (!u) throw Object.assign(new Error('User not found'), { statusCode: 404 });
-        return u;
-      });
-    res.json({ success: true, paymentMethods: savedCards });
+    const User = (await import('../models/User.js')).default;
+    const user = await User.findById(req.user!.id).select('savedCards');
+    if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+    res.json({ success: true, paymentMethods: user.savedCards });
   } catch (err) { next(err); }
 };
 

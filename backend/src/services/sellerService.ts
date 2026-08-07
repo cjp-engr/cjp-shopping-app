@@ -1,5 +1,5 @@
 import Product from '../models/Product.js';
-import Order from '../models/Order.js';
+import Order, { OrderStatus } from '../models/Order.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -120,7 +120,7 @@ export async function getSellerOrders(sellerId: string) {
           : item.product?.toString();
       return productId ? sellerIdSet.has(productId) : false;
     });
-    const doc = order.toObject({ flattenMaps: true }) as Record<string, unknown> & {
+    const doc = order.toObject({ flattenMaps: true }) as unknown as Record<string, unknown> & {
       deliverySelections?: Record<string, string>;
       selectedDeliveryOption?: string;
       shipping?: number;
@@ -147,7 +147,7 @@ export async function getSellerOrders(sellerId: string) {
 export async function updateSellerOrderStatus(
   orderId: string,
   sellerId: string,
-  status: string,
+  status: OrderStatus,
   cancelReason?: string,
 ) {
   const order = await Order.findById(orderId);
