@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { connectDB } from './config/database.js';
@@ -27,6 +28,26 @@ const app = express();
 connectDB();
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+const isTest = process.env.NODE_ENV === 'test';
+
+// Stricter limit for auth endpoints — prevents brute-force and signup spam
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: isTest ? 0 : 10,       // 0 = unlimited in test env
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' },
+});
+
+// General limit for all other API routes
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,        // 1 minute
+  max: isTest ? 0 : 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' },
+});
 app.use(cors({
   origin: process.env.NODE_ENV === 'development'
     ? /^http:\/\/localhost:\d+$/
@@ -44,14 +65,14 @@ app.get('/health', (req, res) => {
   res.status(200).json({ success: true, message: 'Server is running', timestamp: new Date().toISOString() });
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/seller', sellerRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/coupons', couponRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/products', apiLimiter, productRoutes);
+app.use('/api/orders', apiLimiter, orderRoutes);
+app.use('/api/seller', apiLimiter, sellerRoutes);
+app.use('/api/cart', apiLimiter, cartRoutes);
+app.use('/api/reviews', apiLimiter, reviewRoutes);
+app.use('/api/users', apiLimiter, userRoutes);
+app.use('/api/coupons', apiLimiter, couponRoutes);
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'TokoMart API', version: '1.0.0' });
