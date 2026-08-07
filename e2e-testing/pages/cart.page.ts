@@ -19,6 +19,8 @@ export class CartPage {
   }
 
   async proceedToCheckout(): Promise<void> {
+    // Wait for cart items to finish loading before clicking — cart re-renders on data fetch
+    await this.page.locator('[data-testid^="cart-item-"]').first().waitFor({ timeout: 10_000 });
     await this.checkoutButton.click();
   }
 
