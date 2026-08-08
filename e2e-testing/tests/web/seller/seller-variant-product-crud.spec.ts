@@ -77,16 +77,17 @@ test.describe.serial('Seller variant product CRUD', () => {
         await productDetailPage.enterBuyerPreview();
       });
 
-      await test.step('Verify variant detail page — selectors present and price updates', async () => {
+      await test.step('Verify variant detail page — selectors present and price/stock updates', async () => {
         await expect(page).toHaveURL(new RegExp(`/products/${productId}`));
         for (const size of TC064_SIZE_VARIANTS.attribute.values) {
           await expect(
             page.getByTestId(`variant-value-Size-${size}`),
           ).toBeVisible();
         }
-        for (const [size, expectedPrice] of Object.entries(TC064_SIZE_VARIANTS.priceBySize)) {
+        for (const size of TC064_SIZE_VARIANTS.attribute.values as ('S' | 'M' | 'L')[]) {
           await page.getByTestId(`variant-value-Size-${size}`).click();
-          await expect(page.getByTestId('product-price')).toContainText(expectedPrice);
+          await expect(page.getByTestId('product-price')).toContainText(TC064_SIZE_VARIANTS.priceBySize[size]);
+          await expect(page.getByTestId('variant-stock')).toContainText(TC064_SIZE_VARIANTS.stockBySize[size]);
         }
       });
     },

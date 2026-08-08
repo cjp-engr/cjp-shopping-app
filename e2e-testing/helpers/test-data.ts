@@ -40,6 +40,7 @@ export const TC064_SIZE_VARIANTS: {
   attribute: VariantAttributeConfig;
   rows: VariantRowConfig[];
   priceBySize: Record<'S' | 'M' | 'L', string>;
+  stockBySize: Record<'S' | 'M' | 'L', string>;
 } = {
   attribute: { name: 'Size', values: ['S', 'M', 'L'] },
   rows: [
@@ -73,5 +74,10 @@ export const TC064_SIZE_VARIANTS: {
     S: '$49.99',
     M: '$54.99',
     L: '$59.99',
+  },
+  stockBySize: {
+    S: '5 in stock',
+    M: '10 in stock',
+    L: '15 in stock',
   },
 };
