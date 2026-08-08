@@ -3,8 +3,6 @@ import { Locator, Page } from '@playwright/test';
 import {
   BUYER_EMAIL,
   SELLER_EMAIL,
-  PASSWORD,
-  TEST_EMAIL,
   TEST_PASSWORD,
 } from '../helpers/api-client';
 
@@ -35,10 +33,10 @@ export class LoginPage {
   }
 
   async loginAsBuyer(): Promise<void> {
-    await this.loginAs(BUYER_EMAIL, PASSWORD);
+    await this.loginAs(BUYER_EMAIL, TEST_PASSWORD);
   }
 
   async loginAsSeller(): Promise<void> {
-    await this.loginAs(SELLER_EMAIL, PASSWORD);
+    await this.loginAs(SELLER_EMAIL, TEST_PASSWORD);
   }
 }

@@ -9,8 +9,8 @@
 param(
     [string]$Device = "emulator-5554",
     [string]$Tags = "",
-    [string]$BuyerEmail = "buyer@test.com",
-    [string]$SellerEmail = "seller@test.com",
+    [string]$BuyerEmail = "b@test.com",
+    [string]$SellerEmail = "s@test.com",
     [string]$Password = "Test750!!"
 )
 
@@ -20,7 +20,7 @@ $baseArgs = @(
     "--device", $Device,
     "--dart-define=BUYER_EMAIL=$BuyerEmail",
     "--dart-define=SELLER_EMAIL=$SellerEmail",
-    "--dart-define=PASSWORD=$Password"
+    "--dart-define=TEST_PASSWORD=$Password"
 )
 
 if ($Tags) {

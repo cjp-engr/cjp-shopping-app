@@ -26,10 +26,10 @@ HTTP-layer tests for the TokoMart backend API. These tests hit a real running ba
 Use helpers from `helpers/api-client.ts` — never hardcode credentials or tokens:
 
 ```ts
-import { authHeaders, login, signupFreshUser, TEST_EMAIL, TEST_PASSWORD } from '../../helpers/api-client';
+import { authHeaders, login, signupFreshUser, SELLER_EMAIL, TEST_PASSWORD } from '../../helpers/api-client';
 
 // Seeded account (buyer or seller)
-const token = await login(ctx, TEST_EMAIL, TEST_PASSWORD);
+const token = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
 
 // Fresh account — guaranteed no prior state
 const { token, userId } = await signupFreshUser(request, 'prefix');
@@ -53,7 +53,7 @@ const res = await request.get('/api/orders', { headers: authHeaders(token) });
 
   test.beforeAll(async () => {
     const ctx = await pwRequest.newContext({ baseURL: API_URL });
-    buyerToken = await login(ctx, TEST_EMAIL, TEST_PASSWORD);
+    buyerToken = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
     // create test product...
     productId = (await res.json()).product._id;
   });
@@ -64,7 +64,7 @@ const res = await request.get('/api/orders', { headers: authHeaders(token) });
 | When to use | Helper |
 |---|---|
 | Test needs a clean user with no history (no orders, no cart, not a seller) | `signupFreshUser(request, 'prefix')` |
-| Test uses the seeded buyer/seller accounts and domain-known state | `login(ctx, TEST_EMAIL, TEST_PASSWORD)` |
+| Test uses the seeded buyer/seller accounts and domain-known state | `login(ctx, SELLER_EMAIL, TEST_PASSWORD)` |
 
 Never depend on shared seeded state changing between test runs — the seeded accounts accumulate orders and cart items across runs. If your test needs a known-clean state, use `signupFreshUser`.
 

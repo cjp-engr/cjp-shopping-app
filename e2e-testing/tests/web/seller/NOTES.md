@@ -24,7 +24,7 @@ Drives the seller dashboard product creation wizard end-to-end. Products are cre
 ### TC-054 — `seller-access.spec.ts`
 **Seller dashboard only shows the seller's own products**
 
-`beforeAll` uses a raw API context (not the fixture `request`, which is scoped to `:5173`) to promote `buyer@test.com` to a second seller account and create a product as that seller. The test then verifies seller1's dashboard cannot see or interact with seller2's product.
+`beforeAll` uses a raw API context (not the fixture `request`, which is scoped to `:5173`) to promote `b@test.com` to a second seller account and create a product as that seller. The test then verifies seller1's dashboard cannot see or interact with seller2's product.
 
 | Test | Assertion |
 |------|-----------|

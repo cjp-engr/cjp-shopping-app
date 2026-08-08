@@ -68,7 +68,7 @@ With explicit credentials (if not set in `test_credentials.dart`):
 ```bash
 patrol test --target patrol_test/0_auth/login_test.dart \
   --dart-define=EMAIL=test@example.com \
-  --dart-define=PASSWORD=password123
+  --dart-define=TEST_PASSWORD=password123
 ```
 
 ## Structure

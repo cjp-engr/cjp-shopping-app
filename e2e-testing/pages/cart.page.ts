@@ -19,6 +19,8 @@ export class CartPage {
   }
 
   async proceedToCheckout(): Promise<void> {
+    // Cart renders from context; checkout button appears once items are loaded
+    await this.checkoutButton.waitFor({ timeout: 10_000 });
     await this.checkoutButton.click();
   }
 

@@ -5,8 +5,8 @@
 import { test, expect, request as pwRequest } from '@playwright/test';
 import {
   authHeaders, login,
-  TEST_EMAIL, TEST_PASSWORD,
-  SELLER_EMAIL, PASSWORD,
+  SELLER_EMAIL, TEST_PASSWORD,
+  SELLER_EMAIL, TEST_PASSWORD,
   BUYER_EMAIL,
 } from '../../helpers/api-client';
 
@@ -26,7 +26,7 @@ let seller2ProductId: string;
 test.beforeAll(async () => {
   const ctx = await pwRequest.newContext({ baseURL: API_URL });
 
-  seller1Token = await login(ctx, SELLER_EMAIL, PASSWORD);
+  seller1Token = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
 
   // Register a brand-new buyer account so we can be certain they are not a seller,
   // regardless of what prior test runs did to the seeded accounts.
@@ -57,7 +57,7 @@ test.beforeAll(async () => {
 
   // ── Seller2 setup (for TC-054) ────────────────────────────────────────────
   // Promote buyer2 to seller (idempotent) and create a product as seller2
-  const seller2Token = await login(ctx, BUYER_EMAIL, PASSWORD);
+  const seller2Token = await login(ctx, BUYER_EMAIL, TEST_PASSWORD);
   await ctx.put('/api/auth/profile', {
     data: { role: 'seller' },
     headers: authHeaders(seller2Token),

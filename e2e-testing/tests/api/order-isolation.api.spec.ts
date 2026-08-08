@@ -4,8 +4,8 @@
 import { test, expect, request as pwRequest } from '@playwright/test';
 import {
   authHeaders, login,
-  TEST_EMAIL, TEST_PASSWORD,
-  SELLER_EMAIL, PASSWORD,
+  SELLER_EMAIL, TEST_PASSWORD,
+  SELLER_EMAIL, TEST_PASSWORD,
 } from '../../helpers/api-client';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
@@ -22,7 +22,7 @@ test.beforeAll(async () => {
   const ctx = await pwRequest.newContext({ baseURL: API_URL });
 
   // Buyer1 — seeded account
-  buyer1Token = await login(ctx, TEST_EMAIL, TEST_PASSWORD);
+  buyer1Token = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
 
   // Buyer2 — fresh account with no orders
   const ts = Date.now();
@@ -37,7 +37,7 @@ test.beforeAll(async () => {
   buyer2Token = (await signupRes.json()).token;
 
   // Seller creates a product for buyer1 to order
-  const sellerToken = await login(ctx, SELLER_EMAIL, PASSWORD);
+  const sellerToken = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
   const productRes = await ctx.post('/api/seller/products', {
     multipart: {
       name: `Order Isolation Test Product ${ts}`,

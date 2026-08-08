@@ -3,7 +3,7 @@ import * as path from 'path';
 
 import type { APIRequestContext } from '@playwright/test';
 
-import { authHeaders, PASSWORD, SELLER_EMAIL } from './api-client';
+import { authHeaders, TEST_PASSWORD, SELLER_EMAIL } from './api-client';
 
 const AUTH_DIR = path.join(__dirname, '..', '.auth');
 
@@ -41,7 +41,7 @@ export async function loginSeller(
   apiUrl: string,
 ): Promise<string> {
   const response = await request.post(`${apiUrl}/api/auth/login`, {
-    data: { email: SELLER_EMAIL, password: PASSWORD },
+    data: { email: SELLER_EMAIL, password: TEST_PASSWORD },
   });
   if (!response.ok()) {
     throw new Error(`Seller login failed: ${response.status()} ${await response.text()}`);
