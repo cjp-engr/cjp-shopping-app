@@ -65,7 +65,7 @@ test.describe('Product detail — variant selection (TC-013, TC-014)', () => {
       await productDetailPage.expectVariantSelectionCycle(
         ['S', 'M', 'L'],
         TC064_SIZE_VARIANTS.priceBySize,
-        2,
+        0, // each variant has 1 image — thumbnail grid only renders with >1 images
       );
 
       await expect(productDetailPage.addToCartButton).toBeVisible();

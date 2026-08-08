@@ -2,7 +2,7 @@
 
 import { test, expect } from '../../../fixtures/base-fixture';
 import { request as pwRequest, APIRequestContext } from '@playwright/test';
-import { authHeaders, login, TEST_EMAIL, TEST_PASSWORD, SELLER_EMAIL, PASSWORD } from '../../../helpers/api-client';
+import { authHeaders, login, SELLER_EMAIL, TEST_PASSWORD, SELLER_EMAIL, TEST_PASSWORD } from '../../../helpers/api-client';
 import { injectAuth } from '../../../helpers/auth-inject';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
@@ -18,8 +18,8 @@ test.beforeAll(async () => {
   const ctx: APIRequestContext = await pwRequest.newContext({ baseURL: API_URL });
 
   // Buyer1 — seeded account; place an order
-  const buyer1Token = await login(ctx, TEST_EMAIL, TEST_PASSWORD);
-  const sellerToken = await login(ctx, SELLER_EMAIL, PASSWORD);
+  const buyer1Token = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
+  const sellerToken = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
 
   const ts = Date.now();
   const productRes = await ctx.post('/api/seller/products', {

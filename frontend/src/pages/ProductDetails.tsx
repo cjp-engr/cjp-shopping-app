@@ -82,7 +82,9 @@ export const ProductDetails: React.FC = () => {
     ? (selectedVariant.discount && selectedVariant.discount > 0
         ? selectedVariant.price * (1 - selectedVariant.discount / 100)
         : selectedVariant.price)
-    : product?.price ?? 0;
+    : (product?.discount && product.discount > 0
+        ? (product?.price ?? 0) * (1 - product.discount / 100)
+        : product?.price ?? 0);
   const effectiveStock = selectedVariant?.stock ?? product?.stock ?? 0;
   const effectiveSku = selectedVariant?.sku ?? product?.sku;
 

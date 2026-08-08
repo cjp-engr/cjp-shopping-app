@@ -1,5 +1,5 @@
 import { test as setup } from '@playwright/test';
-import { authHeaders, SELLER_EMAIL, PASSWORD } from '../../helpers/api-client';
+import { authHeaders, SELLER_EMAIL, TEST_PASSWORD } from '../../helpers/api-client';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
 const WEB_URL = process.env.WEB_URL ?? 'http://localhost:5173';
@@ -8,7 +8,7 @@ const SELLER_STATE = '.auth/seller.json';
 setup('authenticate as seller', async ({ page, request }) => {
   // Login via API to get token
   const loginRes = await request.post(`${API_URL}/api/auth/login`, {
-    data: { email: SELLER_EMAIL, password: PASSWORD },
+    data: { email: SELLER_EMAIL, password: TEST_PASSWORD },
   });
   const body = await loginRes.json();
   if (!body.token) throw new Error(`API login failed: ${JSON.stringify(body)}`);

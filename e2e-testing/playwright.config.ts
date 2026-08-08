@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 const envDir = __dirname;
-dotenv.config({ path: path.join(envDir, '.env.dev') });
 dotenv.config({ path: path.join(envDir, '.env') });
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';

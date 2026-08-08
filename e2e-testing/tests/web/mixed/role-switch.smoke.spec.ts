@@ -1,9 +1,9 @@
 // Smoke test: proves switchRole applies the correct auth state for each role.
 // Not a business-flow test — delete or replace once real mixed tests exist.
 //
-// Minor issues noted:
-// - switchRole silently clears localStorage without error if the JSON has no entries
-// - login.spec.ts starts pre-authenticated under web-buyer project
+// Note: role assertions use email (immutable) rather than role field —
+// the buyer account (b1@test.com) may be promoted to seller by other
+// tests and cannot be demoted, so role field is not a reliable assertion.
 
 import { test, expect } from '../../../fixtures/base-fixture';
 
@@ -20,7 +20,7 @@ test(
       localStorage.getItem('shopping_app_user_data'),
     );
     const buyer = JSON.parse(buyerData!);
-    expect(buyer.role).toBe('buyer');
+    expect(buyer.email).toBe('b1@test.com');
 
     await switchRole('seller');
     await expect(page.getByTestId('user-menu-btn')).toBeVisible({ timeout: 10_000 });
@@ -28,6 +28,6 @@ test(
       localStorage.getItem('shopping_app_user_data'),
     );
     const seller = JSON.parse(sellerData!);
-    expect(seller.role).toBe('seller');
+    expect(seller.email).toBe('s1@ex.com');
   },
 );
