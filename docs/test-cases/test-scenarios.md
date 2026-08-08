@@ -1203,6 +1203,33 @@
 
 ---
 
+### TC-120: Edit variant product — update variant price, stock, and options
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Seller  
+**Platform**: Web  
+**Parity**: Both  
+**Automation**: Playwright  
+**Preconditions**: Seller has an existing variant product (e.g. created via TC-064 or TC-091)  
+**Steps**:
+1. Open seller dashboard → locate the variant product card
+2. Click **Edit** (`edit-product-{id}`)
+3. Navigate to the **Variants** step
+4. Change price on one variant (e.g. Size M: $54.99 → $57.99)
+5. Change stock on another variant (e.g. Size L: 15 → 20)
+6. Add a new variant option (e.g. Size XL with price $59.99, stock 5)
+7. Save changes
+8. Open the product detail page as buyer
+**Expected Results**:
+- Updated prices and stock values are reflected on the product detail page
+- The new variant option (XL) is selectable via `variant-value-Size-XL`
+- `PUT /api/products/:id` returns 200 with persisted variant data
+**Business Rule**: §2 Product fields — variant price and stock are per-option  
+**Selectors/API**: `edit-product-{id}`, `wizard-variant-row-{i}-price`, `wizard-variant-row-{i}-stock`, `variant-value-{attr}-{value}`, `PUT /api/products/:id`  
+**Suggested Layer**: E2E Web
+
+---
+
 ### TC-045: Preview product as buyer via My Products page
 **Category**: Happy Path  
 **Priority**: P2  
@@ -1573,7 +1600,7 @@
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
-**Preconditions**: Seeded user; env vars `EMAIL`, `PASSWORD` for Patrol  
+**Preconditions**: Seeded user; env vars `EMAIL`, `TEST_PASSWORD` for Patrol  
 **Steps**:
 1. Reuse `patrol_test/modules/auth.dart` login flow (see `patrol_test/login_test.dart`)
 2. Assert home screen and search field visible
@@ -1972,7 +1999,7 @@
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
-**Preconditions**: Buyer logged in (`buyer@test.com`); product in cart; saved or new shipping address  
+**Preconditions**: Buyer logged in (`b@test.com`); product in cart; saved or new shipping address  
 **Steps**:
 1. Open product detail → add to cart → tap product-detail cart icon (`products_productDetailCartIconButton`)
 2. From cart with checked items → checkout
@@ -1993,7 +2020,7 @@
 **Platform**: Mobile  
 **Parity**: Both (web TC-023)  
 **Automation**: Patrol  
-**Preconditions**: Buyer logged in (`buyer@test.com`); ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); cart with checked items; shipping address saved or entered on checkout  
+**Preconditions**: Buyer logged in (`b@test.com`); ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); cart with checked items; shipping address saved or entered on checkout  
 **Steps**:
 1. From cart with checked items → tap checkout (`cart_checkoutButton`)
 2. Fill/confirm shipping address if not saved
@@ -2041,7 +2068,7 @@
 **Platform**: Mobile  
 **Parity**: Both (web TC-098)  
 **Automation**: Patrol  
-**Preconditions**: Buyer logged in (`buyer@test.com`); variant product in catalog (from TC-091 or seeded); cart empty  
+**Preconditions**: Buyer logged in (`b@test.com`); variant product in catalog (from TC-091 or seeded); cart empty  
 **Steps**:
 1. Open product detail → select required variant attributes (e.g. Size M)
 2. Verify variant price updates on detail screen
@@ -2066,7 +2093,7 @@
 **Platform**: Mobile  
 **Parity**: Both (web TC-024 + TC-098 combined)  
 **Automation**: Patrol  
-**Preconditions**: Buyer logged in (`buyer@test.com`); variant product in catalog (from TC-091 or seeded `E2E Test Variant Tee`); cart empty; no saved card selected  
+**Preconditions**: Buyer logged in (`b@test.com`); variant product in catalog (from TC-091 or seeded `E2E Test Variant Tee`); cart empty; no saved card selected  
 **Steps**:
 1. Open variant product detail → select required variant attributes (e.g. Size M)
 2. Tap add to cart → navigate to cart → proceed to checkout
@@ -2091,7 +2118,7 @@
 **Platform**: Mobile  
 **Parity**: Both (web TC-023 + TC-098 combined)  
 **Automation**: Patrol  
-**Preconditions**: Buyer logged in (`buyer@test.com`); ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); variant product in catalog (from TC-091 or seeded `E2E Test Variant Tee`); cart empty  
+**Preconditions**: Buyer logged in (`b@test.com`); ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); variant product in catalog (from TC-091 or seeded `E2E Test Variant Tee`); cart empty  
 **Steps**:
 1. Open variant product detail → select required variant attributes (e.g. Size M)
 2. Tap add to cart → navigate to cart → proceed to checkout
