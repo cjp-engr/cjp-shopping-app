@@ -82,6 +82,7 @@
 | TC-064 | E2E | Playwright | P0 |
 | TC-043 | E2E | Playwright | P1 |
 | TC-044 | E2E | Playwright | P1 |
+| TC-120 | E2E | Playwright | P1 |
 | TC-122 | E2E | Playwright | P1 |
 | TC-045 | E2E | Playwright | P2 |
 | TC-121 | E2E | Playwright | P2 |

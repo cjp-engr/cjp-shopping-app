@@ -108,8 +108,10 @@ Test strategy for the **full scenario suite** (TC-001–TC-066 web, TC-067–TC-
 | TC-064 | Variant product listing | E2E | Playwright | Web | P0 | `variant-value-*` | Variant listing | |
 | TC-043 | Wizard validation | E2E | Playwright | Web | P1 | wizard steps | Negative UX | |
 | TC-044 | Edit product price/stock | E2E | Playwright | Web | P1 | `edit-product-{id}` | Seller CRUD | |
+| TC-120 | Edit variant product — price, stock, new option | E2E | Playwright | Web | P1 | `edit-product-{id}`, `wizard-variant-row-{i}-price`, `variant-value-{attr}-{value}` | Variant CRUD | |
 | TC-122 | My Products list view | E2E | Playwright | Web | P1 | `my-products-page`, `product-card-{id}` | Web-only | |
 | TC-045 | My Products preview | E2E | Playwright | Web | P2 | `/my-products` | Web-only | |
+| TC-121 | My Products preview — variant product | E2E | Playwright | Web | P2 | `my-products-page`, `variant-value-{attr}-{value}` | Web-only | |
 | TC-046 | Delete product | E2E | Playwright | Web | P2 | `delete-product-{id}` | Seller CRUD | |
 | TC-047 | Order status pipeline | E2E | Playwright | Web | P0 | `seller-order-action-btn` | Seller smoke | |
 | TC-048 | Invalid status transition | API | Playwright-API | Web | P1 | `PUT /api/seller/orders/:id/status` | Transition matrix | |
