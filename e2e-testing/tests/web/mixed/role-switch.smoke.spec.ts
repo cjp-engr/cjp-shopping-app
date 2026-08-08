@@ -2,7 +2,7 @@
 // Not a business-flow test — delete or replace once real mixed tests exist.
 //
 // Note: role assertions use email (immutable) rather than role field —
-// the buyer account (buyer@test.com) may be promoted to seller by other
+// the buyer account (b1@test.com) may be promoted to seller by other
 // tests and cannot be demoted, so role field is not a reliable assertion.
 
 import { test, expect } from '../../../fixtures/base-fixture';
@@ -20,7 +20,7 @@ test(
       localStorage.getItem('shopping_app_user_data'),
     );
     const buyer = JSON.parse(buyerData!);
-    expect(buyer.email).toBe('buyer@test.com');
+    expect(buyer.email).toBe('b1@test.com');
 
     await switchRole('seller');
     await expect(page.getByTestId('user-menu-btn')).toBeVisible({ timeout: 10_000 });
@@ -28,6 +28,6 @@ test(
       localStorage.getItem('shopping_app_user_data'),
     );
     const seller = JSON.parse(sellerData!);
-    expect(seller.email).toBe('seller@test.com');
+    expect(seller.email).toBe('s1@example.com');
   },
 );

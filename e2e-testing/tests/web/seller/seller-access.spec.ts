@@ -12,7 +12,7 @@ let seller2ProductId: string;
 test.beforeAll(async () => {
   const ctx = await pwRequest.newContext({ baseURL: API_URL });
 
-  // Promote buyer@test.com to seller2 (idempotent) and create a product
+  // Promote b@test.com to seller2 (idempotent) and create a product
   const seller2Token = await login(ctx, BUYER_EMAIL, PASSWORD);
   await ctx.put('/api/auth/profile', {
     data: { role: 'seller' },

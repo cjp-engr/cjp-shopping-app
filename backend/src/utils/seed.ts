@@ -518,42 +518,49 @@ const seedDatabase = async () => {
 
     // Create test users
     console.log('Creating test users...');
-    const [, seller] = await User.create([
+    const [seller1] = await User.create([
       {
-        email: 'test@example.com',
-        password: 'password123',
-        firstName: 'Test',
-        lastName: 'User',
-        role: 'buyer',
-      },
-      {
-        email: 'b@test.com',
+        email: 's1@example.com',
         password: 'Test750!!',
-        firstName: 'Buyer',
-        lastName: 'Test',
-        role: 'buyer',
-      },
-      {
-        email: 's@test.com',
-        password: 'Test750!!',
-        firstName: 'Seller',
-        lastName: 'Test',
+        firstName: 'Seller1',
+        lastName: 'Musk',
         role: 'seller',
+      },
+      {
+        email: 's2@example.com',
+        password: 'Test750!!',
+        firstName: 'Seller2',
+        lastName: 'De Leon',
+        role: 'seller',
+      },
+      {
+        email: 'b1@test.com',
+        password: 'Test750!!',
+        firstName: 'Buyer1',
+        lastName: 'Monte Cristo',
+        role: 'buyer',
+      },
+      {
+        email: 'b2@test.com',
+        password: 'Test750!!',
+        firstName: 'Buyer2',
+        lastName: 'Cruz',
+        role: 'buyer',
       },
     ]);
 
-    // Assign all products to the seller so buyers can add them to cart
+    // Assign all products to s1@example.com so buyers can add them to cart
     console.log('Seeding products...');
-    const sellerId = seller._id;
-    const productsWithSeller = products.map(p => ({ ...p, sellerId }));
+    const productsWithSeller = products.map(p => ({ ...p, sellerId: seller1._id }));
     await Product.insertMany(productsWithSeller);
 
     console.log(`✅ Database seeded successfully!`);
-    console.log(`   - ${products.length} products added (all owned by s@test.com)`);
-    console.log(`   - 3 test users created:`);
-    console.log(`       test@example.com / password123 (buyer)`);
-    console.log(`       b@test.com / Test750!! (buyer)`);
-    console.log(`       s@test.com / Test750!! (seller)`);
+    console.log(`   - ${products.length} products added (all owned by s1@example.com)`);
+    console.log(`   - 4 test users created:`);
+    console.log(`       s1@example.com / Test750!! (seller)`);
+    console.log(`       s2@example.com / Test750!! (seller)`);
+    console.log(`       b1@test.com / Test750!! (buyer)`);
+    console.log(`       b2@test.com / Test750!! (buyer)`);
 
     process.exit(0);
   } catch (error) {

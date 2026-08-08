@@ -1,14 +1,14 @@
 import type { APIRequestContext } from '@playwright/test';
 
-export const TEST_EMAIL = process.env.TEST_EMAIL ?? 'test@example.com';
+export const SELLER_EMAIL = process.env.SELLER_EMAIL ?? 'test@example.com';
 export const TEST_PASSWORD = process.env.TEST_PASSWORD ?? 'password123';
-export const BUYER_EMAIL = process.env.BUYER_EMAIL ?? 'buyer@test.com';
-export const SELLER_EMAIL = process.env.SELLER_EMAIL ?? 'seller@test.com';
-export const PASSWORD = process.env.PASSWORD ?? 'Test750!!';
+export const BUYER_EMAIL = process.env.BUYER_EMAIL ?? 'b1@test.com';
+export const SELLER_EMAIL = process.env.SELLER_EMAIL ?? 's1@example.com';
+export const TEST_PASSWORD = process.env.TEST_PASSWORD ?? 'Test750!!';
 
 export async function login(
   request: APIRequestContext,
-  email = TEST_EMAIL,
+  email = SELLER_EMAIL,
   password = TEST_PASSWORD,
 ): Promise<string> {
   const response = await request.post('/api/auth/login', {
@@ -31,7 +31,7 @@ export async function signupFreshUser(
 ): Promise<{ token: string; userId: string }> {
   const email = `${prefix}-${Date.now()}@test.com`;
   const res = await request.post('/api/auth/signup', {
-    data: { email, password: PASSWORD, firstName: 'Test', lastName: 'User' },
+    data: { email, password: TEST_PASSWORD, firstName: 'Test', lastName: 'User' },
   });
   if (!res.ok()) throw new Error(`Signup failed: ${res.status()}`);
   const { token, user } = await res.json();
