@@ -23,29 +23,31 @@ test.describe('TC-022: Checkout COD', () => {
       cartPage,
       checkoutPage,
     }) => {
-      // Auth already applied via .auth/buyer.json — no login step needed
-      await productListPage.goto();
+      await test.step('Browse products and add first to cart', async () => {
+        await productListPage.goto();
+        await productListPage.clickFirstProduct();
+        await productDetailPage.root.waitFor();
+        await productDetailPage.addToCart();
+      });
 
-      // Add first available product to cart
-      await productListPage.clickFirstProduct();
-      await productDetailPage.root.waitFor();
-      await productDetailPage.addToCart();
+      await test.step('Open cart and proceed to checkout', async () => {
+        await cartPage.open();
+        await cartPage.proceedToCheckout();
+        await checkoutPage.root.waitFor();
+      });
 
-      // Open cart and proceed to checkout
-      await cartPage.open();
-      await cartPage.proceedToCheckout();
-      await checkoutPage.root.waitFor();
+      await test.step('Fill shipping address, select Cash on Delivery, and place order', async () => {
+        await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
+        await checkoutPage.continueToPayment();
+        await checkoutPage.selectPaymentMethod('cash-on-delivery');
+        await checkoutPage.continueToReview();
+        await checkoutPage.placeOrder();
+      });
 
-      // Fill shipping, select COD, place order
-      await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
-      await checkoutPage.continueToPayment();
-      await checkoutPage.selectPaymentMethod('cash-on-delivery');
-      await checkoutPage.continueToReview();
-      await checkoutPage.placeOrder();
-
-      // Assert: redirected to orders page
-      await expect(page).toHaveURL(/\/orders/, { timeout: 15_000 });
-      await expect(page.getByTestId('orders-page')).toBeVisible();
+      await test.step('Verify redirect to orders page', async () => {
+        await expect(page).toHaveURL(/\/orders/, { timeout: 15_000 });
+        await expect(page.getByTestId('orders-page')).toBeVisible();
+      });
     });
 });
 
@@ -61,44 +63,46 @@ test.describe('TC-023: Checkout with saved credit card', () => {
       cartPage,
       checkoutPage,
     }) => {
-      // Precondition: ensure buyer has at least one saved card (idempotent — duplicate check in API)
-      // Token is read from disk to avoid SecurityError on about:blank before any navigation
-      const token = getBuyerToken();
-      await request.post(`${API_URL}/api/auth/payment-methods`, {
-        headers: { Authorization: `Bearer ${token}` },
-        data: {
-          type: 'credit-card',
-          last4: '4242',
-          cardHolder: 'Test Buyer',
-          expiryMonth: '12',
-          expiryYear: '2028',
-          setAsDefault: true,
-        },
+      await test.step('Ensure buyer has a saved credit card', async () => {
+        const token = getBuyerToken();
+        await request.post(`${API_URL}/api/auth/payment-methods`, {
+          headers: { Authorization: `Bearer ${token}` },
+          data: {
+            type: 'credit-card',
+            last4: '4242',
+            cardHolder: 'Test Buyer',
+            expiryMonth: '12',
+            expiryYear: '2028',
+            setAsDefault: true,
+          },
+        });
       });
 
-      // Auth context re-fetches user (including savedCards) on page mount
-      await productListPage.goto();
+      await test.step('Browse products and add first to cart', async () => {
+        await productListPage.goto();
+        await productListPage.clickFirstProduct();
+        await productDetailPage.root.waitFor();
+        await productDetailPage.addToCart();
+      });
 
-      // Add first available product to cart
-      await productListPage.clickFirstProduct();
-      await productDetailPage.root.waitFor();
-      await productDetailPage.addToCart();
+      await test.step('Open cart and proceed to checkout', async () => {
+        await cartPage.open();
+        await cartPage.proceedToCheckout();
+        await checkoutPage.root.waitFor();
+      });
 
-      // Open cart and proceed to checkout
-      await cartPage.open();
-      await cartPage.proceedToCheckout();
-      await checkoutPage.root.waitFor();
+      await test.step('Fill shipping address, select saved card, and place order', async () => {
+        await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
+        await checkoutPage.continueToPayment();
+        await checkoutPage.selectSavedCard();
+        await checkoutPage.continueToReview();
+        await checkoutPage.placeOrder();
+      });
 
-      // Fill shipping; payment section starts in saved-card mode (first card auto-selected)
-      await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
-      await checkoutPage.continueToPayment();
-      await checkoutPage.selectSavedCard();
-      await checkoutPage.continueToReview();
-      await checkoutPage.placeOrder();
-
-      // Assert: redirected to orders page
-      await expect(page).toHaveURL(/\/orders/, { timeout: 15_000 });
-      await expect(page.getByTestId('orders-page')).toBeVisible();
+      await test.step('Verify redirect to orders page', async () => {
+        await expect(page).toHaveURL(/\/orders/, { timeout: 15_000 });
+        await expect(page.getByTestId('orders-page')).toBeVisible();
+      });
     });
 });
 
@@ -112,35 +116,37 @@ test.describe('TC-024: Checkout with new card entry', () => {
       cartPage,
       checkoutPage,
     }) => {
-      // Auth already applied via .auth/buyer.json — no login step needed
-      await productListPage.goto();
-
-      // Add first available product to cart
-      await productListPage.clickFirstProduct();
-      await productDetailPage.root.waitFor();
-      await productDetailPage.addToCart();
-
-      // Open cart and proceed to checkout
-      await cartPage.open();
-      await cartPage.proceedToCheckout();
-      await checkoutPage.root.waitFor();
-
-      // Fill shipping, enter new credit card details, place order
-      await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
-      await checkoutPage.continueToPayment();
-      await checkoutPage.fillNewCardForm({
-        type: 'credit-card',
-        cardNumber: '4111111111111111',
-        cardHolder: 'Test Buyer',
-        expiryMonth: '12',
-        expiryYear: String(new Date().getFullYear() + 2),
-        cvv: '123',
+      await test.step('Browse products and add first to cart', async () => {
+        await productListPage.goto();
+        await productListPage.clickFirstProduct();
+        await productDetailPage.root.waitFor();
+        await productDetailPage.addToCart();
       });
-      await checkoutPage.continueToReview();
-      await checkoutPage.placeOrder();
 
-      // Assert: redirected to orders page
-      await expect(page).toHaveURL(/\/orders/, { timeout: 15_000 });
-      await expect(page.getByTestId('orders-page')).toBeVisible();
+      await test.step('Open cart and proceed to checkout', async () => {
+        await cartPage.open();
+        await cartPage.proceedToCheckout();
+        await checkoutPage.root.waitFor();
+      });
+
+      await test.step('Fill shipping address, enter new card details, and place order', async () => {
+        await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
+        await checkoutPage.continueToPayment();
+        await checkoutPage.fillNewCardForm({
+          type: 'credit-card',
+          cardNumber: '4111111111111111',
+          cardHolder: 'Test Buyer',
+          expiryMonth: '12',
+          expiryYear: String(new Date().getFullYear() + 2),
+          cvv: '123',
+        });
+        await checkoutPage.continueToReview();
+        await checkoutPage.placeOrder();
+      });
+
+      await test.step('Verify redirect to orders page', async () => {
+        await expect(page).toHaveURL(/\/orders/, { timeout: 15_000 });
+        await expect(page.getByTestId('orders-page')).toBeVisible();
+      });
     });
 });
