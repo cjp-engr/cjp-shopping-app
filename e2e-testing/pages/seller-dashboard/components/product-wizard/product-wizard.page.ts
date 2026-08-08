@@ -94,6 +94,17 @@ export class ProductWizardPage {
     await this.publish();
   }
 
+  async editSimpleProductPricing(price: string, stock: string): Promise<void> {
+    await this.basicInfo.continue();
+    await this.pricing.priceInput.fill(price);
+    await this.pricing.stockInput.fill(stock);
+    await this.pricing.continue();
+    await this.description.continue();
+    await this.images.continue();
+    await this.shipping.acceptDefaultAndContinue();
+    await this.publish();
+  }
+
   async createVariantProduct(opts: VariantProductOptions): Promise<void> {
     await this.fillBasicInfo({
       name: opts.name,

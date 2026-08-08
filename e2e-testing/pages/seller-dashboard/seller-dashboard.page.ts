@@ -6,15 +6,22 @@ export class SellerDashboardPage {
   readonly page: Page;
   readonly root: Locator;
   readonly addProductButton: Locator;
+  readonly myProductsLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.root = page.getByTestId('seller-dashboard');
     this.addProductButton = page.getByTestId('add-product-btn');
+    this.myProductsLink = page.getByTestId('nav-link-my-products');
   }
 
   async expectLoaded(): Promise<void> {
     await expect(this.root).toBeVisible({ timeout: 10_000 });
+  }
+
+  async navigateToMyProducts(): Promise<void> {
+    await this.myProductsLink.click();
+    await expect(this.page.getByTestId('my-products-page')).toBeVisible({ timeout: 10_000 });
   }
 
   async openCreateProductWizard(): Promise<ProductWizardPage> {
