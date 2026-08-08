@@ -108,6 +108,7 @@ export class ProductWizardPage {
   async editVariantProduct(changes: {
     variantUpdates: { rowIndex: number; price?: string; stock?: string }[];
     newValues?: { attrIndex: number; value: string; rowIndex: number; price: string; stock: string }[];
+    imageUrl?: string;
   }): Promise<void> {
     await this.basicInfo.continue();
     for (const u of changes.variantUpdates) {
@@ -141,6 +142,9 @@ export class ProductWizardPage {
     }
     await this.pricing.continue();
     await this.description.continue();
+    if (changes.imageUrl) {
+      await this.images.addByUrl(changes.imageUrl);
+    }
     await this.images.continue();
     await this.shipping.acceptDefaultAndContinue();
     await this.publish();
