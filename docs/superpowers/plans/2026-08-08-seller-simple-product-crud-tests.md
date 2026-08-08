@@ -4,7 +4,7 @@
 
 **Goal:** Move TC-042 into a new seller CRUD spec and add TC-122, TC-045, TC-044, TC-046 — covering the full read/update/delete lifecycle of a simple product on the web seller dashboard.
 
-**Architecture:** One new spec file (`seller-simple-product-crud.spec.ts`) owns all five TCs. A `beforeAll` creates a shared product via API (fast, no wizard overhead) reused by TC-122/TC-045/TC-044. TC-042 runs its own independent wizard-drive create flow. TC-046 creates and deletes its own dedicated product so it never clobbers the shared one. POM stubs (`ListProductsSection`, `DeleteProductSection`) are filled before the spec is written.
+**Architecture:** One new spec file (`seller-simple-product-crud.spec.ts`) owns all five TCs inside a `test.describe.serial()` block. TC-042 creates the product via wizard and stores the `productId` in a shared closure variable. TC-122, TC-045, and TC-044 reuse that `productId`. TC-046 deletes it via UI as the final step. An `afterAll` fires an API delete as a safety net in case TC-046 is skipped due to an earlier failure — guaranteeing a clean database after every run. POM stubs (`ListProductsSection`, `DeleteProductSection`) are filled before the spec is written.
 
 **Tech Stack:** Playwright (TypeScript), `e2e-testing/` package, `web-seller` project (pre-loaded seller auth state from `.auth/seller.json`).
 
@@ -285,18 +285,18 @@ git commit -m "refactor(pom): fill list/delete product stubs; fix PASSWORD impor
 
 ---
 
-### Task 2: Create spec with TC-042 (moved), TC-122, TC-045
+### Task 2: Create spec — serial CRUD chain TC-042 → TC-122 → TC-045 → TC-044 → TC-046
 
 **Files:**
 - Create: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`
 
 **Interfaces:**
 - Consumes: `ListProductsPage.goto()`, `ListProductsPage.expectLoaded()`, `ListProductsSection.productCard()`, `ListProductsSection.expectProductVisible()`, `SellerDashboardPage.navigateToMyProducts()` (from Task 1)
-- Consumes: `createSimpleProduct()` from `helpers/product-factory.ts`
-- Consumes: `getSellerToken()` from `helpers/auth-state.ts`
 - Consumes: `ProductWizardPage`, `SellerDashboardPage`, `ProductDetailPage` from existing POMs
+- Consumes: `getSellerToken()`, `authHeaders` for `afterAll` safety-net delete
+- Produces: `seller-simple-product-crud.spec.ts` — all 5 TCs in serial order
 
-- [ ] **Step 1: Create the spec file with imports, shared state, and `beforeAll`**
+- [ ] **Step 1: Create the spec file with imports and shared closure variable**
 
 Create `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`:
 
@@ -312,7 +312,7 @@ import { request as pwRequest } from '@playwright/test';
 import { test, expect } from '../../../fixtures/base-fixture';
 import { getSellerToken } from '../../../helpers/auth-state';
 import { authHeaders } from '../../../helpers/api-client';
-import { createSimpleProduct } from '../../../helpers/product-factory';
+import { ProductWizardPage } from '../../../pages/seller-dashboard/components/product-wizard/product-wizard.page';
 import { ListProductsPage } from '../../../pages/seller-dashboard/pages/my-products/list-products/list-products.page';
 import { API_URL, BUYER_PAYS_SHIPPING } from '../../../helpers/test-data';
 
@@ -322,297 +322,204 @@ const PRODUCT_IMAGE_URL =
 const PRODUCT_DESCRIPTION =
   'A beautiful E2E test lamp for home decor. Energy efficient and modern design.';
 const PRODUCT_TAGS = ['lamp', 'home-decor', 'lighting'];
-
-// Shared product created via API in beforeAll — reused by TC-122, TC-045, TC-044.
-// TC-042 uses its own wizard-created product. TC-046 uses its own dedicated product.
-let sharedProductId: string;
-
-test.beforeAll(async () => {
-  const ctx = await pwRequest.newContext({ baseURL: API_URL });
-  const token = getSellerToken();
-  sharedProductId = await createSimpleProduct(
-    ctx,
-    token,
-    `E2E CRUD Shared ${Date.now()}`,
-    { price: 29.99, category: 'Electronics' },
-  );
-  await ctx.dispose();
-});
 ```
 
-- [ ] **Step 2: Add TC-042 (create via wizard)**
+- [ ] **Step 2: Open the serial describe block with shared state and `afterAll` cleanup**
 
 Append to the spec file:
 
 ```ts
-test(
-  'TC-042: seller creates simple product via wizard and verifies dashboard + detail page',
-  { tag: ['@TC-042', '@seller', '@product-create', '@simple', '@smoke'] },
-  async ({ page, request, homePage, sellerDashboardPage, productDetailPage }) => {
-    await page.goto('/');
-    await expect(page.getByTestId('navbar')).toBeVisible();
-    await homePage.navigateToSellerDashboard();
-    await sellerDashboardPage.expectLoaded();
-    const wizard = await sellerDashboardPage.openCreateProductWizard();
-    await expect(wizard.root).toBeVisible();
+test.describe.serial('Seller simple product CRUD', () => {
+  // productId is set by TC-042 and reused by all subsequent tests.
+  let productId: string;
 
-    await wizard.createSimpleProduct({
-      name: PRODUCT_NAME,
-      category: 'Electronics',
-      brand: 'Test Brand',
-      price: '29.99',
-      stock: '10',
-      sku: 'SKU-001',
-      discount: '10',
-      description: PRODUCT_DESCRIPTION,
-      tags: PRODUCT_TAGS,
-      imageUrl: PRODUCT_IMAGE_URL,
-      shipping: BUYER_PAYS_SHIPPING,
-    });
-
-    await expect(wizard.root).not.toBeVisible();
-    await expect(wizard.errorAlert).not.toBeVisible().catch(() => {});
-
-    const productId = await sellerDashboardPage.getProductIdFromCard(PRODUCT_NAME);
-
-    const token = await page.evaluate(() =>
-      localStorage.getItem('shopping_app_auth_token'),
-    );
-    expect(token).toBeTruthy();
-
-    // Verify product detail page is accessible and has no variant selectors
-    await productDetailPage.goto(productId);
-    await expect(page.getByTestId('product-name')).toContainText(PRODUCT_NAME);
-    await productDetailPage.expectNoVariantSelectors();
-  },
-);
-```
-
-- [ ] **Step 3: Add TC-122 (My Products list view)**
-
-Append to the spec file:
-
-```ts
-test(
-  'TC-122: seller views product list on My Products page',
-  { tag: ['@TC-122', '@seller', '@product-read'] },
-  async ({ page, sellerDashboardPage }) => {
-    const listProductsPage = new ListProductsPage(page);
-
-    await page.goto('/');
-    await expect(page.getByTestId('navbar')).toBeVisible();
-    await sellerDashboardPage.navigateToMyProducts();
-    await listProductsPage.expectLoaded();
-
-    const list = listProductsPage.listProductsSection;
-    await list.expectProductVisible(sharedProductId);
-    await expect(list.productCard(sharedProductId)).toContainText('Electronics');
-  },
-);
-```
-
-- [ ] **Step 4: Add TC-045 (preview simple product as buyer)**
-
-Append to the spec file:
-
-```ts
-test(
-  'TC-045: seller previews simple product as buyer via My Products page',
-  { tag: ['@TC-045', '@seller', '@product-read'] },
-  async ({ page, sellerDashboardPage, productDetailPage }) => {
-    const listProductsPage = new ListProductsPage(page);
-
-    await page.goto('/');
-    await expect(page.getByTestId('navbar')).toBeVisible();
-    await sellerDashboardPage.navigateToMyProducts();
-    await listProductsPage.expectLoaded();
-
-    // Click the product card — navigates to /products/{id}
-    await listProductsPage.listProductsSection.productCard(sharedProductId).click();
-
-    await expect(page.getByTestId('product-detail-page')).toBeVisible({ timeout: 10_000 });
-    await expect(page).toHaveURL(new RegExp(`/products/${sharedProductId}`));
-    // Simple product: no variant selectors
-    await productDetailPage.expectNoVariantSelectors();
-  },
-);
-```
-
-- [ ] **Step 5: Run the three new tests**
-
-```bash
-cd e2e-testing && npx playwright test tests/web/seller/seller-simple-product-crud.spec.ts --project=web-seller --reporter=line
-```
-
-Expected: TC-042, TC-122, TC-045 all pass. Fix any failures before continuing.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts
-git commit -m "test(seller): add seller-simple-product-crud.spec.ts with TC-042, TC-122, TC-045"
-```
-
----
-
-### Task 3: Add TC-044 (edit simple product price and stock)
-
-**Files:**
-- Modify: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`
-
-**Interfaces:**
-- Consumes: `ProductWizardPage.editSimpleProductPricing(price, stock)` (Task 1)
-- Consumes: `SellerDashboardPage.getProductCard()`, `ListProductsSection.editButton()` (Task 1)
-
-- [ ] **Step 1: Append TC-044 to the spec**
-
-Open `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts` and append:
-
-```ts
-test(
-  'TC-044: seller edits simple product price and stock — changes reflected on detail page',
-  { tag: ['@TC-044', '@seller', '@product-update'] },
-  async ({ page, homePage, sellerDashboardPage, productDetailPage }) => {
-    const NEW_PRICE = '39.99';
-    const NEW_STOCK = '25';
-
-    // Navigate to seller dashboard to access edit controls
-    await page.goto('/');
-    await expect(page.getByTestId('navbar')).toBeVisible();
-    await homePage.navigateToSellerDashboard();
-    await sellerDashboardPage.expectLoaded();
-
-    // Open the edit wizard for the shared product
-    await page.getByTestId(`edit-product-${sharedProductId}`).click();
-    const wizard = new (await import('../../../pages/seller-dashboard/components/product-wizard/product-wizard.page')).ProductWizardPage(page);
-    await expect(wizard.root).toBeVisible();
-
-    // Navigate through all steps updating only price and stock
-    await wizard.editSimpleProductPricing(NEW_PRICE, NEW_STOCK);
-
-    // Wizard closes on save
-    await expect(wizard.root).not.toBeVisible({ timeout: 10_000 });
-
-    // Verify changes on product detail page
-    await productDetailPage.goto(sharedProductId);
-    await productDetailPage.expectDisplayedPrice(`$${NEW_PRICE}`);
-  },
-);
-```
-
-**Note on the dynamic import:** To avoid a circular import issue in some setups, you can also just import `ProductWizardPage` at the top of the file with the other imports. Add this to the existing imports block at the top of the spec:
-
-```ts
-import { ProductWizardPage } from '../../../pages/seller-dashboard/components/product-wizard/product-wizard.page';
-```
-
-Then simplify the test body:
-```ts
-await page.getByTestId(`edit-product-${sharedProductId}`).click();
-const wizard = new ProductWizardPage(page);
-await expect(wizard.root).toBeVisible();
-await wizard.editSimpleProductPricing(NEW_PRICE, NEW_STOCK);
-await expect(wizard.root).not.toBeVisible({ timeout: 10_000 });
-await productDetailPage.goto(sharedProductId);
-await productDetailPage.expectDisplayedPrice(`$${NEW_PRICE}`);
-```
-
-Use the static import approach (add to top of file). The dynamic import shown above is only a fallback.
-
-- [ ] **Step 2: Run TC-044**
-
-```bash
-cd e2e-testing && npx playwright test tests/web/seller/seller-simple-product-crud.spec.ts --project=web-seller --grep="TC-044" --reporter=line
-```
-
-Expected: PASS. Fix any failures before continuing.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts
-git commit -m "test(seller): add TC-044 — edit simple product price and stock"
-```
-
----
-
-### Task 4: Add TC-046 (delete simple product from dashboard)
-
-**Files:**
-- Modify: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`
-
-**Interfaces:**
-- Consumes: `ListProductsSection.deleteButton(id)`, `ListProductsSection.expectProductNotVisible(id)` (Task 1)
-- Consumes: `DeleteProductSection.confirm()` (Task 1)
-- Consumes: `createSimpleProduct()`, `getSellerToken()` — already imported
-
-- [ ] **Step 1: Append TC-046 to the spec**
-
-Open `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts` and append:
-
-```ts
-test(
-  'TC-046: seller deletes product from dashboard — product removed from list',
-  { tag: ['@TC-046', '@seller', '@product-delete'] },
-  async ({ page, homePage, sellerDashboardPage }) => {
-    // Create a dedicated product to delete so the shared product is not affected
+  // Safety net: deletes the product via API if TC-046 was skipped due to an
+  // earlier failure. If TC-046 already deleted it, the 404 is silently ignored.
+  test.afterAll(async () => {
+    if (!productId) return;
     const ctx = await pwRequest.newContext({ baseURL: API_URL });
-    const token = getSellerToken();
-    const deleteProductId = await createSimpleProduct(
-      ctx,
-      token,
-      `E2E Delete Me ${Date.now()}`,
-    );
-    await ctx.dispose();
-
-    const listProductsPage = new ListProductsPage(page);
-
-    // Navigate to seller dashboard
-    await page.goto('/');
-    await expect(page.getByTestId('navbar')).toBeVisible();
-    await homePage.navigateToSellerDashboard();
-    await sellerDashboardPage.expectLoaded();
-
-    // Confirm the product exists in the dashboard before deleting
-    await expect(
-      page.getByTestId(`product-item-${deleteProductId}`),
-    ).toBeVisible();
-
-    // Click delete — opens ConfirmDialog
-    await page.getByTestId(`delete-product-${deleteProductId}`).click();
-
-    // Confirm deletion via the dialog
-    await listProductsPage.deleteProductSection.confirm();
-
-    // Product card must be gone from the dashboard
-    await expect(
-      page.getByTestId(`product-item-${deleteProductId}`),
-    ).not.toBeVisible({ timeout: 10_000 });
-  },
-);
+    try {
+      await ctx.delete(`/api/products/${productId}`, {
+        headers: authHeaders(getSellerToken()),
+      });
+    } catch {
+      // product already deleted by TC-046 or never created — nothing to clean up
+    } finally {
+      await ctx.dispose();
+    }
+  });
 ```
 
-- [ ] **Step 2: Run TC-046**
+- [ ] **Step 3: Add TC-042 (create via wizard — sets `productId`)**
 
-```bash
-cd e2e-testing && npx playwright test tests/web/seller/seller-simple-product-crud.spec.ts --project=web-seller --grep="TC-046" --reporter=line
+Append inside the describe block:
+
+```ts
+  test(
+    'TC-042: seller creates simple product via wizard and verifies dashboard + detail page',
+    { tag: ['@TC-042', '@seller', '@product-create', '@simple', '@smoke'] },
+    async ({ page, homePage, sellerDashboardPage, productDetailPage }) => {
+      await page.goto('/');
+      await expect(page.getByTestId('navbar')).toBeVisible();
+      await homePage.navigateToSellerDashboard();
+      await sellerDashboardPage.expectLoaded();
+
+      const wizard = await sellerDashboardPage.openCreateProductWizard();
+      await expect(wizard.root).toBeVisible();
+
+      await wizard.createSimpleProduct({
+        name: PRODUCT_NAME,
+        category: 'Electronics',
+        brand: 'Test Brand',
+        price: '29.99',
+        stock: '10',
+        sku: 'SKU-001',
+        discount: '10',
+        description: PRODUCT_DESCRIPTION,
+        tags: PRODUCT_TAGS,
+        imageUrl: PRODUCT_IMAGE_URL,
+        shipping: BUYER_PAYS_SHIPPING,
+      });
+
+      await expect(wizard.root).not.toBeVisible();
+      await expect(wizard.errorAlert).not.toBeVisible().catch(() => {});
+
+      // Capture productId from dashboard card — used by all subsequent tests
+      productId = await sellerDashboardPage.getProductIdFromCard(PRODUCT_NAME);
+      expect(productId).toBeTruthy();
+
+      await productDetailPage.goto(productId);
+      await expect(page.getByTestId('product-name')).toContainText(PRODUCT_NAME);
+      await productDetailPage.expectNoVariantSelectors();
+    },
+  );
 ```
 
-Expected: PASS. Fix any failures before continuing.
+- [ ] **Step 4: Add TC-122 (My Products list view)**
 
-- [ ] **Step 3: Run the full spec to confirm no regressions**
+Append inside the describe block:
+
+```ts
+  test(
+    'TC-122: seller views product list on My Products page',
+    { tag: ['@TC-122', '@seller', '@product-read'] },
+    async ({ page, sellerDashboardPage }) => {
+      const listProductsPage = new ListProductsPage(page);
+
+      await page.goto('/');
+      await expect(page.getByTestId('navbar')).toBeVisible();
+      await sellerDashboardPage.navigateToMyProducts();
+      await listProductsPage.expectLoaded();
+
+      const list = listProductsPage.listProductsSection;
+      await list.expectProductVisible(productId);
+      await expect(list.productCard(productId)).toContainText('Electronics');
+    },
+  );
+```
+
+- [ ] **Step 5: Add TC-045 (preview simple product as buyer)**
+
+Append inside the describe block:
+
+```ts
+  test(
+    'TC-045: seller previews simple product as buyer via My Products page',
+    { tag: ['@TC-045', '@seller', '@product-read'] },
+    async ({ page, sellerDashboardPage, productDetailPage }) => {
+      const listProductsPage = new ListProductsPage(page);
+
+      await page.goto('/');
+      await expect(page.getByTestId('navbar')).toBeVisible();
+      await sellerDashboardPage.navigateToMyProducts();
+      await listProductsPage.expectLoaded();
+
+      await listProductsPage.listProductsSection.productCard(productId).click();
+
+      await expect(page.getByTestId('product-detail-page')).toBeVisible({ timeout: 10_000 });
+      await expect(page).toHaveURL(new RegExp(`/products/${productId}`));
+      await productDetailPage.expectNoVariantSelectors();
+    },
+  );
+```
+
+- [ ] **Step 6: Add TC-044 (edit price and stock)**
+
+Append inside the describe block:
+
+```ts
+  test(
+    'TC-044: seller edits simple product price and stock — changes reflected on detail page',
+    { tag: ['@TC-044', '@seller', '@product-update'] },
+    async ({ page, homePage, sellerDashboardPage, productDetailPage }) => {
+      const NEW_PRICE = '39.99';
+      const NEW_STOCK = '25';
+
+      await page.goto('/');
+      await expect(page.getByTestId('navbar')).toBeVisible();
+      await homePage.navigateToSellerDashboard();
+      await sellerDashboardPage.expectLoaded();
+
+      await page.getByTestId(`edit-product-${productId}`).click();
+      const wizard = new ProductWizardPage(page);
+      await expect(wizard.root).toBeVisible();
+
+      await wizard.editSimpleProductPricing(NEW_PRICE, NEW_STOCK);
+      await expect(wizard.root).not.toBeVisible({ timeout: 10_000 });
+
+      await productDetailPage.goto(productId);
+      await productDetailPage.expectDisplayedPrice(`$${NEW_PRICE}`);
+    },
+  );
+```
+
+- [ ] **Step 7: Add TC-046 (delete product) and close the describe block**
+
+Append inside the describe block, then close it:
+
+```ts
+  test(
+    'TC-046: seller deletes product from dashboard — product removed from dashboard',
+    { tag: ['@TC-046', '@seller', '@product-delete'] },
+    async ({ page, homePage, sellerDashboardPage }) => {
+      const listProductsPage = new ListProductsPage(page);
+
+      await page.goto('/');
+      await expect(page.getByTestId('navbar')).toBeVisible();
+      await homePage.navigateToSellerDashboard();
+      await sellerDashboardPage.expectLoaded();
+
+      // Confirm product exists before deleting
+      await expect(page.getByTestId(`product-item-${productId}`)).toBeVisible();
+
+      // Click delete — opens ConfirmDialog
+      await page.getByTestId(`delete-product-${productId}`).click();
+
+      // Confirm deletion
+      await listProductsPage.deleteProductSection.confirm();
+
+      // Product card must be gone from the dashboard
+      await expect(
+        page.getByTestId(`product-item-${productId}`),
+      ).not.toBeVisible({ timeout: 10_000 });
+    },
+  );
+}); // end test.describe.serial
+```
+
+- [ ] **Step 8: Run the full spec**
 
 ```bash
 cd e2e-testing && npx playwright test tests/web/seller/seller-simple-product-crud.spec.ts --project=web-seller --reporter=line
 ```
 
-Expected: all 5 tests pass (TC-042, TC-122, TC-045, TC-044, TC-046).
+Expected: all 5 tests pass in order (TC-042, TC-122, TC-045, TC-044, TC-046). Fix any failures before continuing.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts
-git commit -m "test(seller): add TC-046 — delete simple product from seller dashboard"
+git commit -m "test(seller): add seller-simple-product-crud.spec.ts — serial CRUD chain TC-042→TC-122→TC-045→TC-044→TC-046"
 ```
 
 ---

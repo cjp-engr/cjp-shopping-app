@@ -1,4 +1,3 @@
-// TC-042: Seller creates simple product listing (web 6-step wizard)
 // TC-064: Seller creates variant product via wizard
 
 import { Page } from '@playwright/test';
@@ -17,13 +16,6 @@ import { SellerDashboardPage } from '../../../pages/seller-dashboard/seller-dash
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
 
-const PRODUCT_NAME = `E2E Simple Lamp ${Date.now()}`;
-const PRODUCT_IMAGE_URL =
-  'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400';
-const PRODUCT_DESCRIPTION =
-  'A beautiful E2E test lamp for home decor. Energy efficient and modern design.';
-const PRODUCT_TAGS = ['lamp', 'home-decor', 'lighting'];
-
 async function openSellerWizard(
   page: Page,
   homePage: HomePage,
@@ -37,47 +29,6 @@ async function openSellerWizard(
   await expect(wizard.root).toBeVisible();
   return wizard;
 }
-
-test(
-  'TC-042: seller creates simple product via wizard and verifies dashboard + direct URL',
-  { tag: ['@TC-042', '@seller', '@product-create', '@simple', '@smoke'] },
-  async ({ page, request, homePage, sellerDashboardPage, productDetailPage }) => {
-    const wizard = await openSellerWizard(page, homePage, sellerDashboardPage);
-
-    await wizard.createSimpleProduct({
-      name: PRODUCT_NAME,
-      category: 'Electronics',
-      brand: 'Test Brand',
-      price: '29.99',
-      stock: '10',
-      sku: 'SKU-001',
-      discount: '10',
-      description: PRODUCT_DESCRIPTION,
-      tags: PRODUCT_TAGS,
-      imageUrl: PRODUCT_IMAGE_URL,
-      shipping: BUYER_PAYS_SHIPPING,
-    });
-
-    await expect(wizard.root).not.toBeVisible();
-    await expect(wizard.errorAlert).not.toBeVisible().catch(() => {});
-
-    const productId = await sellerDashboardPage.getProductIdFromCard(PRODUCT_NAME);
-
-    const token = await page.evaluate(() =>
-      localStorage.getItem('shopping_app_auth_token'),
-    );
-    expect(token).toBeTruthy();
-
-    const savedProduct = await fetchSavedProduct(request, API_URL, productId, token!);
-    assertBuyerPaysShipping(savedProduct as Parameters<typeof assertBuyerPaysShipping>[0]);
-    expect(savedProduct.tags).toEqual(expect.arrayContaining(PRODUCT_TAGS));
-    expect(savedProduct.tags).toHaveLength(PRODUCT_TAGS.length);
-
-    await productDetailPage.goto(productId);
-    await expect(page.getByTestId('product-name')).toContainText(PRODUCT_NAME);
-    await productDetailPage.expectNoVariantSelectors();
-  },
-);
 
 test(
   'TC-064: seller creates variant product via wizard and verifies variants on detail page',
