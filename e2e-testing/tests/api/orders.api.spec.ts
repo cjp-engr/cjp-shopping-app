@@ -6,8 +6,8 @@
 import { test, expect, request as pwRequest } from '@playwright/test';
 import {
   authHeaders, login,
-  TEST_EMAIL, TEST_PASSWORD,
-  SELLER_EMAIL, PASSWORD,
+  SELLER_EMAIL, TEST_PASSWORD,
+  SELLER_EMAIL, TEST_PASSWORD,
   BUYER_EMAIL,
 } from '../../helpers/api-client';
 
@@ -25,8 +25,8 @@ let expensiveProductId: string;
 test.beforeAll(async () => {
   const ctx = await pwRequest.newContext({ baseURL: API_URL });
 
-  buyerToken  = await login(ctx, TEST_EMAIL, TEST_PASSWORD);
-  sellerToken = await login(ctx, SELLER_EMAIL, PASSWORD);
+  buyerToken  = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
+  sellerToken = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
 
   // Create test products with default shipping (no shippingFee field) so the
   // standard $9.99 / free-over-$50 rule applies deterministically.
@@ -173,7 +173,7 @@ test.describe('TC-025: Multi-seller checkout creates separate orders', () => {
     const ctx = await pwRequest.newContext({ baseURL: API_URL });
 
     // Promote buyer2 account to seller (idempotent)
-    seller2Token = await login(ctx, BUYER_EMAIL, PASSWORD);
+    seller2Token = await login(ctx, BUYER_EMAIL, TEST_PASSWORD);
     await ctx.put('/api/auth/profile', {
       data: { role: 'seller' },
       headers: authHeaders(seller2Token),

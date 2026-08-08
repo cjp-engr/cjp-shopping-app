@@ -4,8 +4,8 @@
 import { test, expect, request as pwRequest } from '@playwright/test';
 import {
   authHeaders, login,
-  TEST_EMAIL, TEST_PASSWORD,
-  SELLER_EMAIL, PASSWORD,
+  SELLER_EMAIL, TEST_PASSWORD,
+  SELLER_EMAIL, TEST_PASSWORD,
 } from '../../helpers/api-client';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
@@ -21,8 +21,8 @@ let testProductId: string;
 test.beforeAll(async () => {
   const ctx = await pwRequest.newContext({ baseURL: API_URL });
 
-  buyerToken  = await login(ctx, TEST_EMAIL, TEST_PASSWORD);
-  sellerToken = await login(ctx, SELLER_EMAIL, PASSWORD);
+  buyerToken  = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
+  sellerToken = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
 
   // Create a dedicated test product so the test is self-sufficient
   const ts = Date.now();

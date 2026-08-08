@@ -5,7 +5,7 @@
 import { test, expect, request as pwRequest } from '@playwright/test';
 import {
   authHeaders, login,
-  TEST_EMAIL, TEST_PASSWORD,
+  SELLER_EMAIL, TEST_PASSWORD,
 } from '../../helpers/api-client';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
@@ -18,7 +18,7 @@ test.beforeAll(async () => {
   const ctx = await pwRequest.newContext({ baseURL: API_URL });
 
   // Buyer1 — existing seeded account
-  buyer1Token = await login(ctx, TEST_EMAIL, TEST_PASSWORD);
+  buyer1Token = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
 
   // Buyer2 — fresh account to guarantee a clean slate
   const ts = Date.now();

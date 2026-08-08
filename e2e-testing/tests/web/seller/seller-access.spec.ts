@@ -2,7 +2,7 @@
 
 import { test, expect } from '../../../fixtures/base-fixture';
 import { request as pwRequest } from '@playwright/test';
-import { login, authHeaders, BUYER_EMAIL, PASSWORD } from '../../../helpers/api-client';
+import { login, authHeaders, BUYER_EMAIL, TEST_PASSWORD } from '../../../helpers/api-client';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400';
@@ -13,7 +13,7 @@ test.beforeAll(async () => {
   const ctx = await pwRequest.newContext({ baseURL: API_URL });
 
   // Promote b@test.com to seller2 (idempotent) and create a product
-  const seller2Token = await login(ctx, BUYER_EMAIL, PASSWORD);
+  const seller2Token = await login(ctx, BUYER_EMAIL, TEST_PASSWORD);
   await ctx.put('/api/auth/profile', {
     data: { role: 'seller' },
     headers: authHeaders(seller2Token),

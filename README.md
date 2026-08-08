@@ -247,9 +247,9 @@ Create `e2e-testing/.env` (optional — defaults shown):
 ```
 API_URL=http://localhost:5000
 WEB_URL=http://localhost:5173
-BUYER_EMAIL=buyer@test.com
-SELLER_EMAIL=seller@test.com
-PASSWORD=Test750!!
+BUYER_EMAIL=b@test.com
+SELLER_EMAIL=s@test.com
+TEST_PASSWORD=Test750!!
 ```
 
 Run all tests (requires backend + frontend running):
@@ -313,16 +313,16 @@ flutter run                          # Run on connected device/emulator
 flutter build apk                    # Build Android APK
 patrol test                          # Run all Patrol E2E tests
 patrol test --target patrol_test/login_test.dart \
-  --dart-define=EMAIL=buyer@test.com \
-  --dart-define=PASSWORD=Test750!!   # Run a single test
+  --dart-define=EMAIL=b@test.com \
+  --dart-define=TEST_PASSWORD=Test750!!   # Run a single test
 ```
 
 ## Test Credentials
 
 | Role | Email | Password |
 |---|---|---|
-| Buyer | `buyer@test.com` | `Test750!!` |
-| Seller | `seller@test.com` | `Test750!!` |
+| Buyer | `b@test.com` | `Test750!!` |
+| Seller | `s@test.com` | `Test750!!` |
 
 Or register a new account via the Sign Up page. To create a seller account, register and toggle the seller role in Profile.
 

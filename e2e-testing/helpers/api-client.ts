@@ -1,9 +1,7 @@
 import type { APIRequestContext } from '@playwright/test';
 
-export const SELLER_EMAIL = process.env.SELLER_EMAIL ?? 'test@example.com';
-export const TEST_PASSWORD = process.env.TEST_PASSWORD ?? 'password123';
 export const BUYER_EMAIL = process.env.BUYER_EMAIL ?? 'b1@test.com';
-export const SELLER_EMAIL = process.env.SELLER_EMAIL ?? 's1@example.com';
+export const SELLER_EMAIL = process.env.SELLER_EMAIL ?? 's2@ex.com';
 export const TEST_PASSWORD = process.env.TEST_PASSWORD ?? 'Test750!!';
 
 export async function login(

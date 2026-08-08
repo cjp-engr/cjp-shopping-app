@@ -28,6 +28,6 @@ test(
       localStorage.getItem('shopping_app_user_data'),
     );
     const seller = JSON.parse(sellerData!);
-    expect(seller.email).toBe('s1@example.com');
+    expect(seller.email).toBe('s1@ex.com');
   },
 );

@@ -2,16 +2,16 @@
 class TestCredentials {
   static const buyerEmail = String.fromEnvironment(
     'BUYER_EMAIL',
-    defaultValue: 'buyer@test.com',
+    defaultValue: 'b@test.com',
   );
 
   static const sellerEmail = String.fromEnvironment(
     'SELLER_EMAIL',
-    defaultValue: 'seller@test.com',
+    defaultValue: 's@test.com',
   );
 
   static const password = String.fromEnvironment(
-    'PASSWORD',
+    'TEST_PASSWORD',
     defaultValue: 'Test750!!',
   );
 }
