@@ -138,18 +138,18 @@ const products = [
   {
     name: 'E2E Test Variant Tee',
     description: 'A test t-shirt with size variants for automated testing.',
-    price: 25.00,
+    price: 49.99,
     category: 'Clothing',
-    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500',
+    image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500',
     stock: 0,
     rating: 4.0,
     reviews: 1,
     tags: ['e2e', 'test', 'variant'],
     variantAttributes: [{ name: 'Size', values: ['S', 'M', 'L'] }],
     variants: [
-      { attributes: new Map([['Size', 'S']]), price: 25.00, stock: 10, images: [] },
-      { attributes: new Map([['Size', 'M']]), price: 25.00, stock: 10, images: [] },
-      { attributes: new Map([['Size', 'L']]), price: 25.00, stock: 10, images: [] },
+      { attributes: new Map([['Size', 'S']]), price: 49.99, stock: 5, images: ['https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400'] },
+      { attributes: new Map([['Size', 'M']]), price: 54.99, stock: 10, images: ['https://images.unsplash.com/photo-1576566588028-4147f3842f3f?w=400'] },
+      { attributes: new Map([['Size', 'L']]), price: 59.99, stock: 15, images: ['https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400'] },
     ],
   },
   {
@@ -518,7 +518,7 @@ const seedDatabase = async () => {
 
     // Create test users
     console.log('Creating test users...');
-    await User.create([
+    const [, seller] = await User.create([
       {
         email: 'test@example.com',
         password: 'password123',
@@ -527,14 +527,14 @@ const seedDatabase = async () => {
         role: 'buyer',
       },
       {
-        email: 'buyer@test.com',
+        email: 'b@test.com',
         password: 'Test750!!',
         firstName: 'Buyer',
         lastName: 'Test',
         role: 'buyer',
       },
       {
-        email: 'seller@test.com',
+        email: 's@test.com',
         password: 'Test750!!',
         firstName: 'Seller',
         lastName: 'Test',
@@ -542,16 +542,18 @@ const seedDatabase = async () => {
       },
     ]);
 
-    // Insert products
+    // Assign all products to the seller so buyers can add them to cart
     console.log('Seeding products...');
-    await Product.insertMany(products);
+    const sellerId = seller._id;
+    const productsWithSeller = products.map(p => ({ ...p, sellerId }));
+    await Product.insertMany(productsWithSeller);
 
     console.log(`✅ Database seeded successfully!`);
-    console.log(`   - ${products.length} products added`);
+    console.log(`   - ${products.length} products added (all owned by s@test.com)`);
     console.log(`   - 3 test users created:`);
     console.log(`       test@example.com / password123 (buyer)`);
-    console.log(`       buyer@test.com / Test750!! (buyer)`);
-    console.log(`       seller@test.com / Test750!! (seller)`);
+    console.log(`       b@test.com / Test750!! (buyer)`);
+    console.log(`       s@test.com / Test750!! (seller)`);
 
     process.exit(0);
   } catch (error) {
