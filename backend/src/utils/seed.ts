@@ -18,8 +18,8 @@ const products = [
       'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=500'
     ],
     stock: 45,
-    rating: 4.5,
-    reviews: 234,
+    rating: 0,
+    reviews: 0,
     tags: ['wireless', 'bluetooth', 'noise-cancelling'],
     specifications: new Map([
       ['Battery Life', '30 hours'],
@@ -35,8 +35,8 @@ const products = [
     category: 'Electronics',
     image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500',
     stock: 28,
-    rating: 4.7,
-    reviews: 512,
+    rating: 0,
+    reviews: 0,
     tags: ['5G', 'smartphone', 'OLED'],
     specifications: new Map([
       ['Display', '6.5" OLED'],
@@ -52,8 +52,8 @@ const products = [
     category: 'Electronics',
     image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500',
     stock: 15,
-    rating: 4.6,
-    reviews: 187,
+    rating: 0,
+    reviews: 0,
     tags: ['laptop', 'gaming', 'productivity'],
     specifications: new Map([
       ['Processor', 'Intel Core i7'],
@@ -69,8 +69,8 @@ const products = [
     category: 'Electronics',
     image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500',
     stock: 120,
-    rating: 4.3,
-    reviews: 342,
+    rating: 0,
+    reviews: 0,
     tags: ['wireless', 'mouse', 'ergonomic']
   },
   {
@@ -80,8 +80,8 @@ const products = [
     category: 'Electronics',
     image: 'https://images.unsplash.com/photo-1585792180666-f7347c490ee2?w=500',
     stock: 63,
-    rating: 4.4,
-    reviews: 89,
+    rating: 0,
+    reviews: 0,
     tags: ['webcam', '4K', 'streaming']
   },
   {
@@ -91,8 +91,8 @@ const products = [
     category: 'Electronics',
     image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500',
     stock: 74,
-    rating: 4.6,
-    reviews: 298,
+    rating: 0,
+    reviews: 0,
     tags: ['keyboard', 'gaming', 'RGB']
   },
   {
@@ -102,8 +102,8 @@ const products = [
     category: 'Electronics',
     image: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=500',
     stock: 52,
-    rating: 4.6,
-    reviews: 412,
+    rating: 0,
+    reviews: 0,
     tags: ['smartwatch', 'fitness', 'wearable']
   },
   {
@@ -113,8 +113,8 @@ const products = [
     category: 'Electronics',
     image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=500',
     stock: 134,
-    rating: 4.4,
-    reviews: 567,
+    rating: 0,
+    reviews: 0,
     tags: ['speaker', 'bluetooth', 'portable']
   },
 
@@ -126,8 +126,8 @@ const products = [
     category: 'Clothing',
     image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500',
     stock: 200,
-    rating: 4.2,
-    reviews: 423,
+    rating: 0,
+    reviews: 0,
     tags: ['t-shirt', 'cotton', 'casual'],
     specifications: new Map([
       ['Material', '100% Cotton'],
@@ -143,8 +143,8 @@ const products = [
     category: 'Clothing',
     image: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500',
     stock: 0,
-    rating: 4.3,
-    reviews: 88,
+    rating: 0,
+    reviews: 0,
     tags: ['polo', 'clothing', 'casual'],
     variantAttributes: [{ name: 'Size', values: ['S', 'M', 'L', 'XL'] }],
     variants: [
@@ -161,8 +161,8 @@ const products = [
     category: 'Sports & Outdoors',
     image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500',
     stock: 0,
-    rating: 4.6,
-    reviews: 143,
+    rating: 0,
+    reviews: 0,
     tags: ['shoes', 'trail', 'running'],
     variantAttributes: [{ name: 'Size', values: ['7', '8', '9', '10', '11'] }],
     variants: [
@@ -180,8 +180,8 @@ const products = [
     category: 'Home & Garden',
     image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=500',
     stock: 0,
-    rating: 4.7,
-    reviews: 312,
+    rating: 0,
+    reviews: 0,
     tags: ['mug', 'kitchen', 'ceramic'],
     variantAttributes: [{ name: 'Color', values: ['White', 'Black', 'Blue'] }],
     variants: [
@@ -197,8 +197,8 @@ const products = [
     category: 'Clothing',
     image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?w=500',
     stock: 0,
-    rating: 4.5,
-    reviews: 201,
+    rating: 0,
+    reviews: 0,
     tags: ['wallet', 'leather', 'accessory'],
     variantAttributes: [{ name: 'Color', values: ['Brown', 'Black', 'Tan'] }],
     variants: [
@@ -214,8 +214,8 @@ const products = [
     category: 'Sports & Outdoors',
     image: 'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=500',
     stock: 0,
-    rating: 4.8,
-    reviews: 467,
+    rating: 0,
+    reviews: 0,
     tags: ['leggings', 'yoga', 'fitness'],
     variantAttributes: [{ name: 'Size', values: ['S', 'M', 'L'] }],
     variants: [
@@ -231,8 +231,8 @@ const products = [
     category: 'Electronics',
     image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500',
     stock: 0,
-    rating: 4.5,
-    reviews: 389,
+    rating: 0,
+    reviews: 0,
     tags: ['earbuds', 'wireless', 'audio'],
     variantAttributes: [{ name: 'Color', values: ['White', 'Black'] }],
     variants: [
@@ -247,8 +247,8 @@ const products = [
     category: 'Home & Garden',
     image: 'https://images.unsplash.com/photo-1580301762395-14d3e6509fa1?w=500',
     stock: 0,
-    rating: 4.6,
-    reviews: 276,
+    rating: 0,
+    reviews: 0,
     tags: ['blanket', 'home', 'cosy'],
     variantAttributes: [{ name: 'Color', values: ['Grey', 'Beige', 'Navy'] }],
     variants: [
@@ -264,8 +264,8 @@ const products = [
     category: 'Clothing',
     image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500',
     stock: 0,
-    rating: 4.0,
-    reviews: 1,
+    rating: 0,
+    reviews: 0,
     tags: ['e2e', 'test', 'variant'],
     variantAttributes: [{ name: 'Size', values: ['S', 'M', 'L'] }],
     variants: [
@@ -281,8 +281,8 @@ const products = [
     category: 'Clothing',
     image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=500',
     stock: 85,
-    rating: 4.5,
-    reviews: 267,
+    rating: 0,
+    reviews: 0,
     tags: ['jeans', 'denim', 'slim-fit']
   },
   {
@@ -292,8 +292,8 @@ const products = [
     category: 'Clothing',
     image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500',
     stock: 56,
-    rating: 4.7,
-    reviews: 512,
+    rating: 0,
+    reviews: 0,
     tags: ['shoes', 'running', 'athletic']
   },
   {
@@ -303,8 +303,8 @@ const products = [
     category: 'Clothing',
     image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=500',
     stock: 42,
-    rating: 4.8,
-    reviews: 178,
+    rating: 0,
+    reviews: 0,
     tags: ['jacket', 'winter', 'waterproof']
   },
   {
@@ -314,8 +314,8 @@ const products = [
     category: 'Clothing',
     image: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=500',
     stock: 92,
-    rating: 4.3,
-    reviews: 234,
+    rating: 0,
+    reviews: 0,
     tags: ['sneakers', 'casual', 'canvas']
   },
   {
@@ -325,8 +325,8 @@ const products = [
     category: 'Clothing',
     image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500',
     stock: 110,
-    rating: 4.4,
-    reviews: 356,
+    rating: 0,
+    reviews: 0,
     tags: ['hoodie', 'casual', 'cotton']
   },
   {
@@ -336,8 +336,8 @@ const products = [
     category: 'Clothing',
     image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=500',
     stock: 87,
-    rating: 4.3,
-    reviews: 189,
+    rating: 0,
+    reviews: 0,
     tags: ['shirt', 'formal', 'business']
   },
   {
@@ -347,8 +347,8 @@ const products = [
     category: 'Clothing',
     image: 'https://images.unsplash.com/photo-1624222247344-550fb60583bb?w=500',
     stock: 145,
-    rating: 4.2,
-    reviews: 298,
+    rating: 0,
+    reviews: 0,
     tags: ['belt', 'leather', 'accessory']
   },
 
@@ -360,8 +360,8 @@ const products = [
     category: 'Home & Garden',
     image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=500',
     stock: 67,
-    rating: 4.5,
-    reviews: 145,
+    rating: 0,
+    reviews: 0,
     tags: ['lamp', 'lighting', 'modern']
   },
   {
@@ -371,8 +371,8 @@ const products = [
     category: 'Home & Garden',
     image: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=500',
     stock: 88,
-    rating: 4.2,
-    reviews: 223,
+    rating: 0,
+    reviews: 0,
     tags: ['pillows', 'decor', 'home']
   },
   {
@@ -382,8 +382,8 @@ const products = [
     category: 'Home & Garden',
     image: 'https://images.unsplash.com/photo-1509423350716-97f9360b4e09?w=500',
     stock: 135,
-    rating: 4.6,
-    reviews: 412,
+    rating: 0,
+    reviews: 0,
     tags: ['plant', 'indoor', 'air-purifying']
   },
   {
@@ -393,8 +393,8 @@ const products = [
     category: 'Home & Garden',
     image: 'https://images.unsplash.com/photo-1532372320572-cda25653a26d?w=500',
     stock: 23,
-    rating: 4.7,
-    reviews: 87,
+    rating: 0,
+    reviews: 0,
     tags: ['furniture', 'table', 'wood']
   },
   {
@@ -404,8 +404,8 @@ const products = [
     category: 'Home & Garden',
     image: 'https://images.unsplash.com/photo-1563861826100-9cb868fdbe1c?w=500',
     stock: 156,
-    rating: 4.3,
-    reviews: 267,
+    rating: 0,
+    reviews: 0,
     tags: ['clock', 'wall-decor', 'minimalist']
   },
   {
@@ -415,8 +415,8 @@ const products = [
     category: 'Home & Garden',
     image: 'https://images.unsplash.com/photo-1601153896234-b09b52f3f8f4?w=500',
     stock: 41,
-    rating: 4.4,
-    reviews: 178,
+    rating: 0,
+    reviews: 0,
     tags: ['rug', 'carpet', 'decor']
   },
   {
@@ -426,8 +426,8 @@ const products = [
     category: 'Home & Garden',
     image: 'https://images.unsplash.com/photo-1611269154421-4e27233ac5c7?w=500',
     stock: 78,
-    rating: 4.5,
-    reviews: 234,
+    rating: 0,
+    reviews: 0,
     tags: ['organizer', 'office', 'bamboo']
   },
   {
@@ -437,8 +437,8 @@ const products = [
     category: 'Home & Garden',
     image: 'https://images.unsplash.com/photo-1602874801006-e7f2dc7e8027?w=500',
     stock: 156,
-    rating: 4.6,
-    reviews: 445,
+    rating: 0,
+    reviews: 0,
     tags: ['candles', 'scented', 'decor']
   },
 
@@ -450,8 +450,8 @@ const products = [
     category: 'Books',
     image: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=500',
     stock: 78,
-    rating: 4.8,
-    reviews: 523,
+    rating: 0,
+    reviews: 0,
     tags: ['programming', 'technical', 'education'],
     specifications: new Map([
       ['Pages', '648'],
@@ -467,8 +467,8 @@ const products = [
     category: 'Books',
     image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500',
     stock: 145,
-    rating: 4.5,
-    reviews: 892,
+    rating: 0,
+    reviews: 0,
     tags: ['fiction', 'mystery', 'thriller']
   },
   {
@@ -478,8 +478,8 @@ const products = [
     category: 'Books',
     image: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=500',
     stock: 92,
-    rating: 4.6,
-    reviews: 356,
+    rating: 0,
+    reviews: 0,
     tags: ['cookbook', 'healthy', 'recipes']
   },
   {
@@ -489,8 +489,8 @@ const products = [
     category: 'Books',
     image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=500',
     stock: 67,
-    rating: 4.7,
-    reviews: 678,
+    rating: 0,
+    reviews: 0,
     tags: ['sci-fi', 'fiction', 'space']
   },
   {
@@ -500,8 +500,8 @@ const products = [
     category: 'Books',
     image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500',
     stock: 103,
-    rating: 4.4,
-    reviews: 445,
+    rating: 0,
+    reviews: 0,
     tags: ['self-help', 'mindfulness', 'wellness']
   },
   {
@@ -511,8 +511,8 @@ const products = [
     category: 'Books',
     image: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=500',
     stock: 58,
-    rating: 4.5,
-    reviews: 267,
+    rating: 0,
+    reviews: 0,
     tags: ['biography', 'business', 'inspiration']
   },
   {
@@ -522,8 +522,8 @@ const products = [
     category: 'Books',
     image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500',
     stock: 198,
-    rating: 4.8,
-    reviews: 678,
+    rating: 0,
+    reviews: 0,
     tags: ['children', 'picture-book', 'education']
   },
   {
@@ -533,8 +533,8 @@ const products = [
     category: 'Books',
     image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=500',
     stock: 64,
-    rating: 4.5,
-    reviews: 234,
+    rating: 0,
+    reviews: 0,
     tags: ['travel', 'guide', 'europe']
   },
 
@@ -546,8 +546,8 @@ const products = [
     category: 'Sports & Outdoors',
     image: 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=500',
     stock: 112,
-    rating: 4.6,
-    reviews: 534,
+    rating: 0,
+    reviews: 0,
     tags: ['yoga', 'fitness', 'exercise']
   },
   {
@@ -557,8 +557,8 @@ const products = [
     category: 'Sports & Outdoors',
     image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=500',
     stock: 34,
-    rating: 4.5,
-    reviews: 189,
+    rating: 0,
+    reviews: 0,
     tags: ['camping', 'tent', 'outdoor']
   },
   {
@@ -568,8 +568,8 @@ const products = [
     category: 'Sports & Outdoors',
     image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=500',
     stock: 67,
-    rating: 4.7,
-    reviews: 423,
+    rating: 0,
+    reviews: 0,
     tags: ['fitness', 'weights', 'strength']
   },
   {
@@ -579,8 +579,8 @@ const products = [
     category: 'Sports & Outdoors',
     image: 'https://images.unsplash.com/photo-1622260614153-03223fb72052?w=500',
     stock: 45,
-    rating: 4.6,
-    reviews: 278,
+    rating: 0,
+    reviews: 0,
     tags: ['hiking', 'backpack', 'outdoor']
   },
   {
@@ -590,8 +590,8 @@ const products = [
     category: 'Sports & Outdoors',
     image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500',
     stock: 98,
-    rating: 4.4,
-    reviews: 312,
+    rating: 0,
+    reviews: 0,
     tags: ['basketball', 'sports', 'outdoor']
   },
   {
@@ -601,8 +601,8 @@ const products = [
     category: 'Sports & Outdoors',
     image: 'https://images.unsplash.com/photo-1589403165913-94b1716e8cb9?w=500',
     stock: 76,
-    rating: 4.5,
-    reviews: 234,
+    rating: 0,
+    reviews: 0,
     tags: ['bicycle', 'helmet', 'safety']
   },
   {
@@ -612,8 +612,8 @@ const products = [
     category: 'Sports & Outdoors',
     image: 'https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=500',
     stock: 142,
-    rating: 4.5,
-    reviews: 567,
+    rating: 0,
+    reviews: 0,
     tags: ['fitness', 'resistance-bands', 'exercise']
   },
   {
@@ -623,8 +623,8 @@ const products = [
     category: 'Sports & Outdoors',
     image: 'https://images.unsplash.com/photo-1614632537197-38a17061c2bd?w=500',
     stock: 89,
-    rating: 4.6,
-    reviews: 389,
+    rating: 0,
+    reviews: 0,
     tags: ['soccer', 'ball', 'sports']
   }
 ];
