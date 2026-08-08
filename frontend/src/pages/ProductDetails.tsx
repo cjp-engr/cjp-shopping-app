@@ -453,7 +453,7 @@ export const ProductDetails: React.FC = () => {
 
                 {/* Selected variant info */}
                 {selectedVariant && (
-                  <div className="flex items-center gap-3 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-100 dark:border-primary-800 text-sm">
+                  <div data-testid="variant-stock" className="flex items-center gap-3 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-100 dark:border-primary-800 text-sm">
                     <span className="font-medium text-primary-700 dark:text-primary-300">
                       {selectedVariant.stock > 0 ? `${selectedVariant.stock} in stock` : 'Out of stock'}
                     </span>
