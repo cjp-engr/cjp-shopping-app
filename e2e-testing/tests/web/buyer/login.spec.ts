@@ -6,9 +6,15 @@ test.describe('Web login', () => {
     'TC-001: buyer can log in and see authenticated navbar',
     { tag: ['@TC-001', '@buyer', '@auth', '@smoke'] },
     async ({ page, loginPage }) => {
-    await loginPage.goto();
-    await loginPage.loginAsBuyer();
-    await expect(page.getByTestId('user-menu-btn')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByTestId('nav-signin-link')).not.toBeVisible();
-  });
+      await test.step('Navigate to login page and sign in as buyer', async () => {
+        await loginPage.goto();
+        await loginPage.loginAsBuyer();
+      });
+
+      await test.step('Verify authenticated navbar is shown', async () => {
+        await expect(page.getByTestId('user-menu-btn')).toBeVisible({ timeout: 15_000 });
+        await expect(page.getByTestId('nav-signin-link')).not.toBeVisible();
+      });
+    },
+  );
 });

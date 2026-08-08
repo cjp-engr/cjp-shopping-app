@@ -5,7 +5,6 @@ import { test, expect, request as pwRequest } from '@playwright/test';
 import {
   authHeaders, login,
   SELLER_EMAIL, TEST_PASSWORD,
-  SELLER_EMAIL, TEST_PASSWORD,
 } from '../../helpers/api-client';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
@@ -71,15 +70,21 @@ async function advanceToDelivered(request: any, orderId: string): Promise<void> 
 
 test.describe('TC-036: Review blocked before order is delivered', () => {
   test('POST /api/reviews returns 403 for a non-delivered order', async ({ request }) => {
-    const orderId = await placeOrder(request);
+    let orderId: string;
 
-    const res = await request.post('/api/reviews', {
-      data: { productId: testProductId, orderId, rating: 5, comment: 'Great product!' },
-      headers: authHeaders(buyerToken),
+    await test.step('Place an order (not yet delivered)', async () => {
+      orderId = await placeOrder(request);
     });
-    expect(res.status()).toBe(403);
-    const body = await res.json();
-    expect(body.message).toMatch(/delivered/i);
+
+    await test.step('Attempt to submit review before delivery and assert 403', async () => {
+      const res = await request.post('/api/reviews', {
+        data: { productId: testProductId, orderId, rating: 5, comment: 'Great product!' },
+        headers: authHeaders(buyerToken),
+      });
+      expect(res.status()).toBe(403);
+      const body = await res.json();
+      expect(body.message).toMatch(/delivered/i);
+    });
   });
 });
 
@@ -87,26 +92,31 @@ test.describe('TC-036: Review blocked before order is delivered', () => {
 
 test.describe('TC-035: Duplicate review is blocked', () => {
   test('POST /api/reviews returns 409 on second review for the same product', async ({ request }) => {
-    // Full lifecycle: place order → advance to delivered
-    const orderId = await placeOrder(request);
-    await advanceToDelivered(request, orderId);
+    let orderId: string;
 
-    const payload = { productId: testProductId, orderId, rating: 4, comment: 'Good product' };
-
-    // First review — must succeed
-    const first = await request.post('/api/reviews', {
-      data: payload,
-      headers: authHeaders(buyerToken),
+    await test.step('Place order and advance to delivered', async () => {
+      orderId = await placeOrder(request);
+      await advanceToDelivered(request, orderId);
     });
-    expect(first.status()).toBe(201);
 
-    // Second review same product — must conflict
-    const second = await request.post('/api/reviews', {
-      data: payload,
-      headers: authHeaders(buyerToken),
+    await test.step('Submit first review and assert 201', async () => {
+      const payload = { productId: testProductId, orderId, rating: 4, comment: 'Good product' };
+      const first = await request.post('/api/reviews', {
+        data: payload,
+        headers: authHeaders(buyerToken),
+      });
+      expect(first.status()).toBe(201);
     });
-    expect(second.status()).toBe(409);
-    const body = await second.json();
-    expect(body.message).toMatch(/already reviewed/i);
+
+    await test.step('Submit duplicate review and assert 409', async () => {
+      const payload = { productId: testProductId, orderId, rating: 4, comment: 'Good product' };
+      const second = await request.post('/api/reviews', {
+        data: payload,
+        headers: authHeaders(buyerToken),
+      });
+      expect(second.status()).toBe(409);
+      const body = await second.json();
+      expect(body.message).toMatch(/already reviewed/i);
+    });
   });
 });

@@ -50,14 +50,17 @@ test.describe('Cart isolation: buyer2 sees own empty cart in UI', () => {
     'TC-109: buyer2 cannot see buyer1 cart items on the cart page',
     { tag: ['@TC-109', '@buyer', '@cart'] },
     async ({ page, cartPage }) => {
-      await page.goto('/');
-      await injectAuth(page, buyer2Token, buyer2UserData);
+      await test.step('Inject buyer2 auth and navigate to cart page', async () => {
+        await page.goto('/');
+        await injectAuth(page, buyer2Token, buyer2UserData);
+        await page.goto('/cart');
+        await expect(page.getByTestId('cart-empty').or(cartPage.root)).toBeVisible({ timeout: 10_000 });
+      });
 
-      await page.goto('/cart');
-      await expect(page.getByTestId('cart-empty').or(cartPage.root)).toBeVisible({ timeout: 10_000 });
-
-      await expect(cartPage.cartItem(testProductId)).not.toBeVisible();
-      await expect(page.getByTestId('cart-empty')).toBeVisible();
+      await test.step('Verify buyer2 sees empty cart and buyer1 items are absent', async () => {
+        await expect(cartPage.cartItem(testProductId)).not.toBeVisible();
+        await expect(page.getByTestId('cart-empty')).toBeVisible();
+      });
     },
   );
 });

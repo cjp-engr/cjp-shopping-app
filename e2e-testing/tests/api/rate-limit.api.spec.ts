@@ -15,31 +15,37 @@ import { test, expect, type APIRequestContext } from '@playwright/test';
 
 test.describe('Rate limit — headers present on every response', () => {
   test('TC-114: auth route includes RateLimit headers', async ({ request }) => {
-    const res = await request.post('/api/auth/login', {
-      data: { email: 'probe@test.com', password: 'wrong' },
-    });
+    await test.step('Send POST /api/auth/login and assert RateLimit headers present', async () => {
+      const res = await request.post('/api/auth/login', {
+        data: { email: 'probe@test.com', password: 'wrong' },
+      });
 
-    expect(res.headers()).toHaveProperty('ratelimit-limit');
-    expect(res.headers()).toHaveProperty('ratelimit-remaining');
-    expect(res.headers()).toHaveProperty('ratelimit-reset');
+      expect(res.headers()).toHaveProperty('ratelimit-limit');
+      expect(res.headers()).toHaveProperty('ratelimit-remaining');
+      expect(res.headers()).toHaveProperty('ratelimit-reset');
+    });
   });
 
   test('TC-115: product route includes RateLimit headers', async ({ request }) => {
-    const res = await request.get('/api/products');
+    await test.step('Send GET /api/products and assert RateLimit headers present', async () => {
+      const res = await request.get('/api/products');
 
-    expect(res.headers()).toHaveProperty('ratelimit-limit');
-    expect(res.headers()).toHaveProperty('ratelimit-remaining');
-    expect(res.headers()).toHaveProperty('ratelimit-reset');
+      expect(res.headers()).toHaveProperty('ratelimit-limit');
+      expect(res.headers()).toHaveProperty('ratelimit-remaining');
+      expect(res.headers()).toHaveProperty('ratelimit-reset');
+    });
   });
 
   test('TC-116: RateLimit-Remaining decrements across requests', async ({ request }) => {
-    const first  = await request.get('/api/products');
-    const second = await request.get('/api/products');
+    await test.step('Send two GET /api/products requests and assert remaining decrements', async () => {
+      const first  = await request.get('/api/products');
+      const second = await request.get('/api/products');
 
-    const remainingAfterFirst  = parseInt(first.headers()['ratelimit-remaining']);
-    const remainingAfterSecond = parseInt(second.headers()['ratelimit-remaining']);
+      const remainingAfterFirst  = parseInt(first.headers()['ratelimit-remaining']);
+      const remainingAfterSecond = parseInt(second.headers()['ratelimit-remaining']);
 
-    expect(remainingAfterSecond).toBeLessThan(remainingAfterFirst);
+      expect(remainingAfterSecond).toBeLessThan(remainingAfterFirst);
+    });
   });
 });
 
@@ -69,27 +75,35 @@ test.describe('Rate limit — 429 enforcement (low-limit mode)', () => {
   );
 
   test('TC-117: auth route returns 429 after limit is exhausted', async ({ request }) => {
-    await exhaustAuthLimit(request, authMax);
-
-    const res = await request.post('/api/auth/login', {
-      data: { email: 'blocked@test.com', password: 'wrong' },
+    await test.step('Exhaust auth rate limit', async () => {
+      await exhaustAuthLimit(request, authMax);
     });
 
-    expect(res.status()).toBe(429);
-    const body = await res.json();
-    expect(body.success).toBe(false);
-    expect(body.message).toBe('Too many requests, please try again later.');
+    await test.step('Send one more login request and assert 429 with correct message', async () => {
+      const res = await request.post('/api/auth/login', {
+        data: { email: 'blocked@test.com', password: 'wrong' },
+      });
+
+      expect(res.status()).toBe(429);
+      const body = await res.json();
+      expect(body.success).toBe(false);
+      expect(body.message).toBe('Too many requests, please try again later.');
+    });
   });
 
   test('TC-118: 429 response includes Retry-After header', async ({ request }) => {
-    await exhaustAuthLimit(request, authMax);
-
-    const res = await request.post('/api/auth/login', {
-      data: { email: 'blocked@test.com', password: 'wrong' },
+    await test.step('Exhaust auth rate limit', async () => {
+      await exhaustAuthLimit(request, authMax);
     });
 
-    expect(res.status()).toBe(429);
-    expect(res.headers()).toHaveProperty('retry-after');
+    await test.step('Send one more login request and assert Retry-After header present', async () => {
+      const res = await request.post('/api/auth/login', {
+        data: { email: 'blocked@test.com', password: 'wrong' },
+      });
+
+      expect(res.status()).toBe(429);
+      expect(res.headers()).toHaveProperty('retry-after');
+    });
   });
 });
 
@@ -100,15 +114,19 @@ test.describe('Rate limit — 429 enforcement on API routes (low-limit mode)', (
   );
 
   test('TC-119: product route returns 429 after limit is exhausted', async ({ request }) => {
-    for (let i = 0; i < apiMax; i++) {
-      await request.get('/api/products');
-    }
+    await test.step('Exhaust API rate limit with repeated GET /api/products', async () => {
+      for (let i = 0; i < apiMax; i++) {
+        await request.get('/api/products');
+      }
+    });
 
-    const res = await request.get('/api/products');
+    await test.step('Send one more request and assert 429 with correct message', async () => {
+      const res = await request.get('/api/products');
 
-    expect(res.status()).toBe(429);
-    const body = await res.json();
-    expect(body.success).toBe(false);
-    expect(body.message).toBe('Too many requests, please try again later.');
+      expect(res.status()).toBe(429);
+      const body = await res.json();
+      expect(body.success).toBe(false);
+      expect(body.message).toBe('Too many requests, please try again later.');
+    });
   });
 });

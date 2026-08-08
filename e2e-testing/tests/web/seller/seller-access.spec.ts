@@ -45,14 +45,17 @@ test.describe('TC-054: Seller dashboard only shows own products', () => {
     'seller1 cannot see seller2 product in their dashboard',
     { tag: ['@TC-054', '@seller', '@seller-access'] },
     async ({ page, homePage, sellerDashboardPage }) => {
-      await page.goto('/');
-      await homePage.navigateToSellerDashboard();
-      await sellerDashboardPage.expectLoaded();
+      await test.step('Navigate to seller1 dashboard', async () => {
+        await page.goto('/');
+        await homePage.navigateToSellerDashboard();
+        await sellerDashboardPage.expectLoaded();
+      });
 
-      // seller2's product must not appear in seller1's product list
-      await expect(
-        page.getByTestId(`product-item-${seller2ProductId}`),
-      ).not.toBeVisible();
+      await test.step('Verify seller2 product is not listed in seller1 dashboard', async () => {
+        await expect(
+          page.getByTestId(`product-item-${seller2ProductId}`),
+        ).not.toBeVisible();
+      });
     },
   );
 
@@ -60,17 +63,21 @@ test.describe('TC-054: Seller dashboard only shows own products', () => {
     'seller1 cannot see edit or delete controls for seller2 product',
     { tag: ['@TC-054', '@seller', '@seller-access'] },
     async ({ page, homePage, sellerDashboardPage }) => {
-      await page.goto('/');
-      await homePage.navigateToSellerDashboard();
-      await sellerDashboardPage.expectLoaded();
+      await test.step('Navigate to seller1 dashboard', async () => {
+        await page.goto('/');
+        await homePage.navigateToSellerDashboard();
+        await sellerDashboardPage.expectLoaded();
+      });
 
-      await expect(
-        page.getByTestId(`edit-product-${seller2ProductId}`),
-      ).not.toBeVisible();
+      await test.step('Verify edit and delete controls for seller2 product are absent', async () => {
+        await expect(
+          page.getByTestId(`edit-product-${seller2ProductId}`),
+        ).not.toBeVisible();
 
-      await expect(
-        page.getByTestId(`delete-product-${seller2ProductId}`),
-      ).not.toBeVisible();
+        await expect(
+          page.getByTestId(`delete-product-${seller2ProductId}`),
+        ).not.toBeVisible();
+      });
     },
   );
 });

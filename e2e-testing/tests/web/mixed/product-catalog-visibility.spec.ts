@@ -14,15 +14,17 @@ test.describe('TC-008: Guest can browse products without login', () => {
     'products page loads and a product detail is accessible without auth',
     { tag: ['@TC-008', '@guest', '@catalog', '@smoke'] },
     async ({ page, productListPage }) => {
-      await productListPage.goto();
+      await test.step('Navigate to products page as guest', async () => {
+        await productListPage.goto();
+        await expect(page.getByTestId('products-page')).toBeVisible();
+        await expect(page.getByTestId('nav-signin-link')).toBeVisible();
+      });
 
-      await expect(page.getByTestId('products-page')).toBeVisible();
-      await expect(page.getByTestId('nav-signin-link')).toBeVisible();
-
-      await expect(productListPage.grid).toBeVisible();
-      await productListPage.clickFirstProduct();
-
-      await expect(page.getByTestId('product-detail-page')).toBeVisible();
+      await test.step('Click first product and verify detail page is accessible', async () => {
+        await expect(productListPage.grid).toBeVisible();
+        await productListPage.clickFirstProduct();
+        await expect(page.getByTestId('product-detail-page')).toBeVisible();
+      });
     },
   );
 });
@@ -43,19 +45,23 @@ test.describe('TC-065: Buyer sees new seller listing in public catalog', () => {
     'product created by seller is visible to buyer in the catalog',
     { tag: ['@TC-065', '@mixed', '@seller', '@catalog'] },
     async ({ page, productListPage, switchRole }) => {
-      // Inject buyer session (reads .auth/buyer.json — no API call)
-      await productListPage.goto();
-      await switchRole('buyer');
-      await productListPage.goto();
+      await test.step('Inject buyer session and navigate to product catalog', async () => {
+        await productListPage.goto();
+        await switchRole('buyer');
+        await productListPage.goto();
+      });
 
-      // Product card must appear in the public catalog
-      const card = productListPage.productCard(productId);
-      await expect(card).toBeVisible({ timeout: 10_000 });
+      await test.step('Verify seller product card is visible in catalog', async () => {
+        const card = productListPage.productCard(productId);
+        await expect(card).toBeVisible({ timeout: 10_000 });
+      });
 
-      await card.click();
-      await expect(page.getByTestId('product-detail-page')).toBeVisible();
-      await expect(page.getByTestId('add-to-cart-btn')).toBeVisible();
-      await expect(page.getByTestId('product-name')).toContainText(productName);
+      await test.step('Click product card and verify detail page with Add to Cart', async () => {
+        await productListPage.productCard(productId).click();
+        await expect(page.getByTestId('product-detail-page')).toBeVisible();
+        await expect(page.getByTestId('add-to-cart-btn')).toBeVisible();
+        await expect(page.getByTestId('product-name')).toContainText(productName);
+      });
     },
   );
 });

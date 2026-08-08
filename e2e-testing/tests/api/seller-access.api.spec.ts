@@ -6,7 +6,6 @@ import { test, expect, request as pwRequest } from '@playwright/test';
 import {
   authHeaders, login,
   SELLER_EMAIL, TEST_PASSWORD,
-  SELLER_EMAIL, TEST_PASSWORD,
   BUYER_EMAIL,
 } from '../../helpers/api-client';
 
@@ -86,11 +85,13 @@ test.beforeAll(async () => {
 
 test.describe('TC-053: Buyer is blocked from seller-only routes', () => {
   test('PUT /api/seller/orders/:id/status returns 403 for buyer token', async ({ request }) => {
-    const res = await request.put('/api/seller/orders/000000000000000000000000/status', {
-      data: { status: 'processing' },
-      headers: authHeaders(freshBuyerToken),
+    await test.step('Send PUT /api/seller/orders/:id/status with buyer token and assert 403', async () => {
+      const res = await request.put('/api/seller/orders/000000000000000000000000/status', {
+        data: { status: 'processing' },
+        headers: authHeaders(freshBuyerToken),
+      });
+      expect(res.status()).toBe(403);
     });
-    expect(res.status()).toBe(403);
   });
 });
 
@@ -98,29 +99,33 @@ test.describe('TC-053: Buyer is blocked from seller-only routes', () => {
 
 test.describe('TC-054: Seller cannot edit another sellers product', () => {
   test('PUT /api/products/:id returns 403 when seller does not own the product', async ({ request }) => {
-    // seller1 tries to update seller2's product — use multipart because the route uses multer
-    const res = await request.put(`/api/products/${seller2ProductId}`, {
-      multipart: {
-        name: 'Hacked Name',
-        description: 'Unauthorized edit attempt',
-        price: '1',
-        category: 'Electronics',
-        stock: '0',
-      },
-      headers: authHeaders(seller1Token),
+    await test.step('Send PUT /api/products/:id as seller1 on seller2 product and assert 403', async () => {
+      // seller1 tries to update seller2's product — use multipart because the route uses multer
+      const res = await request.put(`/api/products/${seller2ProductId}`, {
+        multipart: {
+          name: 'Hacked Name',
+          description: 'Unauthorized edit attempt',
+          price: '1',
+          category: 'Electronics',
+          stock: '0',
+        },
+        headers: authHeaders(seller1Token),
+      });
+      expect(res.status()).toBe(403);
     });
-    expect(res.status()).toBe(403);
   });
 });
 
 test.describe('TC-054: Seller cannot delete another sellers product', () => {
   test('DELETE /api/products/:id returns 403 when seller does not own the product', async ({ request }) => {
-    const res = await request.delete(`/api/products/${seller2ProductId}`, {
-      headers: authHeaders(seller1Token),
+    await test.step('Send DELETE /api/products/:id as seller1 on seller2 product and assert 403', async () => {
+      const res = await request.delete(`/api/products/${seller2ProductId}`, {
+        headers: authHeaders(seller1Token),
+      });
+      expect(res.status()).toBe(403);
+      const body = await res.json();
+      expect(body.message).toMatch(/not authorized/i);
     });
-    expect(res.status()).toBe(403);
-    const body = await res.json();
-    expect(body.message).toMatch(/not authorized/i);
   });
 });
 
@@ -128,25 +133,29 @@ test.describe('TC-054: Seller cannot delete another sellers product', () => {
 
 test.describe('TC-048: Invalid seller order status transition returns 400', () => {
   test('skipping from pending directly to shipped returns 400', async ({ request }) => {
-    // Create a fresh order as buyer
-    const orderRes = await request.post('/api/orders', {
-      data: {
-        items: [{ productId: seller1ProductId, quantity: 1 }],
-        shippingAddress: ADDR,
-        paymentMethod: COD,
-      },
-      headers: authHeaders(freshBuyerToken),
-    });
-    expect(orderRes.status()).toBe(201);
-    const orderId = (await orderRes.json()).orders[0]._id;
+    let orderId: string;
 
-    // Attempt invalid transition: pending → shipped (skips preparing + processing)
-    const res = await request.put(`/api/seller/orders/${orderId}/status`, {
-      data: { status: 'shipped' },
-      headers: authHeaders(seller1Token),
+    await test.step('Place fresh order as buyer', async () => {
+      const orderRes = await request.post('/api/orders', {
+        data: {
+          items: [{ productId: seller1ProductId, quantity: 1 }],
+          shippingAddress: ADDR,
+          paymentMethod: COD,
+        },
+        headers: authHeaders(freshBuyerToken),
+      });
+      expect(orderRes.status()).toBe(201);
+      orderId = (await orderRes.json()).orders[0]._id;
     });
-    expect(res.status()).toBe(400);
-    const body = await res.json();
-    expect(body.message).toMatch(/Cannot transition order from 'pending' to 'shipped'/i);
+
+    await test.step('Attempt invalid transition pending → shipped and assert 400', async () => {
+      const res = await request.put(`/api/seller/orders/${orderId}/status`, {
+        data: { status: 'shipped' },
+        headers: authHeaders(seller1Token),
+      });
+      expect(res.status()).toBe(400);
+      const body = await res.json();
+      expect(body.message).toMatch(/Cannot transition order from 'pending' to 'shipped'/i);
+    });
   });
 });
