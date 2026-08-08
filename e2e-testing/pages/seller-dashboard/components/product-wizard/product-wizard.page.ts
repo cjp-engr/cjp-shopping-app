@@ -105,6 +105,47 @@ export class ProductWizardPage {
     await this.publish();
   }
 
+  async editVariantProduct(changes: {
+    variantUpdates: { rowIndex: number; price?: string; stock?: string }[];
+    newValues?: { attrIndex: number; value: string; rowIndex: number; price: string; stock: string }[];
+  }): Promise<void> {
+    await this.basicInfo.continue();
+    for (const u of changes.variantUpdates) {
+      if (u.price !== undefined) {
+        await this.page
+          .getByTestId(`wizard-variant-row-${u.rowIndex}-price`)
+          .fill(u.price);
+      }
+      if (u.stock !== undefined) {
+        await this.page
+          .getByTestId(`wizard-variant-row-${u.rowIndex}-stock`)
+          .fill(u.stock);
+      }
+    }
+    for (const v of changes.newValues ?? []) {
+      await this.page
+        .getByTestId(`wizard-variant-attr-value-input-${v.attrIndex}`)
+        .fill(v.value);
+      await this.page
+        .getByTestId(`wizard-variant-attr-add-value-${v.attrIndex}`)
+        .click();
+      await this.page
+        .getByTestId(`wizard-variant-row-${v.rowIndex}-price`)
+        .waitFor({ state: 'visible' });
+      await this.page
+        .getByTestId(`wizard-variant-row-${v.rowIndex}-price`)
+        .fill(v.price);
+      await this.page
+        .getByTestId(`wizard-variant-row-${v.rowIndex}-stock`)
+        .fill(v.stock);
+    }
+    await this.pricing.continue();
+    await this.description.continue();
+    await this.images.continue();
+    await this.shipping.acceptDefaultAndContinue();
+    await this.publish();
+  }
+
   async createVariantProduct(opts: VariantProductOptions): Promise<void> {
     await this.fillBasicInfo({
       name: opts.name,
