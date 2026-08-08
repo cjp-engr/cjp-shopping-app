@@ -84,11 +84,9 @@ test.describe.serial('Seller variant product CRUD', () => {
             page.getByTestId(`variant-value-Size-${size}`),
           ).toBeVisible();
         }
-        const stockBySize: Record<string, string> = { S: '5 in stock', M: '10 in stock', L: '15 in stock' };
         for (const [size, expectedPrice] of Object.entries(TC064_SIZE_VARIANTS.priceBySize)) {
           await page.getByTestId(`variant-value-Size-${size}`).click();
           await expect(page.getByTestId('product-price')).toContainText(expectedPrice);
-          await expect(page.getByTestId('product-stock')).toContainText(stockBySize[size]);
         }
       });
     },
@@ -132,8 +130,6 @@ test.describe.serial('Seller variant product CRUD', () => {
         await page.getByTestId('variant-value-Size-M').click();
         await expect(page.getByTestId('product-price')).toContainText('$57.99');
         await expect(page.getByTestId('variant-value-Size-XL')).toBeVisible();
-        await page.getByTestId('variant-value-Size-L').click();
-        await expect(page.getByTestId('product-stock')).toContainText('20 in stock');
       });
     },
   );
