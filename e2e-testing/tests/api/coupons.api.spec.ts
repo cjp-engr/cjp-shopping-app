@@ -4,7 +4,6 @@ import { test, expect, request as pwRequest } from '@playwright/test';
 import {
   authHeaders, login,
   SELLER_EMAIL, TEST_PASSWORD,
-  SELLER_EMAIL, TEST_PASSWORD,
 } from '../../helpers/api-client';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
@@ -47,16 +46,18 @@ test.beforeAll(async () => {
 
 test.describe('TC-057: Coupon rejected when order is below minimum amount', () => {
   test('POST /api/coupons/validate returns 400 when orderAmount < minOrderAmount', async ({ request }) => {
-    const res = await request.post('/api/coupons/validate', {
-      data: {
-        code: couponCode,
-        sellerId,
-        orderAmount: 10,   // well below the $100 minimum
-      },
-      headers: authHeaders(buyerToken),
+    await test.step('Send validate request with order amount below $100 minimum', async () => {
+      const res = await request.post('/api/coupons/validate', {
+        data: {
+          code: couponCode,
+          sellerId,
+          orderAmount: 10,   // well below the $100 minimum
+        },
+        headers: authHeaders(buyerToken),
+      });
+      expect(res.status()).toBe(400);
+      const body = await res.json();
+      expect(body.message).toMatch(/minimum order/i);
     });
-    expect(res.status()).toBe(400);
-    const body = await res.json();
-    expect(body.message).toMatch(/minimum order/i);
   });
 });

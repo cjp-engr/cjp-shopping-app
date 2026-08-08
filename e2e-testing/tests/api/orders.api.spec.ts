@@ -7,7 +7,6 @@ import { test, expect, request as pwRequest } from '@playwright/test';
 import {
   authHeaders, login,
   SELLER_EMAIL, TEST_PASSWORD,
-  SELLER_EMAIL, TEST_PASSWORD,
   BUYER_EMAIL,
 } from '../../helpers/api-client';
 
@@ -65,18 +64,22 @@ test.beforeAll(async () => {
 
 test.describe('TC-026: Order total matches pricing formula', () => {
   test('tax is 8% of after-discount subtotal; total = afterDiscounts + tax + shipping', async ({ request }) => {
-    const res = await request.post('/api/orders', {
-      data: { items: [{ productId: cheapProductId, quantity: 1 }], shippingAddress: ADDR, paymentMethod: COD },
-      headers: authHeaders(buyerToken),
+    await test.step('Place order with cheap product', async () => {
+      const res = await request.post('/api/orders', {
+        data: { items: [{ productId: cheapProductId, quantity: 1 }], shippingAddress: ADDR, paymentMethod: COD },
+        headers: authHeaders(buyerToken),
+      });
+      expect(res.status()).toBe(201);
+
+      const { orders } = await res.json();
+      const o = orders[0];
+
+      await test.step('Assert tax = 8% of after-discount subtotal and total formula', async () => {
+        const afterDiscounts = o.subtotal - o.productDiscount - o.discount;
+        expect(o.tax).toBeCloseTo(afterDiscounts * 0.08, 2);
+        expect(o.total).toBeCloseTo(afterDiscounts + o.tax + o.shipping, 2);
+      });
     });
-    expect(res.status()).toBe(201);
-
-    const { orders } = await res.json();
-    const o = orders[0];
-
-    const afterDiscounts = o.subtotal - o.productDiscount - o.discount;
-    expect(o.tax).toBeCloseTo(afterDiscounts * 0.08, 2);
-    expect(o.total).toBeCloseTo(afterDiscounts + o.tax + o.shipping, 2);
   });
 });
 
@@ -84,18 +87,22 @@ test.describe('TC-026: Order total matches pricing formula', () => {
 
 test.describe('TC-027: Shipping $9.99 when effective subtotal < $50', () => {
   test('order with cheap product gets $9.99 default shipping', async ({ request }) => {
-    const res = await request.post('/api/orders', {
-      data: { items: [{ productId: cheapProductId, quantity: 1 }], shippingAddress: ADDR, paymentMethod: COD },
-      headers: authHeaders(buyerToken),
+    await test.step('Place order with $20 product (subtotal < $50)', async () => {
+      const res = await request.post('/api/orders', {
+        data: { items: [{ productId: cheapProductId, quantity: 1 }], shippingAddress: ADDR, paymentMethod: COD },
+        headers: authHeaders(buyerToken),
+      });
+      expect(res.status()).toBe(201);
+
+      const { orders } = await res.json();
+      const o = orders[0];
+      const afterDiscounts = o.subtotal - o.productDiscount - o.discount;
+
+      await test.step('Assert effective subtotal < $50 and shipping = $9.99', async () => {
+        expect(afterDiscounts).toBeLessThan(50);
+        expect(o.shipping).toBe(9.99);
+      });
     });
-    expect(res.status()).toBe(201);
-
-    const { orders } = await res.json();
-    const o = orders[0];
-    const afterDiscounts = o.subtotal - o.productDiscount - o.discount;
-
-    expect(afterDiscounts).toBeLessThan(50);
-    expect(o.shipping).toBe(9.99);
   });
 });
 
@@ -103,18 +110,22 @@ test.describe('TC-027: Shipping $9.99 when effective subtotal < $50', () => {
 
 test.describe('TC-028: Free shipping when effective subtotal >= $50', () => {
   test('order with expensive product gets $0 shipping', async ({ request }) => {
-    const res = await request.post('/api/orders', {
-      data: { items: [{ productId: expensiveProductId, quantity: 1 }], shippingAddress: ADDR, paymentMethod: COD },
-      headers: authHeaders(buyerToken),
+    await test.step('Place order with $99 product (subtotal >= $50)', async () => {
+      const res = await request.post('/api/orders', {
+        data: { items: [{ productId: expensiveProductId, quantity: 1 }], shippingAddress: ADDR, paymentMethod: COD },
+        headers: authHeaders(buyerToken),
+      });
+      expect(res.status()).toBe(201);
+
+      const { orders } = await res.json();
+      const o = orders[0];
+      const afterDiscounts = o.subtotal - o.productDiscount - o.discount;
+
+      await test.step('Assert effective subtotal >= $50 and shipping = $0', async () => {
+        expect(afterDiscounts).toBeGreaterThanOrEqual(50);
+        expect(o.shipping).toBe(0);
+      });
     });
-    expect(res.status()).toBe(201);
-
-    const { orders } = await res.json();
-    const o = orders[0];
-    const afterDiscounts = o.subtotal - o.productDiscount - o.discount;
-
-    expect(afterDiscounts).toBeGreaterThanOrEqual(50);
-    expect(o.shipping).toBe(0);
   });
 });
 
@@ -122,13 +133,18 @@ test.describe('TC-028: Free shipping when effective subtotal >= $50', () => {
 
 test.describe('TC-056: Insufficient stock at checkout returns 400', () => {
   test('POST /api/orders returns 400 when quantity exceeds stock', async ({ request }) => {
-    const res = await request.post('/api/orders', {
-      data: { items: [{ productId: cheapProductId, quantity: 99999 }], shippingAddress: ADDR, paymentMethod: COD },
-      headers: authHeaders(buyerToken),
+    await test.step('Place order with quantity 99999 (far exceeds stock)', async () => {
+      const res = await request.post('/api/orders', {
+        data: { items: [{ productId: cheapProductId, quantity: 99999 }], shippingAddress: ADDR, paymentMethod: COD },
+        headers: authHeaders(buyerToken),
+      });
+      expect(res.status()).toBe(400);
+
+      await test.step('Assert 400 with insufficient stock message', async () => {
+        const body = await res.json();
+        expect(body.message).toMatch(/insufficient stock/i);
+      });
     });
-    expect(res.status()).toBe(400);
-    const body = await res.json();
-    expect(body.message).toMatch(/insufficient stock/i);
   });
 });
 
@@ -136,30 +152,35 @@ test.describe('TC-056: Insufficient stock at checkout returns 400', () => {
 
 test.describe('TC-033: Buyer cannot cancel a processing order', () => {
   test('PUT /api/orders/:id/status returns 400 when order is in processing', async ({ request }) => {
-    // Create order as buyer
-    const orderRes = await request.post('/api/orders', {
-      data: { items: [{ productId: cheapProductId, quantity: 1 }], shippingAddress: ADDR, paymentMethod: COD },
-      headers: authHeaders(buyerToken),
-    });
-    expect(orderRes.status()).toBe(201);
-    const orderId = (await orderRes.json()).orders[0]._id;
+    let orderId: string;
 
-    // Seller advances: pending → preparing → processing
-    await request.put(`/api/seller/orders/${orderId}/status`, {
-      data: { status: 'preparing' },
-      headers: authHeaders(sellerToken),
-    });
-    await request.put(`/api/seller/orders/${orderId}/status`, {
-      data: { status: 'processing' },
-      headers: authHeaders(sellerToken),
+    await test.step('Place order as buyer', async () => {
+      const orderRes = await request.post('/api/orders', {
+        data: { items: [{ productId: cheapProductId, quantity: 1 }], shippingAddress: ADDR, paymentMethod: COD },
+        headers: authHeaders(buyerToken),
+      });
+      expect(orderRes.status()).toBe(201);
+      orderId = (await orderRes.json()).orders[0]._id;
     });
 
-    // Buyer attempts cancel → must fail
-    const cancelRes = await request.put(`/api/orders/${orderId}/status`, {
-      data: { cancelReason: 'Changed my mind' },
-      headers: authHeaders(buyerToken),
+    await test.step('Advance order to processing via seller (pending → preparing → processing)', async () => {
+      await request.put(`/api/seller/orders/${orderId}/status`, {
+        data: { status: 'preparing' },
+        headers: authHeaders(sellerToken),
+      });
+      await request.put(`/api/seller/orders/${orderId}/status`, {
+        data: { status: 'processing' },
+        headers: authHeaders(sellerToken),
+      });
     });
-    expect(cancelRes.status()).toBe(400);
+
+    await test.step('Attempt buyer cancel and assert 400', async () => {
+      const cancelRes = await request.put(`/api/orders/${orderId}/status`, {
+        data: { cancelReason: 'Changed my mind' },
+        headers: authHeaders(buyerToken),
+      });
+      expect(cancelRes.status()).toBe(400);
+    });
   });
 });
 
@@ -198,21 +219,25 @@ test.describe('TC-025: Multi-seller checkout creates separate orders', () => {
   });
 
   test('cart with items from 2 sellers creates 2 separate orders', async ({ request }) => {
-    const res = await request.post('/api/orders', {
-      data: {
-        items: [
-          { productId: cheapProductId,     quantity: 1 },
-          { productId: seller2ProductId,   quantity: 1 },
-        ],
-        shippingAddress: ADDR,
-        paymentMethod: COD,
-      },
-      headers: authHeaders(buyerToken),
-    });
-    expect(res.status()).toBe(201);
+    await test.step('Place order with items from seller1 and seller2', async () => {
+      const res = await request.post('/api/orders', {
+        data: {
+          items: [
+            { productId: cheapProductId,     quantity: 1 },
+            { productId: seller2ProductId,   quantity: 1 },
+          ],
+          shippingAddress: ADDR,
+          paymentMethod: COD,
+        },
+        headers: authHeaders(buyerToken),
+      });
+      expect(res.status()).toBe(201);
 
-    const { orders } = await res.json();
-    expect(orders).toHaveLength(2);
-    expect(orders[0]._id).not.toBe(orders[1]._id);
+      await test.step('Assert two separate orders are created', async () => {
+        const { orders } = await res.json();
+        expect(orders).toHaveLength(2);
+        expect(orders[0]._id).not.toBe(orders[1]._id);
+      });
+    });
   });
 });

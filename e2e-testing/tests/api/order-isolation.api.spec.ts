@@ -5,7 +5,6 @@ import { test, expect, request as pwRequest } from '@playwright/test';
 import {
   authHeaders, login,
   SELLER_EMAIL, TEST_PASSWORD,
-  SELLER_EMAIL, TEST_PASSWORD,
 } from '../../helpers/api-client';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
@@ -73,13 +72,15 @@ test.beforeAll(async () => {
 
 test.describe('TC-110: Order list isolation — buyer2 cannot see buyer1 orders', () => {
   test('GET /api/orders with buyer2 token does not return buyer1 order', async ({ request }) => {
-    const res = await request.get('/api/orders', {
-      headers: authHeaders(buyer2Token),
+    await test.step('Send GET /api/orders as buyer2 and assert buyer1 order is absent', async () => {
+      const res = await request.get('/api/orders', {
+        headers: authHeaders(buyer2Token),
+      });
+      expect(res.status()).toBe(200);
+      const body = await res.json();
+      const orderIds: string[] = (body.orders ?? []).map((o: any) => o._id);
+      expect(orderIds).not.toContain(buyer1OrderId);
     });
-    expect(res.status()).toBe(200);
-    const body = await res.json();
-    const orderIds: string[] = (body.orders ?? []).map((o: any) => o._id);
-    expect(orderIds).not.toContain(buyer1OrderId);
   });
 });
 
@@ -87,9 +88,11 @@ test.describe('TC-110: Order list isolation — buyer2 cannot see buyer1 orders'
 
 test.describe('TC-111: Order detail isolation — buyer2 gets 403 on buyer1 order', () => {
   test('GET /api/orders/:id returns 403 when buyer2 requests buyer1 order', async ({ request }) => {
-    const res = await request.get(`/api/orders/${buyer1OrderId}`, {
-      headers: authHeaders(buyer2Token),
+    await test.step('Send GET /api/orders/:id as buyer2 on buyer1 order and assert 403', async () => {
+      const res = await request.get(`/api/orders/${buyer1OrderId}`, {
+        headers: authHeaders(buyer2Token),
+      });
+      expect(res.status()).toBe(403);
     });
-    expect(res.status()).toBe(403);
   });
 });

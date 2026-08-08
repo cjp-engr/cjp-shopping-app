@@ -49,31 +49,37 @@ test.beforeAll(async () => {
 
 test.describe('Cart isolation: buyer2 cannot access buyer1 cart contents', () => {
   test('TC-107: GET /api/cart returns buyer1 items for buyer1', async ({ request }) => {
-    const res = await request.get('/api/cart', {
-      headers: authHeaders(buyer1Token),
+    await test.step('Send GET /api/cart as buyer1 and assert own items returned', async () => {
+      const res = await request.get('/api/cart', {
+        headers: authHeaders(buyer1Token),
+      });
+      expect(res.status()).toBe(200);
+      const { sellers } = await res.json();
+      const allProductIds = (sellers as any[]).flatMap(s =>
+        s.items.map((i: any) => i.product?._id ?? i.product?.toString()),
+      );
+      expect(allProductIds).toContain(testProductId);
     });
-    expect(res.status()).toBe(200);
-    const { sellers } = await res.json();
-    const allProductIds = (sellers as any[]).flatMap(s =>
-      s.items.map((i: any) => i.product?._id ?? i.product?.toString()),
-    );
-    expect(allProductIds).toContain(testProductId);
   });
 
   test('TC-108: GET /api/cart returns empty cart for buyer2, not buyer1 items', async ({ request }) => {
-    const res = await request.get('/api/cart', {
-      headers: authHeaders(buyer2Token),
+    await test.step('Send GET /api/cart as buyer2 and assert buyer1 items are absent', async () => {
+      const res = await request.get('/api/cart', {
+        headers: authHeaders(buyer2Token),
+      });
+      expect(res.status()).toBe(200);
+      const { sellers } = await res.json();
+      const allProductIds = (sellers as any[]).flatMap(s =>
+        s.items.map((i: any) => i.product?._id ?? i.product?.toString()),
+      );
+      expect(allProductIds).not.toContain(testProductId);
     });
-    expect(res.status()).toBe(200);
-    const { sellers } = await res.json();
-    const allProductIds = (sellers as any[]).flatMap(s =>
-      s.items.map((i: any) => i.product?._id ?? i.product?.toString()),
-    );
-    expect(allProductIds).not.toContain(testProductId);
   });
 
   test('GET /api/cart without auth returns 401', async ({ request }) => {
-    const res = await request.get('/api/cart');
-    expect(res.status()).toBe(401);
+    await test.step('Send GET /api/cart without auth token and assert 401', async () => {
+      const res = await request.get('/api/cart');
+      expect(res.status()).toBe(401);
+    });
   });
 });

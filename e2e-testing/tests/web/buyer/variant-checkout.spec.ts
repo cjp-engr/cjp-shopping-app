@@ -33,73 +33,82 @@ test.describe('TC-098: Checkout COD with variant product', () => {
       checkoutPage,
       orderDetailPage,
     }) => {
-      const sellerToken = await loginSeller(request, API_URL);
-      const seed = await createVariantProductForCheckout(
-        request,
-        API_URL,
-        sellerToken,
-      );
-      const variantM = variantBySize(seed.variants, SELECTED_SIZE);
+      let seed: Awaited<ReturnType<typeof createVariantProductForCheckout>>;
+      let variantM: ReturnType<typeof variantBySize>;
+      let mStockBefore: number;
+      let sStockBefore: number;
+      let orderId: string;
 
-      const stockBefore = await fetchProduct(request, API_URL, seed.productId);
-      const sStockBefore = variantBySize(stockBefore.variants, 'S').stock;
-      const mStockBefore = variantBySize(stockBefore.variants, 'M').stock;
+      await test.step('Seed variant product and capture stock snapshot', async () => {
+        const sellerToken = await loginSeller(request, API_URL);
+        seed = await createVariantProductForCheckout(request, API_URL, sellerToken);
+        variantM = variantBySize(seed.variants, SELECTED_SIZE);
 
-      await productDetailPage.goto(seed.productId);
-      await productDetailPage.selectSizeAndAddToCart(
-        SELECTED_SIZE,
-        TC064_SIZE_VARIANTS.priceBySize.M,
-      );
+        const stockBefore = await fetchProduct(request, API_URL, seed.productId);
+        sStockBefore = variantBySize(stockBefore.variants, 'S').stock;
+        mStockBefore = variantBySize(stockBefore.variants, 'M').stock;
+      });
 
-      await cartPage.open();
-      await cartPage.expectVariantLineItem(
-        seed.productId,
-        variantM.id,
-        SELECTED_SIZE,
-        '54.99',
-      );
+      await test.step('Select variant M and add to cart', async () => {
+        await productDetailPage.goto(seed.productId);
+        await productDetailPage.selectSizeAndAddToCart(
+          SELECTED_SIZE,
+          TC064_SIZE_VARIANTS.priceBySize.M,
+        );
+      });
 
-      await cartPage.proceedToCheckout();
-      await checkoutPage.completeCodCheckout(DEFAULT_SHIPPING_ADDRESS);
+      await test.step('Verify variant M line item in cart', async () => {
+        await cartPage.open();
+        await cartPage.expectVariantLineItem(
+          seed.productId,
+          variantM.id,
+          SELECTED_SIZE,
+          '54.99',
+        );
+      });
 
-      await expect(page).toHaveURL(/\/orders\?success=/, { timeout: 15_000 });
-      const orderId = new URL(page.url()).searchParams.get('success');
-      expect(orderId).toBeTruthy();
+      await test.step('Proceed to checkout and complete COD', async () => {
+        await cartPage.proceedToCheckout();
+        await checkoutPage.completeCodCheckout(DEFAULT_SHIPPING_ADDRESS);
+      });
 
-      const order = await fetchOrder(
-        request,
-        API_URL,
-        orderId!,
-        getBuyerToken(),
-      );
-      const item = (order.items as unknown[])[0] as {
-        variantId: string;
-        selectedAttributes: { Size: string };
-        productPrice: number;
-        productImage?: string;
-      };
-      expect(order.items).toHaveLength(1);
-      expect(item.variantId).toBe(variantM.id);
-      expect(item.selectedAttributes.Size).toBe(SELECTED_SIZE);
-      expect(item.productPrice).toBe(54.99);
-      if (variantM.image) {
-        expect(item.productImage).toBe(variantM.image);
-      }
-      expect(order.status).toBe('pending');
-      expect(
-        (order.paymentMethod as { type?: string })?.type ?? order.paymentMethod,
-      ).toMatch(/cash/i);
+      await test.step('Verify redirect to orders page and extract order ID', async () => {
+        await expect(page).toHaveURL(/\/orders\?success=/, { timeout: 15_000 });
+        orderId = new URL(page.url()).searchParams.get('success')!;
+        expect(orderId).toBeTruthy();
+      });
 
-      await orderDetailPage.goto(orderId!);
-      await orderDetailPage.expectVariantLine(
-        seed.productId,
-        SELECTED_SIZE,
-        '$54.99',
-      );
+      await test.step('Verify order record contains correct variant data', async () => {
+        const order = await fetchOrder(request, API_URL, orderId, getBuyerToken());
+        const item = (order.items as unknown[])[0] as {
+          variantId: string;
+          selectedAttributes: { Size: string };
+          productPrice: number;
+          productImage?: string;
+        };
+        expect(order.items).toHaveLength(1);
+        expect(item.variantId).toBe(variantM.id);
+        expect(item.selectedAttributes.Size).toBe(SELECTED_SIZE);
+        expect(item.productPrice).toBe(54.99);
+        if (variantM.image) {
+          expect(item.productImage).toBe(variantM.image);
+        }
+        expect(order.status).toBe('pending');
+        expect(
+          (order.paymentMethod as { type?: string })?.type ?? order.paymentMethod,
+        ).toMatch(/cash/i);
+      });
 
-      const stockAfter = await fetchProduct(request, API_URL, seed.productId);
-      expect(variantBySize(stockAfter.variants, 'S').stock).toBe(sStockBefore);
-      expect(variantBySize(stockAfter.variants, 'M').stock).toBe(mStockBefore - 1);
+      await test.step('Verify variant line on order detail page', async () => {
+        await orderDetailPage.goto(orderId);
+        await orderDetailPage.expectVariantLine(seed.productId, SELECTED_SIZE, '$54.99');
+      });
+
+      await test.step('Verify stock deducted for M, unchanged for S', async () => {
+        const stockAfter = await fetchProduct(request, API_URL, seed.productId);
+        expect(variantBySize(stockAfter.variants, 'S').stock).toBe(sStockBefore);
+        expect(variantBySize(stockAfter.variants, 'M').stock).toBe(mStockBefore - 1);
+      });
     });
 });
 
@@ -119,87 +128,94 @@ test.describe('TC-105: Checkout New card with variant product',
         checkoutPage,
         orderDetailPage,
       }) => {
-        const sellerToken = await loginSeller(request, API_URL);
-        const seed = await createVariantProductForCheckout(
-          request,
-          API_URL,
-          sellerToken,
-        );
-        const variantM = variantBySize(seed.variants, SELECTED_SIZE);
+        let seed: Awaited<ReturnType<typeof createVariantProductForCheckout>>;
+        let variantM: ReturnType<typeof variantBySize>;
+        let mStockBefore: number;
+        let sStockBefore: number;
+        let orderId: string;
 
-        const stockBefore = await fetchProduct(request, API_URL, seed.productId);
-        const sStockBefore = variantBySize(stockBefore.variants, 'S').stock;
-        const mStockBefore = variantBySize(stockBefore.variants, 'M').stock;
+        await test.step('Seed variant product and capture stock snapshot', async () => {
+          const sellerToken = await loginSeller(request, API_URL);
+          seed = await createVariantProductForCheckout(request, API_URL, sellerToken);
+          variantM = variantBySize(seed.variants, SELECTED_SIZE);
 
-        await productDetailPage.goto(seed.productId);
-        await productDetailPage.selectSizeAndAddToCart(
-          SELECTED_SIZE,
-          TC064_SIZE_VARIANTS.priceBySize.M,
-        );
-
-        await cartPage.open();
-        await cartPage.expectVariantLineItem(
-          seed.productId,
-          variantM.id,
-          SELECTED_SIZE,
-          '54.99',
-        );
-
-        await cartPage.proceedToCheckout();
-        await checkoutPage.root.waitFor();
-
-        // Fill shipping, enter new credit card details, place order
-        await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
-        await checkoutPage.continueToPayment();
-        await checkoutPage.fillNewCardForm({
-          type: 'credit-card',
-          cardNumber: '4111111111111111',
-          cardHolder: 'Test Buyer',
-          expiryMonth: '12',
-          expiryYear: String(new Date().getFullYear() + 2),
-          cvv: '123',
+          const stockBefore = await fetchProduct(request, API_URL, seed.productId);
+          sStockBefore = variantBySize(stockBefore.variants, 'S').stock;
+          mStockBefore = variantBySize(stockBefore.variants, 'M').stock;
         });
-        await checkoutPage.continueToReview();
-        await checkoutPage.placeOrder();
 
-        await expect(page).toHaveURL(/\/orders\?success=/, { timeout: 15_000 });
-        const orderId = new URL(page.url()).searchParams.get('success');
-        expect(orderId).toBeTruthy();
+        await test.step('Select variant M and add to cart', async () => {
+          await productDetailPage.goto(seed.productId);
+          await productDetailPage.selectSizeAndAddToCart(
+            SELECTED_SIZE,
+            TC064_SIZE_VARIANTS.priceBySize.M,
+          );
+        });
 
-        const order = await fetchOrder(
-          request,
-          API_URL,
-          orderId!,
-          getBuyerToken(),
-        );
-        const item = (order.items as unknown[])[0] as {
-          variantId: string;
-          selectedAttributes: { Size: string };
-          productPrice: number;
-          productImage?: string;
-        };
-        expect(order.items).toHaveLength(1);
-        expect(item.variantId).toBe(variantM.id);
-        expect(item.selectedAttributes.Size).toBe(SELECTED_SIZE);
-        expect(item.productPrice).toBe(54.99);
-        if (variantM.image) {
-          expect(item.productImage).toBe(variantM.image);
-        }
-        expect(order.status).toBe('pending');
-        expect(
-          (order.paymentMethod as { type?: string })?.type ?? order.paymentMethod,
-        ).toMatch(/credit/i);
+        await test.step('Verify variant M line item in cart', async () => {
+          await cartPage.open();
+          await cartPage.expectVariantLineItem(
+            seed.productId,
+            variantM.id,
+            SELECTED_SIZE,
+            '54.99',
+          );
+        });
 
-        await orderDetailPage.goto(orderId!);
-        await orderDetailPage.expectVariantLine(
-          seed.productId,
-          SELECTED_SIZE,
-          '$54.99',
-        );
+        await test.step('Proceed to checkout, enter new card, and place order', async () => {
+          await cartPage.proceedToCheckout();
+          await checkoutPage.root.waitFor();
+          await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
+          await checkoutPage.continueToPayment();
+          await checkoutPage.fillNewCardForm({
+            type: 'credit-card',
+            cardNumber: '4111111111111111',
+            cardHolder: 'Test Buyer',
+            expiryMonth: '12',
+            expiryYear: String(new Date().getFullYear() + 2),
+            cvv: '123',
+          });
+          await checkoutPage.continueToReview();
+          await checkoutPage.placeOrder();
+        });
 
-        const stockAfter = await fetchProduct(request, API_URL, seed.productId);
-        expect(variantBySize(stockAfter.variants, 'S').stock).toBe(sStockBefore);
-        expect(variantBySize(stockAfter.variants, 'M').stock).toBe(mStockBefore - 1);
+        await test.step('Verify redirect to orders page and extract order ID', async () => {
+          await expect(page).toHaveURL(/\/orders\?success=/, { timeout: 15_000 });
+          orderId = new URL(page.url()).searchParams.get('success')!;
+          expect(orderId).toBeTruthy();
+        });
+
+        await test.step('Verify order record contains correct variant data', async () => {
+          const order = await fetchOrder(request, API_URL, orderId, getBuyerToken());
+          const item = (order.items as unknown[])[0] as {
+            variantId: string;
+            selectedAttributes: { Size: string };
+            productPrice: number;
+            productImage?: string;
+          };
+          expect(order.items).toHaveLength(1);
+          expect(item.variantId).toBe(variantM.id);
+          expect(item.selectedAttributes.Size).toBe(SELECTED_SIZE);
+          expect(item.productPrice).toBe(54.99);
+          if (variantM.image) {
+            expect(item.productImage).toBe(variantM.image);
+          }
+          expect(order.status).toBe('pending');
+          expect(
+            (order.paymentMethod as { type?: string })?.type ?? order.paymentMethod,
+          ).toMatch(/credit/i);
+        });
+
+        await test.step('Verify variant line on order detail page', async () => {
+          await orderDetailPage.goto(orderId);
+          await orderDetailPage.expectVariantLine(seed.productId, SELECTED_SIZE, '$54.99');
+        });
+
+        await test.step('Verify stock deducted for M, unchanged for S', async () => {
+          const stockAfter = await fetchProduct(request, API_URL, seed.productId);
+          expect(variantBySize(stockAfter.variants, 'S').stock).toBe(sStockBefore);
+          expect(variantBySize(stockAfter.variants, 'M').stock).toBe(mStockBefore - 1);
+        });
       });
   });
 
@@ -219,80 +235,87 @@ test.describe('TC-106: Checkout Saved card with variant product',
         checkoutPage,
         orderDetailPage,
       }) => {
-        const sellerToken = await loginSeller(request, API_URL);
-        const seed = await createVariantProductForCheckout(
-          request,
-          API_URL,
-          sellerToken,
-        );
-        const variantM = variantBySize(seed.variants, SELECTED_SIZE);
+        let seed: Awaited<ReturnType<typeof createVariantProductForCheckout>>;
+        let variantM: ReturnType<typeof variantBySize>;
+        let mStockBefore: number;
+        let sStockBefore: number;
+        let orderId: string;
 
-        const stockBefore = await fetchProduct(request, API_URL, seed.productId);
-        const sStockBefore = variantBySize(stockBefore.variants, 'S').stock;
-        const mStockBefore = variantBySize(stockBefore.variants, 'M').stock;
+        await test.step('Seed variant product and capture stock snapshot', async () => {
+          const sellerToken = await loginSeller(request, API_URL);
+          seed = await createVariantProductForCheckout(request, API_URL, sellerToken);
+          variantM = variantBySize(seed.variants, SELECTED_SIZE);
 
-        await productDetailPage.goto(seed.productId);
-        await productDetailPage.selectSizeAndAddToCart(
-          SELECTED_SIZE,
-          TC064_SIZE_VARIANTS.priceBySize.M,
-        );
+          const stockBefore = await fetchProduct(request, API_URL, seed.productId);
+          sStockBefore = variantBySize(stockBefore.variants, 'S').stock;
+          mStockBefore = variantBySize(stockBefore.variants, 'M').stock;
+        });
 
-        await cartPage.open();
-        await cartPage.expectVariantLineItem(
-          seed.productId,
-          variantM.id,
-          SELECTED_SIZE,
-          '54.99',
-        );
+        await test.step('Select variant M and add to cart', async () => {
+          await productDetailPage.goto(seed.productId);
+          await productDetailPage.selectSizeAndAddToCart(
+            SELECTED_SIZE,
+            TC064_SIZE_VARIANTS.priceBySize.M,
+          );
+        });
 
-        await cartPage.proceedToCheckout();
-        await checkoutPage.root.waitFor();
+        await test.step('Verify variant M line item in cart', async () => {
+          await cartPage.open();
+          await cartPage.expectVariantLineItem(
+            seed.productId,
+            variantM.id,
+            SELECTED_SIZE,
+            '54.99',
+          );
+        });
 
-        // Fill shipping, enter new credit card details, place order
-        await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
-        await checkoutPage.continueToPayment();
-        await checkoutPage.selectSavedCard();
-        await checkoutPage.continueToReview();
-        await checkoutPage.placeOrder();
+        await test.step('Proceed to checkout, select saved card, and place order', async () => {
+          await cartPage.proceedToCheckout();
+          await checkoutPage.root.waitFor();
+          await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
+          await checkoutPage.continueToPayment();
+          await checkoutPage.selectSavedCard();
+          await checkoutPage.continueToReview();
+          await checkoutPage.placeOrder();
+        });
 
-        await expect(page).toHaveURL(/\/orders\?success=/, { timeout: 15_000 });
-        const orderId = new URL(page.url()).searchParams.get('success');
-        expect(orderId).toBeTruthy();
+        await test.step('Verify redirect to orders page and extract order ID', async () => {
+          await expect(page).toHaveURL(/\/orders\?success=/, { timeout: 15_000 });
+          orderId = new URL(page.url()).searchParams.get('success')!;
+          expect(orderId).toBeTruthy();
+        });
 
-        const order = await fetchOrder(
-          request,
-          API_URL,
-          orderId!,
-          getBuyerToken(),
-        );
-        const item = (order.items as unknown[])[0] as {
-          variantId: string;
-          selectedAttributes: { Size: string };
-          productPrice: number;
-          productImage?: string;
-        };
-        expect(order.items).toHaveLength(1);
-        expect(item.variantId).toBe(variantM.id);
-        expect(item.selectedAttributes.Size).toBe(SELECTED_SIZE);
-        expect(item.productPrice).toBe(54.99);
-        if (variantM.image) {
-          expect(item.productImage).toBe(variantM.image);
-        }
-        expect(order.status).toBe('pending');
-        expect(
-          (order.paymentMethod as { type?: string })?.type ?? order.paymentMethod,
-        ).toMatch(/credit/i);
+        await test.step('Verify order record contains correct variant data', async () => {
+          const order = await fetchOrder(request, API_URL, orderId, getBuyerToken());
+          const item = (order.items as unknown[])[0] as {
+            variantId: string;
+            selectedAttributes: { Size: string };
+            productPrice: number;
+            productImage?: string;
+          };
+          expect(order.items).toHaveLength(1);
+          expect(item.variantId).toBe(variantM.id);
+          expect(item.selectedAttributes.Size).toBe(SELECTED_SIZE);
+          expect(item.productPrice).toBe(54.99);
+          if (variantM.image) {
+            expect(item.productImage).toBe(variantM.image);
+          }
+          expect(order.status).toBe('pending');
+          expect(
+            (order.paymentMethod as { type?: string })?.type ?? order.paymentMethod,
+          ).toMatch(/credit/i);
+        });
 
-        await orderDetailPage.goto(orderId!);
-        await orderDetailPage.expectVariantLine(
-          seed.productId,
-          SELECTED_SIZE,
-          '$54.99',
-        );
+        await test.step('Verify variant line on order detail page', async () => {
+          await orderDetailPage.goto(orderId);
+          await orderDetailPage.expectVariantLine(seed.productId, SELECTED_SIZE, '$54.99');
+        });
 
-        const stockAfter = await fetchProduct(request, API_URL, seed.productId);
-        expect(variantBySize(stockAfter.variants, 'S').stock).toBe(sStockBefore);
-        expect(variantBySize(stockAfter.variants, 'M').stock).toBe(mStockBefore - 1);
+        await test.step('Verify stock deducted for M, unchanged for S', async () => {
+          const stockAfter = await fetchProduct(request, API_URL, seed.productId);
+          expect(variantBySize(stockAfter.variants, 'S').stock).toBe(sStockBefore);
+          expect(variantBySize(stockAfter.variants, 'M').stock).toBe(mStockBefore - 1);
+        });
       });
 
   });
