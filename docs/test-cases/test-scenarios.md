@@ -1230,21 +1230,71 @@
 
 ---
 
-### TC-045: Preview product as buyer via My Products page
+### TC-045: Preview simple product as buyer via My Products page
 **Category**: Happy Path  
 **Priority**: P2  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Playwright  
-**Preconditions**: Seller with listed products  
+**Preconditions**: Seller has an existing simple product (no variants)  
 **Steps**:
-1. Navigate to `/my-products`
-2. Open product preview
+1. Navigate to `/my-products` (`nav-link-my-products`)
+2. Click preview on a simple product card
 **Expected Results**:
-- Buyer-view rendering of own product
+- Product detail page renders in buyer view (no edit controls visible)
+- Product name, price, and description are displayed correctly
+- Add to cart button is not functional for the seller's own product
 **Business Rule**: §9 Platform — `/my-products` web-only  
-**Selectors/API**: `my-products-page`, `nav-link-my-products`  
+**Selectors/API**: `my-products-page`, `nav-link-my-products`, `product-detail-page`  
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-121: Preview variant product as buyer via My Products page
+**Category**: Happy Path  
+**Priority**: P2  
+**Role**: Seller  
+**Platform**: Web  
+**Parity**: Web-only  
+**Automation**: Playwright  
+**Preconditions**: Seller has an existing variant product (e.g. created via TC-064)  
+**Steps**:
+1. Navigate to `/my-products` (`nav-link-my-products`)
+2. Click preview on a variant product card
+3. Select each available variant option
+**Expected Results**:
+- Product detail page renders in buyer view
+- Variant selectors are present and selectable (`variant-value-{attr}-{value}`)
+- Price and stock update correctly when switching variants
+- Add to cart button is not functional for the seller's own product
+**Business Rule**: §9 Platform — `/my-products` web-only; §2 Variant display  
+**Selectors/API**: `my-products-page`, `product-detail-page`, `variant-value-{attr}-{value}`, `product-price`  
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-122: Seller views product list on My Products page
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Seller  
+**Platform**: Web  
+**Parity**: Web-only  
+**Automation**: Playwright  
+**Preconditions**: Seller has at least one simple and one variant product  
+**Steps**:
+1. Navigate to `/my-products` (`nav-link-my-products`)
+2. Verify the product list loads
+3. Confirm each product card shows the correct name and price
+4. Confirm edit and delete actions are present on each card
+**Expected Results**:
+- `my-products-page` is visible
+- All seller-owned products appear as `product-item-{id}` cards
+- Each card shows product name and price
+- `edit-product-{id}` and `delete-product-{id}` controls are present on each card
+- Products not owned by this seller are not listed
+**Business Rule**: §2 Product catalog — seller sees only own products  
+**Selectors/API**: `my-products-page`, `nav-link-my-products`, `product-item-{id}`, `edit-product-{id}`, `delete-product-{id}`  
 **Suggested Layer**: E2E Web
 
 ---
