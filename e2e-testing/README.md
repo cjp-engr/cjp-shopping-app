@@ -9,6 +9,48 @@ Web UI and API tests for TokoMart in one Playwright project.
 
 Mobile tests remain in `frontend-mobile/patrol_test/` (Patrol).
 
+## Workflow
+
+```mermaid
+flowchart TD
+    BE["Backend :5000\nnpm run seed · npm run dev"]
+    FE["Frontend :5173\nnpm run dev · web tests only"]
+
+    subgraph SETUP["AUTH SETUP — serial, runs once"]
+        BS["buyer-setup.ts\nPOST /auth/login → localStorage"] -->|saves| BJ[".auth/buyer.json\nstorageState snapshot"]
+        SS["seller-setup.ts\nlogin + PUT /profile role=seller"] -->|saves| SJ[".auth/seller.json\nstorageState snapshot"]
+    end
+
+    subgraph PROJECTS["TEST PROJECTS — fully parallel"]
+        direction LR
+        API["api\ntests/api/\nrequest fixture only\nno storageState\n10 spec files"]
+        WB["web-buyer\ntests/web/buyer/\ndeps: buyer-setup\nstorageState: buyer.json\n5 spec files"]
+        WS["web-seller\ntests/web/seller/\ndeps: seller-setup\nstorageState: seller.json\n4 spec files"]
+        WM["web-mixed\ntests/web/mixed/\ndeps: both setups\nno storageState · switchRole\n4 spec files"]
+    end
+
+    subgraph INFRA["SHARED INFRASTRUCTURE"]
+        direction LR
+        FX["base-fixture.ts\npage objects · switchRole · request"]
+        HC["helpers/api-client.ts\nlogin · authHeaders · signupFreshUser"]
+        PO["pages/ — Page Objects\nCartPage · CheckoutPage · …"]
+    end
+
+    subgraph REPORTS["REPORTS"]
+        direction LR
+        HR["HTML Report\nnpm run report"]
+        AR["Allure Report\nallure serve allure-results/"]
+    end
+
+    BE --> SETUP
+    FE --> SETUP
+    SETUP --> PROJECTS
+    BJ -->|storageState| WB
+    SJ -->|storageState| WS
+    PROJECTS --> INFRA
+    INFRA --> REPORTS
+```
+
 ---
 
 ## Best Practices
@@ -116,18 +158,25 @@ Generated tests land here; map each file to `TC-*` IDs in comments.
 | `seller-access.api.spec.ts` | TC-048, TC-053, TC-054 | Buyer blocked from seller routes, cross-seller edit/delete blocked, invalid status transition |
 | `reviews.api.spec.ts` | TC-035, TC-036 | Duplicate review blocked, review before delivery blocked |
 | `coupons.api.spec.ts` | TC-057 | Coupon below minimum order amount |
-| `cart.api.spec.ts` | TC-107, TC-108 | Cart returns buyer's own items, cart isolation between buyers |
+| `cart.api.spec.ts` | TC-107, TC-108, TC-109 | Cart returns buyer's own items, cart isolation between buyers |
 | `order-isolation.api.spec.ts` | TC-110, TC-111 | Order list isolation, order detail ownership (403) |
+| `rate-limit.api.spec.ts` | TC-114–TC-119 | Rate limiting across auth, orders, and review endpoints |
+| `users.api.spec.ts` | TC-113 | User profile read and update |
 
 ### Web E2E (`tests/web/`)
 
 | File | TC IDs | Description |
 |------|--------|-------------|
 | `buyer/login.spec.ts` | TC-001 | Buyer login, authenticated navbar |
+| `buyer/product-browse.spec.ts` | TC-010, TC-011 | Search by keyword, filter by category |
+| `buyer/product-detail.spec.ts` | TC-012, TC-013, TC-014 | Sale price display, variant selection, add-to-cart guard |
 | `buyer/checkout.spec.ts` | TC-022, TC-023, TC-024 | Checkout COD, saved card, new card |
 | `buyer/variant-checkout.spec.ts` | TC-098, TC-105, TC-106 | Checkout with variant product across payment methods |
-| `seller/seller-product-wizard.spec.ts` | TC-042, TC-064 | Seller creates simple and variant products |
+| `seller/seller-product-wizard.spec.ts` | TC-064 | Seller creates variant product via wizard, verifies on detail page |
+| `seller/seller-simple-product-crud.spec.ts` | TC-042, TC-044, TC-045, TC-046, TC-122 | Simple product CRUD: create, edit, preview, delete, My Products list |
+| `seller/seller-variant-product-crud.spec.ts` | TC-120, TC-121, TC-046 | Variant product edit, buyer preview, delete |
 | `seller/seller-access.spec.ts` | TC-054 | Seller dashboard shows only own products |
 | `mixed/cart-isolation.spec.ts` | TC-109 | Buyer2 sees own empty cart, not buyer1's items |
 | `mixed/order-isolation.spec.ts` | TC-112 | Buyer2 sees only own order history, not buyer1's orders |
+| `mixed/product-catalog-visibility.spec.ts` | TC-008, TC-065 | Guest browse, seller listing visible to buyer in catalog |
 | `mixed/role-switch.smoke.spec.ts` | — | Auth state switching smoke test |

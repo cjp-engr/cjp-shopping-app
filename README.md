@@ -143,6 +143,86 @@ shopping-app-automation/
 └── README.md
 ```
 
+## Workflows
+
+### A) TokoMart Application Flow
+
+```mermaid
+flowchart LR
+    AUTH["Auth\n/login · /signup\nJWT → localStorage"]
+
+    subgraph BUYER["BUYER JOURNEY"]
+        direction TB
+        B1["Browse Products\n/products"] --> B2["Product Detail\n/products/:id"]
+        B2 --> B3["Add to Cart\n/cart"]
+        B3 --> B4["Checkout\n/checkout\nshipping → payment → review"]
+        B4 --> B5["Order Placed\n/orders/:id"]
+        B5 --> B6["Confirm Received\nLeave Review"]
+    end
+
+    subgraph SELLER["SELLER JOURNEY"]
+        direction TB
+        S1["Seller Dashboard\n/seller"] --> S2["Product Wizard\n7-step form"]
+        S2 --> S3["My Products\nlist · edit · delete"]
+        S1 --> S4["Order Management\nview + update status"]
+        S4 --> S5["Cancel with reason\nor advance to Shipped"]
+    end
+
+    AUTH --> BUYER
+    AUTH --> SELLER
+```
+
+### B) Test Automation Workflow
+
+See [`e2e-testing/README.md`](e2e-testing/README.md#workflow) for the full Playwright workflow diagram — auth setup → parallel test projects → shared infrastructure → reports.
+
+### C) Order Status Flow
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending : POST /api/orders
+
+    pending --> preparing : seller
+    preparing --> processing : seller
+    processing --> shipped : seller
+    shipped --> delivered : seller · or auto after 2 days
+
+    pending --> cancelled : buyer or seller
+    preparing --> cancelled : buyer or seller
+    processing --> cancelled : seller only
+
+    delivered --> [*]
+    cancelled --> [*]
+```
+
+Stock is restored automatically when an order is cancelled. Once `delivered`, no further transitions are allowed.
+
+### D) Authentication Flow
+
+```mermaid
+flowchart TD
+    A["User visits app"] --> B{"Logged in?"}
+    B -->|no| C["/login or /signup"]
+    C --> D["POST /api/auth/login\nor /api/auth/signup"]
+    D --> E["JWT returned\n(expires 7 days)"]
+    E --> F["Stored in localStorage\nAuthContext loads user"]
+    B -->|yes| F
+    F --> G{"Role?"}
+    G -->|buyer| H["Buyer UI\nBrowse · Cart · Orders · Profile"]
+    G -->|seller| I["Seller UI\nDashboard · Products · Orders"]
+    H --> J["Become a Seller\nProfile → toggle role"]
+    J --> K["PUT /api/auth/profile\n{ role: 'seller' } — one-way"]
+    K --> I
+
+    subgraph PW["Playwright E2E Setup (runs once before tests)"]
+        direction LR
+        P1["buyer-setup.ts\nAPI login → .auth/buyer.json"]
+        P2["seller-setup.ts\nAPI login + role promote → .auth/seller.json"]
+    end
+```
+
+---
+
 ## How This Was Built
 
 This project was built using an AI-assisted workflow powered by Claude Code. Each feature started with a structured design session, was broken into a step-by-step implementation plan, then executed by fresh subagents — one per task — with automated review gates between them. The same pipeline drives the test suite: scenario design → strategy → code generation → review.
@@ -335,20 +415,27 @@ Or register a new account via the Sign Up page. To create a seller account, regi
 | File | TC IDs | Layer |
 |---|---|---|
 | `tests/web/buyer/login.spec.ts` | TC-001 | E2E Web |
+| `tests/web/buyer/product-browse.spec.ts` | TC-010, TC-011 | E2E Web |
+| `tests/web/buyer/product-detail.spec.ts` | TC-012, TC-013, TC-014 | E2E Web |
 | `tests/web/buyer/checkout.spec.ts` | TC-022, TC-023, TC-024 | E2E Web |
 | `tests/web/buyer/variant-checkout.spec.ts` | TC-098, TC-105, TC-106 | E2E Web |
-| `tests/web/seller/seller-product-wizard.spec.ts` | TC-042, TC-064 | E2E Web |
+| `tests/web/seller/seller-product-wizard.spec.ts` | TC-064 | E2E Web |
+| `tests/web/seller/seller-simple-product-crud.spec.ts` | TC-042, TC-044, TC-045, TC-046, TC-122 | E2E Web |
+| `tests/web/seller/seller-variant-product-crud.spec.ts` | TC-120, TC-121, TC-046 | E2E Web |
 | `tests/web/seller/seller-access.spec.ts` | TC-054 | E2E Web |
 | `tests/web/mixed/cart-isolation.spec.ts` | TC-109 | E2E Web |
 | `tests/web/mixed/order-isolation.spec.ts` | TC-112 | E2E Web |
+| `tests/web/mixed/product-catalog-visibility.spec.ts` | TC-008, TC-065 | E2E Web |
+| `tests/web/mixed/role-switch.smoke.spec.ts` | — | E2E Web |
 | `tests/api/auth.api.spec.ts` | — | API |
 | `tests/api/health.api.spec.ts` | — | API |
 | `tests/api/orders.api.spec.ts` | TC-025, TC-026, TC-027, TC-028, TC-033, TC-056 | API |
 | `tests/api/seller-access.api.spec.ts` | TC-048, TC-053, TC-054 | API |
 | `tests/api/reviews.api.spec.ts` | TC-035, TC-036 | API |
 | `tests/api/coupons.api.spec.ts` | TC-057 | API |
-| `tests/api/cart.api.spec.ts` | TC-107, TC-108 | API |
+| `tests/api/cart.api.spec.ts` | TC-107, TC-108, TC-109 | API |
 | `tests/api/order-isolation.api.spec.ts` | TC-110, TC-111 | API |
+| `tests/api/rate-limit.api.spec.ts` | TC-114–TC-119 | API |
 | `tests/api/users.api.spec.ts` | TC-113 | API |
 
 Full coverage details: [`e2e-testing/README.md`](e2e-testing/README.md)
@@ -470,11 +557,7 @@ All protected endpoints require `Authorization: Bearer <token>`.
 
 ## Order Status Flow
 
-```
-pending → preparing → processing → shipped → delivered
-                ↘              ↘          ↘
-                           cancelled (from any non-terminal state)
-```
+See [Order Status Flow diagram](#c-order-status-flow) above.
 
 Stock is restored automatically when an order is cancelled.
 

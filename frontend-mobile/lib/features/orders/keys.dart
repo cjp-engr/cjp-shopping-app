@@ -13,6 +13,7 @@ class OrdersKeys {
   final checkoutZipField = const _OrdersKey('checkoutZipField');
   final ordersScreen = const _OrdersKey('ordersScreen');
   final paymentNewCardTab = const _OrdersKey('paymentNewCardTab');
+  // ignore: library_private_types_in_public_api
   _OrdersKey paymentOption(String type) => _OrdersKey('paymentOption_$type');
   final placeOrderButton = const _OrdersKey('placeOrderButton');
 }
