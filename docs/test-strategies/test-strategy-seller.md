@@ -11,7 +11,7 @@
 
 | Layer | Web | Mobile |
 |-------|-----|--------|
-| E2E | 14 Playwright | 8 Patrol |
+| E2E | 14 Playwright | 11 Patrol |
 | API | 4 | 1 shared (TC-611) |
 | Manual | 1 (TC-052) | 1 (TC-605) |
 | Multi | 0 | 0 |
@@ -60,6 +60,9 @@
 |----|-------|-------|-------|
 | TC-090 | Simple product (7-step wizard) | E2E Patrol | M3 |
 | TC-091 | Variant product (7-step wizard) | E2E Patrol | M3 |
+| TC-615 | View simple product in dashboard (Read) | E2E Patrol | M4 |
+| TC-616 | Edit simple product from dashboard (Update) | E2E Patrol | M4 |
+| TC-617 | Delete simple product from dashboard (Delete) | E2E Patrol | M4 |
 | TC-601 | 7-step wizard parity | E2E Patrol | M6 |
 | TC-094 | Preview as buyer (`hideEdit=1`) | E2E Patrol | M6 |
 | TC-610 | Own products hidden | E2E Patrol | M4 |
@@ -91,6 +94,9 @@
 |----|-------------|------|----------|
 | TC-089 | E2E | Patrol | P0 |
 | TC-090–091 | E2E | Patrol | P0 |
+| TC-615 | E2E | Patrol | P1 |
+| TC-616 | E2E | Patrol | P1 |
+| TC-617 | E2E | Patrol | P1 |
 | TC-092 | E2E | Patrol | P0 |
 | TC-093 | E2E | Patrol | P1 |
 | TC-094 | E2E | Patrol | P2 |

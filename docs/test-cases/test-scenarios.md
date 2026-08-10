@@ -2518,6 +2518,71 @@
 
 ---
 
+### TC-615: Seller views simple product in seller dashboard (mobile Read)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Seller  
+**Platform**: Mobile  
+**Parity**: Divergent (mobile: tap product tile → `/products/:id?hideEdit=1`; web TC-045: `/my-products` list with separate Preview button)  
+**Automation**: Patrol  
+**Preconditions**: Seller logged in; simple product exists (created via API before test)  
+**Steps**:
+1. Seller tab → seller dashboard loads
+2. Product tile is visible with correct name and price
+3. Tap product tile → product detail screen opens
+**Expected Results**:
+- Product tile shows correct name and price on dashboard
+- Product detail screen loads at `/products/:id?hideEdit=1`; edit controls hidden
+**Business Rule**: §2 Seller product listing  
+**Selectors/API**: `keys.seller.productTile(productId)` — **key missing**; `keys.seller.dashboardScreen` exists  
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-616: Seller edits simple product from dashboard (mobile Update)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Seller  
+**Platform**: Mobile  
+**Parity**: Divergent (mobile: 7-step wizard re-opens pre-filled; web TC-044: 6-step wizard)  
+**Automation**: Patrol  
+**Preconditions**: Seller logged in; simple product exists (created via API before test)  
+**Steps**:
+1. Seller tab → product tile visible on dashboard
+2. Tap edit icon on product tile → wizard opens with current values pre-filled
+3. Change product name and price
+4. Advance through remaining steps → publish
+**Expected Results**:
+- Wizard opens in edit mode with current values populated
+- After publish, dashboard product tile reflects updated name and price
+**Business Rule**: §2 Seller product wizard (edit mode)  
+**Selectors/API**: `keys.seller.editProductButton(productId)` — **key missing**; wizard keys exist  
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-617: Seller deletes simple product from dashboard (mobile Delete)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Seller  
+**Platform**: Mobile  
+**Parity**: Both (TC-046 — same delete+confirm pattern; different UI chrome)  
+**Automation**: Patrol  
+**Preconditions**: Seller logged in; simple product exists (created via API before test)  
+**Steps**:
+1. Seller tab → product tile visible on dashboard
+2. Tap delete icon on product tile → confirmation dialog appears
+3. Confirm deletion
+**Expected Results**:
+- Confirmation dialog shown before deletion
+- Product tile no longer visible on dashboard after confirm
+- `DELETE /api/seller/products/:id` returns 200
+**Business Rule**: §2 Product delete  
+**Selectors/API**: `keys.seller.deleteProductButton(productId)` — **key missing**; `keys.widgets.dialogConfirmButton` exists  
+**Suggested Layer**: E2E Mobile
+
+---
+
 ### TC-092: Seller advances order through status pipeline (mobile)
 **Category**: Happy Path  
 **Priority**: P0  
