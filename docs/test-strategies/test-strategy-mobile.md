@@ -3,7 +3,7 @@
 *Filtered view of `docs/test-strategies/test-strategy.md` — do not edit independently.*
 
 **Platform filter:** Mobile | Both  
-**Input:** 44 mobile-native TCs from `docs/test-cases/test-scenarios-mobile.md`
+**Input:** 47 mobile-native TCs from `docs/test-cases/test-scenarios-mobile.md`
 
 ---
 
@@ -73,6 +73,9 @@
 | TC-089 | Become seller | E2E | Patrol | P0 | Seller promotion API | S3 mobile |
 | TC-090 | **Simple 7-step wizard** | E2E | Patrol | P0 | `/seller/add` | S3 mobile |
 | TC-091 | **Variant 7-step wizard** | E2E | Patrol | P0 | Variant step 4 | Variant listing |
+| TC-615 | Seller views simple product (Read) | E2E | Patrol | P1 | `keys.seller.productTile(id)` — **key missing** | Parity TC-045 (divergent) |
+| TC-616 | Seller edits simple product (Update) | E2E | Patrol | P1 | `keys.seller.editProductButton(id)` — **key missing** | Parity TC-044 (divergent) |
+| TC-617 | Seller deletes simple product (Delete) | E2E | Patrol | P1 | `keys.seller.deleteProductButton(id)` — **key missing** | Parity TC-046 (both) |
 | TC-092 | Seller order pipeline | E2E | Patrol | P0 | `/seller?tab=orders` | Seller smoke |
 | TC-093 | Seller voucher CRUD | E2E | Patrol | P1 | `/seller?tab=vouchers` | Coupon E2E |
 | TC-094 | Preview as buyer | E2E | Patrol | P2 | `?hideEdit=1` | vs web TC-045 |

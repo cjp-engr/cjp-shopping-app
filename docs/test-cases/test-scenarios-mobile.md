@@ -61,6 +61,9 @@
 | TC-089 | Become seller | P0 | Seller | Patrol |
 | TC-090 | **7-step simple product wizard** | P0 | Seller | Patrol |
 | TC-091 | **7-step variant product wizard** | P0 | Seller | Patrol |
+| TC-615 | Seller views simple product in dashboard (Read) | P1 | Seller | Patrol |
+| TC-616 | Seller edits simple product from dashboard (Update) | P1 | Seller | Patrol |
+| TC-617 | Seller deletes simple product from dashboard (Delete) | P1 | Seller | Patrol |
 | TC-092 | Seller order status pipeline | P0 | Seller | Patrol |
 | TC-093 | Seller voucher CRUD + apply | P1 | Seller | Patrol |
 | TC-094 | Preview as buyer (`hideEdit=1`) | P2 | Seller | Patrol |
