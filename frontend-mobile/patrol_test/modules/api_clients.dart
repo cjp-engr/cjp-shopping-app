@@ -25,6 +25,7 @@ final class SellerApiClient {
   }
 
   Future<String> createSimpleProduct(String name) async {
+    assert(_token != null, 'Call login() before using SellerApiClient');
     final res = await _dio.post(
       '/seller/products',
       data: {
@@ -43,6 +44,7 @@ final class SellerApiClient {
   }
 
   Future<void> deleteProduct(String id) async {
+    assert(_token != null, 'Call login() before using SellerApiClient');
     await _dio.delete(
       '/seller/products/$id',
       options: Options(headers: {'Authorization': 'Bearer $_token'}),

@@ -8,7 +8,8 @@ import '../test_credentials.dart';
 
 void main() {
   testApp('TC-616: seller edits simple product from dashboard',
-      tags: ['edit-product-simple', 'seller', 'product-update'], ($, modules) async {
+      tags: ['edit-product-simple', 'seller', 'product-update'],
+      ($, modules) async {
     const updatedName = 'E2E Edited Lamp';
     const updatedPrice = '39.99';
 
@@ -37,8 +38,8 @@ void main() {
     // Step 2 — Description: skip
     await $(keys.seller.wizardNextButton).tap();
 
-    // Step 3 — Images: skip (product has no images — Next is still enabled)
-    await modules.seller.skipImages();
+    // Step 3 — Images: add image via camera (required)
+    await modules.seller.addImageViaCamera();
 
     // Step 4 — Shipping: skip
     await $(keys.seller.wizardNextButton).tap();
