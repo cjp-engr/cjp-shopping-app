@@ -72,4 +72,12 @@ class SellerKeys {
       _SellerKey('wizardShippingFee_$option');
 
   final wizardPublishButton = const _SellerKey('wizardPublishButton');
+
+  // Product tile actions (parameterized by product id)
+  // ignore: library_private_types_in_public_api
+  _SellerKey productTile(String id) => _SellerKey('productTile_$id');
+  // ignore: library_private_types_in_public_api
+  _SellerKey editProductButton(String id) => _SellerKey('editProductButton_$id');
+  // ignore: library_private_types_in_public_api
+  _SellerKey deleteProductButton(String id) => _SellerKey('deleteProductButton_$id');
 }
