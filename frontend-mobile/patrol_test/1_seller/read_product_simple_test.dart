@@ -1,6 +1,5 @@
 // TC-615: Seller views simple product in seller dashboard (mobile Read)
 
-import 'package:flutter_test/flutter_test.dart' show find;
 import 'package:toko_mart/keys.dart';
 
 import '../modules/api_clients.dart';
@@ -30,7 +29,7 @@ void main() {
     await modules.seller.tapProductTile(productId);
 
     // Assert: product detail screen loaded
-    await $(find.text('E2E Read Test Lamp')).waitUntilVisible();
+    await $('E2E Read Test Lamp').waitUntilVisible();
 
     // Teardown
     await api.deleteProduct(productId);
