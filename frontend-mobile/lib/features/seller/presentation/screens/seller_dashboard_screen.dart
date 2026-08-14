@@ -1288,6 +1288,7 @@ class _ProductTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
+      key: keys.seller.productTile(product.id),
       color: context.surfaceColor,
       borderRadius: BorderRadius.circular(AppSizes.radiusLg),
       child: InkWell(
@@ -1388,20 +1389,26 @@ class _ProductTile extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _ActionIconBtn(
-                        icon: Icons.edit_outlined,
-                        color: AppColors.primary,
-                        bgColor: AppColors.primaryLight,
-                        onPressed: isSaving ? null : onEdit,
-                        tooltip: AppStrings.edit,
+                      KeyedSubtree(
+                        key: keys.seller.editProductButton(product.id),
+                        child: _ActionIconBtn(
+                          icon: Icons.edit_outlined,
+                          color: AppColors.primary,
+                          bgColor: AppColors.primaryLight,
+                          onPressed: isSaving ? null : onEdit,
+                          tooltip: AppStrings.edit,
+                        ),
                       ),
                       const SizedBox(height: 8),
-                      _ActionIconBtn(
-                        icon: Icons.delete_outline_rounded,
-                        color: AppColors.danger,
-                        bgColor: AppColors.dangerSurface,
-                        onPressed: isSaving ? null : onDelete,
-                        tooltip: AppStrings.delete,
+                      KeyedSubtree(
+                        key: keys.seller.deleteProductButton(product.id),
+                        child: _ActionIconBtn(
+                          icon: Icons.delete_outline_rounded,
+                          color: AppColors.danger,
+                          bgColor: AppColors.dangerSurface,
+                          onPressed: isSaving ? null : onDelete,
+                          tooltip: AppStrings.delete,
+                        ),
                       ),
                     ],
                   ),
