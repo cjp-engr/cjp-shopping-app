@@ -2583,6 +2583,73 @@
 
 ---
 
+### TC-618: Seller views variant product in dashboard (mobile Read)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Seller  
+**Platform**: Mobile  
+**Parity**: Divergent (no web equivalent — web uses `/my-products` TC-121 with a Preview button)  
+**Automation**: Patrol  
+**Preconditions**: Seller logged in; variant product exists (created via `SellerApiClient.createVariantProduct()` before test)  
+**Steps**:
+1. Seller tab → seller dashboard loads
+2. Product tile is visible with correct name
+3. Tap product tile → product detail screen opens
+**Expected Results**:
+- Variant product tile shows on dashboard
+- Product detail screen loads; variant selectors visible
+**Business Rule**: §2 Seller product listing; §2 Variants  
+**Selectors/API**: `keys.seller.productTile(productId)` (exists); `SellerApiClient.createVariantProduct()` — **method missing**  
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-619: Seller edits variant product from dashboard (mobile Update)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Seller  
+**Platform**: Mobile  
+**Parity**: Both (web equivalent: TC-120 — edit variant product)  
+**Automation**: Patrol  
+**Preconditions**: Seller logged in; variant product exists (created via API before test)  
+**Steps**:
+1. Seller tab → product tile visible on dashboard
+2. Tap edit icon → wizard opens with current values pre-filled
+3. Navigate to Variants step (step 4)
+4. Change price on one variant (e.g. Size M: $29.99 → $34.99)
+5. Advance through remaining steps → publish
+**Expected Results**:
+- Wizard opens in edit mode with variant values populated
+- After publish, product tile still present on dashboard
+- Variant price update persisted (`PUT /api/seller/products/:id`)
+**Business Rule**: §2 Variant price/stock are per-option; §2 Wizard edit mode  
+**Selectors/API**: `keys.seller.editProductButton(productId)` (exists); `keys.seller.wizardVariantPriceField(label)` (exists); `PUT /api/seller/products/:id`  
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-620: Seller deletes variant product from dashboard (mobile Delete)
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Seller  
+**Platform**: Mobile  
+**Parity**: Both (web equivalent: TC-046 — delete product, covers both simple and variant)  
+**Automation**: Patrol  
+**Preconditions**: Seller logged in; variant product exists (created via API before test)  
+**Steps**:
+1. Seller tab → product tile visible on dashboard
+2. Tap delete icon on product tile → confirmation dialog appears
+3. Confirm delete
+**Expected Results**:
+- Dialog confirms intent; product removed
+- Product tile no longer visible on dashboard
+- `DELETE /api/seller/products/:id` returns 200
+**Business Rule**: §2 Product delete  
+**Selectors/API**: `keys.seller.deleteProductButton(productId)` (exists); `keys.widgets.dialogConfirmButton` (exists); no API teardown — UI deleted  
+**Suggested Layer**: E2E Mobile
+
+---
+
 ### TC-092: Seller advances order through status pipeline (mobile)
 **Category**: Happy Path  
 **Priority**: P0  

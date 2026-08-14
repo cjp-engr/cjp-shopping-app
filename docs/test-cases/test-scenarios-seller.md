@@ -42,13 +42,16 @@
 | TC-615 | Seller views simple product in dashboard (Read) | P1 | Patrol |
 | TC-616 | Seller edits simple product from dashboard (Update) | P1 | Patrol |
 | TC-617 | Seller deletes simple product from dashboard (Delete) | P1 | Patrol |
+| TC-618 | Seller views variant product in dashboard (Read) | P1 | Patrol |
+| TC-619 | Seller edits variant product from dashboard (Update) | P1 | Patrol |
+| TC-620 | Seller deletes variant product from dashboard (Delete) | P1 | Patrol |
 | TC-092 | Order status pipeline | P0 | Patrol |
 | TC-093 | Voucher CRUD + buyer apply | P1 | Patrol |
 | TC-094 | Preview as buyer (`hideEdit=1`) | P2 | Patrol |
 | TC-601 | 7-step wizard step count | P2 | Patrol |
 | TC-605 | Local order notification + deep link | P2 | Manual / Patrol |
 
-**Total seller scenarios:** 17 web + 9 mobile
+**Total seller scenarios:** 17 web + 12 mobile
 
 Full steps, expected results, and selectors: **`docs/test-cases/test-scenarios.md`**
 

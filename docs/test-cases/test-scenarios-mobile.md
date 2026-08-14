@@ -3,7 +3,7 @@
 *Filtered view of `docs/test-cases/test-scenarios.md` — do not edit independently.*
 
 **Platform filter:** Mobile | Both  
-**Scope:** 66 web TCs with `Parity: Both` apply to mobile via Patrol; 35 mobile-native TCs below.
+**Scope:** 66 web TCs with `Parity: Both` apply to mobile via Patrol; 38 mobile-native TCs below.
 
 ---
 
@@ -64,6 +64,9 @@
 | TC-615 | Seller views simple product in dashboard (Read) | P1 | Seller | Patrol |
 | TC-616 | Seller edits simple product from dashboard (Update) | P1 | Seller | Patrol |
 | TC-617 | Seller deletes simple product from dashboard (Delete) | P1 | Seller | Patrol |
+| TC-618 | Seller views variant product in dashboard (Read) | P1 | Seller | Patrol |
+| TC-619 | Seller edits variant product from dashboard (Update) | P1 | Seller | Patrol |
+| TC-620 | Seller deletes variant product from dashboard (Delete) | P1 | Seller | Patrol |
 | TC-092 | Seller order status pipeline | P0 | Seller | Patrol |
 | TC-093 | Seller voucher CRUD + apply | P1 | Seller | Patrol |
 | TC-094 | Preview as buyer (`hideEdit=1`) | P2 | Seller | Patrol |
@@ -109,6 +112,6 @@ These web TCs have `Parity: Both` — implement as Patrol where keys exist:
 
 Cart, checkout, orders, seller wizard, and wishlist screens lack `ValueKey`s. Flag in `/generate-tests` Phase 1 — add keys per `ui-selectors.md` before full Patrol coverage.
 
-**Total mobile-native scenarios:** 35 (+ shared parity with ~43 web Both TCs)
+**Total mobile-native scenarios:** 38 (+ shared parity with ~43 web Both TCs)
 
 Full steps and selectors: **`docs/test-cases/test-scenarios.md`**
