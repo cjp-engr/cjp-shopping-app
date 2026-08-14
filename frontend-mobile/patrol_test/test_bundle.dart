@@ -14,8 +14,11 @@ import '0_auth/signup_test.dart' as _0_auth__signup_test;
 import '1_seller/add_product_simple_test.dart' as _1_seller__add_product_simple_test;
 import '1_seller/add_product_variant_test.dart' as _1_seller__add_product_variant_test;
 import '1_seller/delete_product_simple_test.dart' as _1_seller__delete_product_simple_test;
+import '1_seller/delete_product_variant_test.dart' as _1_seller__delete_product_variant_test;
 import '1_seller/edit_product_simple_test.dart' as _1_seller__edit_product_simple_test;
+import '1_seller/edit_product_variant_test.dart' as _1_seller__edit_product_variant_test;
 import '1_seller/read_product_simple_test.dart' as _1_seller__read_product_simple_test;
+import '1_seller/read_product_variant_test.dart' as _1_seller__read_product_variant_test;
 import '2_buyer/simple_cod_checkout_test.dart' as _2_buyer__simple_cod_checkout_test;
 import '2_buyer/simple_new_credit_checkout_test.dart' as _2_buyer__simple_new_credit_checkout_test;
 import '2_buyer/simple_saved_credit_checkout_test.dart' as _2_buyer__simple_saved_credit_checkout_test;
@@ -75,7 +78,7 @@ Future<void> main() async {
     final topLevelGroup = Invoker.current!.liveTest.groups.first;
     final dartTestGroup = createDartTestGroup(
       topLevelGroup,
-      tags: 'read-product-simple',
+      tags: 'delete-product-variant',
       excludeTags: null,
     );
     testExplorationCompleter.complete(dartTestGroup);
@@ -89,8 +92,11 @@ Future<void> main() async {
   group('_1_seller.add_product_simple_test', _1_seller__add_product_simple_test.main);
   group('_1_seller.add_product_variant_test', _1_seller__add_product_variant_test.main);
   group('_1_seller.delete_product_simple_test', _1_seller__delete_product_simple_test.main);
+  group('_1_seller.delete_product_variant_test', _1_seller__delete_product_variant_test.main);
   group('_1_seller.edit_product_simple_test', _1_seller__edit_product_simple_test.main);
+  group('_1_seller.edit_product_variant_test', _1_seller__edit_product_variant_test.main);
   group('_1_seller.read_product_simple_test', _1_seller__read_product_simple_test.main);
+  group('_1_seller.read_product_variant_test', _1_seller__read_product_variant_test.main);
   group('_2_buyer.simple_cod_checkout_test', _2_buyer__simple_cod_checkout_test.main);
   group('_2_buyer.simple_new_credit_checkout_test', _2_buyer__simple_new_credit_checkout_test.main);
   group('_2_buyer.simple_saved_credit_checkout_test', _2_buyer__simple_saved_credit_checkout_test.main);
