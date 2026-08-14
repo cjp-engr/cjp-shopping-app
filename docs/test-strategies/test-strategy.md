@@ -188,9 +188,12 @@ Test strategy for the **full scenario suite** (TC-001–TC-066 web, TC-067–TC-
 | TC-089 | Become seller | E2E | Patrol | Mobile | P0 | `PATCH /api/users/me/seller` | S3 mobile leg | |
 | TC-090 | Simple product 7-step wizard | E2E | Patrol | Mobile | P0 | `/seller/add`, `_WizardStepper` | S3 mobile leg — **keys missing** | |
 | TC-091 | Variant product 7-step wizard | E2E | Patrol | Mobile | P0 | Variant step 4 | Variant listing — **keys missing** | |
-| TC-615 | Seller views simple product in dashboard (Read) | E2E | Patrol | Mobile | P1 | `keys.seller.productTile(id)` — **key missing** | Parity TC-045 (divergent) | |
-| TC-616 | Seller edits simple product from dashboard (Update) | E2E | Patrol | Mobile | P1 | `keys.seller.editProductButton(id)` — **key missing** | Parity TC-044 (divergent) | |
-| TC-617 | Seller deletes simple product from dashboard (Delete) | E2E | Patrol | Mobile | P1 | `keys.seller.deleteProductButton(id)` — **key missing** | Parity TC-046 (both) | |
+| TC-615 | Seller views simple product in dashboard (Read) | E2E | Patrol | Mobile | P1 | `keys.seller.productTile(id)` (exists) | Parity TC-045 (divergent) | |
+| TC-616 | Seller edits simple product from dashboard (Update) | E2E | Patrol | Mobile | P1 | `keys.seller.editProductButton(id)` (exists) | Parity TC-044 (divergent) | |
+| TC-617 | Seller deletes simple product from dashboard (Delete) | E2E | Patrol | Mobile | P1 | `keys.seller.deleteProductButton(id)` (exists) | Parity TC-046 (both) | |
+| TC-618 | Seller views variant product in dashboard (Read) | E2E | Patrol | Mobile | P1 | `keys.seller.productTile(id)` (exists); `SellerApiClient.createVariantProduct()` — **method missing** | Divergent (no web equivalent) | |
+| TC-619 | Seller edits variant product from dashboard (Update) | E2E | Patrol | Mobile | P1 | `keys.seller.editProductButton(id)` (exists); `keys.seller.wizardVariantPriceField(label)` (exists) | Parity TC-120 (both) | |
+| TC-620 | Seller deletes variant product from dashboard (Delete) | E2E | Patrol | Mobile | P1 | `keys.seller.deleteProductButton(id)` (exists) | Parity TC-046 (both) | |
 | TC-092 | Seller order pipeline | E2E | Patrol | Mobile | P0 | `/seller?tab=orders` | Seller smoke | |
 | TC-093 | Seller voucher CRUD + apply | E2E | Patrol | Mobile | P1 | `/seller?tab=vouchers` | End-to-end coupon | |
 | TC-094 | Preview as buyer | E2E | Patrol | Mobile | P2 | `/products/:id?hideEdit=1` | Divergent from web TC-045 | |
