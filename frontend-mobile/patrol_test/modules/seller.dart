@@ -41,6 +41,88 @@ final class Seller extends Module {
     await $(keys.seller.wizardNextButton).tap();
   }
 
+  Future<void> enableVariants() async {
+    await $(keys.seller.wizardVariantsToggle).tap();
+  }
+
+  Future<void> addVariantAttribute({
+    required String name,
+    required List<String> values,
+  }) async {
+    await $(keys.seller.wizardAddAttributeButton).tap();
+    await $(keys.seller.wizardAttrNameField).enterText(name);
+    for (final value in values) {
+      await $(keys.seller.wizardAttrAddValueField).enterText(value);
+      await $(keys.seller.wizardAttrAddValueButton).tap();
+    }
+    await $(keys.seller.wizardAttrConfirmButton).tap();
+  }
+
+  Future<void> fillVariantRow(
+    String label, {
+    required String price,
+    required String stock,
+    String discount = '25.00',
+    String sku = 'SKU',
+  }) async {
+    await $(keys.seller.wizardVariantPriceField(label))
+        .scrollTo(scrollDirection: AxisDirection.down)
+        .tap();
+    await $(keys.seller.wizardVariantPriceField(label)).enterText(price);
+    await $(keys.seller.wizardVariantStockField(label)).enterText(stock);
+    await $(keys.seller.wizardVariantDiscountField(label)).enterText(discount);
+    await $(keys.seller.wizardVariantSkuField(label)).enterText('$sku-$label');
+    await $(keys.seller.wizardNextButton).tap();
+  }
+
+  Future<void> fillVariantPricingStep({
+    required List<String> sizes,
+    required String price,
+    required String stock,
+    String discount = '25.00',
+  }) async {
+    await enableVariants();
+    await addVariantAttribute(name: 'Size', values: sizes);
+    for (final size in sizes) {
+      await $(keys.seller.wizardVariantPriceField(size))
+          .scrollTo(scrollDirection: AxisDirection.down)
+          .tap();
+      await $(keys.seller.wizardVariantPriceField(size)).enterText(price);
+      await $(keys.seller.wizardVariantStockField(size)).enterText(stock);
+      await $(keys.seller.wizardVariantDiscountField(size)).enterText(discount);
+      await $(keys.seller.wizardVariantSkuField(size)).enterText('SKU-$size');
+    }
+    await $(keys.seller.wizardNextButton).tap();
+  }
+
+  Future<void> updateVariantPrice(String label, String price) async {
+    await $(keys.seller.wizardVariantPriceField(label))
+        .scrollTo(scrollDirection: AxisDirection.down)
+        .tap();
+    await $(keys.seller.wizardVariantPriceField(label)).enterText(price);
+  }
+
+  Future<void> advanceWizardStep() async {
+    await $(keys.seller.wizardNextButton).tap();
+  }
+
+  Future<void> expectProductNameOnDashboard(String name) async {
+    await $(name).waitUntilVisible();
+  }
+
+  Future<void> expectProductTileAbsent(String productId) async {
+    await $(keys.seller.dashboardScreen).waitUntilVisible();
+    if ($(keys.seller.productTile(productId)).exists) {
+      throw StateError('Product tile should not exist after deletion: $productId');
+    }
+  }
+
+  Future<void> expectVariantOptionsVisible(List<String> sizes) async {
+    for (final size in sizes) {
+      await $(keys.products.variantValue('Size', size)).waitUntilVisible();
+    }
+  }
+
   Future<void> fillDescription({
     required String description,
     String tag = 'e2e',

@@ -80,4 +80,25 @@ final class SellerApiClient {
       options: Options(headers: {'Authorization': 'Bearer $_token'}),
     );
   }
+
+  Future<Map<String, dynamic>> getProduct(String id) async {
+    assert(_token != null, 'Call login() before using SellerApiClient');
+    final res = await _dio.get(
+      '/products/$id',
+      options: Options(headers: {'Authorization': 'Bearer $_token'}),
+    );
+    return res.data['product'] as Map<String, dynamic>;
+  }
+
+  double? variantPrice(Map<String, dynamic> product, String size) {
+    final variants = product['variants'] as List<dynamic>? ?? [];
+    for (final raw in variants) {
+      final variant = raw as Map<String, dynamic>;
+      final attrs = variant['attributes'] as Map<String, dynamic>?;
+      if (attrs?['Size'] == size) {
+        return (variant['price'] as num).toDouble();
+      }
+    }
+    return null;
+  }
 }

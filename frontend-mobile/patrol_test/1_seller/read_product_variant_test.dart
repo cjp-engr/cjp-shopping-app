@@ -28,8 +28,9 @@ void main() {
     // Navigate into product detail
     await modules.seller.tapProductTile(productId);
 
-    // Assert: product detail screen shows the product name
+    // Assert: product detail screen shows name and variant selectors
     await $('E2E Read Test Tee').waitUntilVisible();
+    await modules.seller.expectVariantOptionsVisible(['S', 'M', 'L']);
 
     // Teardown
     await api.deleteProduct(productId);

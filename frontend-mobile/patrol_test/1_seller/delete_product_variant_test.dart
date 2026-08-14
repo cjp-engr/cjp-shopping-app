@@ -29,11 +29,7 @@ void main() {
     await modules.seller.tapDeleteProduct(productId);
     await modules.seller.confirmDelete();
 
-    // Assert: tile no longer present — wait for dashboard to settle, then check
-    await $(keys.seller.dashboardScreen).waitUntilVisible();
-    if ($(keys.seller.productTile(productId)).exists) {
-      throw StateError('Product tile should not exist after deletion: $productId');
-    }
-    // No API teardown needed — UI already deleted the product
+    // Assert: tile no longer present
+    await modules.seller.expectProductTileAbsent(productId);
   });
 }
