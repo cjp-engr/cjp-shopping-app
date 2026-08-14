@@ -73,6 +73,20 @@ final class SellerApiClient {
     return res.data['product']['_id'] as String;
   }
 
+  Future<String> findProductByName(String name) async {
+    assert(_token != null, 'Call login() before using SellerApiClient');
+    final res = await _dio.get(
+      '/seller/products',
+      options: Options(headers: {'Authorization': 'Bearer $_token'}),
+    );
+    final products = res.data['products'] as List;
+    final match = products.firstWhere(
+      (p) => p['name'] == name,
+      orElse: () => throw StateError('Product not found: $name'),
+    );
+    return match['_id'] as String;
+  }
+
   Future<void> deleteProduct(String id) async {
     assert(_token != null, 'Call login() before using SellerApiClient');
     await _dio.delete(
