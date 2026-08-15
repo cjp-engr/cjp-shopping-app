@@ -1,5 +1,6 @@
 // TC-090: Seller creates simple product via 7-step wizard on mobile
 
+import '../modules/api_clients.dart';
 import '../test_app.dart';
 import '../test_credentials.dart';
 
@@ -38,5 +39,11 @@ void main() {
     await modules.seller.publish();
 
     await modules.seller.expectProductNameOnDashboard(productName);
+
+    // Teardown — delete via API
+    final api = SellerApiClient();
+    await api.login(TestCredentials.sellerEmail, TestCredentials.password);
+    final productId = await api.findProductByName(productName);
+    await api.deleteProduct(productId);
   });
 }
