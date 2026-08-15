@@ -252,12 +252,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
               _load();
             },
             itemBuilder: (_) => const [
-              PopupMenuItem(value: 'newest', child: Text(AppStrings.sortNewest)),
               PopupMenuItem(
-                  value: 'price-asc', child: Text(AppStrings.sortPriceLowToHigh)),
+                  value: 'newest', child: Text(AppStrings.sortNewest)),
               PopupMenuItem(
-                  value: 'price-desc', child: Text(AppStrings.sortPriceHighToLow)),
-              PopupMenuItem(value: 'rating', child: Text(AppStrings.sortTopRated)),
+                  value: 'price-asc',
+                  child: Text(AppStrings.sortPriceLowToHigh)),
+              PopupMenuItem(
+                  value: 'price-desc',
+                  child: Text(AppStrings.sortPriceHighToLow)),
+              PopupMenuItem(
+                  value: 'rating', child: Text(AppStrings.sortTopRated)),
             ],
             child: Container(
               width: 48,

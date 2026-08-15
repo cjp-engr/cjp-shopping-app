@@ -148,10 +148,10 @@ const products = [
     tags: ['polo', 'clothing', 'casual'],
     variantAttributes: [{ name: 'Size', values: ['S', 'M', 'L', 'XL'] }],
     variants: [
-      { attributes: new Map([['Size', 'S']]),  price: 34.99, stock: 8,  images: ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=400'] },
-      { attributes: new Map([['Size', 'M']]),  price: 34.99, stock: 15, images: ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=400'] },
-      { attributes: new Map([['Size', 'L']]),  price: 36.99, stock: 12, images: ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=400'] },
-      { attributes: new Map([['Size', 'XL']]), price: 36.99, stock: 6,  images: ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=400'] },
+      { attributes: new Map([['Size', 'S']]), price: 34.99, stock: 8, images: ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=400'] },
+      { attributes: new Map([['Size', 'M']]), price: 34.99, stock: 15, images: ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=400'] },
+      { attributes: new Map([['Size', 'L']]), price: 36.99, stock: 12, images: ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=400'] },
+      { attributes: new Map([['Size', 'XL']]), price: 36.99, stock: 6, images: ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=400'] },
     ],
   },
   {
@@ -166,11 +166,11 @@ const products = [
     tags: ['shoes', 'trail', 'running'],
     variantAttributes: [{ name: 'Size', values: ['7', '8', '9', '10', '11'] }],
     variants: [
-      { attributes: new Map([['Size', '7']]),  price: 89.99, stock: 4,  images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'] },
-      { attributes: new Map([['Size', '8']]),  price: 89.99, stock: 8,  images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'] },
-      { attributes: new Map([['Size', '9']]),  price: 89.99, stock: 10, images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'] },
-      { attributes: new Map([['Size', '10']]), price: 89.99, stock: 7,  images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'] },
-      { attributes: new Map([['Size', '11']]), price: 89.99, stock: 3,  images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'] },
+      { attributes: new Map([['Size', '7']]), price: 89.99, stock: 4, images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'] },
+      { attributes: new Map([['Size', '8']]), price: 89.99, stock: 8, images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'] },
+      { attributes: new Map([['Size', '9']]), price: 89.99, stock: 10, images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'] },
+      { attributes: new Map([['Size', '10']]), price: 89.99, stock: 7, images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'] },
+      { attributes: new Map([['Size', '11']]), price: 89.99, stock: 3, images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'] },
     ],
   },
   {
@@ -187,7 +187,7 @@ const products = [
     variants: [
       { attributes: new Map([['Color', 'White']]), price: 18.99, stock: 20, images: ['https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400'] },
       { attributes: new Map([['Color', 'Black']]), price: 18.99, stock: 15, images: ['https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400'] },
-      { attributes: new Map([['Color', 'Blue']]),  price: 18.99, stock: 10, images: ['https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400'] },
+      { attributes: new Map([['Color', 'Blue']]), price: 18.99, stock: 10, images: ['https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400'] },
     ],
   },
   {
@@ -204,7 +204,7 @@ const products = [
     variants: [
       { attributes: new Map([['Color', 'Brown']]), price: 29.99, stock: 12, images: ['https://images.unsplash.com/photo-1627123424574-724758594e93?w=400'] },
       { attributes: new Map([['Color', 'Black']]), price: 29.99, stock: 18, images: ['https://images.unsplash.com/photo-1627123424574-724758594e93?w=400'] },
-      { attributes: new Map([['Color', 'Tan']]),   price: 31.99, stock: 8,  images: ['https://images.unsplash.com/photo-1627123424574-724758594e93?w=400'] },
+      { attributes: new Map([['Color', 'Tan']]), price: 31.99, stock: 8, images: ['https://images.unsplash.com/photo-1627123424574-724758594e93?w=400'] },
     ],
   },
   {
@@ -221,7 +221,7 @@ const products = [
     variants: [
       { attributes: new Map([['Size', 'S']]), price: 44.99, stock: 10, images: ['https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=400'] },
       { attributes: new Map([['Size', 'M']]), price: 44.99, stock: 14, images: ['https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=400'] },
-      { attributes: new Map([['Size', 'L']]), price: 44.99, stock: 9,  images: ['https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=400'] },
+      { attributes: new Map([['Size', 'L']]), price: 44.99, stock: 9, images: ['https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=400'] },
     ],
   },
   {
@@ -252,9 +252,9 @@ const products = [
     tags: ['blanket', 'home', 'cosy'],
     variantAttributes: [{ name: 'Color', values: ['Grey', 'Beige', 'Navy'] }],
     variants: [
-      { attributes: new Map([['Color', 'Grey']]),  price: 39.99, stock: 14, images: ['https://images.unsplash.com/photo-1580301762395-14d3e6509fa1?w=400'] },
+      { attributes: new Map([['Color', 'Grey']]), price: 39.99, stock: 14, images: ['https://images.unsplash.com/photo-1580301762395-14d3e6509fa1?w=400'] },
       { attributes: new Map([['Color', 'Beige']]), price: 39.99, stock: 10, images: ['https://images.unsplash.com/photo-1580301762395-14d3e6509fa1?w=400'] },
-      { attributes: new Map([['Color', 'Navy']]),  price: 39.99, stock: 8,  images: ['https://images.unsplash.com/photo-1580301762395-14d3e6509fa1?w=400'] },
+      { attributes: new Map([['Color', 'Navy']]), price: 39.99, stock: 8, images: ['https://images.unsplash.com/photo-1580301762395-14d3e6509fa1?w=400'] },
     ],
   },
   {
@@ -642,6 +642,13 @@ const seedDatabase = async () => {
     console.log('Creating test users...');
     const [seller1] = await User.create([
       {
+        email: 'x@x.com',
+        password: 'Test750!!',
+        firstName: 'SellerX',
+        lastName: 'Xavier',
+        role: 'seller',
+      },
+      {
         email: 's1@ex.com',
         password: 'Test750!!',
         firstName: 'Seller1',
@@ -679,6 +686,7 @@ const seedDatabase = async () => {
     console.log(`✅ Database seeded successfully!`);
     console.log(`   - ${products.length} products added (all owned by s1@ex.com)`);
     console.log(`   - 4 test users created:`);
+    console.log(`       x@x.com / Test750!! (seller)`);
     console.log(`       s1@ex.com / Test750!! (seller)`);
     console.log(`       s2@ex.com / Test750!! (seller)`);
     console.log(`       b1@test.com / Test750!! (buyer)`);
