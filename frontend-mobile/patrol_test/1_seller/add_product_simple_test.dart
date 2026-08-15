@@ -6,6 +6,9 @@ import '../test_credentials.dart';
 void main() {
   testApp('TC-090: seller creates simple product via wizard',
       tags: ['add-product-simple', 'seller', 'smoke'], ($, modules) async {
+    final productName =
+        'E2E Variant Shirt - ${DateTime.now().millisecondsSinceEpoch}';
+
     await modules.auth.login(
       email: TestCredentials.sellerEmail,
       password: TestCredentials.password,
@@ -15,7 +18,7 @@ void main() {
     await modules.seller.openWizard();
 
     await modules.seller.fillBasicInfo(
-      name: 'E2E Test Lamp - Test',
+      name: productName,
       category: 'Home & Garden',
     );
 
@@ -33,5 +36,7 @@ void main() {
     await modules.seller.addImageViaCamera();
     await modules.seller.fillShipping();
     await modules.seller.publish();
+
+    await modules.seller.expectProductNameOnDashboard(productName);
   });
 }
