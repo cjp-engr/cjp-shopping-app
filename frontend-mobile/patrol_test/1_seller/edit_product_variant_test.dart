@@ -38,8 +38,8 @@ void main() {
     // Step 2 — Description: skip
     await modules.seller.advanceWizardStep();
 
-    // Step 3 — Images: add image via camera (required)
-    await modules.seller.addImageViaCamera();
+    // Step 3 — Images: add image via link (required)
+    await modules.seller.addImageViaLink();
 
     // Step 4 — Shipping: skip
     await modules.seller.advanceWizardStep();

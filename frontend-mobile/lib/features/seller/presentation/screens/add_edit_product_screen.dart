@@ -2549,6 +2549,7 @@ class _ImageLinkDialogState extends State<_ImageLinkDialog> {
     return AlertDialog(
       title: const Text('Add image link'),
       content: TextField(
+        key: keys.seller.wizardImageLinkField,
         controller: _ctrl,
         autofocus: true,
         decoration: const InputDecoration(
@@ -2559,10 +2560,12 @@ class _ImageLinkDialogState extends State<_ImageLinkDialog> {
       ),
       actions: [
         TextButton(
+          key: keys.seller.wizardImageLinkCancelButton,
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
         TextButton(
+          key: keys.seller.wizardImageLinkAddButton,
           onPressed: () => Navigator.pop(context, _ctrl.text.trim()),
           child: const Text('Add'),
         ),

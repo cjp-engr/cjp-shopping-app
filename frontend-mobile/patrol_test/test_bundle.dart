@@ -78,7 +78,7 @@ Future<void> main() async {
     final topLevelGroup = Invoker.current!.liveTest.groups.first;
     final dartTestGroup = createDartTestGroup(
       topLevelGroup,
-      tags: 'delete-product-variant',
+      tags: 'edit-product-variant',
       excludeTags: null,
     );
     testExplorationCompleter.complete(dartTestGroup);
