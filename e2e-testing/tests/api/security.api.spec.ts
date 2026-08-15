@@ -11,7 +11,7 @@ import {
   signupFreshUser,
   SELLER_EMAIL,
   BUYER_EMAIL,
-  PASSWORD,
+  TEST_PASSWORD,
 } from '../../helpers/api-client';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
@@ -24,10 +24,10 @@ let seller2Token: string;
 test.beforeAll(async () => {
   const ctx = await pwRequest.newContext({ baseURL: API_URL });
 
-  seller1Token = await login(ctx, SELLER_EMAIL, PASSWORD);
+  seller1Token = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
 
   // Promote seeded buyer to seller2 (idempotent)
-  seller2Token = await login(ctx, BUYER_EMAIL, PASSWORD);
+  seller2Token = await login(ctx, BUYER_EMAIL, TEST_PASSWORD);
   await ctx.put('/api/auth/profile', {
     data: { role: 'seller' },
     headers: authHeaders(seller2Token),
