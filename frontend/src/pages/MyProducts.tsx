@@ -4,12 +4,18 @@ import sellerService from '../services/sellerService';
 import { Card } from '../components/common/Card';
 import { ProductCard } from '../components/common/ProductCard';
 import { Spinner } from '../components/common/Spinner';
+import { Pagination } from '../components/common/Pagination';
+import { useGridColumns, PAGE_SIZE_BY_COLUMNS } from '../hooks/useGridColumns';
 import { Store, Package } from 'lucide-react';
 
 export const MyProducts: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [page, setPage] = useState(1);
+
+  const columns = useGridColumns();
+  const pageSize = PAGE_SIZE_BY_COLUMNS[columns];
 
   useEffect(() => {
     sellerService.getProducts()
@@ -26,6 +32,15 @@ export const MyProducts: React.FC = () => {
   const filtered = useMemo(() =>
     selectedCategory === 'All' ? products : products.filter(p => p.category === selectedCategory),
     [products, selectedCategory]
+  );
+
+  // Reset page when category or column count changes
+  useEffect(() => { setPage(1); }, [selectedCategory, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginated = useMemo(
+    () => filtered.slice((page - 1) * pageSize, page * pageSize),
+    [filtered, page, pageSize]
   );
 
   return (
@@ -82,11 +97,18 @@ export const MyProducts: React.FC = () => {
               <p className="text-gray-500 dark:text-gray-400">No products in this category.</p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filtered.map(product => (
-                <ProductCard key={product.id} product={product} variant="seller" />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {paginated.map(product => (
+                  <ProductCard key={product.id} product={product} variant="seller" />
+                ))}
+              </div>
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={p => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              />
+            </>
           )}
         </>
       )}
