@@ -1319,6 +1319,192 @@
 
 ---
 
+### TC-123: Products page — navigate to next page loads different products
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Web  
+**Parity**: Divergent (mobile uses infinite scroll)  
+**Automation**: Playwright  
+**Preconditions**: More than one page of products exists in seed (60+ products); buyer logged in  
+**Steps**:
+1. Navigate to `/products`
+2. Wait for products grid to load; collect all visible product names on page 1
+3. Click the next page button (`data-testid="pagination-next"`)
+4. Wait for products grid to reload; collect all visible product names on page 2
+**Expected Results**:
+- Page 2 product names differ from page 1
+- Active page indicator shows page 2 (`data-testid="pagination-page-2"` has active styling)
+**Business Rule**: §1 Product browse — paginated at 20/page server-side  
+**Selectors/API**: `pagination-next`, `pagination-page-2`, `[data-testid^="product-card-"]`, `GET /api/products?page=2&limit=N`  
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-124: Products page — category filter resets to page 1
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Web  
+**Parity**: Divergent  
+**Automation**: Playwright  
+**Preconditions**: More than one page of products; buyer logged in  
+**Steps**:
+1. Navigate to `/products` and navigate to page 2
+2. Click a category filter button (e.g. `category-filter-electronics`)
+3. Wait for products grid to reload
+**Expected Results**:
+- Page resets to 1 (`pagination-page-1` is active)
+- Products shown belong to the selected category
+**Business Rule**: §1 Product browse — filter change resets pagination  
+**Selectors/API**: `pagination-next`, `pagination-page-1`, `category-filter-{slug}`, `products-loading`  
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-125: Products page — sort change resets to page 1
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Web  
+**Parity**: Divergent  
+**Automation**: Playwright  
+**Preconditions**: More than one page of products; buyer logged in  
+**Steps**:
+1. Navigate to `/products` and navigate to page 2
+2. Change the sort select (`sort-select`) to a different value
+3. Wait for products grid to reload
+**Expected Results**:
+- Page resets to 1 (`pagination-page-1` is active)
+**Business Rule**: §1 Product browse — sort change resets pagination  
+**Selectors/API**: `pagination-next`, `pagination-page-1`, `sort-select`, `products-loading`  
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-126: Products page — count label shows total across all pages
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Web  
+**Parity**: Divergent  
+**Automation**: Playwright  
+**Preconditions**: More than one page of products; buyer logged in  
+**Steps**:
+1. Navigate to `/products` with no filters
+2. Read the product count label text (e.g. "X products found")
+3. Navigate to page 2
+4. Read the product count label text again
+**Expected Results**:
+- Count label shows the same total on both pages
+- Total is greater than the number of products visible on a single page (i.e. reflects the full dataset)
+**Business Rule**: §1 Product browse — count reflects server total, not current page slice  
+**Selectors/API**: `products-page` subtitle text, `pagination-next`  
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-127: Products page — pagination hidden when results fit on one page
+**Category**: Edge Case  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Web  
+**Parity**: Divergent  
+**Automation**: Playwright  
+**Preconditions**: Buyer logged in  
+**Steps**:
+1. Navigate to `/products`
+2. Enter a specific product name in the search field that returns only one result
+3. Wait for results to load
+**Expected Results**:
+- Products grid shows the single matching product
+- `pagination` container is not present in the DOM
+**Business Rule**: §1 Product browse — pagination hidden when total ≤ page size  
+**Selectors/API**: `product-search-input`, `pagination` (absent), `products-loading`  
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-128: MyProducts page — navigate to next page
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Seller  
+**Platform**: Web  
+**Parity**: Divergent  
+**Automation**: Playwright  
+**Preconditions**: Seller has more products than the page size (requires seeded seller with 10+ products); seller logged in  
+**Steps**:
+1. Navigate to `/my-products`
+2. Collect product names visible on page 1
+3. Click the next page button (`pagination-next`)
+4. Collect product names visible on page 2
+**Expected Results**:
+- Page 2 product names differ from page 1
+- Active page indicator shows page 2
+**Business Rule**: §2 Product catalog — My Products paginated client-side  
+**Selectors/API**: `my-products-page`, `pagination-next`, `pagination-page-2`, `[data-testid^="product-card-"]`  
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-129: MyProducts page — category filter resets to page 1
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Seller  
+**Platform**: Web  
+**Parity**: Divergent  
+**Automation**: Playwright  
+**Preconditions**: Seller has more products than the page size across multiple categories; seller logged in  
+**Steps**:
+1. Navigate to `/my-products` and navigate to page 2
+2. Click a category chip
+**Expected Results**:
+- Page resets to 1 (`pagination-page-1` is active)
+- Products shown belong to the selected category
+**Business Rule**: §2 Product catalog — category filter resets pagination  
+**Selectors/API**: `my-products-page`, `pagination-next`, `my-products-category-filter-{slug}`, `pagination-page-1`  
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-130: MyProducts page — next button disabled on last page
+**Category**: Edge Case  
+**Priority**: P1  
+**Role**: Seller  
+**Platform**: Web  
+**Parity**: Divergent  
+**Automation**: Playwright  
+**Preconditions**: Seller has more than one page of products; seller logged in  
+**Steps**:
+1. Navigate to `/my-products`
+2. Click the last page number button to jump to the final page
+**Expected Results**:
+- `pagination-next` button is disabled
+**Business Rule**: §2 Product catalog — pagination boundary  
+**Selectors/API**: `my-products-page`, `pagination-next` (disabled), last `pagination-page-{n}` button  
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-131: MyProducts page — pagination hidden when products fit on one page
+**Category**: Edge Case  
+**Priority**: P1  
+**Role**: Seller  
+**Platform**: Web  
+**Parity**: Divergent  
+**Automation**: Playwright  
+**Preconditions**: Seller has fewer products than the page size; seller logged in  
+**Steps**:
+1. Navigate to `/my-products`
+**Expected Results**:
+- All products are visible
+- `pagination` container is not present in the DOM
+**Business Rule**: §2 Product catalog — pagination hidden when total ≤ page size  
+**Selectors/API**: `my-products-page`, `pagination` (absent)  
+**Suggested Layer**: E2E Web
+
+---
+
 ### TC-046: Delete product from seller dashboard
 **Category**: Happy Path  
 **Priority**: P2  
@@ -2650,6 +2836,93 @@
 
 ---
 
+### TC-621: Initial product list loads first 20 products
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Mobile  
+**Parity**: Divergent (web uses numbered pagination — TC-123)  
+**Automation**: Patrol  
+**Preconditions**: Buyer logged in; 60+ products in seed  
+**Steps**:
+1. Navigate to the product list screen (Products tab)
+2. Wait for initial load to complete
+3. Count the product cards rendered in the widget tree without scrolling
+**Expected Results**:
+- Exactly 20 product cards are in the widget tree on initial load (first BLoC page)
+- No loading spinner at bottom of list (initial fetch complete)
+**Business Rule**: §1 Product browse — mobile infinite scroll, 20 per fetch  
+**Selectors/API**: `keys.products.productList`, `keys.products.productCard(name)`, `GET /api/products?page=1&limit=20`  
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-622: Scrolling to the bottom loads more products
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Mobile  
+**Parity**: Divergent (web uses next-page button — TC-123)  
+**Automation**: Patrol  
+**Preconditions**: Buyer logged in; more than 20 products in seed  
+**Steps**:
+1. Navigate to the product list screen
+2. Wait for initial 20 products to load
+3. Scroll to the bottom of the list (`keys.products.productList`)
+4. Wait for the next batch to resolve
+5. Count product cards in the widget tree again
+**Expected Results**:
+- More than 20 product cards are now in the widget tree
+- No error state visible
+**Business Rule**: §1 Product browse — `ProductsLoadMoreRequested` triggered within 300px of bottom  
+**Selectors/API**: `keys.products.productList`, `keys.products.productCard(name)`, `GET /api/products?page=2&limit=20`  
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-623: Loading spinner visible while fetching more products
+**Category**: Happy Path  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Mobile  
+**Parity**: Divergent  
+**Automation**: Patrol  
+**Preconditions**: Buyer logged in; more than 20 products in seed  
+**Steps**:
+1. Navigate to the product list screen; wait for initial load
+2. Scroll to the bottom of the product list to trigger load-more
+3. Before the next batch finishes, assert the load-more spinner key is visible
+**Expected Results**:
+- `CircularProgressIndicator` (keyed as the load-more spinner) is visible at the bottom of the list during the fetch
+**Business Rule**: §1 Product browse — BLoC `ProductsLoading` state while fetching next page  
+**Selectors/API**: `keys.products.loadMoreSpinner` — **key may be missing; add to `lib/features/products/keys.dart`**  
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-624: No further fetch when all products are loaded
+**Category**: Edge Case  
+**Priority**: P1  
+**Role**: Buyer  
+**Platform**: Mobile  
+**Parity**: Divergent  
+**Automation**: Patrol  
+**Preconditions**: Buyer logged in; total product count in seed is finite and known  
+**Steps**:
+1. Navigate to the product list screen
+2. Scroll to the bottom repeatedly until no new product cards appear
+3. Record the final product count
+4. Scroll to the bottom one more time and wait
+**Expected Results**:
+- Product count remains unchanged on the final scroll
+- No loading spinner appears
+- `GET /api/products` is not called again for a next page
+**Business Rule**: §1 Product browse — BLoC stops dispatching `ProductsLoadMoreRequested` when `hasReachedMax` is true  
+**Selectors/API**: `keys.products.productList`, `keys.products.loadMoreSpinner` (absent)  
+**Suggested Layer**: E2E Mobile
+
+---
+
 ### TC-092: Seller advances order through status pipeline (mobile)
 **Category**: Happy Path  
 **Priority**: P0  
@@ -3002,11 +3275,16 @@
 | TC-060–063 | 4 | Platform parity (web perspective) |
 | TC-064–066 | 3 | Seller variant listing + buyer catalog (web) |
 | TC-098–100 | 3 | Buyer variant checkout + cart (web) |
+| TC-120–122 | 3 | Seller variant product CRUD — web (edit, My Products, add) |
+| TC-123–127 | 5 | Web Products page pagination (numbered, server-side) |
+| TC-128–131 | 4 | Web MyProducts page pagination (numbered, client-side) |
 | TC-067–094, TC-095–097 | 31 | Mobile happy path — auth, browse, cart, checkout, orders, wishlist, seller |
 | TC-101–102 | 2 | Buyer variant checkout + guard (mobile) |
 | TC-607–614 | 6 | Mobile session, UI, negative, edge |
 | TC-600–606, TC-608–611 | 11 | Mobile platform parity & security |
 | TC-604–605 | (in above) | Mobile-only notifications |
-| **Total** | **123** | Web (75) + Mobile-native (48) |
+| TC-615–620 | 6 | Mobile seller product CRUD — simple and variant |
+| TC-621–624 | 4 | Mobile product list infinite scroll pagination |
+| **Total** | **147** | Web (84) + Mobile-native (63) |
 
-**Automation split:** Playwright E2E (~51 web), Patrol E2E (~38 mobile, many blocked on missing keys), Playwright-API (~15), Manual/Blocked (~5)
+**Automation split:** Playwright E2E (~60 web), Patrol E2E (~45 mobile, many blocked on missing keys), Playwright-API (~15), Manual/Blocked (~5)
