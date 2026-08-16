@@ -60,7 +60,13 @@ const adaptProduct = (p: any): Product => ({
 });
 
 class ProductService {
-  async getProducts(filters?: ProductFilters, sortBy?: SortOption, minReviews?: number): Promise<Product[]> {
+  async getProducts(
+    filters?: ProductFilters,
+    sortBy?: SortOption,
+    minReviews?: number,
+    page = 1,
+    limit = 20,
+  ): Promise<{ products: Product[]; pages: number; total: number }> {
     const params = new URLSearchParams();
 
     if (filters?.category && filters.category !== 'All') {
@@ -88,12 +94,11 @@ class ProductService {
       params.append('minReviews', minReviews.toString());
     }
 
-    params.append('limit', '100');
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
 
     const url = `${API_ENDPOINTS.PRODUCTS}?${params}`;
-    const response = await fetch(url, {
-      headers: getHeaders()
-    });
+    const response = await fetch(url, { headers: getHeaders() });
 
     if (!response.ok) {
       throw new Error('Failed to fetch products');
@@ -101,8 +106,11 @@ class ProductService {
 
     const data = await response.json();
 
-    // Adapt backend response to frontend format
-    return data.products.map((p: any) => adaptProduct(p));
+    return {
+      products: data.products.map((p: any) => adaptProduct(p)),
+      pages: data.pages ?? 1,
+      total: data.total ?? 0,
+    };
   }
 
   async getProductById(id: string): Promise<Product | null> {
@@ -125,7 +133,7 @@ class ProductService {
   }
 
   async searchProducts(query: string): Promise<Product[]> {
-    return this.getProducts({ searchQuery: query });
+    return (await this.getProducts({ searchQuery: query })).products;
   }
 
   getCategories(): string[] {
@@ -136,15 +144,15 @@ class ProductService {
   async getFeaturedProductsAsync(count: number = 8): Promise<Product[]> {
     // minReviews=1 is enforced server-side so sellers cannot game the
     // Featured section by listing new products with zero reviews.
-    const products = await this.getProducts(undefined, 'rating', 1);
-    return products.slice(0, count);
+    const { products } = await this.getProducts(undefined, 'rating', 1, 1, count);
+    return products;
   }
 
   async getRelatedProductsAsync(productId: string, count: number = 4): Promise<Product[]> {
     const product = await this.getProductById(productId);
     if (!product) return [];
 
-    const products = await this.getProducts({ category: product.category });
+    const { products } = await this.getProducts({ category: product.category }, undefined, undefined, 1, count + 1);
     return products.filter(p => p.id !== productId).slice(0, count);
   }
 

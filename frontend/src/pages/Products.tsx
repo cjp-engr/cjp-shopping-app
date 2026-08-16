@@ -5,10 +5,12 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { ProductCard } from '../components/common/ProductCard';
 import { Spinner } from '../components/common/Spinner';
+import { Pagination } from '../components/common/Pagination';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from '../hooks/useProducts';
 import { useDebounce } from '../hooks/useDebounce';
+import { useGridColumns, PAGE_SIZE_BY_COLUMNS } from '../hooks/useGridColumns';
 import { Search, SlidersHorizontal, X, Star } from 'lucide-react';
 
 export const Products: React.FC = () => {
@@ -17,6 +19,10 @@ export const Products: React.FC = () => {
   const [sortBy, setSortBy] = useState<SortOption>('rating');
   const [minRating, setMinRating] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
+
+  const columns = useGridColumns();
+  const pageSize = PAGE_SIZE_BY_COLUMNS[columns];
 
   const { addToCart } = useCart();
   const { user } = useAuth();
@@ -35,7 +41,11 @@ export const Products: React.FC = () => {
     rating: minRating || undefined,
   };
 
-  const { products, loading } = useProducts(filters, sortBy);
+  // Reset to page 1 whenever filters, sort, or column count changes
+  const filtersKey = JSON.stringify(filters) + sortBy;
+  useEffect(() => { setPage(1); }, [filtersKey, pageSize]);
+
+  const { products, loading, totalPages, total } = useProducts(filters, sortBy, page, pageSize);
 
   const visibleProducts = products.filter(p => p.sellerId !== user?.id);
 
@@ -46,6 +56,7 @@ export const Products: React.FC = () => {
     setSelectedCategory('All');
     setMinRating(0);
     setSortBy('rating');
+    setPage(1);
   };
 
   const activeFiltersCount = [selectedCategory !== 'All', minRating > 0, searchInput !== ''].filter(Boolean).length;
@@ -57,7 +68,7 @@ export const Products: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">All Products</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {loading ? 'Loading…' : `${visibleProducts.length} products found`}
+            {loading ? 'Loading…' : `${total} products found`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -196,9 +207,9 @@ export const Products: React.FC = () => {
               <Button size="sm" onClick={handleResetFilters}>Reset Filters</Button>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {visibleProducts
-                .map(product => (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {visibleProducts.map(product => (
                   <ProductCard
                     key={product.id}
                     product={product}
@@ -206,7 +217,13 @@ export const Products: React.FC = () => {
                     onAddToCart={p => addToCart(p, 1)}
                   />
                 ))}
-            </div>
+              </div>
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={p => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              />
+            </>
           )}
         </div>
       </div>
