@@ -26,6 +26,7 @@ class ProductsScreen extends StatefulWidget {
 
 class _ProductsScreenState extends State<ProductsScreen> {
   final _searchCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
   String? _selectedCategory;
   String _sortBy = 'newest';
   bool _searchActive = false;
@@ -37,6 +38,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
     super.initState();
     _load();
     context.read<ProductBloc>().add(CategoriesLoadRequested());
+    _scrollCtrl.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!_scrollCtrl.hasClients) return;
+    if (_scrollCtrl.position.pixels >=
+        _scrollCtrl.position.maxScrollExtent - 300) {
+      context.read<ProductBloc>().add(ProductsLoadMoreRequested());
+    }
   }
 
   void _load({bool refresh = false}) {
@@ -52,6 +62,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
@@ -333,7 +344,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget _buildBody(BuildContext context) {
     final onSurface = context.onSurfaceColor;
     return BlocBuilder<ProductBloc, ProductState>(
-      buildWhen: (p, c) => p.status != c.status || p.products != c.products,
+      buildWhen: (p, c) =>
+          p.status != c.status ||
+          p.products != c.products ||
+          p.isLoadingMore != c.isLoadingMore,
       builder: (context, state) {
         if (state.status == ProductStatus.loading && state.products.isEmpty) {
           return const LoadingWidget();
@@ -363,6 +377,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           onRefresh: () async => _load(refresh: true),
           child: CustomScrollView(
             key: keys.products.productList,
+            controller: _scrollCtrl,
             slivers: [
               if (!_searchActive)
                 SliverToBoxAdapter(
@@ -423,7 +438,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   ),
                 );
               }),
-              const SliverToBoxAdapter(child: SizedBox(height: AppSizes.xl)),
+              SliverToBoxAdapter(
+                child: state.isLoadingMore
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: AppSizes.md),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                              color: AppColors.primary),
+                        ),
+                      )
+                    : const SizedBox(height: AppSizes.xl),
+              ),
             ],
           ),
         );

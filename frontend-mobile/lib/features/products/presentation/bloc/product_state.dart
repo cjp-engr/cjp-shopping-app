@@ -15,6 +15,10 @@ class ProductState extends Equatable {
   final SellerProfileEntity? sellerProfile;
   final ProductStatus sellerProfileStatus;
   final String? sellerProfileError;
+  final int currentPage;
+  final bool hasMore;
+  final bool isLoadingMore;
+  final String? activeSortBy;
 
   const ProductState({
     this.status = ProductStatus.initial,
@@ -27,6 +31,10 @@ class ProductState extends Equatable {
     this.sellerProfile,
     this.sellerProfileStatus = ProductStatus.initial,
     this.sellerProfileError,
+    this.currentPage = 1,
+    this.hasMore = true,
+    this.isLoadingMore = false,
+    this.activeSortBy,
   });
 
   ProductState copyWith({
@@ -40,6 +48,10 @@ class ProductState extends Equatable {
     SellerProfileEntity? sellerProfile,
     ProductStatus? sellerProfileStatus,
     String? sellerProfileError,
+    int? currentPage,
+    bool? hasMore,
+    bool? isLoadingMore,
+    String? activeSortBy,
   }) {
     return ProductState(
       status: status ?? this.status,
@@ -52,6 +64,10 @@ class ProductState extends Equatable {
       sellerProfile: sellerProfile ?? this.sellerProfile,
       sellerProfileStatus: sellerProfileStatus ?? this.sellerProfileStatus,
       sellerProfileError: sellerProfileError,
+      currentPage: currentPage ?? this.currentPage,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      activeSortBy: activeSortBy ?? this.activeSortBy,
     );
   }
 
@@ -67,5 +83,9 @@ class ProductState extends Equatable {
         sellerProfile,
         sellerProfileStatus,
         sellerProfileError,
+        currentPage,
+        hasMore,
+        isLoadingMore,
+        activeSortBy,
       ];
 }

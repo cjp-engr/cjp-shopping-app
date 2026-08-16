@@ -30,6 +30,8 @@ final class ProductDetailRequested extends ProductEvent {
   List<Object?> get props => [id];
 }
 
+final class ProductsLoadMoreRequested extends ProductEvent {}
+
 final class CategoriesLoadRequested extends ProductEvent {}
 
 final class SellerProfileRequested extends ProductEvent {
