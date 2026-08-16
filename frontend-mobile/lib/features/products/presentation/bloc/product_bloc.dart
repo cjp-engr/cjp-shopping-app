@@ -22,6 +22,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       status: ProductStatus.loading,
       activeCategory: event.category,
       searchQuery: event.search,
+      activeSortBy: event.sortBy,
       currentPage: 1,
       hasMore: true,
       isLoadingMore: false,
@@ -55,7 +56,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       final more = await _repository.getProducts(
         search: state.searchQuery,
         category: state.activeCategory,
-        sort: null,
+        sort: state.activeSortBy,
         page: nextPage,
         limit: _pageSize,
       );

@@ -42,6 +42,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   void _onScroll() {
+    if (!_scrollCtrl.hasClients) return;
     if (_scrollCtrl.position.pixels >=
         _scrollCtrl.position.maxScrollExtent - 300) {
       context.read<ProductBloc>().add(ProductsLoadMoreRequested());
@@ -343,7 +344,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget _buildBody(BuildContext context) {
     final onSurface = context.onSurfaceColor;
     return BlocBuilder<ProductBloc, ProductState>(
-      buildWhen: (p, c) => p.status != c.status || p.products != c.products,
+      buildWhen: (p, c) =>
+          p.status != c.status ||
+          p.products != c.products ||
+          p.isLoadingMore != c.isLoadingMore,
       builder: (context, state) {
         if (state.status == ProductStatus.loading && state.products.isEmpty) {
           return const LoadingWidget();
