@@ -87,6 +87,15 @@
 | TC-045 | E2E | Playwright | P2 |
 | TC-121 | E2E | Playwright | P2 |
 | TC-046 | E2E | Playwright | P2 |
+| TC-123 | E2E | Playwright | P1 |
+| TC-124 | E2E | Playwright | P1 |
+| TC-125 | E2E | Playwright | P1 |
+| TC-126 | E2E | Playwright | P1 |
+| TC-127 | E2E | Playwright | P1 |
+| TC-128 | E2E | Playwright | P1 |
+| TC-129 | E2E | Playwright | P1 |
+| TC-130 | E2E | Playwright | P1 |
+| TC-131 | E2E | Playwright | P1 |
 | TC-047 | E2E | Playwright | P0 |
 | TC-048 | API | Playwright-API | P1 |
 | TC-049 | E2E | Playwright | P1 |

@@ -79,6 +79,10 @@
 | TC-618 | Seller views variant product (Read) | E2E | Patrol | P1 | `keys.seller.productTile(id)` (exists); `SellerApiClient.createVariantProduct()` — **method missing** | Divergent (no web equivalent) |
 | TC-619 | Seller edits variant product (Update) | E2E | Patrol | P1 | `keys.seller.editProductButton(id)` (exists); `keys.seller.wizardVariantPriceField(label)` (exists) | Parity TC-120 (both) |
 | TC-620 | Seller deletes variant product (Delete) | E2E | Patrol | P1 | `keys.seller.deleteProductButton(id)` (exists) | Parity TC-046 (both) |
+| TC-621 | Initial product list loads 20 products | E2E | Patrol | P1 | `keys.products.productList` | Divergent (web: TC-123) |
+| TC-622 | Scroll to bottom loads more products | E2E | Patrol | P1 | `keys.products.productList` | Divergent (web: TC-123) |
+| TC-623 | Loading spinner visible while fetching more | E2E | Patrol | P1 | `keys.products.loadMoreSpinner` — **key may be missing** | Divergent |
+| TC-624 | No fetch when all products loaded | E2E | Patrol | P1 | `keys.products.loadMoreSpinner` (absent check) | Divergent |
 | TC-092 | Seller order pipeline | E2E | Patrol | P0 | `/seller?tab=orders` | Seller smoke |
 | TC-093 | Seller voucher CRUD | E2E | Patrol | P1 | `/seller?tab=vouchers` | Coupon E2E |
 | TC-094 | Preview as buyer | E2E | Patrol | P2 | `?hideEdit=1` | vs web TC-045 |
