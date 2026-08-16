@@ -36,6 +36,10 @@ class SellerKeys {
   final wizardAddImageTile = const _SellerKey('wizardAddImageTile');
   final wizardCameraOption = const _SellerKey('wizardCameraOption');
   final wizardImageLinkOption = const _SellerKey('wizardImageLinkOption');
+  final wizardImageLinkField = const _SellerKey('wizardImageLinkField');
+  final wizardImageLinkCancelButton =
+      const _SellerKey('wizardImageLinkCancelButton');
+  final wizardImageLinkAddButton = const _SellerKey('wizardImageLinkAddButton');
   final wizardGalleryOption = const _SellerKey('wizardGalleryOption');
 
   // Variants (Step 1)
@@ -77,7 +81,9 @@ class SellerKeys {
   // ignore: library_private_types_in_public_api
   _SellerKey productTile(String id) => _SellerKey('productTile_$id');
   // ignore: library_private_types_in_public_api
-  _SellerKey editProductButton(String id) => _SellerKey('editProductButton_$id');
+  _SellerKey editProductButton(String id) =>
+      _SellerKey('editProductButton_$id');
   // ignore: library_private_types_in_public_api
-  _SellerKey deleteProductButton(String id) => _SellerKey('deleteProductButton_$id');
+  _SellerKey deleteProductButton(String id) =>
+      _SellerKey('deleteProductButton_$id');
 }

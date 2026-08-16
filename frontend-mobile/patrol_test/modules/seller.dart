@@ -113,7 +113,8 @@ final class Seller extends Module {
   Future<void> expectProductTileAbsent(String productId) async {
     await $(keys.seller.dashboardScreen).waitUntilVisible();
     if ($(keys.seller.productTile(productId)).exists) {
-      throw StateError('Product tile should not exist after deletion: $productId');
+      throw StateError(
+          'Product tile should not exist after deletion: $productId');
     }
   }
 
@@ -142,6 +143,15 @@ final class Seller extends Module {
         .tap(Selector(resourceId: 'com.android.camera2:id/shutter_button'));
     await $.platform.mobile
         .tap(Selector(resourceId: 'com.android.camera2:id/done_button'));
+    await $(keys.seller.wizardNextButton).tap();
+  }
+
+  Future<void> addImageViaLink() async {
+    await $(keys.seller.wizardAddImageTile).tap();
+    await $(keys.seller.wizardImageLinkOption).tap();
+    await $(keys.seller.wizardImageLinkField).enterText(
+        'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400');
+    await $(keys.seller.wizardImageLinkAddButton).tap();
     await $(keys.seller.wizardNextButton).tap();
   }
 
