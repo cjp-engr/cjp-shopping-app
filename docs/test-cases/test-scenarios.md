@@ -7,7 +7,8 @@
 
 | Platform | File | Coverage |
 |----------|------|----------|
-| Web | [test-scenarios-web.md](test-scenarios-web.md) | TC-001–066, TC-098–100, TC-105–131, TC-107–119 |
+| Web | [test-scenarios-web.md](test-scenarios-web.md) | TC-001–066, TC-098–100, TC-105–106, TC-109, TC-112–113, TC-120–131 |
+| API | [test-scenarios-api.md](test-scenarios-api.md) | TC-107–108, TC-110–111 |
 | Mobile | [test-scenarios-mobile.md](test-scenarios-mobile.md) | TC-067–097, TC-101–104, TC-600–624 |
 
 ---
