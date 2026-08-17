@@ -8,7 +8,7 @@
 | Platform | File | Coverage |
 |----------|------|----------|
 | Web | [test-scenarios-web.md](test-scenarios-web.md) | TC-001–066, TC-098–100, TC-105–106, TC-109, TC-112–113, TC-120–131 |
-| API | [test-scenarios-api.md](test-scenarios-api.md) | TC-107–108, TC-110–111 |
+| API | [test-scenarios-api.md](test-scenarios-api.md) | TC-107–108, TC-110–111, TC-132–136 |
 | Mobile | [test-scenarios-mobile.md](test-scenarios-mobile.md) | TC-067–097, TC-101–104, TC-600–624 |
 
 ---
@@ -31,6 +31,7 @@
 | TC-001–040 | 40 | Buyer auth, browse, cart, checkout, orders, reviews, UI (web) |
 | TC-041–052 | 12 | Seller orders, vouchers, wizard (web) |
 | TC-053–055 | 3 | Security (web/API) |
+| TC-132–136 | 5 | Security (API) — 401/403 enforcement, IDOR, weak password |
 | TC-114–119 | 6 | Rate limiting — headers, decrement, 429 enforcement |
 | TC-056–059 | 4 | Edge cases (web) |
 | TC-060–063 | 4 | Platform parity (web perspective) |
@@ -46,6 +47,6 @@
 | TC-604–605 | (in above) | Mobile-only notifications |
 | TC-615–620 | 6 | Mobile seller product CRUD — simple and variant |
 | TC-621–624 | 4 | Mobile product list infinite scroll pagination |
-| **Total** | **147** | Web (84) + Mobile-native (63) |
+| **Total** | **152** | Web (84) + Mobile-native (63) + API security (5) |
 
 **Automation split:** Playwright E2E (~60 web), Patrol E2E (~45 mobile, many blocked on missing keys), Playwright-API (~15), Manual/Blocked (~5)

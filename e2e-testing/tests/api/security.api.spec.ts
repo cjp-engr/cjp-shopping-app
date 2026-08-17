@@ -1,8 +1,8 @@
-// TC coverage: TC-120 — Protected routes return 401 with no token
-//              TC-121 — Tampered JWT returns 401
-//              TC-122 — Seller order list is scoped to own account (IDOR)
-//              TC-123 — Buyer blocked from all key seller routes (extends TC-053)
-//              TC-124 — Weak password on signup returns 400
+// TC coverage: TC-132 — Protected routes return 401 with no token
+//              TC-133 — Tampered JWT returns 401
+//              TC-134 — Seller order list is scoped to own account (IDOR)
+//              TC-135 — Buyer blocked from all key seller routes (extends TC-053)
+//              TC-136 — Weak password on signup returns 400
 
 import { test, expect, request as pwRequest } from '@playwright/test';
 import {
@@ -40,9 +40,9 @@ test.beforeAll(async () => {
   await ctx.dispose();
 });
 
-// ── TC-120 ───────────────────────────────────────────────────────────────────
+// ── TC-132 ───────────────────────────────────────────────────────────────────
 
-test.describe('TC-120: Protected routes return 401 with no token', () => {
+test.describe('TC-132: Protected routes return 401 with no token', () => {
   const protectedRoutes: { method: 'get' | 'put' | 'post'; path: string; label: string }[] = [
     { method: 'get',  path: '/api/auth/me',                                              label: 'GET /api/auth/me' },
     { method: 'get',  path: '/api/orders',                                               label: 'GET /api/orders' },
@@ -54,7 +54,7 @@ test.describe('TC-120: Protected routes return 401 with no token', () => {
   for (const route of protectedRoutes) {
     test(
       `${route.label} returns 401 without Authorization header`,
-      { tag: ['@TC-120', '@api', '@security'] },
+      { tag: ['@TC-132', '@api', '@security'] },
       async ({ request }) => {
         const res = await request[route.method](route.path);
         expect(res.status()).toBe(401);
@@ -65,12 +65,12 @@ test.describe('TC-120: Protected routes return 401 with no token', () => {
   }
 });
 
-// ── TC-121 ───────────────────────────────────────────────────────────────────
+// ── TC-133 ───────────────────────────────────────────────────────────────────
 
-test.describe('TC-121: Tampered JWT returns 401', () => {
+test.describe('TC-133: Tampered JWT returns 401', () => {
   test(
     'GET /api/auth/me with a corrupted token signature returns 401',
-    { tag: ['@TC-121', '@api', '@security'] },
+    { tag: ['@TC-133', '@api', '@security'] },
     async ({ request }) => {
       // Corrupt the last character of the signature segment
       const validToken = freshBuyerToken;
@@ -89,19 +89,19 @@ test.describe('TC-121: Tampered JWT returns 401', () => {
   );
 });
 
-// ── TC-122 ───────────────────────────────────────────────────────────────────
+// ── TC-134 ───────────────────────────────────────────────────────────────────
 
-test.describe('TC-122: Seller order list is scoped to own account', () => {
+test.describe('TC-134: Seller order list is scoped to own account', () => {
   test(
     'GET /api/seller/orders returns only orders for seller1 products, not seller2',
-    { tag: ['@TC-122', '@api', '@security'] },
+    { tag: ['@TC-134', '@api', '@security'] },
     async ({ request }) => {
       const ts = Date.now();
 
       // Seller2 creates a product
       const productRes = await request.post('/api/seller/products', {
         multipart: {
-          name: `TC-122 Seller2 Product ${ts}`,
+          name: `TC-134 Seller2 Product ${ts}`,
           description: 'IDOR scoping test — must not appear in seller1 orders',
           price: '20',
           category: 'Electronics',
@@ -137,9 +137,9 @@ test.describe('TC-122: Seller order list is scoped to own account', () => {
   );
 });
 
-// ── TC-123 ───────────────────────────────────────────────────────────────────
+// ── TC-135 ───────────────────────────────────────────────────────────────────
 
-test.describe('TC-123: Buyer blocked from all key seller routes', () => {
+test.describe('TC-135: Buyer blocked from all key seller routes', () => {
   const sellerRoutes: { method: 'get' | 'post' | 'put'; path: string; label: string }[] = [
     { method: 'get',  path: '/api/seller/products',                                      label: 'GET /api/seller/products' },
     { method: 'post', path: '/api/seller/products',                                      label: 'POST /api/seller/products' },
@@ -150,7 +150,7 @@ test.describe('TC-123: Buyer blocked from all key seller routes', () => {
   for (const route of sellerRoutes) {
     test(
       `${route.label} returns 403 for buyer token`,
-      { tag: ['@TC-123', '@api', '@security'] },
+      { tag: ['@TC-135', '@api', '@security'] },
       async ({ request }) => {
         const res = await request[route.method](route.path, {
           headers: authHeaders(freshBuyerToken),
@@ -163,12 +163,12 @@ test.describe('TC-123: Buyer blocked from all key seller routes', () => {
   }
 });
 
-// ── TC-124 ───────────────────────────────────────────────────────────────────
+// ── TC-136 ───────────────────────────────────────────────────────────────────
 
-test.describe('TC-124: Weak password on signup returns 400', () => {
+test.describe('TC-136: Weak password on signup returns 400', () => {
   test(
     'POST /api/auth/signup with a 3-character password returns 400',
-    { tag: ['@TC-124', '@api', '@security'] },
+    { tag: ['@TC-136', '@api', '@security'] },
     async ({ request }) => {
       const res = await request.post('/api/auth/signup', {
         data: {
