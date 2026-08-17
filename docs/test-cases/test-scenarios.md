@@ -7,8 +7,8 @@
 
 | Platform | File | Coverage |
 |----------|------|----------|
-| Web | [test-scenarios-web.md](test-scenarios-web.md) | TC-001–066, TC-098–100, TC-105–106, TC-109, TC-112–113, TC-120–131 |
-| API | [test-scenarios-api.md](test-scenarios-api.md) | TC-107–108, TC-110–111, TC-132–136 |
+| Web | [test-scenarios-web.md](test-scenarios-web.md) | TC-001–025, TC-029–032, TC-034, TC-037–047, TC-049–052, TC-055, TC-059–066, TC-098–100, TC-105–106, TC-109, TC-112, TC-120–131 |
+| API | [test-scenarios-api.md](test-scenarios-api.md) | TC-026–028, TC-033, TC-035–036, TC-048, TC-053–054, TC-056–058, TC-107–108, TC-110–111, TC-113–119, TC-132–136 |
 | Mobile | [test-scenarios-mobile.md](test-scenarios-mobile.md) | TC-067–097, TC-101–104, TC-600–624 |
 
 ---
@@ -30,10 +30,12 @@
 |-------|-------|-------|
 | TC-001–040 | 40 | Buyer auth, browse, cart, checkout, orders, reviews, UI (web) |
 | TC-041–052 | 12 | Seller orders, vouchers, wizard (web) |
-| TC-053–055 | 3 | Security (web/API) |
+| TC-055 | 1 | Security — protected routes require authentication (web) |
+| TC-053–054 | 2 | Security — role enforcement (API) |
+| TC-056–058 | 3 | Edge cases (API) — stock, coupon, description validation |
+| TC-059 | 1 | Edge cases (web) — stale cart cleanup |
+| TC-114–119 | 6 | Rate limiting — headers, decrement, 429 enforcement (API) |
 | TC-132–136 | 5 | Security (API) — 401/403 enforcement, IDOR, weak password |
-| TC-114–119 | 6 | Rate limiting — headers, decrement, 429 enforcement |
-| TC-056–059 | 4 | Edge cases (web) |
 | TC-060–063 | 4 | Platform parity (web perspective) |
 | TC-064–066 | 3 | Seller variant listing + buyer catalog (web) |
 | TC-098–100 | 3 | Buyer variant checkout + cart (web) |

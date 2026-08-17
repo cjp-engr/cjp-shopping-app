@@ -669,62 +669,6 @@
 
 ---
 
-### TC-026: Order total matches pricing formula
-**Category**: Business Rule  
-**Priority**: P0  
-**Role**: Buyer  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: Known product price, discount, coupon, delivery  
-**Steps**:
-1. Place order via API or UI with controlled inputs
-2. Assert persisted `subtotal`, `productDiscount`, `discount`, `tax`, `shipping`, `total`
-**Expected Results**:
-- `tax` = 8% of after-discount subtotal
-- `total` = afterDiscounts + tax + shipping (2 decimal places)
-**Business Rule**: §4 Price calculation  
-**Selectors/API**: `POST /api/orders`, order response body  
-**Suggested Layer**: API
-
----
-
-### TC-027: Default shipping $9.99 when subtotal after discounts < $50
-**Category**: Business Rule  
-**Priority**: P1  
-**Role**: Buyer  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: Seller without custom shipping; cart subtotal < $50 after discounts  
-**Steps**:
-1. Place order meeting conditions
-**Expected Results**:
-- `shipping` = 9.99 on order record
-**Business Rule**: §4 Shipping default  
-**Selectors/API**: `POST /api/orders`  
-**Suggested Layer**: API
-
----
-
-### TC-028: Free shipping when subtotal after discounts ≥ $50
-**Category**: Business Rule  
-**Priority**: P1  
-**Role**: Buyer  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: Default shipping rules; effective subtotal ≥ $50  
-**Steps**:
-1. Place qualifying order
-**Expected Results**:
-- `shipping` = 0
-**Business Rule**: §4 Shipping default  
-**Selectors/API**: `POST /api/orders`  
-**Suggested Layer**: API
-
----
-
 ### TC-029: Checkout blocked with missing address fields
 **Category**: Negative  
 **Priority**: P1  
@@ -801,24 +745,6 @@
 
 ---
 
-### TC-033: Buyer cannot cancel processing order
-**Category**: Negative  
-**Priority**: P1  
-**Role**: Buyer  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: Order status `processing`  
-**Steps**:
-1. Attempt cancel via API
-**Expected Results**:
-- **400** — cancel not allowed
-**Business Rule**: §5 Buyer cancel — pending/preparing only  
-**Selectors/API**: `PUT /api/orders/:id/status`  
-**Suggested Layer**: API
-
----
-
 ### TC-112: Buyer2's order history page shows only their own orders, not buyer1's
 **Category**: Security / Isolation  
 **Priority**: P1  
@@ -860,60 +786,6 @@
 **Business Rule**: §7 Reviews  
 **Selectors/API**: `review-btn-{productId}`, `POST /api/reviews`  
 **Suggested Layer**: E2E Web
-
----
-
-### TC-035: Duplicate review blocked
-**Category**: Negative  
-**Priority**: P1  
-**Role**: Buyer  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: User already reviewed product  
-**Steps**:
-1. POST second review for same product
-**Expected Results**:
-- **409** duplicate review
-**Business Rule**: §7 Unique (userId, productId)  
-**Selectors/API**: `POST /api/reviews`  
-**Suggested Layer**: API
-
----
-
-### TC-036: Review blocked before delivery
-**Category**: Security  
-**Priority**: P1  
-**Role**: Buyer  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: Order status `shipped` (not delivered)  
-**Steps**:
-1. Attempt create review via API
-**Expected Results**:
-- **403** — not eligible
-**Business Rule**: §7 Eligibility  
-**Selectors/API**: `POST /api/reviews`  
-**Suggested Layer**: API
-
----
-
-### TC-113: User cannot follow themselves (API)
-**Category**: Security  
-**Priority**: P1  
-**Role**: Buyer  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: Authenticated user  
-**Steps**:
-1. `POST /api/users/:id/follow` using own user ID as `:id`
-**Expected Results**:
-- **400** — `"Cannot follow yourself"`
-**Business Rule**: §8 Follow system  
-**Selectors\API**: `POST /api/users/:id/follow`  
-**Suggested Layer**: API
 
 ---
 
@@ -1443,24 +1315,6 @@
 
 ---
 
-### TC-048: Seller invalid status transition rejected
-**Category**: Negative  
-**Priority**: P1  
-**Role**: Seller  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: Order in `pending`  
-**Steps**:
-1. Attempt pending → shipped via API
-**Expected Results**:
-- **400** `"Cannot transition order from 'pending' to 'shipped'"`
-**Business Rule**: §5 Invalid transition  
-**Selectors/API**: `PUT /api/seller/orders/:id/status`  
-**Suggested Layer**: API
-
----
-
 ### TC-049: Seller cancel order with reason
 **Category**: Happy Path  
 **Priority**: P1  
@@ -1541,42 +1395,6 @@
 
 ## Security & Access Control
 
-### TC-053: Buyer blocked from seller API routes
-**Category**: Security  
-**Priority**: P0  
-**Role**: Buyer  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: Buyer JWT  
-**Steps**:
-1. Call `PUT /api/seller/orders/:id/status` as buyer
-**Expected Results**:
-- **403** forbidden
-**Business Rule**: §1 requireSeller  
-**Selectors/API**: `PUT /api/seller/orders/:id/status`  
-**Suggested Layer**: API
-
----
-
-### TC-054: Seller cannot edit another seller's product
-**Category**: Security  
-**Priority**: P1  
-**Role**: Seller  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: Two seller accounts  
-**Steps**:
-1. Seller A attempts update/delete Seller B product
-**Expected Results**:
-- **403** forbidden
-**Business Rule**: §1 Authorization  
-**Selectors/API**: `PUT /api/products/:id`  
-**Suggested Layer**: API
-
----
-
 ### TC-055: Protected routes require authentication
 **Category**: Security  
 **Priority**: P0  
@@ -1597,60 +1415,6 @@
 
 
 ## Edge Cases
-
-### TC-056: Insufficient stock at checkout returns 400
-**Category**: Edge Case  
-**Priority**: P1  
-**Role**: Buyer  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: Cart qty exceeds stock at order time  
-**Steps**:
-1. Submit order when stock depleted
-**Expected Results**:
-- **400** `"Insufficient stock for..."`
-**Business Rule**: §4 Stock validation  
-**Selectors/API**: `POST /api/orders`  
-**Suggested Layer**: API
-
----
-
-### TC-057: Coupon below minimum order amount rejected
-**Category**: Edge Case  
-**Priority**: P1  
-**Role**: Buyer  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: Coupon with `minOrderAmount` > cart subtotal  
-**Steps**:
-1. Validate coupon via API
-**Expected Results**:
-- **400** minimum not met
-**Business Rule**: §6 Validation  
-**Selectors/API**: `POST /api/coupons/validate`  
-**Suggested Layer**: API
-
----
-
-### TC-058: Product description max 200 characters enforced
-**Category**: Edge Case  
-**Priority**: P2  
-**Role**: Seller  
-**Platform**: Web  
-**Parity**: Both  
-**Automation**: Playwright-API  
-**Preconditions**: Seller token  
-**Steps**:
-1. Create/update product with description > 200 chars
-**Expected Results**:
-- **400** validation error
-**Business Rule**: §2 description max 200  
-**Selectors/API**: `POST /api/products`  
-**Suggested Layer**: API
-
----
 
 ### TC-059: Stale product removed from cart on load (web)
 **Category**: Edge Case  
@@ -1796,126 +1560,3 @@
 
 ---
 
-
-## Security & Infrastructure — Rate Limiting
-
-### TC-114: Auth route response includes rate limit headers
-**Category**: Happy Path
-**Priority**: P1
-**Role**: Any
-**Platform**: Web
-**Parity**: Web (backend shared with mobile)
-**Automation**: Playwright-API
-**Preconditions**: Backend running with rate limiting middleware active
-**Steps**:
-1. `POST /api/auth/login` with any credentials
-**Expected Results**:
-- Response includes `RateLimit-Limit` header
-- Response includes `RateLimit-Remaining` header
-- Response includes `RateLimit-Reset` header
-**Business Rule**: §12 Rate Limiting
-**Selectors/API**: `POST /api/auth/login`
-**Suggested Layer**: API
-
----
-
-### TC-115: API route response includes rate limit headers
-**Category**: Happy Path
-**Priority**: P1
-**Role**: Any
-**Platform**: Web
-**Parity**: Web (backend shared with mobile)
-**Automation**: Playwright-API
-**Preconditions**: Backend running with rate limiting middleware active
-**Steps**:
-1. `GET /api/products`
-**Expected Results**:
-- Response includes `RateLimit-Limit` header
-- Response includes `RateLimit-Remaining` header
-- Response includes `RateLimit-Reset` header
-**Business Rule**: §12 Rate Limiting
-**Selectors/API**: `GET /api/products`
-**Suggested Layer**: API
-
----
-
-### TC-116: RateLimit-Remaining decrements with each request
-**Category**: Happy Path
-**Priority**: P1
-**Role**: Any
-**Platform**: Web
-**Parity**: Web (backend shared with mobile)
-**Automation**: Playwright-API
-**Preconditions**: Backend running; window not exhausted
-**Steps**:
-1. `GET /api/products` — record `RateLimit-Remaining` value
-2. `GET /api/products` again immediately
-**Expected Results**:
-- `RateLimit-Remaining` on second response is exactly 1 less than first
-**Business Rule**: §12 Rate Limiting
-**Selectors/API**: `GET /api/products`
-**Suggested Layer**: API
-
----
-
-### TC-117: Auth route returns 429 after limit is exhausted
-**Category**: Negative
-**Priority**: P1
-**Role**: Any
-**Platform**: Web
-**Parity**: Web (backend shared with mobile)
-**Automation**: Playwright-API
-**Preconditions**: Backend started with `RATE_LIMIT_AUTH_MAX=3` (low-limit mode)
-**Steps**:
-1. `POST /api/auth/login` with bad credentials — repeat until limit reached (3×)
-2. `POST /api/auth/login` one more time (4th request)
-**Expected Results**:
-- **429** on the 4th request
-- `body.success` → `false`
-- `body.message` → `"Too many requests, please try again later."`
-**Business Rule**: §12 Rate Limiting
-**Selectors/API**: `POST /api/auth/login`
-**Suggested Layer**: API
-
----
-
-### TC-118: 429 response includes Retry-After header
-**Category**: Negative
-**Priority**: P1
-**Role**: Any
-**Platform**: Web
-**Parity**: Web (backend shared with mobile)
-**Automation**: Playwright-API
-**Preconditions**: Backend started with `RATE_LIMIT_AUTH_MAX=3` (low-limit mode)
-**Steps**:
-1. Exhaust the auth limit (3 requests)
-2. Send one more `POST /api/auth/login`
-**Expected Results**:
-- **429** status
-- Response includes `Retry-After` header with a positive integer value
-**Business Rule**: §12 Rate Limiting
-**Selectors/API**: `POST /api/auth/login`
-**Suggested Layer**: API
-
----
-
-### TC-119: General API route returns 429 after limit is exhausted
-**Category**: Negative
-**Priority**: P1
-**Role**: Any
-**Platform**: Web
-**Parity**: Web (backend shared with mobile)
-**Automation**: Playwright-API
-**Preconditions**: Backend started with `RATE_LIMIT_API_MAX=5` (low-limit mode)
-**Steps**:
-1. `GET /api/products` — repeat until limit reached (5×)
-2. `GET /api/products` one more time (6th request)
-**Expected Results**:
-- **429** on the 6th request
-- `body.success` → `false`
-- `body.message` → `"Too many requests, please try again later."`
-**Business Rule**: §12 Rate Limiting
-**Selectors/API**: `GET /api/products`
-**Suggested Layer**: API
-
----
