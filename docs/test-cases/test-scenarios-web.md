@@ -1294,26 +1294,6 @@
 
 ---
 
-### TC-122: Seller views My Products list
-**Category**: Happy Path  
-**Priority**: P1  
-**Role**: Seller  
-**Platform**: Web  
-**Parity**: Web-only  
-**Automation**: Playwright  
-**Preconditions**: Seller with at least one listed product  
-**Steps**:
-1. Navigate to `/my-products`
-2. Verify product card is visible with correct category label
-**Expected Results**:
-- My Products page loads (`my-products-page` visible)
-- Product card appears with correct category
-**Business Rule**: §9 Platform — `/my-products` web-only  
-**Selectors\API**: `my-products-page`, `nav-link-my-products`, `product-card-{id}`  
-**Suggested Layer**: E2E Web
-
----
-
 ### TC-123: Products page — navigate to next page loads different products
 **Category**: Happy Path  
 **Priority**: P1  
