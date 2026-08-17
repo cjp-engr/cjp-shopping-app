@@ -19,6 +19,7 @@
 1. Navigate to `/login`
 2. Enter valid email and password
 3. Click Sign in
+
 **Expected Results**:
 - Redirect to home or prior `?redirect=` URL
 - Navbar shows user menu; `nav-signin-link` hidden
@@ -40,6 +41,7 @@
 1. Navigate to `/login`
 2. Enter valid email with wrong password
 3. Submit form
+
 **Expected Results**:
 - Stay on `/login`
 - `login-error-alert` visible with error message
@@ -63,6 +65,7 @@
 2. Fill first name, last name, email, password (8+ chars, upper, lower, number), confirm password
 3. Accept terms checkbox
 4. Submit
+
 **Expected Results**:
 - Account created; redirected to authenticated state
 - User role = buyer
@@ -84,6 +87,7 @@
 1. Navigate to `/signup`
 2. Enter password failing web rules (e.g. `abc123` — no uppercase)
 3. Submit
+
 **Expected Results**:
 - Client validation prevents submit or shows inline error
 - No account created
@@ -104,6 +108,7 @@
 **Steps**:
 1. Open user menu → Sign out
 2. Attempt to visit `/orders`
+
 **Expected Results**:
 - Redirect to `/login?redirect=/orders`
 - Cart cleared locally (server cart preserved)
@@ -126,6 +131,7 @@
 2. Logout
 3. Login again
 4. Open `/cart`
+
 **Expected Results**:
 - Cart items restored from server
 **Business Rule**: §1 Session & cart, §3 Cart sync  
@@ -144,6 +150,7 @@
 **Preconditions**: Guest (not logged in)  
 **Steps**:
 1. Navigate directly to `/checkout`
+
 **Expected Results**:
 - Redirect to `/login?redirect=/checkout`
 **Business Rule**: §3 Checkout gate  
@@ -166,6 +173,7 @@
 **Steps**:
 1. Navigate to `/products`
 2. Click a product card
+
 **Expected Results**:
 - Products page loads; `products-page` visible
 - Product detail accessible without auth
@@ -186,6 +194,7 @@
 **Preconditions**: Guest with local cart items (if supported) or empty cart  
 **Steps**:
 1. Navigate to `/cart` as guest
+
 **Expected Results**:
 - Cart page loads (`cart-page` or `cart-empty`)
 - Checkout requires login when items present
@@ -209,6 +218,7 @@
 **Steps**:
 1. Navigate to `/products`
 2. Type keyword in search input
+
 **Expected Results**:
 - Grid filters to matching products
 - Empty state if no matches (`products-empty`)
@@ -229,6 +239,7 @@
 **Steps**:
 1. Open filters panel
 2. Select a category (e.g. Electronics)
+
 **Expected Results**:
 - Only products in selected category shown
 **Business Rule**: §2 Categories enum  
@@ -247,6 +258,7 @@
 **Preconditions**: Product or variant with discount > 0  
 **Steps**:
 1. Open discounted product detail
+
 **Expected Results**:
 - Original price struck through; discounted price displayed
 - `product-price` reflects discounted amount
@@ -268,6 +280,7 @@
 1. Open product detail
 2. Select each required variant attribute
 3. Click Add to cart
+
 **Expected Results**:
 - Variant-specific price and image update
 - Item added with selected attributes
@@ -288,6 +301,7 @@
 **Steps**:
 1. Open variant product without selecting options
 2. Attempt add to cart
+
 **Expected Results**:
 - Error toast or button disabled; no cart add
 **Business Rule**: §2 Variant pricing  
@@ -307,6 +321,7 @@
 **Steps**:
 1. Navigate to `/products`
 2. Search for seller's own product name
+
 **Expected Results**:
 - Own products not shown in public grid
 - Product accessible via direct URL or seller dashboard
@@ -331,6 +346,7 @@
 4. Locate product card in grid (`product-card-{id}`) — scroll/search if paginated
 5. Click product card → open detail page
 6. Verify name, price, and Add to cart (`add-to-cart-btn`) visible
+
 **Expected Results**:
 - Product visible to other buyers on public catalog (not hidden like seller's own listing — see TC-015)
 - `products-page` → `product-card-{id}` → `product-detail-page`
@@ -356,6 +372,7 @@
 4. Clear search; open `filters-panel`
 5. Select category filter matching product (e.g. `category-filter-electronics`)
 6. Verify product still discoverable in filtered grid
+
 **Expected Results**:
 - Search returns the new listing by name
 - Category filter includes the new listing when category matches
@@ -381,6 +398,7 @@
 1. Add product to cart
 2. Open `/cart`; increment quantity
 3. Decrement quantity; remove item
+
 **Expected Results**:
 - Quantity updates; line total recalculates
 - Remove deletes line; empty state when cart empty
@@ -400,6 +418,7 @@
 **Preconditions**: Product with known stock (e.g. stock = 3)  
 **Steps**:
 1. Add to cart; increment qty beyond stock
+
 **Expected Results**:
 - Increment disabled or error shown; qty ≤ stock
 **Business Rule**: §3 Quantity rules  
@@ -420,6 +439,7 @@
 1. Open `/cart`
 2. Scope to `cart-seller-group-{sellerId}`
 3. Select express delivery
+
 **Expected Results**:
 - Delivery selection persisted per seller group
 - Shipping fee updates in summary if buyer_pays
@@ -440,6 +460,7 @@
 **Steps**:
 1. Open cart for seller group
 2. Click select voucher; apply valid code
+
 **Expected Results**:
 - Discount reflected in cart summary for that seller
 **Business Rule**: §6 Coupons — one per seller  
@@ -458,6 +479,7 @@
 **Preconditions**: Cart with items  
 **Steps**:
 1. Apply expired or wrong-seller coupon code
+
 **Expected Results**:
 - Error message; no discount applied
 **Business Rule**: §6 Validation failures  
@@ -476,6 +498,7 @@
 **Preconditions**: Cart items from 2+ sellers  
 **Steps**:
 1. Open `/cart`
+
 **Expected Results**:
 - Separate `cart-seller-group-{sellerId}` per seller
 - Independent delivery/voucher controls per group
@@ -497,6 +520,7 @@
 1. Inject buyer2's auth token into `localStorage`
 2. Reload page; wait for authenticated navbar
 3. Navigate to `/cart`
+
 **Expected Results**:
 - `cart-empty` testid is visible
 - `cart-item-{buyer1ProductId}` is NOT visible
@@ -522,6 +546,7 @@
 2. Complete shipping address
 3. Select Cash on Delivery
 4. Place order
+
 **Expected Results**:
 - Redirect to order confirmation / orders
 - Order status `pending`; payment shows "Cash on Delivery"
@@ -544,6 +569,7 @@
 1. Checkout with items
 2. Select saved card payment
 3. Place order
+
 **Expected Results**:
 - Order created; card last4 shown on order detail
 **Business Rule**: §4 Payment methods, §8 Saved cards  
@@ -564,6 +590,7 @@
 1. Checkout; choose credit card
 2. Enter card number, holder, expiry, CVV
 3. Place order
+
 **Expected Results**:
 - Client validation passes for 16-digit card, 3–4 digit CVV
 - Order created successfully
@@ -590,6 +617,7 @@
 6. Complete shipping address; select Cash on Delivery
 7. Place order
 8. Open order detail for created order
+
 **Expected Results**:
 - Cart line shows selected variant attributes and **variant-specific price** (not base product price)
 - `POST /api/orders` succeeds; order item includes `variantId`, `selectedAttributes` (e.g. `{ Size: 'M' }`)
@@ -615,6 +643,7 @@
 1. Add Size L variant to cart as Buyer A
 2. Deplete Size L stock (place order as Buyer B or `PATCH` via API)
 3. Attempt checkout as Buyer A
+
 **Expected Results**:
 - Order rejected with **400** `"Insufficient stock for variant of: ..."`
 - Cart item remains or user sees clear error; L stock not negative
@@ -638,6 +667,7 @@
 3. Open cart — verify **two separate line items** (same product, different variants)
 4. Complete COD checkout
 5. Open created order detail
+
 **Expected Results**:
 - Cart shows 2 lines: S and M with distinct prices/attributes
 - Single order (one seller) with **2 items**, each with distinct `variantId` and `selectedAttributes`
@@ -660,6 +690,7 @@
 **Steps**:
 1. Complete checkout for full cart
 2. Open `/orders`
+
 **Expected Results**:
 - Two distinct orders (`order-card-{id}` each)
 - Independent subtotal, tax (8%), shipping, total per order
@@ -680,6 +711,7 @@
 **Steps**:
 1. Leave required fields empty (street, city, state, zip)
 2. Attempt place order
+
 **Expected Results**:
 - Validation errors; order not submitted
 **Business Rule**: §4 Shipping address, §10 Web checkout  
@@ -699,6 +731,7 @@
 **Steps**:
 1. Open `/orders`
 2. Click status tabs
+
 **Expected Results**:
 - Each tab shows only matching orders
 **Business Rule**: §5 Order lifecycle  
@@ -718,6 +751,7 @@
 **Steps**:
 1. Open order detail
 2. Click confirm received
+
 **Expected Results**:
 - Status → `delivered`
 - Review button becomes available
@@ -737,6 +771,7 @@
 **Preconditions**: Order status `pending`  
 **Steps**:
 1. Cancel order from detail or history
+
 **Expected Results**:
 - Status → `cancelled`; stock restored (variant-aware)
 **Business Rule**: §5 Buyer cancel, §5 Stock restore  
@@ -756,6 +791,7 @@
 **Steps**:
 1. Inject buyer2's auth into localStorage; reload
 2. Navigate to `/orders`
+
 **Expected Results**:
 - `orders-page` is visible
 - Buyer1's `order-card-{orderId}` is NOT visible
@@ -781,6 +817,7 @@
 1. Open order detail
 2. Click review button for product
 3. Submit rating 1–5 and comment
+
 **Expected Results**:
 - Review saved; product rating updated
 **Business Rule**: §7 Reviews  
@@ -800,6 +837,7 @@
 **Steps**:
 1. Navigate to `/users/:id`
 2. Click Follow; then Unfollow
+
 **Expected Results**:
 - Follower count updates; cannot follow self
 **Business Rule**: §8 Follow system  
@@ -822,6 +860,7 @@
 **Steps**:
 1. Click theme toggle in navbar
 2. Navigate to products and back
+
 **Expected Results**:
 - Dark class applied to document/root
 - Preference persists in session/local storage
@@ -841,6 +880,7 @@
 **Preconditions**: Order with product discount + coupon applied  
 **Steps**:
 1. View order in history
+
 **Expected Results**:
 - Displayed total matches `order.total` from API (includes tax, shipping, discounts)
 **Business Rule**: §5 Order display rules  
@@ -860,6 +900,7 @@
 **Steps**:
 1. Load `/products`; observe loading spinner
 2. Search nonsense string
+
 **Expected Results**:
 - `products-loading` during fetch
 - `products-empty` when no results
@@ -883,6 +924,7 @@
 **Steps**:
 1. Profile → Become a Seller
 2. Confirm promotion
+
 **Expected Results**:
 - Role → seller; seller nav link appears
 - Cannot demote back to buyer
@@ -911,6 +953,7 @@
 8. **Step 6 — Review:** confirm summary; submit create
 9. Verify new card on seller dashboard (`product-item-{id}`)
 10. Open `/products/{id}` directly — product detail loads
+
 **Expected Results**:
 - `POST /api/products` (or update) succeeds; product persisted with correct name, price, stock, category
 - Product appears on seller dashboard with `product-item-{id}`
@@ -942,6 +985,7 @@
 7. **Step 6 — Review:** submit
 8. Open product detail `/products/{id}` → **Preview as Buyer** (`preview-as-buyer-btn`)
 9. Select each size (`variant-value-Size-{S|M|L}`)
+
 **Expected Results**:
 - Product created with `variants[]` persisted (attributes, price, stock, **2 images per variant**)
 - API: `variants[i].images.length === 2` for each row
@@ -964,6 +1008,7 @@
 **Preconditions**: Seller on add product wizard  
 **Steps**:
 1. Attempt next/submit without name, images, or shipping options
+
 **Expected Results**:
 - Step blocked with validation messages
 **Business Rule**: §2 Product fields, wizard steps  
@@ -983,6 +1028,7 @@
 **Steps**:
 1. Edit product from dashboard
 2. Update price and stock; save
+
 **Expected Results**:
 - Changes persisted; reflected on product detail
 **Business Rule**: §2 Product fields  
@@ -1008,6 +1054,7 @@
 6. Add a new variant option (e.g. Size XL with price $59.99, stock 5)
 7. Save changes
 8. Open the product detail page as buyer
+
 **Expected Results**:
 - Updated prices and stock values are reflected on the product detail page
 - The new variant option (XL) is selectable via `variant-value-Size-XL`
@@ -1029,6 +1076,7 @@
 **Steps**:
 1. Navigate to `/my-products` (`nav-link-my-products`)
 2. Click preview on a simple product card
+
 **Expected Results**:
 - Product detail page renders in buyer view (no edit controls visible)
 - Product name, price, and description are displayed correctly
@@ -1051,6 +1099,7 @@
 1. Navigate to `/my-products` (`nav-link-my-products`)
 2. Click preview on a variant product card
 3. Select each available variant option
+
 **Expected Results**:
 - Product detail page renders in buyer view
 - Variant selectors are present and selectable (`variant-value-{attr}-{value}`)
@@ -1075,6 +1124,7 @@
 2. Verify the product list loads
 3. Confirm each product card shows the correct name and price
 4. Confirm edit and delete actions are present on each card
+
 **Expected Results**:
 - `my-products-page` is visible
 - All seller-owned products appear as `product-item-{id}` cards
@@ -1100,6 +1150,7 @@
 2. Wait for products grid to load; collect all visible product names on page 1
 3. Click the next page button (`data-testid="pagination-next"`)
 4. Wait for products grid to reload; collect all visible product names on page 2
+
 **Expected Results**:
 - Page 2 product names differ from page 1
 - Active page indicator shows page 2 (`data-testid="pagination-page-2"` has active styling)
@@ -1121,6 +1172,7 @@
 1. Navigate to `/products` and navigate to page 2
 2. Click a category filter button (e.g. `category-filter-electronics`)
 3. Wait for products grid to reload
+
 **Expected Results**:
 - Page resets to 1 (`pagination-page-1` is active)
 - Products shown belong to the selected category
@@ -1142,6 +1194,7 @@
 1. Navigate to `/products` and navigate to page 2
 2. Change the sort select (`sort-select`) to a different value
 3. Wait for products grid to reload
+
 **Expected Results**:
 - Page resets to 1 (`pagination-page-1` is active)
 **Business Rule**: §1 Product browse — sort change resets pagination  
@@ -1163,6 +1216,7 @@
 2. Read the product count label text (e.g. "X products found")
 3. Navigate to page 2
 4. Read the product count label text again
+
 **Expected Results**:
 - Count label shows the same total on both pages
 - Total is greater than the number of products visible on a single page (i.e. reflects the full dataset)
@@ -1184,6 +1238,7 @@
 1. Navigate to `/products`
 2. Enter a specific product name in the search field that returns only one result
 3. Wait for results to load
+
 **Expected Results**:
 - Products grid shows the single matching product
 - `pagination` container is not present in the DOM
@@ -1206,6 +1261,7 @@
 2. Collect product names visible on page 1
 3. Click the next page button (`pagination-next`)
 4. Collect product names visible on page 2
+
 **Expected Results**:
 - Page 2 product names differ from page 1
 - Active page indicator shows page 2
@@ -1226,6 +1282,7 @@
 **Steps**:
 1. Navigate to `/my-products` and navigate to page 2
 2. Click a category chip
+
 **Expected Results**:
 - Page resets to 1 (`pagination-page-1` is active)
 - Products shown belong to the selected category
@@ -1246,6 +1303,7 @@
 **Steps**:
 1. Navigate to `/my-products`
 2. Click the last page number button to jump to the final page
+
 **Expected Results**:
 - `pagination-next` button is disabled
 **Business Rule**: §2 Product catalog — pagination boundary  
@@ -1264,6 +1322,7 @@
 **Preconditions**: Seller has fewer products than the page size; seller logged in  
 **Steps**:
 1. Navigate to `/my-products`
+
 **Expected Results**:
 - All products are visible
 - `pagination` container is not present in the DOM
@@ -1284,6 +1343,7 @@
 **Steps**:
 1. Click delete on product card
 2. Confirm deletion
+
 **Expected Results**:
 - Product removed from dashboard and catalog
 **Business Rule**: §2 Product catalog  
@@ -1306,6 +1366,7 @@
 **Steps**:
 1. Seller dashboard → orders tab
 2. Advance: pending → preparing → processing → shipped
+
 **Expected Results**:
 - Each transition succeeds; status badge updates
 - `shippedAt` set on shipped
@@ -1326,6 +1387,7 @@
 **Steps**:
 1. Cancel from seller order detail
 2. Provide reason
+
 **Expected Results**:
 - Status → `cancelled`
 **Business Rule**: §5 Cancellation  
@@ -1346,6 +1408,7 @@
 1. Seller creates voucher in dashboard
 2. Buyer applies at cart/checkout
 3. Complete order
+
 **Expected Results**:
 - Discount on order; `usedCount` incremented
 **Business Rule**: §6 Coupons  
@@ -1364,6 +1427,7 @@
 **Preconditions**: Order with COD and express delivery  
 **Steps**:
 1. Open `/seller/orders/:id`
+
 **Expected Results**:
 - Payment shows "Cash on Delivery" (not slug)
 - Delivery option label resolved from `deliverySelections`
@@ -1384,6 +1448,7 @@
 **Steps**:
 1. Keep seller dashboard open
 2. Place order as buyer in separate session
+
 **Expected Results**:
 - In-app toast appears for new order (polling)
 **Business Rule**: §9 Platform — web toast polling  
@@ -1405,6 +1470,7 @@
 **Preconditions**: Guest session  
 **Steps**:
 1. Visit `/orders`, `/profile`, `/seller` without login
+
 **Expected Results**:
 - Redirect to login with redirect param
 **Business Rule**: §1 Authentication  
@@ -1426,6 +1492,7 @@
 **Preconditions**: Cart contains deleted product  
 **Steps**:
 1. Load `/cart` after product deleted
+
 **Expected Results**:
 - Stale item removed from display
 **Business Rule**: §3 Stale cleanup (web)  
@@ -1447,6 +1514,7 @@
 **Preconditions**: Guest  
 **Steps**:
 1. Browse `/`, `/products`, `/products/:id` without auth
+
 **Expected Results**:
 - All public catalog routes accessible
 **Business Rule**: §9 Guest browsing  
@@ -1465,6 +1533,7 @@
 **Preconditions**: Seller on web  
 **Steps**:
 1. Count wizard steps on web add product flow
+
 **Expected Results**:
 - Web = 6 steps (variants within pricing step)
 - Document divergence; do not assert mobile step count in web test
@@ -1484,6 +1553,7 @@
 **Preconditions**: N/A  
 **Steps**:
 1. Confirm no `/wishlist` route on web
+
 **Expected Results**:
 - No wishlist nav or page on web
 - Tag Blocked for Playwright — mobile-only
@@ -1503,6 +1573,7 @@
 **Preconditions**: Cart with multiple items  
 **Steps**:
 1. Proceed to checkout from cart without per-item selection
+
 **Expected Results**:
 - All cart items included in checkout (unlike mobile checkbox subset)
 **Business Rule**: §3 Web vs mobile cart selection  
@@ -1526,6 +1597,7 @@
 4. In **Payment Method**, select **Credit Card** from the type dropdown; if saved cards exist, click **New Card** first
 5. Enter card number `4111111111111111`, holder name, expiry, CVV
 6. Click **Review Order**, then **Place Order**
+
 **Expected Results**:
 - Order created with correct variant attributes (`selectedAttributes.Size = 'M'`) and variant price
 - Order detail shows card type and last 4 digits
@@ -1550,6 +1622,7 @@
 3. Fill or confirm shipping address
 4. In **Payment Method**, verify **Saved Card** mode is active (default when saved cards exist); select a saved card
 5. Click **Review Order**, then **Place Order**
+
 **Expected Results**:
 - Order created with correct variant attributes and variant-specific price
 - Order detail shows saved card type + last4

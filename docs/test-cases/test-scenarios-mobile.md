@@ -18,6 +18,7 @@
 **Steps**:
 1. Reuse `patrol_test/modules/auth.dart` login flow (see `patrol_test/login_test.dart`)
 2. Assert home screen and search field visible
+
 **Expected Results**:
 - `keys.products.homeScreen` and `keys.products.searchField` visible
 - User authenticated; bottom nav shell visible
@@ -38,6 +39,7 @@
 **Steps**:
 1. Launch app (cold start)
 2. Attempt deep link or router navigation to `/`, `/cart`, `/orders`, `/wishlist`
+
 **Expected Results**:
 - GoRouter redirect sends user to `/login` for any non-auth route
 - Products home not visible until login succeeds
@@ -57,6 +59,7 @@
 **Preconditions**: User logged in  
 **Steps**:
 1. Navigate to `/login` or `/signup` while authenticated
+
 **Expected Results**:
 - Redirect to `/` (products home)
 **Business Rule**: §1 Authentication  
@@ -77,6 +80,7 @@
 1. From `/login`, navigate to signup
 2. Fill name, email, password (6+ chars, e.g. `abc123`), confirm password
 3. Submit
+
 **Expected Results**:
 - Account created; redirected to products home
 - User role = buyer
@@ -97,6 +101,7 @@
 **Steps**:
 1. Open profile tab → sign out
 2. Attempt to open orders tab
+
 **Expected Results**:
 - Redirect to `/login`
 - Cart cleared locally (server cart preserved for re-login)
@@ -118,6 +123,7 @@
 1. Add product to cart while logged in
 2. Logout → login again
 3. Open `/cart`
+
 **Expected Results**:
 - Cart items restored from server via `GET /api/cart`
 **Business Rule**: §1 Session & cart, §3 Cart sync  
@@ -139,6 +145,7 @@
 **Steps**:
 1. Complete TC-067 login
 2. Verify products grid/list loads on `/`
+
 **Expected Results**:
 - Product cards visible with name and price
 - Search field and cart icon in app bar
@@ -158,6 +165,7 @@
 **Preconditions**: Logged-in buyer  
 **Steps**:
 1. From products home, tap cart icon in app bar
+
 **Expected Results**:
 - Navigates to `/cart`
 - Cart screen loads (empty or with items)
@@ -178,6 +186,7 @@
 **Steps**:
 1. Enter keyword in search field on home
 2. Submit search
+
 **Expected Results**:
 - Results filtered to matching products
 - Empty state if no matches
@@ -198,6 +207,7 @@
 **Steps**:
 1. Open category filter chips or sheet on home
 2. Select a category
+
 **Expected Results**:
 - Only products in selected category shown
 **Business Rule**: §2 Category filter  
@@ -218,6 +228,7 @@
 1. Tap product card → `/products/:id`
 2. Select required variant attributes
 3. Tap add to cart
+
 **Expected Results**:
 - Selected variant price/stock reflected
 - Cart badge increments
@@ -238,6 +249,7 @@
 **Steps**:
 1. Login as buyer
 2. Browse home grid or search for product name
+
 **Expected Results**:
 - New listing visible; seller's own listing hidden when logged in as that seller (TC-610)
 **Business Rule**: §2 Catalog visibility  
@@ -256,6 +268,7 @@
 **Preconditions**: Product or variant with active discount  
 **Steps**:
 1. Open discounted product detail
+
 **Expected Results**:
 - Original price shown with strikethrough; sale price prominent
 **Business Rule**: §4 Pricing — discounts  
@@ -274,6 +287,7 @@
 **Preconditions**: Seller logged in with own active products  
 **Steps**:
 1. Browse products home as seller
+
 **Expected Results**:
 - Own products excluded from public listing
 **Business Rule**: §2 Seller catalog filter  
@@ -296,6 +310,7 @@
 1. Add item via product detail
 2. Open `/cart`; increment/decrement quantity
 3. Remove item
+
 **Expected Results**:
 - Quantity updates respect stock cap
 - Remove clears line item; empty state when last item removed
@@ -317,6 +332,7 @@
 1. Open `/cart`
 2. Uncheck one item; leave another checked
 3. Tap checkout
+
 **Expected Results**:
 - Checkout receives route `extra`: `{ selected: Set<productId>, deliverySelections, voucherSelections }`
 - Only checked items appear on checkout screen
@@ -337,6 +353,7 @@
 **Steps**:
 1. Open cart and deselect all items
 2. Attempt checkout
+
 **Expected Results**:
 - Checkout action disabled or shows zero selected count
 - No navigation to `/checkout` with empty selection
@@ -357,6 +374,7 @@
 **Steps**:
 1. Tap header "select all" checkbox
 2. Tap again to deselect all
+
 **Expected Results**:
 - All item checkboxes sync with header tri-state
 - Summary subtotal reflects selected subset only
@@ -377,6 +395,7 @@
 **Steps**:
 1. On cart, select delivery option for seller group
 2. Proceed to checkout with item selected
+
 **Expected Results**:
 - Selected delivery passed in `extra['deliverySelections']`
 - Shipping fee on checkout matches selection
@@ -397,6 +416,7 @@
 **Steps**:
 1. From cart, open voucher picker for seller
 2. Apply voucher → checkout
+
 **Expected Results**:
 - `extra['voucherSelections']` populated on `/checkout`
 - Discount reflected in checkout summary
@@ -417,6 +437,7 @@
 **Steps**:
 1. Checkout with both seller groups selected
 2. Complete payment (COD)
+
 **Expected Results**:
 - Two distinct orders in history (one per seller)
 - Independent shipping/voucher per seller group
@@ -439,6 +460,7 @@
 2. From cart with checked items → checkout
 3. Fill/confirm address; select Cash on Delivery
 4. Place order
+
 **Expected Results**:
 - Order created; checked-out items removed from cart
 - Order visible in `/orders` history
@@ -461,6 +483,7 @@
 3. In **Payment Method**, verify **Saved Card** mode is active (default when saved cards exist)
 4. Select a saved card from the list
 5. Tap place order (`orders_placeOrderButton`)
+
 **Expected Results**:
 - `POST /api/orders` succeeds; order status `pending`
 - Order payment shows saved card type + last4 on order detail
@@ -485,6 +508,7 @@
 3. In **Payment Method**, select **Credit Card** (`orders_paymentOption_credit-card`); if saved cards exist, tap **+ New Card** (`orders_paymentNewCardTab`) first
 4. Enter card number (16 digits), cardholder name, expiry month/year
 5. Tap place order (`orders_placeOrderButton`)
+
 **Expected Results**:
 - Client validation passes for card fields before submit
 - Order created successfully; payment method persisted on order
@@ -509,6 +533,7 @@
 3. Tap add to cart → open cart (checked items)
 4. Checkout → confirm address → select Cash on Delivery
 5. Place order → open order detail
+
 **Expected Results**:
 - Variant selection required before add succeeds (see TC-613)
 - Order item persists `variantId` and attributes; correct variant price on order detail
@@ -531,6 +556,7 @@
 **Steps**:
 1. Open variant product detail without selecting size/color
 2. Attempt add to cart
+
 **Expected Results**:
 - Add blocked: disabled button, snackbar, or prompt to select variant
 - No cart line added; cart badge unchanged
@@ -555,6 +581,7 @@
 4. In **Payment Method**, select **Credit Card** (`orders_paymentOption_credit-card`); tap **+ New Card** if saved cards exist
 5. Enter card number (16 digits), cardholder name, expiry month/year
 6. Tap place order (`orders_placeOrderButton`)
+
 **Expected Results**:
 - Order created successfully with correct variant attributes and variant-specific price
 - Payment method shows card type on order detail
@@ -579,6 +606,7 @@
 3. Fill/confirm shipping address
 4. In **Payment Method**, verify **Saved Card** mode is active; select a saved card
 5. Tap place order (`orders_placeOrderButton`)
+
 **Expected Results**:
 - Order created successfully with correct variant attributes and variant-specific price
 - Order payment shows saved card type + last4 on order detail
@@ -600,6 +628,7 @@
 **Steps**:
 1. Enter valid email with wrong password on login screen
 2. Submit
+
 **Expected Results**:
 - Error message shown; remain on `/login`
 **Business Rule**: §1 Authentication  
@@ -619,6 +648,7 @@
 **Steps**:
 1. Open product detail without selecting variant
 2. Attempt add to cart
+
 **Expected Results**:
 - Action blocked or prompt to select variant
 **Business Rule**: §2 Variant required  
@@ -637,6 +667,7 @@
 **Preconditions**: Item with known stock limit  
 **Steps**:
 1. Increment quantity beyond available stock
+
 **Expected Results**:
 - Quantity stops at effective stock (variant or product level)
 **Business Rule**: §3 Stock cap  
@@ -658,6 +689,7 @@
 **Steps**:
 1. Open orders tab
 2. Switch status tabs; open an order detail
+
 **Expected Results**:
 - Tabs filter orders correctly
 - Detail shows items, totals, status badge
@@ -678,6 +710,7 @@
 **Steps**:
 1. Open order detail
 2. Tap confirm received
+
 **Expected Results**:
 - Status advances to delivered (or buyer-confirmed state per API)
 - Review action becomes available
@@ -701,6 +734,7 @@
 1. Tap favorite/wishlist icon on product
 2. Open `/wishlist` tab
 3. Remove item from wishlist
+
 **Expected Results**:
 - Item appears on wishlist screen with product info
 - Remove toggles favorite off; empty state when cleared
@@ -720,6 +754,7 @@
 **Preconditions**: Wishlist with multiple items  
 **Steps**:
 1. Open wishlist → tap Clear all
+
 **Expected Results**:
 - All items removed; empty state shown
 - Wishlist not persisted to API (session-only)
@@ -742,6 +777,7 @@
 **Steps**:
 1. Navigate to `/seller-profile/:sellerId`
 2. Tap follow → unfollow
+
 **Expected Results**:
 - Follow state toggles; follower count updates
 **Business Rule**: §8 Follow  
@@ -763,6 +799,7 @@
 **Steps**:
 1. Profile → become seller / start selling
 2. Confirm promotion
+
 **Expected Results**:
 - Role promoted to seller (one-way)
 - Seller tab appears in bottom navigation
@@ -784,6 +821,7 @@
 1. Seller tab → add product (`/seller/add`)
 2. Complete steps 0–6: basic info, pricing (no variants), description, images, skip/empty variants, shipping, review
 3. Publish
+
 **Expected Results**:
 - Product saved; visible on seller dashboard
 - 7 wizard steps with `_WizardStepper` (steps: Basic, Pricing, Description, Images, Shipping, Review — variants on step 4)
@@ -805,6 +843,7 @@
 1. Start add product wizard
 2. On Variants step (4): define attributes, per-variant price/stock/discount/images
 3. Complete shipping + review → publish
+
 **Expected Results**:
 - Variant product live; buyer can select variants on detail (TC-076)
 **Business Rule**: §2 Variants, §2 Wizard steps  
@@ -824,6 +863,7 @@
 **Steps**:
 1. Open seller dashboard → orders tab (`/seller?tab=orders`)
 2. Advance order: pending → preparing → processing → shipped
+
 **Expected Results**:
 - Each transition accepted; status badge updates
 **Business Rule**: §12 Order pipeline  
@@ -843,6 +883,7 @@
 **Steps**:
 1. Seller → vouchers tab → create voucher
 2. As buyer, apply at cart (TC-082)
+
 **Expected Results**:
 - Voucher listed on seller dashboard; validation rules enforced at apply time
 **Business Rule**: §5 Vouchers  
@@ -861,6 +902,7 @@
 **Preconditions**: Seller with published product  
 **Steps**:
 1. From seller product list, tap preview/view as buyer
+
 **Expected Results**:
 - Opens product detail with edit hidden (`hideEdit=1`)
 **Business Rule**: §2 Preview as buyer  
@@ -879,6 +921,7 @@
 **Preconditions**: Buyer-only account  
 **Steps**:
 1. Attempt `/seller/add` or seller-only API as buyer
+
 **Expected Results**:
 - UI blocks or API returns 403 for seller-only actions
 **Business Rule**: §11 Role enforcement  
@@ -899,6 +942,7 @@
 1. Seller tab → seller dashboard loads
 2. Product tile is visible with correct name and price
 3. Tap product tile → product detail screen opens
+
 **Expected Results**:
 - Product tile shows correct name and price on dashboard
 - Product detail screen loads at `/products/:id?hideEdit=1`; edit controls hidden
@@ -921,6 +965,7 @@
 2. Tap edit icon on product tile → wizard opens with current values pre-filled
 3. Change product name and price
 4. Advance through remaining steps → publish
+
 **Expected Results**:
 - Wizard opens in edit mode with current values populated
 - After publish, dashboard product tile reflects updated name and price
@@ -942,6 +987,7 @@
 1. Seller tab → product tile visible on dashboard
 2. Tap delete icon on product tile → confirmation dialog appears
 3. Confirm deletion
+
 **Expected Results**:
 - Confirmation dialog shown before deletion
 - Product tile no longer visible on dashboard after confirm
@@ -964,6 +1010,7 @@
 1. Seller tab → seller dashboard loads
 2. Product tile is visible with correct name
 3. Tap product tile → product detail screen opens
+
 **Expected Results**:
 - Variant product tile shows on dashboard
 - Product detail screen loads; variant selectors visible
@@ -987,6 +1034,7 @@
 3. Navigate to Variants step (step 4)
 4. Change price on one variant (e.g. Size M: $29.99 → $34.99)
 5. Advance through remaining steps → publish
+
 **Expected Results**:
 - Wizard opens in edit mode with variant values populated
 - After publish, product tile still present on dashboard
@@ -1009,6 +1057,7 @@
 1. Seller tab → product tile visible on dashboard
 2. Tap delete icon on product tile → confirmation dialog appears
 3. Confirm delete
+
 **Expected Results**:
 - Dialog confirms intent; product removed
 - Product tile no longer visible on dashboard
@@ -1031,6 +1080,7 @@
 1. Navigate to the product list screen (Products tab)
 2. Wait for initial load to complete
 3. Count the product cards rendered in the widget tree without scrolling
+
 **Expected Results**:
 - Exactly 20 product cards are in the widget tree on initial load (first BLoC page)
 - No loading spinner at bottom of list (initial fetch complete)
@@ -1054,6 +1104,7 @@
 3. Scroll to the bottom of the list (`keys.products.productList`)
 4. Wait for the next batch to resolve
 5. Count product cards in the widget tree again
+
 **Expected Results**:
 - More than 20 product cards are now in the widget tree
 - No error state visible
@@ -1075,6 +1126,7 @@
 1. Navigate to the product list screen; wait for initial load
 2. Scroll to the bottom of the product list to trigger load-more
 3. Before the next batch finishes, assert the load-more spinner key is visible
+
 **Expected Results**:
 - `CircularProgressIndicator` (keyed as the load-more spinner) is visible at the bottom of the list during the fetch
 **Business Rule**: §1 Product browse — BLoC `ProductsLoading` state while fetching next page  
@@ -1096,6 +1148,7 @@
 2. Scroll to the bottom repeatedly until no new product cards appear
 3. Record the final product count
 4. Scroll to the bottom one more time and wait
+
 **Expected Results**:
 - Product count remains unchanged on the final scroll
 - No loading spinner appears
@@ -1118,6 +1171,7 @@
 **Preconditions**: Not logged in  
 **Steps**:
 1. Cold launch app
+
 **Expected Results**:
 - Cannot reach `/` without login (contrast TC-008 web guest browse)
 **Business Rule**: §9 Platform auth  
@@ -1136,6 +1190,7 @@
 **Preconditions**: Seller on `/seller/add`  
 **Steps**:
 1. Count wizard steps in `_WizardStepper`
+
 **Expected Results**:
 - 7 content pages (0–6): Basic, Pricing, Description, Images, Variants, Shipping, Review
 - Variants on separate step (unlike web combined in pricing)
@@ -1155,6 +1210,7 @@
 **Preconditions**: Multi-item cart  
 **Steps**:
 1. Select subset → checkout
+
 **Expected Results**:
 - Unchecked items remain in cart after order
 **Business Rule**: §3 Cart selection  
@@ -1173,6 +1229,7 @@
 **Preconditions**: Items in wishlist  
 **Steps**:
 1. Force-quit and relaunch app
+
 **Expected Results**:
 - Wishlist empty after restart (in-memory bloc only)
 **Business Rule**: §9 Wishlist  
@@ -1191,6 +1248,7 @@
 **Preconditions**: On products home  
 **Steps**:
 1. Tap notifications icon in app bar
+
 **Expected Results**:
 - `onPressed: () {}` — no navigation, no dialog (stub)
 **Business Rule**: §9 Notifications stub  
@@ -1211,6 +1269,7 @@
 1. Place new order as buyer for this seller
 2. Wait for poll interval; observe local notification
 3. Tap notification
+
 **Expected Results**:
 - `NotificationService.showOrderNotification` fires
 - Tap payload `seller_orders_tab` navigates to `/seller?tab=orders`
@@ -1230,6 +1289,7 @@
 **Preconditions**: Unique email  
 **Steps**:
 1. Signup with password `abc123` (6 chars, no uppercase)
+
 **Expected Results**:
 - Succeeds on mobile; would fail on web signup
 **Business Rule**: §10 Password rules  

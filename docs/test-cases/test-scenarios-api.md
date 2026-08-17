@@ -19,6 +19,7 @@
 1. `DELETE /api/cart` to clear buyer1's cart
 2. `PUT /api/cart` with one product item
 3. `GET /api/cart` with buyer1's token
+
 **Expected Results**:
 - Response 200; `sellers` array contains the added `productId`
 **Business Rule**: §3 Cart — server-side, scoped to `userId`  
@@ -38,6 +39,7 @@
 **Steps**:
 1. Login as buyer2 (fresh account)
 2. `GET /api/cart` with buyer2's token
+
 **Expected Results**:
 - Response 200; returned `sellers` array does NOT contain buyer1's product ID
 - Buyer2 sees only their own (empty) cart
@@ -60,6 +62,7 @@
 **Steps**:
 1. Buyer1 places an order via `POST /api/orders`
 2. `GET /api/orders` with buyer2's token
+
 **Expected Results**:
 - Response 200; returned orders array does NOT contain buyer1's order ID
 - Buyer2 sees only their own orders (empty array if none)
@@ -80,6 +83,7 @@
 **Steps**:
 1. Buyer1 places an order; capture `orderId`
 2. `GET /api/orders/:orderId` with buyer2's token
+
 **Expected Results**:
 - Response 403 or 404 — buyer2 cannot read buyer1's order detail
 **Business Rule**: §5 Order ownership — order detail scoped to order's `userId`  
@@ -100,6 +104,7 @@
 **Preconditions**: No Authorization header sent  
 **Steps**:
 1. Send unauthenticated requests to `GET /api/auth/me`, `GET /api/orders`, `GET /api/cart`, `GET /api/seller/products`, `PUT /api/seller/orders/:id/status`
+
 **Expected Results**:
 - All routes respond 401; `success: false`
 **Business Rule**: All authenticated endpoints must reject requests with no token  
@@ -119,6 +124,7 @@
 **Steps**:
 1. Take a valid JWT; corrupt the last character of the signature segment
 2. `GET /api/auth/me` with the tampered token
+
 **Expected Results**:
 - Response 401; `success: false`
 **Business Rule**: JWT signature validation must reject tampered tokens  
@@ -139,6 +145,7 @@
 1. Seller2 creates a product
 2. Buyer places an order on seller2's product
 3. `GET /api/seller/orders` with seller1's token
+
 **Expected Results**:
 - Response 200; returned orders array does NOT contain seller2's order ID
 **Business Rule**: Seller order list scoped to products owned by the authenticated seller  
@@ -157,6 +164,7 @@
 **Preconditions**: Fresh buyer token (non-seller account)  
 **Steps**:
 1. Send buyer token to `GET /api/seller/products`, `POST /api/seller/products`, `GET /api/seller/orders`, `PUT /api/seller/orders/:id/status`
+
 **Expected Results**:
 - All routes respond 403; `success: false`
 **Business Rule**: Seller-only routes must reject buyer role tokens  
@@ -175,6 +183,7 @@
 **Preconditions**: None  
 **Steps**:
 1. `POST /api/auth/signup` with a 3-character password (`abc`)
+
 **Expected Results**:
 - Response 400; `success: false`
 **Business Rule**: Password must meet minimum length requirement  
@@ -196,6 +205,7 @@
 **Steps**:
 1. Place order via API with controlled inputs
 2. Assert persisted `subtotal`, `productDiscount`, `discount`, `tax`, `shipping`, `total`
+
 **Expected Results**:
 - `tax` = 8% of after-discount subtotal
 - `total` = afterDiscounts + tax + shipping (2 decimal places)
@@ -215,6 +225,7 @@
 **Preconditions**: Seller without custom shipping; cart subtotal < $50 after discounts  
 **Steps**:
 1. Place order meeting conditions
+
 **Expected Results**:
 - `shipping` = 9.99 on order record
 **Business Rule**: §4 Shipping default  
@@ -233,6 +244,7 @@
 **Preconditions**: Default shipping rules; effective subtotal ≥ $50  
 **Steps**:
 1. Place qualifying order
+
 **Expected Results**:
 - `shipping` = 0
 **Business Rule**: §4 Shipping default  
@@ -251,6 +263,7 @@
 **Preconditions**: Order status `processing`  
 **Steps**:
 1. Attempt cancel via API
+
 **Expected Results**:
 - **400** — cancel not allowed
 **Business Rule**: §5 Buyer cancel — pending/preparing only  
@@ -271,6 +284,7 @@
 **Preconditions**: User already reviewed product  
 **Steps**:
 1. POST second review for same product
+
 **Expected Results**:
 - **409** duplicate review
 **Business Rule**: §7 Unique (userId, productId)  
@@ -289,6 +303,7 @@
 **Preconditions**: Order status `shipped` (not delivered)  
 **Steps**:
 1. Attempt create review via API
+
 **Expected Results**:
 - **403** — not eligible
 **Business Rule**: §7 Eligibility  
@@ -309,6 +324,7 @@
 **Preconditions**: Authenticated user  
 **Steps**:
 1. `POST /api/users/:id/follow` using own user ID as `:id`
+
 **Expected Results**:
 - **400** — `"Cannot follow yourself"`
 **Business Rule**: §8 Follow system  
@@ -329,6 +345,7 @@
 **Preconditions**: Order in `pending`  
 **Steps**:
 1. Attempt pending → shipped via API
+
 **Expected Results**:
 - **400** `"Cannot transition order from 'pending' to 'shipped'"`
 **Business Rule**: §5 Invalid transition  
@@ -349,6 +366,7 @@
 **Preconditions**: Buyer JWT  
 **Steps**:
 1. Call `PUT /api/seller/orders/:id/status` as buyer
+
 **Expected Results**:
 - **403** forbidden
 **Business Rule**: §1 requireSeller  
@@ -367,6 +385,7 @@
 **Preconditions**: Two seller accounts  
 **Steps**:
 1. Seller A attempts update/delete Seller B product
+
 **Expected Results**:
 - **403** forbidden
 **Business Rule**: §1 Authorization  
@@ -387,6 +406,7 @@
 **Preconditions**: Cart qty exceeds stock at order time  
 **Steps**:
 1. Submit order when stock depleted
+
 **Expected Results**:
 - **400** `"Insufficient stock for..."`
 **Business Rule**: §4 Stock validation  
@@ -405,6 +425,7 @@
 **Preconditions**: Coupon with `minOrderAmount` > cart subtotal  
 **Steps**:
 1. Validate coupon via API
+
 **Expected Results**:
 - **400** minimum not met
 **Business Rule**: §6 Validation  
@@ -423,6 +444,7 @@
 **Preconditions**: Seller token  
 **Steps**:
 1. Create/update product with description > 200 chars
+
 **Expected Results**:
 - **400** validation error
 **Business Rule**: §2 description max 200  
@@ -443,6 +465,7 @@
 **Preconditions**: Backend running with rate limiting middleware active
 **Steps**:
 1. `POST /api/auth/login` with any credentials
+
 **Expected Results**:
 - Response includes `RateLimit-Limit` header
 - Response includes `RateLimit-Remaining` header
@@ -463,6 +486,7 @@
 **Preconditions**: Backend running with rate limiting middleware active
 **Steps**:
 1. `GET /api/products`
+
 **Expected Results**:
 - Response includes `RateLimit-Limit` header
 - Response includes `RateLimit-Remaining` header
@@ -484,6 +508,7 @@
 **Steps**:
 1. `GET /api/products` — record `RateLimit-Remaining` value
 2. `GET /api/products` again immediately
+
 **Expected Results**:
 - `RateLimit-Remaining` on second response is exactly 1 less than first
 **Business Rule**: §12 Rate Limiting
@@ -503,6 +528,7 @@
 **Steps**:
 1. `POST /api/auth/login` with bad credentials — repeat until limit reached (3×)
 2. `POST /api/auth/login` one more time (4th request)
+
 **Expected Results**:
 - **429** on the 4th request
 - `body.success` → `false`
@@ -524,6 +550,7 @@
 **Steps**:
 1. Exhaust the auth limit (3 requests)
 2. Send one more `POST /api/auth/login`
+
 **Expected Results**:
 - **429** status
 - Response includes `Retry-After` header with a positive integer value
@@ -544,6 +571,7 @@
 **Steps**:
 1. `GET /api/products` — repeat until limit reached (5×)
 2. `GET /api/products` one more time (6th request)
+
 **Expected Results**:
 - **429** on the 6th request
 - `body.success` → `false`
