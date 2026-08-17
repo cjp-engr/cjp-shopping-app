@@ -14,6 +14,7 @@
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/0_auth/login_test.dart`  
 **Preconditions**: Seeded user; env vars `EMAIL`, `TEST_PASSWORD` for Patrol  
 **Steps**:
 1. Reuse `patrol_test/modules/auth.dart` login flow (see `patrol_test/login_test.dart`)
@@ -35,6 +36,7 @@
 **Platform**: Mobile  
 **Parity**: Divergent (mobile gates all routes; web allows guest browse)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/0_auth/signup_test.dart`  
 **Preconditions**: Fresh app launch; no stored session  
 **Steps**:
 1. Launch app (cold start)
@@ -454,6 +456,7 @@
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/2_buyer/simple_cod_checkout_test.dart`  
 **Preconditions**: Buyer logged in (`b@test.com`); product in cart; saved or new shipping address  
 **Steps**:
 1. Open product detail → add to cart → tap product-detail cart icon (`products_productDetailCartIconButton`)
@@ -476,6 +479,7 @@
 **Platform**: Mobile  
 **Parity**: Both (web TC-023)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/2_buyer/simple_saved_credit_checkout_test.dart`  
 **Preconditions**: Buyer logged in (`b@test.com`); ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); cart with checked items; shipping address saved or entered on checkout  
 **Steps**:
 1. From cart with checked items → tap checkout (`cart_checkoutButton`)
@@ -501,6 +505,7 @@
 **Platform**: Mobile  
 **Parity**: Both (web TC-024)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/2_buyer/simple_new_credit_checkout_test.dart`  
 **Preconditions**: Buyer logged in; cart with checked items; no saved card selected (tap **+ New Card** if saved cards exist)  
 **Steps**:
 1. From cart → checkout (`cart_checkoutButton`)
@@ -526,6 +531,7 @@
 **Platform**: Mobile  
 **Parity**: Both (web TC-098)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/2_buyer/variant_cod_checkout_test.dart`  
 **Preconditions**: Buyer logged in (`b@test.com`); variant product in catalog (from TC-091 or seeded); cart empty  
 **Steps**:
 1. Open product detail → select required variant attributes (e.g. Size M)
@@ -573,6 +579,7 @@
 **Platform**: Mobile  
 **Parity**: Both (web TC-024 + TC-098 combined)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/2_buyer/variant_new_credit_checkout_test.dart`  
 **Preconditions**: Buyer logged in (`b@test.com`); variant product in catalog (from TC-091 or seeded `E2E Test Variant Tee`); cart empty; no saved card selected  
 **Steps**:
 1. Open variant product detail → select required variant attributes (e.g. Size M)
@@ -599,6 +606,7 @@
 **Platform**: Mobile  
 **Parity**: Both (web TC-023 + TC-098 combined)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/2_buyer/variant_saved_credit_checkout_test.dart`  
 **Preconditions**: Buyer logged in (`b@test.com`); ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); variant product in catalog (from TC-091 or seeded `E2E Test Variant Tee`); cart empty  
 **Steps**:
 1. Open variant product detail → select required variant attributes (e.g. Size M)
@@ -816,6 +824,7 @@
 **Platform**: Mobile  
 **Parity**: Divergent (7 steps: Basic → Pricing → Description → Images → Variants → Shipping → Review)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/1_seller/add_product_simple_test.dart`  
 **Preconditions**: Seller logged in  
 **Steps**:
 1. Seller tab → add product (`/seller/add`)
@@ -838,6 +847,7 @@
 **Platform**: Mobile  
 **Parity**: Divergent (variants on dedicated step 4, separate from web combined pricing step)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/1_seller/add_product_variant_test.dart`  
 **Preconditions**: Seller logged in  
 **Steps**:
 1. Start add product wizard
@@ -937,6 +947,7 @@
 **Platform**: Mobile  
 **Parity**: Divergent (mobile: tap product tile → `/products/:id?hideEdit=1`; web TC-045: `/my-products` list with separate Preview button)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/1_seller/read_product_simple_test.dart`  
 **Preconditions**: Seller logged in; simple product exists (created via API before test)  
 **Steps**:
 1. Seller tab → seller dashboard loads
@@ -959,6 +970,7 @@
 **Platform**: Mobile  
 **Parity**: Divergent (mobile: 7-step wizard re-opens pre-filled; web TC-044: 6-step wizard)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/1_seller/edit_product_simple_test.dart`  
 **Preconditions**: Seller logged in; simple product exists (created via API before test)  
 **Steps**:
 1. Seller tab → product tile visible on dashboard
@@ -982,6 +994,7 @@
 **Platform**: Mobile  
 **Parity**: Both (TC-046 — same delete+confirm pattern; different UI chrome)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/1_seller/delete_product_simple_test.dart`  
 **Preconditions**: Seller logged in; simple product exists (created via API before test)  
 **Steps**:
 1. Seller tab → product tile visible on dashboard
@@ -1005,6 +1018,7 @@
 **Platform**: Mobile  
 **Parity**: Divergent (no web equivalent — web uses `/my-products` TC-121 with a Preview button)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/1_seller/read_product_variant_test.dart`  
 **Preconditions**: Seller logged in; variant product exists (created via `SellerApiClient.createVariantProduct()` before test)  
 **Steps**:
 1. Seller tab → seller dashboard loads
@@ -1027,6 +1041,7 @@
 **Platform**: Mobile  
 **Parity**: Both (web equivalent: TC-120 — edit variant product)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/1_seller/edit_product_variant_test.dart`  
 **Preconditions**: Seller logged in; variant product exists (created via API before test)  
 **Steps**:
 1. Seller tab → product tile visible on dashboard
@@ -1052,6 +1067,7 @@
 **Platform**: Mobile  
 **Parity**: Both (web equivalent: TC-046 — delete product, covers both simple and variant)  
 **Automation**: Patrol  
+**Test File**: `frontend-mobile/patrol_test/1_seller/delete_product_variant_test.dart`  
 **Preconditions**: Seller logged in; variant product exists (created via API before test)  
 **Steps**:
 1. Seller tab → product tile visible on dashboard

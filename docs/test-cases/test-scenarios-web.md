@@ -14,6 +14,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/buyer/login.spec.ts`  
 **Preconditions**: Seeded user exists (`test@example.com` / `password123`)  
 **Steps**:
 1. Navigate to `/login`
@@ -169,6 +170,7 @@
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/mixed/product-catalog-visibility.spec.ts`  
 **Preconditions**: Not logged in  
 **Steps**:
 1. Navigate to `/products`
@@ -214,6 +216,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/buyer/product-browse.spec.ts`  
 **Preconditions**: Seeded products exist  
 **Steps**:
 1. Navigate to `/products`
@@ -235,6 +238,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/buyer/product-browse.spec.ts`  
 **Preconditions**: Products in multiple categories seeded  
 **Steps**:
 1. Open filters panel
@@ -255,6 +259,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/buyer/product-detail.spec.ts`  
 **Preconditions**: Product or variant with discount > 0  
 **Steps**:
 1. Open discounted product detail
@@ -275,6 +280,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/buyer/product-detail.spec.ts`  
 **Preconditions**: Product with variants (e.g. size/color)  
 **Steps**:
 1. Open product detail
@@ -297,6 +303,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/buyer/product-detail.spec.ts`  
 **Preconditions**: Product with required variants  
 **Steps**:
 1. Open variant product without selecting options
@@ -338,6 +345,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/mixed/product-catalog-visibility.spec.ts`  
 **Preconditions**: Seller account created product via TC-042 or TC-064; **different** buyer account logged in (not the seller)  
 **Steps**:
 1. As Seller: create product with unique name (e.g. `E2E Catalog Widget {timestamp}`)
@@ -515,6 +523,7 @@
 **Platform**: Web  
 **Parity**: API (TC-108)  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/mixed/cart-isolation.spec.ts`  
 **Preconditions**: Buyer1 has items in server-side cart; buyer2 is a fresh account with empty cart  
 **Steps**:
 1. Inject buyer2's auth token into `localStorage`
@@ -540,6 +549,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/buyer/checkout.spec.ts`  
 **Preconditions**: Logged in; cart with items; saved or new address  
 **Steps**:
 1. Proceed from cart to `/checkout`
@@ -564,6 +574,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/buyer/checkout.spec.ts`  
 **Preconditions**: User has saved card in profile  
 **Steps**:
 1. Checkout with items
@@ -585,6 +596,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/buyer/checkout.spec.ts`  
 **Preconditions**: Logged in; no saved card selected  
 **Steps**:
 1. Checkout; choose credit card
@@ -607,6 +619,7 @@
 **Platform**: Web  
 **Parity**: Both (mobile TC-101)  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/buyer/variant-checkout.spec.ts`  
 **Preconditions**: Buyer logged in; variant product in catalog with known attributes (e.g. Size S/M/L from TC-064 or API seed); cart empty  
 **Steps**:
 1. Open variant product detail `/products/{id}` (not seller's own listing — use buyer session or TC-065 flow)
@@ -686,6 +699,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
 **Preconditions**: Cart with items from 2 sellers  
 **Steps**:
 1. Complete checkout for full cart
@@ -787,6 +801,7 @@
 **Platform**: Web  
 **Parity**: API (TC-110)  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/mixed/order-isolation.spec.ts`  
 **Preconditions**: Buyer1 has a placed order; buyer2 is a fresh account with no orders  
 **Steps**:
 1. Inject buyer2's auth into localStorage; reload
@@ -941,6 +956,7 @@
 **Platform**: Web  
 **Parity**: Divergent (mobile 7-step — Variants separate)  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`  
 **Preconditions**: Seller logged in (`test@example.com` promoted, or dedicated seller account)  
 **Steps**:
 1. Navigate to `/seller` — verify `seller-dashboard` visible
@@ -974,6 +990,7 @@
 **Platform**: Web  
 **Parity**: Divergent (mobile 7-step — dedicated Variants step + permission flow)  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/seller/seller-product-wizard.spec.ts`  
 **Preconditions**: Seller logged in; backend image upload available  
 **Steps**:
 1. Open `/seller` → **Add product** (`add-product-btn`)
@@ -1024,6 +1041,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`  
 **Preconditions**: Existing seller product  
 **Steps**:
 1. Edit product from dashboard
@@ -1044,6 +1062,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/seller/seller-variant-product-crud.spec.ts`  
 **Preconditions**: Seller has an existing variant product (e.g. created via TC-064 or TC-091)  
 **Steps**:
 1. Open seller dashboard → locate the variant product card
@@ -1072,6 +1091,7 @@
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`  
 **Preconditions**: Seller has an existing simple product (no variants)  
 **Steps**:
 1. Navigate to `/my-products` (`nav-link-my-products`)
@@ -1094,6 +1114,7 @@
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/seller/seller-variant-product-crud.spec.ts`  
 **Preconditions**: Seller has an existing variant product (e.g. created via TC-064)  
 **Steps**:
 1. Navigate to `/my-products` (`nav-link-my-products`)
@@ -1118,6 +1139,7 @@
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`  
 **Preconditions**: Seller has at least one simple and one variant product  
 **Steps**:
 1. Navigate to `/my-products` (`nav-link-my-products`)
@@ -1339,6 +1361,7 @@
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`  
 **Preconditions**: Deletable product (no blocking orders)  
 **Steps**:
 1. Click delete on product card
@@ -1589,6 +1612,7 @@
 **Platform**: Web  
 **Parity**: TC-103 (mobile)  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/buyer/variant-checkout.spec.ts`  
 **Preconditions**: Buyer logged in (`test@example.com`); variant product in catalog (seeded or created via API); cart empty; no saved card selected  
 **Steps**:
 1. Navigate to product detail; select a size variant (e.g. Size M)
@@ -1615,6 +1639,7 @@
 **Platform**: Web  
 **Parity**: TC-104 (mobile)  
 **Automation**: Playwright  
+**Test File**: `e2e-testing/tests/web/buyer/variant-checkout.spec.ts`  
 **Preconditions**: Buyer logged in; ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); variant product in catalog; cart empty  
 **Steps**:
 1. Navigate to product detail; select a size variant (e.g. Size M)

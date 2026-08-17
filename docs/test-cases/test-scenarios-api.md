@@ -14,6 +14,7 @@
 **Platform**: API  
 **Parity**: N/A  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/cart.api.spec.ts`  
 **Preconditions**: Buyer1 logged in; at least one product added to their server-side cart  
 **Steps**:
 1. `DELETE /api/cart` to clear buyer1's cart
@@ -35,6 +36,7 @@
 **Platform**: API  
 **Parity**: Web (TC-109)  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/cart.api.spec.ts`  
 **Preconditions**: Buyer1 has items in cart; buyer2 is a different account with an empty cart  
 **Steps**:
 1. Login as buyer2 (fresh account)
@@ -58,6 +60,7 @@
 **Platform**: API  
 **Parity**: Web (TC-112)  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/order-isolation.api.spec.ts`  
 **Preconditions**: Buyer1 has at least one placed order; buyer2 is a different account with no orders  
 **Steps**:
 1. Buyer1 places an order via `POST /api/orders`
@@ -79,6 +82,7 @@
 **Platform**: API  
 **Parity**: N/A (API-only enforcement)  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/order-isolation.api.spec.ts`  
 **Preconditions**: Buyer1 has a placed order; buyer2 is a different authenticated account  
 **Steps**:
 1. Buyer1 places an order; capture `orderId`
@@ -101,6 +105,7 @@
 **Platform**: API  
 **Parity**: N/A  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/security.api.spec.ts`  
 **Preconditions**: No Authorization header sent  
 **Steps**:
 1. Send unauthenticated requests to `GET /api/auth/me`, `GET /api/orders`, `GET /api/cart`, `GET /api/seller/products`, `PUT /api/seller/orders/:id/status`
@@ -120,6 +125,7 @@
 **Platform**: API  
 **Parity**: N/A  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/security.api.spec.ts`  
 **Preconditions**: A valid buyer token exists  
 **Steps**:
 1. Take a valid JWT; corrupt the last character of the signature segment
@@ -140,6 +146,7 @@
 **Platform**: API  
 **Parity**: N/A  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/security.api.spec.ts`  
 **Preconditions**: Two sellers (seller1, seller2); buyer places order on seller2's product  
 **Steps**:
 1. Seller2 creates a product
@@ -161,6 +168,7 @@
 **Platform**: API  
 **Parity**: Web (extends TC-053)  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/security.api.spec.ts`  
 **Preconditions**: Fresh buyer token (non-seller account)  
 **Steps**:
 1. Send buyer token to `GET /api/seller/products`, `POST /api/seller/products`, `GET /api/seller/orders`, `PUT /api/seller/orders/:id/status`
@@ -180,6 +188,7 @@
 **Platform**: API  
 **Parity**: N/A  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/security.api.spec.ts`  
 **Preconditions**: None  
 **Steps**:
 1. `POST /api/auth/signup` with a 3-character password (`abc`)
@@ -201,6 +210,7 @@
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
 **Preconditions**: Known product price, discount, coupon, delivery  
 **Steps**:
 1. Place order via API with controlled inputs
@@ -222,6 +232,7 @@
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
 **Preconditions**: Seller without custom shipping; cart subtotal < $50 after discounts  
 **Steps**:
 1. Place order meeting conditions
@@ -241,6 +252,7 @@
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
 **Preconditions**: Default shipping rules; effective subtotal ≥ $50  
 **Steps**:
 1. Place qualifying order
@@ -260,6 +272,7 @@
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
 **Preconditions**: Order status `processing`  
 **Steps**:
 1. Attempt cancel via API
@@ -281,6 +294,7 @@
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/reviews.api.spec.ts`  
 **Preconditions**: User already reviewed product  
 **Steps**:
 1. POST second review for same product
@@ -300,6 +314,7 @@
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/reviews.api.spec.ts`  
 **Preconditions**: Order status `shipped` (not delivered)  
 **Steps**:
 1. Attempt create review via API
@@ -321,6 +336,7 @@
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/users.api.spec.ts`  
 **Preconditions**: Authenticated user  
 **Steps**:
 1. `POST /api/users/:id/follow` using own user ID as `:id`
@@ -342,6 +358,7 @@
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/seller-access.api.spec.ts`  
 **Preconditions**: Order in `pending`  
 **Steps**:
 1. Attempt pending → shipped via API
@@ -363,6 +380,7 @@
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/seller-access.api.spec.ts`  
 **Preconditions**: Buyer JWT  
 **Steps**:
 1. Call `PUT /api/seller/orders/:id/status` as buyer
@@ -382,6 +400,7 @@
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/web/seller/seller-access.spec.ts`  
 **Preconditions**: Two seller accounts  
 **Steps**:
 1. Seller A attempts update/delete Seller B product
@@ -403,6 +422,7 @@
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
 **Preconditions**: Cart qty exceeds stock at order time  
 **Steps**:
 1. Submit order when stock depleted
@@ -422,6 +442,7 @@
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Test File**: `e2e-testing/tests/api/coupons.api.spec.ts`  
 **Preconditions**: Coupon with `minOrderAmount` > cart subtotal  
 **Steps**:
 1. Validate coupon via API
@@ -462,6 +483,7 @@
 **Platform**: API
 **Parity**: API (backend shared with mobile)
 **Automation**: Playwright-API
+**Test File**: `e2e-testing/tests/api/rate-limit.api.spec.ts`  
 **Preconditions**: Backend running with rate limiting middleware active
 **Steps**:
 1. `POST /api/auth/login` with any credentials
@@ -483,6 +505,7 @@
 **Platform**: API
 **Parity**: API (backend shared with mobile)
 **Automation**: Playwright-API
+**Test File**: `e2e-testing/tests/api/rate-limit.api.spec.ts`  
 **Preconditions**: Backend running with rate limiting middleware active
 **Steps**:
 1. `GET /api/products`
@@ -504,6 +527,7 @@
 **Platform**: API
 **Parity**: API (backend shared with mobile)
 **Automation**: Playwright-API
+**Test File**: `e2e-testing/tests/api/rate-limit.api.spec.ts`  
 **Preconditions**: Backend running; window not exhausted
 **Steps**:
 1. `GET /api/products` — record `RateLimit-Remaining` value
@@ -524,6 +548,7 @@
 **Platform**: API
 **Parity**: API (backend shared with mobile)
 **Automation**: Playwright-API
+**Test File**: `e2e-testing/tests/api/rate-limit.api.spec.ts`  
 **Preconditions**: Backend started with `RATE_LIMIT_AUTH_MAX=3` (low-limit mode)
 **Steps**:
 1. `POST /api/auth/login` with bad credentials — repeat until limit reached (3×)
@@ -546,6 +571,7 @@
 **Platform**: API
 **Parity**: API (backend shared with mobile)
 **Automation**: Playwright-API
+**Test File**: `e2e-testing/tests/api/rate-limit.api.spec.ts`  
 **Preconditions**: Backend started with `RATE_LIMIT_AUTH_MAX=3` (low-limit mode)
 **Steps**:
 1. Exhaust the auth limit (3 requests)
@@ -567,6 +593,7 @@
 **Platform**: API
 **Parity**: API (backend shared with mobile)
 **Automation**: Playwright-API
+**Test File**: `e2e-testing/tests/api/rate-limit.api.spec.ts`  
 **Preconditions**: Backend started with `RATE_LIMIT_API_MAX=5` (low-limit mode)
 **Steps**:
 1. `GET /api/products` — repeat until limit reached (5×)
