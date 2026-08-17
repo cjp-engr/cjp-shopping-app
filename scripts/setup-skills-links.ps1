@@ -52,7 +52,7 @@ foreach ($j in $junctions) {
     }
 
     New-Item -ItemType Junction -Path $path -Target $target | Out-Null
-    Write-Host "[OK] $path -> $target"
+    Write-Host "✓ $path  →  $target"
 }
 
 Write-Host ""
