@@ -262,6 +262,25 @@ Always-on reference loaded automatically by testing and review skills:
 
 ---
 
+## Agent Skills
+
+Skills (slash commands for Claude Code, Cursor, and Codex) live in a **separate private repo**:
+
+| Property | Value |
+|----------|-------|
+| Repo | [`cjp-engr/cjp-skills`](https://github.com/cjp-engr/cjp-skills) (private) |
+| Clone path | `D:\Files\aiSkills` |
+
+**First-time setup** (after cloning this project):
+1. Clone the skills repo: `git clone https://github.com/cjp-engr/cjp-skills.git "D:\Files\aiSkills"`
+2. Run `.\scripts\setup-skills-links.ps1` to wire the junctions
+
+**Keeping skills up to date:**
+```powershell
+cd D:\Files\aiSkills
+git pull
+```
+
 ## Getting Started
 
 ### Prerequisites
