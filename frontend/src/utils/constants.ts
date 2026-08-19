@@ -7,7 +7,6 @@ export const STORAGE_KEYS = {
 
 export const TAX_RATE = 0.08; // 8%
 export const SHIPPING_COST = 9.99;
-export const FREE_SHIPPING_THRESHOLD = 50;
 
 export const TOKEN_EXPIRY_HOURS = 24;
 

@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { formatCurrency } from '../utils/formatters';
-import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ShoppingBag, Lock, Tag, Ticket } from 'lucide-react';
-import { TAX_RATE, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from '../utils/constants';
+import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ShoppingBag, Lock, Ticket } from 'lucide-react';
+import { TAX_RATE, SHIPPING_COST } from '../utils/constants';
 import { SelectVoucherModal } from '../components/voucher/SelectVoucherModal';
 
 export const Cart: React.FC = () => {
@@ -55,7 +55,7 @@ export const Cart: React.FC = () => {
     const map = new Map<string, {
       sellerName: string; items: typeof cart.items; subtotal: number; discount: number;
       voucherDiscount: number;
-      shippingMode: 'free' | 'buyer_pays' | 'threshold';
+      shippingMode: 'free' | 'buyer_pays' | 'unknown';
       shippingOptions: string[];
       shipping: number; tax: number; storeTotal: number;
     }>();
@@ -65,7 +65,7 @@ export const Cart: React.FC = () => {
         map.set(key, {
           sellerName: cartItem.product.sellerName ?? 'Seller',
           items: [], subtotal: 0, discount: 0, voucherDiscount: 0,
-          shippingMode: 'threshold', shippingOptions: [],
+          shippingMode: 'unknown', shippingOptions: [],
           shipping: 0, tax: 0, storeTotal: 0,
         });
       }
@@ -86,7 +86,7 @@ export const Cart: React.FC = () => {
       // Voucher discount (overrides each loop but same seller so idempotent)
       group.voucherDiscount = voucherSelections[key]?.discountAmount ?? 0;
       // Capture seller's shippingFee config from first product that has it
-      if (group.shippingMode === 'threshold' && cartItem.product.shippingFee) {
+      if (group.shippingMode === 'unknown' && cartItem.product.shippingFee) {
         group.shippingMode = cartItem.product.shippingFee === 'free' ? 'free' : 'buyer_pays';
       }
       // Collect all delivery options across this seller's products
@@ -103,7 +103,7 @@ export const Cart: React.FC = () => {
         const fee = selectedOpt ? group.items[0]?.product.shippingFeeAmounts?.[selectedOpt] : undefined;
         group.shipping = fee ?? -1;
       } else {
-        group.shipping = netSubtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+        group.shipping = -1;
       }
       group.tax = netSubtotal * TAX_RATE;
       group.storeTotal = netSubtotal + Math.max(0, group.shipping) + group.tax;
@@ -112,8 +112,7 @@ export const Cart: React.FC = () => {
   }, [cart.items, deliverySelections, voucherSelections]);
 
   const hasUnknownShipping = sellerGroups.some(g => g.shipping === -1);
-  const allFreeShipping = sellerGroups.length > 0 && sellerGroups.every(g => g.shippingMode === 'free' || (g.shippingMode === 'threshold' && g.shipping === 0));
-  const anySellerNeedsMore = sellerGroups.some(g => g.shippingMode === 'threshold' && g.subtotal < FREE_SHIPPING_THRESHOLD);
+  const allFreeShipping = sellerGroups.length > 0 && sellerGroups.every(g => g.shippingMode === 'free');
   const totalDiscount = sellerGroups.reduce((s, g) => s + g.discount + g.voucherDiscount, 0);
   const summarySubtotal = sellerGroups.reduce((s, g) => s + g.subtotal + g.discount, 0);
   const summaryShipping = sellerGroups.reduce((s, g) => s + Math.max(0, g.shipping), 0);
@@ -170,14 +169,6 @@ export const Cart: React.FC = () => {
       </div>
 
       {/* Per-seller shipping banners */}
-      {anySellerNeedsMore && !allFreeShipping && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl p-4 flex items-center gap-3">
-          <Tag className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-            Add more items per seller to unlock free shipping for that seller (min. {formatCurrency(FREE_SHIPPING_THRESHOLD)}).
-          </p>
-        </div>
-      )}
       {allFreeShipping && (
         <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-4 flex items-center gap-3">
           <Tag className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
@@ -200,15 +191,6 @@ export const Cart: React.FC = () => {
                 {group.shippingMode === 'free' && (
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                     Free Shipping
-                  </span>
-                )}
-                {group.shippingMode === 'threshold' && (
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    group.subtotal >= FREE_SHIPPING_THRESHOLD
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                  }`}>
-                    {group.subtotal >= FREE_SHIPPING_THRESHOLD ? 'Free Shipping' : `+${formatCurrency(FREE_SHIPPING_THRESHOLD - group.subtotal)} for free shipping`}
                   </span>
                 )}
               </div>

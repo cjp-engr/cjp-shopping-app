@@ -45,7 +45,7 @@ interface WizardData {
   variantAttributes: VariantAttribute[];
   variants: VariantRow[];
   shippingOptions: Array<'standard' | 'express' | 'pickup'>;
-  shippingFee: 'free' | 'buyer_pays';
+  shippingFee: 'free' | 'buyer_pays' | '';
   shippingFeeAmounts: Record<string, string>;
 }
 
@@ -55,7 +55,7 @@ const EMPTY_DATA: WizardData = {
   description: '', tags: [],
   imageMode: 'upload', imageUrl: '',
   hasVariants: false, variantAttributes: [], variants: [],
-  shippingOptions: ['standard'], shippingFee: 'free', shippingFeeAmounts: {},
+  shippingOptions: ['standard'], shippingFee: '', shippingFeeAmounts: {},
 };
 
 interface ProductWizardProps {
@@ -95,7 +95,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
           description: product.description,
           tags: product.tags ?? [],
           shippingOptions: product.shippingOptions ?? ['standard'],
-          shippingFee: product.shippingFee ?? 'free',
+          shippingFee: product.shippingFee ?? '',
           shippingFeeAmounts: product.shippingFeeAmounts
             ? Object.fromEntries(Object.entries(product.shippingFeeAmounts).map(([k, v]) => [k, String(v)]))
             : {},
@@ -223,6 +223,14 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
     }
     if (step === 5) {
       if (data.shippingOptions.length === 0) return 'Please select at least one delivery option.';
+      if (!data.shippingFee) return 'Please select a shipping fee option.';
+      if (data.shippingFee === 'buyer_pays') {
+        for (const opt of data.shippingOptions) {
+          const val = (data.shippingFeeAmounts[opt] ?? '').trim();
+          if (!val) return 'Enter a shipping fee amount for each selected delivery option.';
+          if (isNaN(Number(val))) return 'Enter a valid fee amount for each delivery option.';
+        }
+      }
     }
     return null;
   };
@@ -929,7 +937,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
           {data.shippingFee === 'buyer_pays' && (
             <div className="mt-4 space-y-3" data-testid="wizard-shipping-fee-amounts">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Shipping Fee per Delivery Option <span className="text-gray-400 font-normal">(optional)</span>
+                Shipping Fee per Delivery Option <span className="text-red-500">*</span>
               </label>
               {([
                 { value: 'standard', label: 'Standard' },

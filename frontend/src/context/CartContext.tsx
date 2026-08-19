@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import type { Cart, CartItem, SelectedVariant } from '../types/cart';
 import type { Product } from '../types/product';
-import { STORAGE_KEYS, TAX_RATE, SHIPPING_COST, FREE_SHIPPING_THRESHOLD } from '../utils/constants';
+import { STORAGE_KEYS, TAX_RATE } from '../utils/constants';
 import storageService from '../services/storageService';
 import { API_ENDPOINTS, getHeaders } from '../config/api';
 
@@ -43,18 +43,7 @@ const calculateCartTotals = (items: CartItem[]): Cart => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const tax = subtotal * TAX_RATE;
 
-  const sellerSubtotals = new Map<string, number>();
-  for (const item of items) {
-    const price = item.selectedVariant ? variantEffectivePrice(item.selectedVariant) : item.product.price;
-    const key = item.product.sellerId ?? '__unknown__';
-    sellerSubtotals.set(key, (sellerSubtotals.get(key) ?? 0) + price * item.quantity);
-  }
-  let shipping = 0;
-  for (const sellerTotal of sellerSubtotals.values()) {
-    if (sellerTotal < FREE_SHIPPING_THRESHOLD) shipping += SHIPPING_COST;
-  }
-
-  return { items, totalItems, subtotal, tax, shipping, total: subtotal + tax + shipping };
+  return { items, totalItems, subtotal, tax, shipping: 0, total: subtotal + tax };
 };
 
 const getAuthToken = () => localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
