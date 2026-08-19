@@ -1,9 +1,10 @@
 <div align="center">
-  <img src="docs/images/toko-mart-read-me.png" alt="TokoMart" width="800" />
 
-  # TokoMart - Full-Stack E-Commerce Application
+# TokoMart - Full-Stack E-Commerce Application
 
 A full-featured multi-seller e-commerce application with a React web frontend, Flutter mobile app, and Node.js/MongoDB backend, built with TypeScript, Tailwind CSS, Express, and Dart.
+
+  <img src="docs/images/toko-mart-read-me.png" alt="TokoMart" width="800" />
 
 </div>
 
