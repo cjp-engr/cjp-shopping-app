@@ -1,14 +1,22 @@
+<div align="center">
+
 # TokoMart - Full-Stack E-Commerce Application
 
 A full-featured multi-seller e-commerce application with a React web frontend, Flutter mobile app, and Node.js/MongoDB backend, built with TypeScript, Tailwind CSS, Express, and Dart.
 
+  <img src="docs/images/toko-mart-read-me.png" alt="TokoMart" width="800" />
+
+</div>
+
+
+
 ## Features
 
 ### Shopping
-- **Product Browsing**: Browse products across multiple categories with real-time search, category, price range, and rating filters
+- **Product Browsing**: Browse products across multiple categories with real-time search, category, price range, and rating filters; sellers do not see their own listings in the buyer-facing catalog
 - **Multi-Seller Support**: Products are grouped by seller; each seller has an independent shipping and tax calculation
 - **Shopping Cart**: Add/remove items, update quantities — cart persists to MongoDB and is restored on re-login
-- **Per-Seller Order Computation**: Each seller's subtotal, shipping ($9.99 or free over $50), and tax (8%) are shown separately
+- **Per-Seller Order Computation**: Each seller's subtotal, shipping (free or buyer-pays as configured by the seller), and tax (8%) are shown separately
 - **Checkout Flow**: Multi-step checkout (shipping → payment → review) with saved addresses and saved cards
 - **Order History**: View past orders with status tracking and per-item detail
 - **Product Reviews**: Leave a star rating and written review after receiving an order
@@ -17,7 +25,9 @@ A full-featured multi-seller e-commerce application with a React web frontend, F
 ### Seller Dashboard
 - **Multi-Step Product Wizard**: 7-step form (Basic Info → Pricing → Description → Variants → Images → Shipping → Review) for creating and editing listings on both web and mobile
 - **Multi-Select Delivery Options**: Sellers pick Standard, Express, and/or Pickup — buyers choose one at checkout
-- **Shipping Fee Configuration**: Sellers set Free Shipping or Buyer Pays; entering Buyer Pays reveals a fee amount field
+- **Required Shipping Fee**: Sellers must choose Free Shipping or Buyer Pays before publishing a product; when Buyer Pays is selected, a fee amount is required for each selected delivery option
+- **Seller-Configured Shipping**: Shipping cost shown to buyers is determined entirely by what the seller configured — no platform-wide flat rate or threshold
+- **Required Product Fields**: Name, Category, Description, at least one image, Shipping Options, and Shipping Fee are enforced as required on both the frontend forms and the backend API
 - **Product Fields**: Name, Category, Brand, Condition (New/Used), Price, Stock, SKU, Discount %, Description, Tags, and Images
 - **Pricing Computed Card**: Real-time breakdown showing unit price, discount, final price, and total stock value
 - **Order Management**: View and update order status (Pending → Preparing → Processing → Shipped → Delivered); cancel with reason
@@ -126,6 +136,8 @@ shopping-app-automation/
 ├── e2e-testing/                # Playwright test suite
 │   ├── fixtures/               # base-fixture.ts (page object fixtures)
 │   ├── helpers/                # api-client.ts (login, authHeaders, signupFreshUser)
+│   │                           # product-factory.ts (createSimpleProduct, createDiscountedProduct)
+│   │                           # test-data.ts (randomShipping, randomShippingMultipart)
 │   ├── pages/                  # Page Object Model classes
 │   │   ├── cart.page.ts
 │   │   ├── checkout.page.ts
@@ -142,86 +154,6 @@ shopping-app-automation/
 │
 └── README.md
 ```
-
-## Workflows
-
-### A) TokoMart Application Flow
-
-```mermaid
-flowchart LR
-    AUTH["Auth\n/login · /signup\nJWT → localStorage"]
-
-    subgraph BUYER["BUYER JOURNEY"]
-        direction TB
-        B1["Browse Products\n/products"] --> B2["Product Detail\n/products/:id"]
-        B2 --> B3["Add to Cart\n/cart"]
-        B3 --> B4["Checkout\n/checkout\nshipping → payment → review"]
-        B4 --> B5["Order Placed\n/orders/:id"]
-        B5 --> B6["Confirm Received\nLeave Review"]
-    end
-
-    subgraph SELLER["SELLER JOURNEY"]
-        direction TB
-        S1["Seller Dashboard\n/seller"] --> S2["Product Wizard\n7-step form"]
-        S2 --> S3["My Products\nlist · edit · delete"]
-        S1 --> S4["Order Management\nview + update status"]
-        S4 --> S5["Cancel with reason\nor advance to Shipped"]
-    end
-
-    AUTH --> BUYER
-    AUTH --> SELLER
-```
-
-### B) Test Automation Workflow
-
-See [`e2e-testing/README.md`](e2e-testing/README.md#workflow) for the full Playwright workflow diagram — auth setup → parallel test projects → shared infrastructure → reports.
-
-### C) Order Status Flow
-
-```mermaid
-stateDiagram-v2
-    [*] --> pending : POST /api/orders
-
-    pending --> preparing : seller
-    preparing --> processing : seller
-    processing --> shipped : seller
-    shipped --> delivered : seller · or auto after 2 days
-
-    pending --> cancelled : buyer or seller
-    preparing --> cancelled : buyer or seller
-    processing --> cancelled : seller only
-
-    delivered --> [*]
-    cancelled --> [*]
-```
-
-Stock is restored automatically when an order is cancelled. Once `delivered`, no further transitions are allowed.
-
-### D) Authentication Flow
-
-```mermaid
-flowchart TD
-    A["User visits app"] --> B{"Logged in?"}
-    B -->|no| C["/login or /signup"]
-    C --> D["POST /api/auth/login\nor /api/auth/signup"]
-    D --> E["JWT returned\n(expires 7 days)"]
-    E --> F["Stored in localStorage\nAuthContext loads user"]
-    B -->|yes| F
-    F --> G{"Role?"}
-    G -->|buyer| H["Buyer UI\nBrowse · Cart · Orders · Profile"]
-    G -->|seller| I["Seller UI\nDashboard · Products · Orders"]
-    H --> J["Become a Seller\nProfile → toggle role"]
-    J --> K["PUT /api/auth/profile\n{ role: 'seller' } — one-way"]
-    K --> I
-
-    subgraph PW["Playwright E2E Setup (runs once before tests)"]
-        direction LR
-        P1["buyer-setup.ts\nAPI login → .auth/buyer.json"]
-        P2["seller-setup.ts\nAPI login + role promote → .auth/seller.json"]
-    end
-```
-
----
 
 ## How This Was Built
 
@@ -556,10 +488,10 @@ All protected endpoints require `Authorization: Bearer <token>`.
 | `sku` | string | no | |
 | `discount` | number | no | 0–100 (%) |
 | `tags` | JSON string array | no | e.g. `'["sale","new"]'` |
-| `shippingOptions` | JSON string array | no | `standard`, `express`, `pickup` |
-| `shippingFee` | `free` \| `buyer_pays` | no | |
-| `shippingFeeAmount` | number | no | required when `shippingFee=buyer_pays` |
-| `images` | file(s) | no | multipart field name `images` |
+| `shippingOptions` | JSON string array | **yes** | one or more of `standard`, `express`, `pickup` |
+| `shippingFee` | `free` \| `buyer_pays` | **yes** | |
+| `shippingFeeAmounts` | JSON object | conditional | required when `shippingFee=buyer_pays`; keys are the selected options, values are numbers e.g. `{"standard":10,"express":15}` |
+| `images` | file(s) | **yes** | multipart field name `images`; at least one required |
 
 ## Cart Behaviour
 
@@ -570,15 +502,16 @@ All protected endpoints require `Authorization: Bearer <token>`.
 
 ## Shipping & Tax Rules
 
-- Shipping: **$9.99 per seller** whose items total less than $50; free otherwise
+- Shipping: determined entirely by the seller's configuration — **Free** or **Buyer Pays** with per-option fee amounts (Standard / Express / Pickup). There is no platform-wide flat rate or minimum-order free shipping threshold.
+- When a seller has not configured shipping, the cart shows "At checkout" as the shipping cost; the exact amount is resolved when the buyer selects a delivery option.
 - Tax: **8%** of the order subtotal, calculated per seller
 - Both are shown as a per-seller breakdown in the cart and checkout screens
 
 ## Order Status Flow
 
-See [Order Status Flow diagram](#c-order-status-flow) above.
+`pending → preparing → processing → shipped → delivered`
 
-Stock is restored automatically when an order is cancelled.
+Cancellation is allowed by buyer or seller up through `processing`; seller-only after that. Stock is restored automatically when an order is cancelled. Once `delivered`, no further transitions are allowed.
 
 ## Troubleshooting
 

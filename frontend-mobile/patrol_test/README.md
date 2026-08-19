@@ -1,6 +1,12 @@
+<div align="center">
+
 # TokoMart Mobile E2E Tests (Patrol)
 
 Patrol tests for the TokoMart Flutter mobile app.
+
+  <img src="../../docs/images/toko-mart-patrol-read-me.png" alt="TokoMart-Patrol" width="800" />
+
+</div>
 
 ---
 
@@ -30,6 +36,7 @@ Patrol tests for the TokoMart Flutter mobile app.
 
 - **Assert only at the end of the test.** Do not assert after every action.
 - **Prefer `waitUntilVisible` as the final assertion.** Use `expect()` only when visibility alone is not enough.
+- **Shipping cost** is seller-configured — do not assert a flat `$9.99` or a free-over-$50 threshold. Assert `Free` when the seller chose free shipping, or the seller's configured fee amount when buyer pays. If the seller's config is unknown at assertion time, assert that a shipping line is visible rather than its value.
 
 ### Modules
 
@@ -100,8 +107,14 @@ patrol_test/
 
 | File | TC ID | Description |
 |------|-------|-------------|
-| `add_product_simple_test.dart` | TC-090 | Seller creates a simple product via 7-step wizard |
-| `add_product_variant_test.dart` | TC-091 | Seller creates a variant product via 7-step wizard |
+| `add_product_simple_test.dart` | TC-090 | Seller creates a simple product via 7-step wizard; shipping fee selection is required |
+| `read_product_simple_test.dart` | TC-615 | Seller views simple product in seller dashboard |
+| `edit_product_simple_test.dart` | TC-616 | Seller edits simple product from dashboard |
+| `delete_product_simple_test.dart` | TC-617 | Seller deletes simple product from dashboard |
+| `add_product_variant_test.dart` | TC-091 | Seller creates a variant product via 7-step wizard; shipping fee selection is required |
+| `read_product_variant_test.dart` | TC-618 | Seller views variant product in seller dashboard |
+| `edit_product_variant_test.dart` | TC-619 | Seller edits variant product from dashboard |
+| `delete_product_variant_test.dart` | TC-620 | Seller deletes variant product from dashboard |
 
 ### 2_buyer — Buyer Checkout Flows
 

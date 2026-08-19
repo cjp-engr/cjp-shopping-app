@@ -57,13 +57,13 @@ No TC ID — auth baseline smoke.
 | TC | Test | Endpoint | Status | Backend message |
 |----|------|----------|--------|-----------------|
 | TC-026 | Order total formula | `POST /api/orders` | `201` | *(no error — success)* |
-| TC-027 | Shipping $9.99 when subtotal < $50 | `POST /api/orders` | `201` | *(no error — success)* |
-| TC-028 | Free shipping when subtotal ≥ $50 | `POST /api/orders` | `201` | *(no error — success)* |
+| TC-027 | Shipping cost reflects seller config | `POST /api/orders` | `201` | *(no error — success)* |
+| TC-028 | Free shipping when seller set free | `POST /api/orders` | `201` | *(no error — success)* |
 | TC-056 | Insufficient stock | `POST /api/orders` | `400` | `"Insufficient stock for: {product.name}"` or `"Insufficient stock for variant of: {product.name}"` |
 | TC-033 | Buyer cannot cancel processing order | `PUT /api/orders/:id/status` | `400` | `"You can only cancel pending or preparing orders"` |
 | TC-025 | Multi-seller checkout → 2 orders | `POST /api/orders` | `201` | *(no error — success)* |
 
-**Setup:** seller creates two products (cheap $20, expensive $99) in `beforeAll`. TC-025 uses a second seller account promoted via `PUT /api/auth/profile`.
+**Setup:** seller creates two products in `beforeAll` using `randomShipping()` from `helpers/test-data.ts`. TC-025 uses a second seller account promoted via `PUT /api/auth/profile`.
 
 ---
 
@@ -77,7 +77,7 @@ No TC ID — auth baseline smoke.
 | TC-054 | Seller cannot delete another seller's product | `DELETE /api/products/:id` | `403` | `"Not authorized to delete this product"` |
 | TC-048 | Invalid status transition (pending → shipped) | `PUT /api/seller/orders/:id/status` | `400` | `"Cannot transition order from '{current}' to '{requested}'"` |
 
-**Setup:** `beforeAll` creates a fresh buyer account, a seller1 product, and a seller2 product (buyer2 account promoted to seller). Ensures all ownership assertions are against freshly created, known data.
+**Setup:** `beforeAll` creates a fresh buyer account, a seller1 product, and a seller2 product (buyer2 account promoted to seller) — both products use `randomShippingMultipart()`. Ensures all ownership assertions are against freshly created, known data.
 
 ---
 
@@ -89,7 +89,7 @@ No TC ID — auth baseline smoke.
 | TC-036 | Review before delivery blocked | `POST /api/reviews` | `403` | `"You can only review products from delivered orders"` |
 | TC-035 | Duplicate review blocked | `POST /api/reviews` | `409` | `"You have already reviewed this product"` |
 
-**Setup:** seller creates a product; buyer places an order. TC-035 advances the order to `delivered` and posts the first review successfully before attempting the duplicate.
+**Setup:** seller creates a product with `randomShippingMultipart()` in `beforeAll`; buyer places an order. TC-035 advances the order to `delivered` and posts the first review successfully before attempting the duplicate.
 
 ---
 
@@ -125,7 +125,22 @@ No TC ID — auth baseline smoke.
 | TC-110 | Order list isolation — buyer2 cannot see buyer1's orders | `GET /api/orders` | `200` | *(no error — buyer2's list is simply empty; server filters by `userId`)* |
 | TC-111 | Order detail isolation — buyer2 gets 403 on buyer1's order | `GET /api/orders/:id` | `403` | `"Not authorized to access this order"` |
 
-**Setup:** seller creates a product; buyer1 places an order. Buyer2 is a fresh account with no orders. Both tokens are used independently to assert server-side `userId` scoping.
+**Setup:** seller creates a product with `randomShippingMultipart()`; buyer1 places an order. Buyer2 is a fresh account with no orders. Both tokens are used independently to assert server-side `userId` scoping.
+
+---
+
+### `security.api.spec.ts`
+**Authentication security and IDOR scoping**
+
+| TC | Test | Endpoint | Status | Backend message |
+|----|------|----------|--------|-----------------|
+| TC-132 | Protected routes return 401 with no token | multiple | `401` | `"Not authorized to access this route"` |
+| TC-133 | Tampered JWT returns 401 | `GET /api/auth/me` | `401` | *(token signature rejected)* |
+| TC-134 | Seller order list scoped to own account | `GET /api/seller/orders` | `200` | *(seller2's order absent from seller1's list)* |
+| TC-135 | Buyer blocked from all key seller routes | multiple | `403` | `"Seller account required"` |
+| TC-136 | Weak password on signup returns 400 | `POST /api/auth/signup` | `400` | *(password too short)* |
+
+**Setup:** `beforeAll` logs in seller1, promotes buyer2 to seller2, and creates a fresh buyer via `signupFreshUser()`. TC-134 creates a seller2 product with `randomShippingMultipart()`, buyer places an order on it, then seller1 confirms the order does not appear in their list.
 
 ---
 
@@ -153,6 +168,7 @@ tests/api/
 ├── coupons.api.spec.ts             ← TC-057
 ├── cart.api.spec.ts                ← TC-107, TC-108
 ├── order-isolation.api.spec.ts     ← TC-110, TC-111
+├── security.api.spec.ts            ← TC-132, TC-133, TC-134, TC-135, TC-136
 └── users.api.spec.ts               ← TC-113
 ```
 
@@ -161,5 +177,6 @@ tests/api/
 - All tests use the `request` fixture — no `page` or browser needed.
 - Auth is handled via `login()` and `authHeaders()` from `helpers/api-client.ts`.
 - Fresh accounts are created in `beforeAll` via `/api/auth/signup` to avoid dependency on shared seeded state changing between runs.
-- Seller products are created via `multipart` (multer route) using a placeholder image URL.
+- Seller products are created via `multipart` (multer route) using a placeholder image URL and `randomShippingMultipart()` — `shippingOptions` and `shippingFee` are required by the backend.
+- `randomShipping()` and `randomShippingMultipart()` are exported from `helpers/test-data.ts`. They pick a random subset of delivery options and randomly assign `free` or `buyer_pays` (with per-option fee amounts when buyer pays).
 - Run with: `cd e2e-testing && npm run test:api`

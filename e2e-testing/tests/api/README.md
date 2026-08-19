@@ -1,6 +1,12 @@
+<div align="center">
+
 # API Tests (Playwright)
 
 HTTP-layer tests for the TokoMart backend API. These tests hit a real running backend at `:5000` — no mocks, no browser.
+
+  <img src="../../../docs/images/toko-mart-playwright-read-me.png" alt="TokoMart-Playwright" width="800" />
+
+</div>
 
 ---
 
@@ -11,8 +17,8 @@ HTTP-layer tests for the TokoMart backend API. These tests hit a real running ba
 - **File named `*.api.spec.ts`.** The `.api.` segment distinguishes these from web E2E tests and maps to the `test:api` npm script.
 - **TC-* ID in the file header.** First comment block must list every TC ID covered, with a short description of what each asserts:
   ```ts
-  // TC coverage: TC-026 (order total formula), TC-027 (shipping $9.99 < $50),
-  //              TC-028 (free shipping >= $50), TC-056 (insufficient stock → 400)
+  // TC coverage: TC-026 (order total formula), TC-027 (shipping reflects seller config),
+  //              TC-028 (free shipping when seller set free), TC-056 (insufficient stock → 400)
   ```
 - **Use `request` fixture only — no `page`.** API tests are HTTP-only. If you find yourself importing `page`, move the test to `tests/web/`.
 - **Group by domain in `test.describe`.** Each `describe` block maps to one or more `TC-*` IDs. Name it after the domain rule being tested, not the endpoint:
@@ -68,6 +74,28 @@ const res = await request.get('/api/orders', { headers: authHeaders(token) });
 
 Never depend on shared seeded state changing between test runs — the seeded accounts accumulate orders and cart items across runs. If your test needs a known-clean state, use `signupFreshUser`.
 
+### Product Creation — Required Shipping Fields
+
+`shippingOptions` and `shippingFee` are required by the backend. Every product creation call in `beforeAll` must include them:
+
+```ts
+import { randomShipping, randomShippingMultipart } from '../../helpers/test-data';
+
+// JSON-body request (e.g. POST /api/products)
+await ctx.post('/api/products', {
+  data: { name: '...', price: 25, ...randomShipping() },
+  headers: authHeaders(sellerToken),
+});
+
+// Multipart request (e.g. POST /api/seller/products)
+await ctx.post('/api/seller/products', {
+  multipart: { name: '...', price: '25', image: PLACEHOLDER_IMAGE, ...randomShippingMultipart() },
+  headers: authHeaders(sellerToken),
+});
+```
+
+`randomShipping()` returns a random subset of `['standard', 'express', 'pickup']` with either `free` or `buyer_pays`. When `buyer_pays`, `shippingFeeAmounts` is included automatically with a random fee per option. `randomShippingMultipart()` does the same but pre-serializes arrays to JSON strings for multipart.
+
 ### Assertions — assert all three layers
 
 Every response must be checked for:
@@ -91,7 +119,7 @@ Check `backend/NOTES.md` for the exact error string — never guess or paraphras
 |---|---|
 | Multi-seller order | `POST /api/orders` returns **one order per seller**, not one combined order |
 | Order total | Use persisted `order.total` — not a manual sum of line prices |
-| Shipping | $9.99 per seller when after-discount subtotal < $50; free otherwise |
+| Shipping | Determined by seller config — `free` or `buyer_pays` with per-option fee amounts; no platform flat rate or $50 threshold |
 | Tax | 8% of subtotal, calculated per seller |
 | Stock deduction | After order is placed, check `GET /api/products/:id` stock is reduced |
 | Stock restore | After cancel, check stock is restored to original value |
@@ -135,7 +163,7 @@ expect(res.status()).toBe(400);
 
 **One rule per test.** Each negative test should cover exactly one boundary or rejection rule. Combining multiple rules in a single test makes it harder to know which one failed when the test breaks.
 
-**Pair negative tests with their positive counterpart.** If TC-027 asserts shipping is charged when subtotal < $50, TC-028 should assert it is free when subtotal ≥ $50. Both must be in the same file, under the same `describe` block.
+**Pair negative tests with their positive counterpart.** If TC-027 asserts shipping reflects seller config, TC-028 should assert free shipping when the seller set free. Both must be in the same file, under the same `describe` block.
 
 **Use `signupFreshUser` for permission tests.** When testing that a buyer is blocked from a seller route, use a freshly registered account — not the seeded buyer. A seeded account may have been promoted to seller in a prior run, making the test pass for the wrong reason:
 
@@ -187,11 +215,12 @@ test('TC-113: user cannot follow themselves', async () => { ... });
 |------|--------|---------------|
 | `auth.api.spec.ts` | — | Login, `GET /me`, invalid credentials |
 | `health.api.spec.ts` | — | API server health smoke |
-| `orders.api.spec.ts` | TC-025, TC-026, TC-027, TC-028, TC-033, TC-056 | Order totals, shipping rules, multi-seller split, cancel guard, stock validation |
+| `orders.api.spec.ts` | TC-025, TC-026, TC-027, TC-028, TC-033, TC-056 | Order totals, seller-configured shipping, multi-seller split, cancel guard, stock validation |
 | `seller-access.api.spec.ts` | TC-048, TC-053, TC-054 | Buyer blocked from seller routes, cross-seller edit/delete blocked, invalid status transition |
 | `reviews.api.spec.ts` | TC-035, TC-036 | Duplicate review blocked, review before delivery blocked |
 | `coupons.api.spec.ts` | TC-057 | Coupon below minimum order amount |
 | `cart.api.spec.ts` | TC-107, TC-108 | Cart returns buyer's own items, cart isolation between buyers |
 | `order-isolation.api.spec.ts` | TC-110, TC-111 | Order list isolation, order detail ownership (403) |
+| `security.api.spec.ts` | TC-132, TC-133, TC-134, TC-135, TC-136 | Protected routes 401, tampered JWT rejected, seller order scoping (IDOR), buyer blocked from seller routes, weak password rejected |
 | `users.api.spec.ts` | TC-113 | User cannot follow themselves |
 | `rate-limit.api.spec.ts` | TC-114, TC-115, TC-116, TC-117, TC-118, TC-119 | Rate limit headers present; 429 enforcement (low-limit mode) |
