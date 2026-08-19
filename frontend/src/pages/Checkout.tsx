@@ -96,8 +96,6 @@ export const Checkout: React.FC = () => {
     cartState?.deliverySelections ?? {}
   );
 
-  const FREE_SHIPPING_THRESHOLD = 50;
-
   const effectivePrice = (product: typeof cart.items[0]['product']) =>
     product.discount && product.discount > 0
       ? product.price * (1 - product.discount / 100)
@@ -158,7 +156,7 @@ export const Checkout: React.FC = () => {
         const fee = selectedOpt != null ? group.shippingFeeAmounts[selectedOpt] : undefined;
         group.shipping = fee ?? Object.values(group.shippingFeeAmounts)[0] ?? 0;
       } else {
-        group.shipping = netSubtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 9.99;
+        group.shipping = 0;
       }
       group.tax = netSubtotal * 0.08;
       group.storeTotal = netSubtotal + group.shipping + group.tax;

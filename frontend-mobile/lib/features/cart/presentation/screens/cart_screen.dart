@@ -208,7 +208,7 @@ class _CartScreenState extends State<CartScreen> {
                   ship = -1.0; // sentinel: unknown
                 }
               } else {
-                ship = after < 50 ? 9.99 : 0.0;
+                ship = -1.0; // no shipping config set by seller — resolved at checkout
               }
               if (ship >= 0) shipping += ship;
               final sellerTax = after * 0.08;

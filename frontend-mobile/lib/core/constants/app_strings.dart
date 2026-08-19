@@ -75,7 +75,6 @@ class AppStrings {
   static const String tax = 'Tax';
   static const String total = 'Total';
   static const String freeShipping = 'FREE';
-  static const String freeShippingThreshold = 'Free shipping over \$50';
   static const String selectItems = 'Select items';
   static const String orderSummary = 'Order Summary';
   static const String orderAmount = 'Order Amount';

@@ -61,7 +61,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
 
   // Step 5 — Shipping
   final Set<String> _shippingOptions = {'standard'};
-  String _shippingFee = 'free';
+  String _shippingFee = '';
   final Map<String, TextEditingController> _shippingFeeAmountCtrls = {};
 
   bool get _isEditing => widget.product != null;
@@ -100,7 +100,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     _selectedCategory = (p?.category.isNotEmpty == true) ? p!.category : null;
     if (p != null) {
       _condition = p.condition ?? 'new';
-      _shippingFee = p.shippingFee ?? 'free';
+      _shippingFee = p.shippingFee ?? '';
       if (p.shippingOptions.isNotEmpty) {
         _shippingOptions
           ..clear()
@@ -197,6 +197,20 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       case 4:
         if (_shippingOptions.isEmpty) {
           return 'Please select at least one delivery option.';
+        }
+        if (_shippingFee.isEmpty) {
+          return 'Please select a shipping fee option.';
+        }
+        if (_shippingFee == 'buyer_pays') {
+          for (final opt in _shippingOptions) {
+            final val = _shippingFeeAmountCtrls[opt]?.text.trim() ?? '';
+            if (val.isEmpty) {
+              return 'Enter a shipping fee amount for each selected delivery option.';
+            }
+            if (double.tryParse(val) == null) {
+              return 'Enter a valid fee amount for each delivery option.';
+            }
+          }
         }
     }
     return null;

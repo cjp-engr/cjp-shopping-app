@@ -16,20 +16,20 @@ class CartState extends Equatable {
   int get totalQuantity => items.fold(0, (s, i) => s + i.quantity);
   double get subtotal => items.fold(0, (s, i) => s + i.subtotal);
 
-  /// Shipping computed per seller group: $9.99 if that seller's subtotal < $50,
-  /// else free. Pass optional per-seller discounts (keyed by sellerId).
+  /// Shipping computed per seller group, respecting each seller's configured
+  /// shippingFee. 'free' → $0; 'buyer_pays' → resolved at checkout; no config → $0.
+  /// Pass optional per-seller discounts (keyed by sellerId).
   double shippingFor({Map<String, double> sellerDiscounts = const {}}) {
     if (items.isEmpty) return 0;
-    final groups = <String, double>{};
+    final groups = <String, String?>{};
     for (final item in items) {
       final key = item.product.sellerId ?? '__unknown__';
-      groups[key] = (groups[key] ?? 0) + item.subtotal;
+      groups[key] ??= item.product.shippingFee;
     }
     double total = 0;
     for (final entry in groups.entries) {
-      final discount = sellerDiscounts[entry.key] ?? 0;
-      final net = (entry.value - discount).clamp(0, double.infinity);
-      if (net < 50) total += 9.99;
+      if (entry.value == 'free') continue;
+      // 'buyer_pays' and unknown are resolved at checkout
     }
     return total;
   }
