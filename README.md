@@ -8,7 +8,7 @@ A full-featured multi-seller e-commerce application with a React web frontend, F
 
 </div>
 
----
+
 
 ## Features
 
