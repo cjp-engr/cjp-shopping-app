@@ -13,6 +13,7 @@ import {
   BUYER_EMAIL,
   TEST_PASSWORD,
 } from '../../helpers/api-client';
+import { randomShippingMultipart } from '../../helpers/test-data';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400';
@@ -107,8 +108,7 @@ test.describe('TC-134: Seller order list is scoped to own account', () => {
           category: 'Electronics',
           stock: '10',
           image: PLACEHOLDER_IMAGE,
-          shippingOptions: JSON.stringify(['standard']),
-          shippingFee: 'free',
+          ...randomShippingMultipart(),
         },
         headers: authHeaders(seller2Token),
       });
