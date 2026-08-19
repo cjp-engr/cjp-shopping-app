@@ -53,3 +53,8 @@ docs/superpowers/
 plans
 e2e-testing/env
 .worktrees/
+
+# Skill junctions — real files live in cjp-skills repo at D:\Files\aiSkills
+.agents/skills/
+.claude/skills/
+.cursor/skills/
