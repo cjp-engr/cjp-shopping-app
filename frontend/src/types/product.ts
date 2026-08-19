@@ -46,6 +46,7 @@ export interface ProductFilters {
   rating?: number;
   searchQuery?: string;
   tags?: string[];
+  excludeSellerId?: string;
 }
 
 export type SortOption = 'price-asc' | 'price-desc' | 'rating' | 'newest' | 'name';

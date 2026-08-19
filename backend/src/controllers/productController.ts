@@ -28,6 +28,7 @@ export const getProducts = async (req: Request, res: Response) => {
       rating,
       minReviews,
       search,
+      excludeSellerId,
       sort = 'createdAt',
       page = '1',
       limit = '20'
@@ -56,6 +57,10 @@ export const getProducts = async (req: Request, res: Response) => {
 
     if (search) {
       query.$text = { $search: search as string };
+    }
+
+    if (excludeSellerId) {
+      query.sellerId = { $ne: excludeSellerId };
     }
 
     // Exclude out-of-stock products from buyer listing.

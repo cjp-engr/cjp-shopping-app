@@ -86,6 +86,10 @@ class ProductService {
       params.append('search', filters.searchQuery);
     }
 
+    if (filters?.excludeSellerId) {
+      params.append('excludeSellerId', filters.excludeSellerId);
+    }
+
     if (sortBy) {
       params.append('sort', sortBy);
     }
