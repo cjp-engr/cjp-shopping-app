@@ -38,16 +38,28 @@ The test injects buyer2's auth into localStorage via `injectAuth()`, reloads, na
 ### TC-112 — `order-isolation.spec.ts`
 **Buyer2 sees only own order history — not buyer1's orders**
 
-`beforeAll` uses a raw API context to: create a seller product, place an order as buyer1, then create a fresh buyer2 account.
+`beforeAll` uses a raw API context to: create a seller product with `randomShippingMultipart()`, place an order as buyer1, then create a fresh buyer2 account.
 
 The test injects buyer2's auth, navigates to `/orders` via `myOrdersPage.open()`, and asserts buyer1's order card is not visible.
 
 | Step | Detail |
 |------|--------|
-| Setup | Seller creates product; buyer1 places order via API; buyer2 created via signup |
+| Setup | Seller creates product with `randomShippingMultipart()`; buyer1 places order via API; buyer2 created via signup |
 | Auth injection | `injectAuth(page, buyer2Token, buyer2UserData)` |
 | Navigation | `myOrdersPage.open()` → `/orders` |
 | Assertions | `order-card-{buyer1OrderId}` not visible |
+
+---
+
+### TC-008, TC-065 — `product-catalog-visibility.spec.ts`
+**Product catalog visibility for guest and buyer**
+
+| TC | Test | Key steps |
+|----|------|-----------|
+| TC-008 | Guest can browse products without logging in | Navigate to `/products` without auth → assert product cards visible |
+| TC-065 | Seller listing visible to buyer in catalog | Seller creates product via API → buyer navigates to `/products` → asserts product card is visible |
+
+**Note:** sellers do not see their own listings in the buyer-facing catalog — the Products page filters out the current user's own products server-side via `excludeSellerId`.
 
 ---
 
@@ -55,10 +67,11 @@ The test injects buyer2's auth, navigates to `/orders` via `myOrdersPage.open()`
 
 ```
 web/mixed/
-├── NOTES.md                    ← this file
-├── role-switch.smoke.spec.ts   ← infra smoke
-├── cart-isolation.spec.ts      ← TC-109
-└── order-isolation.spec.ts     ← TC-112
+├── NOTES.md                            ← this file
+├── role-switch.smoke.spec.ts           ← infra smoke
+├── cart-isolation.spec.ts              ← TC-109
+├── order-isolation.spec.ts             ← TC-112
+└── product-catalog-visibility.spec.ts  ← TC-008, TC-065
 ```
 
 ## Key notes
@@ -68,3 +81,5 @@ web/mixed/
 - All API setup in `beforeAll` uses `pwRequest.newContext({ baseURL: API_URL })` — never the fixture `request` (scoped to `:5173`).
 - Buyer2 is always a fresh account created via `/api/auth/signup` to guarantee a clean slate (no cart, no orders).
 - POM used: `cartPage` (locators for cart items), `myOrdersPage` (locators for order cards + `open()` / `expectLoaded()`).
+- Product seeds in `beforeAll` must use `randomShippingMultipart()` — `shippingOptions` and `shippingFee` are required by the backend.
+- The Products page (`/products`) excludes the logged-in seller's own listings via the `excludeSellerId` query param — TC-065 verifies visibility from a buyer account, not the seller's own session.

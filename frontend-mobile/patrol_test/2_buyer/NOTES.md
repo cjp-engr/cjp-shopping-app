@@ -156,3 +156,4 @@ Same flow as TC-101 up to payment. Selects `credit-card` — saved card is pre-s
 - Saved card tests require the buyer account to have a card on file (seeded). New card tests guard the mode-toggle with `if ($.exists)` so they pass on both fresh and seeded accounts.
 - All locators use `keys.*` from `lib/keys.dart` — no hardcoded strings.
 - Shipping address is filled on every test — the seeded buyer account has no pre-saved address.
+- **Shipping cost** is seller-configured — never assert a flat `$9.99` or a free-over-`$50` threshold. Assert `Free` when the seller chose free shipping, or the seller's configured fee when buyer pays.

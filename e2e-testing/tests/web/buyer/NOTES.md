@@ -62,6 +62,6 @@ web/buyer/
 
 - Tests run under `web-buyer` project — buyer auth state is pre-loaded; no UI login needed except `login.spec.ts`.
 - Cart is cleared via API before each checkout test to guarantee a clean state.
-- Products are created fresh in `beforeAll` via the seller API to avoid dependency on seeded catalog.
+- Products are created fresh in `beforeAll` via the seller API to avoid dependency on seeded catalog. All product creation calls must include `shippingOptions` and `shippingFee` (use `randomShipping()` or `randomShippingMultipart()` from `helpers/test-data.ts`).
 - Saved card tests require the buyer account to have a card on file (seeded via `npm run seed`).
 - New card tab is conditionally tapped — only appears when the buyer already has saved cards.

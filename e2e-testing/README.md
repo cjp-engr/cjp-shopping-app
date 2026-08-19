@@ -1,55 +1,12 @@
+<div align="center">
+
 # TokoMart E2E Testing (Playwright)
 
 Web UI and API tests for TokoMart in one Playwright project.
 
-| Folder | Type | Pattern |
-|--------|------|---------|
-| `tests/web/` | Browser E2E | `*.spec.ts` |
-| `tests/api/` | HTTP API | `*.api.spec.ts` |
+  <img src="../docs/images/toko-mart-playwright-read-me.png" alt="TokoMart-Playwright" width="800" />
 
-Mobile tests remain in `frontend-mobile/patrol_test/` (Patrol).
-
-## Workflow
-
-```mermaid
-flowchart TD
-    BE["Backend :5000\nnpm run seed · npm run dev"]
-    FE["Frontend :5173\nnpm run dev · web tests only"]
-
-    subgraph SETUP["AUTH SETUP — serial, runs once"]
-        BS["buyer-setup.ts\nPOST /auth/login → localStorage"] -->|saves| BJ[".auth/buyer.json\nstorageState snapshot"]
-        SS["seller-setup.ts\nlogin + PUT /profile role=seller"] -->|saves| SJ[".auth/seller.json\nstorageState snapshot"]
-    end
-
-    subgraph PROJECTS["TEST PROJECTS — fully parallel"]
-        direction LR
-        API["api\ntests/api/\nrequest fixture only\nno storageState\n10 spec files"]
-        WB["web-buyer\ntests/web/buyer/\ndeps: buyer-setup\nstorageState: buyer.json\n5 spec files"]
-        WS["web-seller\ntests/web/seller/\ndeps: seller-setup\nstorageState: seller.json\n4 spec files"]
-        WM["web-mixed\ntests/web/mixed/\ndeps: both setups\nno storageState · switchRole\n4 spec files"]
-    end
-
-    subgraph INFRA["SHARED INFRASTRUCTURE"]
-        direction LR
-        FX["base-fixture.ts\npage objects · switchRole · request"]
-        HC["helpers/api-client.ts\nlogin · authHeaders · signupFreshUser"]
-        PO["pages/ — Page Objects\nCartPage · CheckoutPage · …"]
-    end
-
-    subgraph REPORTS["REPORTS"]
-        direction LR
-        HR["HTML Report\nnpm run report"]
-        AR["Allure Report\nallure serve allure-results/"]
-    end
-
-    BE --> SETUP
-    FE --> SETUP
-    SETUP --> PROJECTS
-    BJ -->|storageState| WB
-    SJ -->|storageState| WS
-    PROJECTS --> INFRA
-    INFRA --> REPORTS
-```
+</div>
 
 ---
 
@@ -65,6 +22,7 @@ Auth is handled once per run via setup projects — never log in through the UI 
 - **`web-mixed` project has no `storageState`** — tests that switch between buyer and seller (e.g. cart isolation, order isolation) must manage auth themselves using `signupFreshUser()` or the API login helper.
 - **Never call the login UI in a web E2E test.** Use the saved `storageState` or, for fresh accounts, `signupFreshUser()` from `helpers/api-client.ts`.
 - **Do not share `storageState` files between CI jobs** without clearing server-side state first. `buyer.setup.ts` clears the cart via API before saving so the snapshot starts clean.
+- **Product seeds in `beforeAll`** must include `shippingOptions` and `shippingFee` — the backend rejects product creation without them. Use `randomShipping()` (JSON body) or `randomShippingMultipart()` (multipart) from `helpers/test-data.ts`.
 
 ### Web E2E (`tests/web/`)
 
@@ -101,6 +59,13 @@ Never use `waitForTimeout`. Use `expect(locator).toBeVisible()` or Playwright's 
 
 **Fresh accounts**
 Use `signupFreshUser(request, 'prefix')` for tests that need a clean user. Never depend on shared seeded state changing between runs — use `beforeAll` to create what the test needs.
+
+**Product creation — required shipping fields**
+`shippingOptions` and `shippingFee` are required by the backend. All product creation calls must include them. Use the helpers from `helpers/test-data.ts`:
+- JSON-body requests: spread `randomShipping()` into `data`
+- Multipart requests: spread `randomShippingMultipart()` into `multipart` (arrays are pre-serialized to JSON strings)
+
+When `shippingFee` is `buyer_pays`, `randomShipping()` also generates `shippingFeeAmounts` with a random fee per selected delivery option.
 
 **Assertions**
 Assert all three layers: status code + `body.success` + `body.message`. Check `backend/NOTES.md` for the exact error string from the backend source.
@@ -154,7 +119,8 @@ Generated tests land here; map each file to `TC-*` IDs in comments.
 |------|--------|-------------|
 | `auth.api.spec.ts` | — | Login, GET /me, invalid credentials |
 | `health.api.spec.ts` | — | API server health smoke |
-| `orders.api.spec.ts` | TC-025, TC-026, TC-027, TC-028, TC-033, TC-056 | Order totals, shipping rules, multi-seller split, cancel guard, stock validation |
+| `orders.api.spec.ts` | TC-025, TC-026, TC-027, TC-028, TC-033, TC-056 | Order totals, seller-configured shipping, multi-seller split, cancel guard, stock validation |
+| `security.api.spec.ts` | TC-132, TC-133, TC-134, TC-135, TC-136 | Protected routes return 401, tampered JWT rejected, seller order scoping (IDOR), buyer blocked from seller routes, weak password rejected |
 | `seller-access.api.spec.ts` | TC-048, TC-053, TC-054 | Buyer blocked from seller routes, cross-seller edit/delete blocked, invalid status transition |
 | `reviews.api.spec.ts` | TC-035, TC-036 | Duplicate review blocked, review before delivery blocked |
 | `coupons.api.spec.ts` | TC-057 | Coupon below minimum order amount |
@@ -180,3 +146,10 @@ Generated tests land here; map each file to `TC-*` IDs in comments.
 | `mixed/order-isolation.spec.ts` | TC-112 | Buyer2 sees only own order history, not buyer1's orders |
 | `mixed/product-catalog-visibility.spec.ts` | TC-008, TC-065 | Guest browse, seller listing visible to buyer in catalog |
 | `mixed/role-switch.smoke.spec.ts` | — | Auth state switching smoke test |
+
+| Folder | Type | Pattern |
+|--------|------|---------|
+| `tests/web/` | Browser E2E | `*.spec.ts` |
+| `tests/api/` | HTTP API | `*.api.spec.ts` |
+
+Mobile tests remain in `frontend-mobile/patrol_test/` (Patrol).
