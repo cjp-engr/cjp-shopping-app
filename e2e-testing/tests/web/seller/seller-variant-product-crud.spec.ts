@@ -27,8 +27,10 @@ test.describe.serial('Seller variant product CRUD', () => {
         condition: 'new',
         price: 0,
         stock: 0,
+        image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400',
         shippingOptions: ['standard', 'express', 'pickup'],
         shippingFee: 'buyer_pays',
+        shippingFeeAmounts: { standard: 10, express: 15, pickup: 5 },
         variantAttributes: [
           { name: 'Size', values: ['S', 'M', 'L'] },
         ],

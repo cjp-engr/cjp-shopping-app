@@ -21,6 +21,8 @@ export async function createDiscountedProduct(
       category: 'Clothing',
       stock: 10,
       image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400',
+      shippingOptions: ['standard'],
+      shippingFee: 'free',
     },
   });
   if (!res.ok()) throw new Error(`Failed to create discounted product: ${res.status()}`);
@@ -44,6 +46,8 @@ export async function createSimpleProduct(
       category: opts.category ?? 'Electronics',
       stock: 5,
       image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400',
+      shippingOptions: ['standard'],
+      shippingFee: 'free',
     },
   });
   if (!res.ok()) throw new Error(`Failed to create product: ${res.status()}`);
