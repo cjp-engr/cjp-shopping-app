@@ -60,11 +60,11 @@ const ProductSchema = new Schema<IProduct>({
   specifications: { type: Map, of: String },
   sellerId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   brand: { type: String, trim: true },
-  condition: { type: String, enum: ['new', 'used'] },
+  condition: { type: String, enum: ['new', 'used'], default: 'new' },
   sku: { type: String, trim: true },
   discount: { type: Number, min: 0, max: 100 },
   shippingOptions: [{ type: String }],
-  shippingFee: { type: String },
+  shippingFee: { type: String, enum: ['free', 'buyer_pays'] },
   shippingFeeAmounts: { type: Map, of: Number, default: {} },
   variantAttributes: [{
     name: { type: String, required: true, trim: true },

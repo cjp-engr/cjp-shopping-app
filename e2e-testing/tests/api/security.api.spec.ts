@@ -107,6 +107,8 @@ test.describe('TC-134: Seller order list is scoped to own account', () => {
           category: 'Electronics',
           stock: '10',
           image: PLACEHOLDER_IMAGE,
+          shippingOptions: JSON.stringify(['standard']),
+          shippingFee: 'free',
         },
         headers: authHeaders(seller2Token),
       });

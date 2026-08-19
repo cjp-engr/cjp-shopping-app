@@ -151,6 +151,47 @@ export const getProduct = async (req: Request, res: Response) => {
 // @desc    Create product
 // @route   POST /api/products
 // @access  Private (seller)
+
+function validateProductFields(fields: {
+  name?: string;
+  category?: string;
+  description?: string;
+  imageUrls: string[];
+  shippingOptions?: string[];
+  shippingFee?: string;
+  shippingFeeAmounts?: Record<string, number>;
+  price?: number;
+  stock?: number;
+  hasVariants: boolean;
+}): string | null {
+  const { name, category, description, imageUrls, shippingOptions, shippingFee, shippingFeeAmounts, price, stock, hasVariants } = fields;
+
+  if (!name?.trim()) return 'Product name is required.';
+  if (!category?.trim()) return 'Category is required.';
+  if (!description?.trim()) return 'Description is required.';
+  if (!imageUrls || imageUrls.length === 0) return 'At least one product image is required.';
+
+  if (!shippingOptions || shippingOptions.length === 0) return 'At least one delivery option is required.';
+  if (!shippingFee) return 'Shipping fee option is required.';
+  if (shippingFee !== 'free' && shippingFee !== 'buyer_pays') return 'Shipping fee must be "free" or "buyer_pays".';
+
+  if (shippingFee === 'buyer_pays') {
+    for (const opt of shippingOptions) {
+      const amount = shippingFeeAmounts?.[opt];
+      if (amount == null || isNaN(Number(amount))) {
+        return `Shipping fee amount is required for delivery option "${opt}".`;
+      }
+    }
+  }
+
+  if (!hasVariants) {
+    if (price == null || isNaN(price) || price < 0) return 'Price is required and must be a non-negative number.';
+    if (stock == null || isNaN(stock) || stock < 0) return 'Stock quantity is required and must be a non-negative number.';
+  }
+
+  return null;
+}
+
 function parseJsonField(raw: unknown): any | undefined {
   if (!raw) return undefined;
   if (typeof raw === 'string') {
@@ -164,16 +205,35 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
     const { name, description, price, category, stock, tags, brand, condition, sku, discount, shippingOptions, shippingFee, shippingFeeAmounts, variantAttributes, variants } = req.body;
     const files = (req.files as Express.Multer.File[]) ?? [];
     const imageUrls = files.map(f => (f as Express.Multer.File & { path: string }).path || f.filename);
+
+    const parsedShippingOptions: string[] = parseJsonField(shippingOptions) ?? [];
+    const parsedShippingFeeAmounts: Record<string, number> = parseJsonField(shippingFeeAmounts) ?? {};
+    const parsedVariants = parseJsonField(variants);
+    const hasVariants = Array.isArray(parsedVariants) && parsedVariants.length > 0;
+    const effectiveImageUrls = imageUrls.length > 0 ? imageUrls : (req.body.image ? [req.body.image] : []);
+
+    const validationError = validateProductFields({
+      name, category, description, imageUrls: effectiveImageUrls,
+      shippingOptions: parsedShippingOptions,
+      shippingFee, shippingFeeAmounts: parsedShippingFeeAmounts,
+      price: price != null ? Number(price) : undefined,
+      stock: stock != null ? Number(stock) : undefined,
+      hasVariants,
+    });
+    if (validationError) {
+      return res.status(400).json({ success: false, message: validationError });
+    }
+
     const product = await sellerService.createSellerProduct(
       req.user!.id,
       {
         name, description, price: Number(price), category, stock: Number(stock ?? 0),
         tags: parseTags(tags), brand, condition, sku,
         discount: discount != null ? Number(discount) : undefined,
-        shippingOptions: parseJsonField(shippingOptions),
-        shippingFee, shippingFeeAmounts: parseJsonField(shippingFeeAmounts),
+        shippingOptions: parsedShippingOptions,
+        shippingFee, shippingFeeAmounts: parsedShippingFeeAmounts,
         variantAttributes: parseJsonField(variantAttributes),
-        variants: parseJsonField(variants),
+        variants: parsedVariants,
       },
       imageUrls,
     );
@@ -190,7 +250,40 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
   try {
     const { name, description, price, category, stock, tags, brand, condition, sku, discount, shippingOptions, shippingFee, shippingFeeAmounts, variantAttributes, variants } = req.body;
     const files = (req.files as Express.Multer.File[]) ?? [];
-    const imageUrls = files.length > 0 ? files.map(f => (f as Express.Multer.File & { path: string }).path || f.filename) : undefined;
+    const newImageUrls = files.length > 0 ? files.map(f => (f as Express.Multer.File & { path: string }).path || f.filename) : undefined;
+
+    // Load existing product to merge values for validation
+    const existing = await Product.findById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    const parsedShippingOptions: string[] = parseJsonField(shippingOptions) ?? (existing.shippingOptions ?? []);
+    const parsedShippingFeeAmounts: Record<string, number> = parseJsonField(shippingFeeAmounts) ?? (existing.shippingFeeAmounts ? Object.fromEntries(existing.shippingFeeAmounts as any) : {});
+    const parsedVariants = parseJsonField(variants);
+    const hasVariants = parsedVariants != null
+      ? (Array.isArray(parsedVariants) && parsedVariants.length > 0)
+      : (Array.isArray(existing.variants) && existing.variants.length > 0);
+    const bodyImage: string | undefined = req.body.image;
+    const effectiveImageUrls = newImageUrls ?? (bodyImage ? [bodyImage] : (existing.images?.length ? existing.images : (existing.image ? [existing.image] : [])));
+
+    const validationError = validateProductFields({
+      name: name ?? existing.name,
+      category: category ?? existing.category,
+      description: description ?? existing.description,
+      imageUrls: effectiveImageUrls,
+      shippingOptions: parsedShippingOptions,
+      shippingFee: shippingFee ?? existing.shippingFee,
+      shippingFeeAmounts: parsedShippingFeeAmounts,
+      price: price != null ? Number(price) : existing.price,
+      stock: stock != null ? Number(stock) : existing.stock,
+      hasVariants,
+    });
+    if (validationError) {
+      return res.status(400).json({ success: false, message: validationError });
+    }
+
+    const imageUrls = newImageUrls;
     const product = await sellerService.updateSellerProduct(
       req.params.id,
       req.user!.id,

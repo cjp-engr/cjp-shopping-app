@@ -31,7 +31,10 @@ export async function signupFreshUser(
   const res = await request.post('/api/auth/signup', {
     data: { email, password: TEST_PASSWORD, firstName: 'Test', lastName: 'User' },
   });
-  if (!res.ok()) throw new Error(`Signup failed: ${res.status()}`);
+  if (!res.ok()) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Signup failed: ${res.status()} — ${body}`);
+  }
   const { token, user } = await res.json();
   return { token, userId: user.id };
 }
