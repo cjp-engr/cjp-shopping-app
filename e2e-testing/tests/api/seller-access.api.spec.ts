@@ -8,6 +8,7 @@ import {
   SELLER_EMAIL, TEST_PASSWORD,
   BUYER_EMAIL,
 } from '../../helpers/api-client';
+import { randomShippingMultipart } from '../../helpers/test-data';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000';
 
@@ -49,6 +50,7 @@ test.beforeAll(async () => {
       category: 'Electronics',
       stock: '20',
       image: PLACEHOLDER_IMAGE,
+      ...randomShippingMultipart(),
     },
     headers: authHeaders(seller1Token),
   });
@@ -69,6 +71,7 @@ test.beforeAll(async () => {
       category: 'Electronics',
       stock: '10',
       image: PLACEHOLDER_IMAGE,
+      ...randomShippingMultipart(),
     },
     headers: authHeaders(seller2Token),
   });

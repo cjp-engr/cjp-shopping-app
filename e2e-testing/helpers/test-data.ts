@@ -9,6 +9,43 @@ import type {
 
 export const API_URL = process.env.API_URL ?? 'http://localhost:5000';
 
+const ALL_OPTIONS = ['standard', 'express', 'pickup'] as const;
+type ShipOption = typeof ALL_OPTIONS[number];
+
+/** Returns a random non-empty subset of shipping options. */
+function randomOptions(): ShipOption[] {
+  const shuffled = [...ALL_OPTIONS].sort(() => Math.random() - 0.5);
+  const count = Math.floor(Math.random() * ALL_OPTIONS.length) + 1;
+  return shuffled.slice(0, count);
+}
+
+/** Random shipping fields for JSON-body product creation requests. */
+export function randomShipping(): {
+  shippingOptions: ShipOption[];
+  shippingFee: 'free' | 'buyer_pays';
+  shippingFeeAmounts?: Partial<Record<ShipOption, number>>;
+} {
+  const options = randomOptions();
+  const fee = Math.random() < 0.5 ? 'free' : 'buyer_pays';
+  if (fee === 'buyer_pays') {
+    const amounts: Partial<Record<ShipOption, number>> = {};
+    for (const o of options) amounts[o] = Math.floor(Math.random() * 20) + 1;
+    return { shippingOptions: options, shippingFee: fee, shippingFeeAmounts: amounts };
+  }
+  return { shippingOptions: options, shippingFee: fee };
+}
+
+/** Random shipping fields serialized for multipart/form-data product creation requests. */
+export function randomShippingMultipart(): Record<string, string> {
+  const s = randomShipping();
+  const fields: Record<string, string> = {
+    shippingOptions: JSON.stringify(s.shippingOptions),
+    shippingFee: s.shippingFee,
+  };
+  if (s.shippingFeeAmounts) fields.shippingFeeAmounts = JSON.stringify(s.shippingFeeAmounts);
+  return fields;
+}
+
 export const DEFAULT_SHIPPING_ADDRESS: ShippingAddress = {
   street: '123 Test Street',
   city: 'Manila',
