@@ -39,6 +39,7 @@ export const Products: React.FC = () => {
     searchQuery: debouncedSearch || undefined,
     category: selectedCategory !== 'All' ? selectedCategory : undefined,
     rating: minRating || undefined,
+    excludeSellerId: user?.id,
   };
 
   // Reset to page 1 whenever filters, sort, or column count changes
@@ -47,7 +48,7 @@ export const Products: React.FC = () => {
 
   const { products, loading, totalPages, total } = useProducts(filters, sortBy, page, pageSize);
 
-  const visibleProducts = products.filter(p => p.sellerId !== user?.id);
+  const visibleProducts = products;
 
   const categories = ['All', 'Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports & Outdoors'];
 
