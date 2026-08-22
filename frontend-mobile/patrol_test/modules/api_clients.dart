@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 
 // Android emulator → host machine's localhost
-const _baseUrl = 'http://10.0.2.2:5000/api';
+import '../test_credentials.dart';
+
+const _baseUrl = '${TestCredentials.baseUrl}/api';
 
 final class SellerApiClient {
   final Dio _dio = Dio(BaseOptions(
@@ -63,9 +65,21 @@ final class SellerApiClient {
           }
         ],
         'variants': [
-          {'attributes': {'Size': 'S'}, 'price': 24.99, 'stock': 5},
-          {'attributes': {'Size': 'M'}, 'price': 29.99, 'stock': 5},
-          {'attributes': {'Size': 'L'}, 'price': 34.99, 'stock': 5},
+          {
+            'attributes': {'Size': 'S'},
+            'price': 24.99,
+            'stock': 5
+          },
+          {
+            'attributes': {'Size': 'M'},
+            'price': 29.99,
+            'stock': 5
+          },
+          {
+            'attributes': {'Size': 'L'},
+            'price': 34.99,
+            'stock': 5
+          },
         ],
       },
       options: Options(headers: {'Authorization': 'Bearer $_token'}),
