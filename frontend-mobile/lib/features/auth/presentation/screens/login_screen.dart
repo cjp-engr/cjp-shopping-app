@@ -176,50 +176,59 @@ class _LoginScreenState extends State<LoginScreen> {
                         key: _formKey,
                         child: Column(
                           children: [
-                            AppTextField(
-                              key: keys.auth.loginEmailField,
-                              label: AppStrings.email,
-                              controller: _emailCtrl,
-                              keyboardType: TextInputType.emailAddress,
-                              prefixIcon: Icons.email_outlined,
-                              textInputAction: TextInputAction.next,
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) {
-                                  return 'Email is required';
-                                }
-                                if (!v.contains('@')) {
-                                  return 'Enter a valid email';
-                                }
-                                return null;
-                              },
+                            Semantics(
+                              identifier: 'login_email_field',
+                              child: AppTextField(
+                                key: keys.auth.loginEmailField,
+                                label: AppStrings.email,
+                                controller: _emailCtrl,
+                                keyboardType: TextInputType.emailAddress,
+                                prefixIcon: Icons.email_outlined,
+                                textInputAction: TextInputAction.next,
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Email is required';
+                                  }
+                                  if (!v.contains('@')) {
+                                    return 'Enter a valid email';
+                                  }
+                                  return null;
+                                },
+                              ),
                             ),
                             const SizedBox(height: AppSizes.md),
-                            AppTextField(
-                              key: keys.auth.loginPasswordField,
-                              label: AppStrings.password,
-                              controller: _passwordCtrl,
-                              obscure: true,
-                              prefixIcon: Icons.lock_outline,
-                              textInputAction: TextInputAction.done,
-                              validator: (v) {
-                                if (v == null || v.isEmpty) {
-                                  return 'Password is required';
-                                }
-                                if (v.length < 6) {
-                                  return 'At least 6 characters';
-                                }
-                                return null;
-                              },
+                            Semantics(
+                              identifier: 'login_password_field',
+                              child: AppTextField(
+                                key: keys.auth.loginPasswordField,
+                                label: AppStrings.password,
+                                controller: _passwordCtrl,
+                                obscure: true,
+                                prefixIcon: Icons.lock_outline,
+                                textInputAction: TextInputAction.done,
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return 'Password is required';
+                                  }
+                                  if (v.length < 6) {
+                                    return 'At least 6 characters';
+                                  }
+                                  return null;
+                                },
+                              ),
                             ),
                             const SizedBox(height: AppSizes.xl),
                             BlocBuilder<AuthBloc, AuthState>(
                               buildWhen: (p, c) => p.status != c.status,
                               builder: (context, state) {
-                                return AppButton(
-                                  key: keys.auth.loginButton,
-                                  label: AppStrings.login,
-                                  loading: state.status == AuthStatus.loading,
-                                  onPressed: _submit,
+                                return Semantics(
+                                  label: 'login_button',
+                                  child: AppButton(
+                                    key: keys.auth.loginButton,
+                                    label: AppStrings.login,
+                                    loading: state.status == AuthStatus.loading,
+                                    onPressed: _submit,
+                                  ),
                                 );
                               },
                             ),
