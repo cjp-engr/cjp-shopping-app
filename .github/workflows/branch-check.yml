@@ -1,0 +1,22 @@
+name: Branch Name Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Block specific branches from merging to main
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          BLOCKED=("feat/main-flutter-semantics" "feat/flutter-semantics-for-update")
+          for b in "${BLOCKED[@]}"; do
+            if [[ "$BRANCH" == "$b" ]]; then
+              echo "Branch '$BRANCH' is not allowed to merge into main."
+              exit 1
+            fi
+          done
+          echo "Branch '$BRANCH' is allowed."
