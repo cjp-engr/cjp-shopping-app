@@ -220,8 +220,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                 border: Border.all(color: border),
               ),
-              child: TextField(
-                key: keys.products.searchField,
+              child: Semantics(
+                identifier: 'search_field',
+                child: TextField(
+                  key: keys.products.searchField,
                 controller: _searchCtrl,
                 style: TextStyle(color: onSurface),
                 keyboardType: TextInputType.text,
@@ -253,6 +255,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   setState(() => _searchActive = v.isNotEmpty);
                   if (v.length >= 2 || v.isEmpty) _load();
                 },
+                ),
               ),
             ),
           ),
@@ -427,11 +430,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       mainAxisSpacing: AppSizes.sm,
                     ),
                     delegate: SliverChildBuilderDelegate(
-                      (_, i) => ProductCard(
-                        key: keys.products.productCard(visibleProducts[i].name),
-                        product: visibleProducts[i],
-                        onTap: () =>
-                            context.push('/products/${visibleProducts[i].id}'),
+                      (_, i) => Semantics(
+                        identifier: 'product_card_${visibleProducts[i].name}',
+                        child: ProductCard(
+                          key: keys.products.productCard(visibleProducts[i].name),
+                          product: visibleProducts[i],
+                          onTap: () =>
+                              context.push('/products/${visibleProducts[i].id}'),
+                        ),
                       ),
                       childCount: visibleProducts.length,
                     ),
@@ -638,11 +644,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               mainAxisSpacing: AppSizes.sm,
                             ),
                             itemCount: filtered.length,
-                            itemBuilder: (_, i) => ProductCard(
-                              key: keys.products.productCard(filtered[i].name),
-                              product: filtered[i],
-                              onTap: () =>
-                                  context.push('/products/${filtered[i].id}'),
+                            itemBuilder: (_, i) => Semantics(
+                              identifier: 'product_card_${filtered[i].name}',
+                              child: ProductCard(
+                                key: keys.products.productCard(filtered[i].name),
+                                product: filtered[i],
+                                onTap: () =>
+                                    context.push('/products/${filtered[i].id}'),
+                              ),
                             ),
                           ),
                         ),

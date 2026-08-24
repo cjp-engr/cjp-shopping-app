@@ -222,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               buildWhen: (p, c) => p.status != c.status,
                               builder: (context, state) {
                                 return Semantics(
-                                  label: 'login_button',
+                                  identifier: 'login_button',
                                   child: AppButton(
                                     key: keys.auth.loginButton,
                                     label: AppStrings.login,
@@ -237,28 +237,31 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: AppSizes.md),
                       Center(
-                        child: TextButton(
-                          key: keys.auth.loginSignUpLink,
-                          onPressed: () => context.push('/signup'),
-                          child: RichText(
-                            text: TextSpan(
-                              text: AppStrings.noAccountPrefix,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withAlpha(153),
-                                fontSize: 14,
-                              ),
-                              children: const [
-                                TextSpan(
-                                  text: AppStrings.signUpLink,
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                        child: Semantics(
+                          identifier: 'login_sign_up_link',
+                          child: TextButton(
+                            key: keys.auth.loginSignUpLink,
+                            onPressed: () => context.push('/signup'),
+                            child: RichText(
+                              text: TextSpan(
+                                text: AppStrings.noAccountPrefix,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withAlpha(153),
+                                  fontSize: 14,
                                 ),
-                              ],
+                                children: const [
+                                  TextSpan(
+                                    text: AppStrings.signUpLink,
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

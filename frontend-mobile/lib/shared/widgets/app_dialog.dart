@@ -153,12 +153,15 @@ class AppDialog extends StatelessWidget {
             ),
 
             // ── Actions (stacked vertically for clarity) ───────────────────
-            _ActionButton(
-              key: keys.widgets.dialogConfirmButton,
-              label: confirmLabel,
-              color: actionColor,
-              filled: true,
-              onTap: onConfirm,
+            Semantics(
+              identifier: 'dialog_confirm_button',
+              child: _ActionButton(
+                key: keys.widgets.dialogConfirmButton,
+                label: confirmLabel,
+                color: actionColor,
+                filled: true,
+                onTap: onConfirm,
+              ),
             ),
             Divider(
               height: 1,
@@ -167,12 +170,15 @@ class AppDialog extends StatelessWidget {
                   ? Colors.white.withValues(alpha: 0.08)
                   : AppColors.border,
             ),
-            _ActionButton(
-              key: keys.widgets.dialogCancelButton,
-              label: cancelLabel,
-              color: isDark ? const Color(0xFF64748B) : AppColors.textSecondary,
-              filled: false,
-              onTap: onCancel,
+            Semantics(
+              identifier: 'dialog_cancel_button',
+              child: _ActionButton(
+                key: keys.widgets.dialogCancelButton,
+                label: cancelLabel,
+                color: isDark ? const Color(0xFF64748B) : AppColors.textSecondary,
+                filled: false,
+                onTap: onCancel,
+              ),
             ),
             const SizedBox(height: AppSizes.xs),
           ],

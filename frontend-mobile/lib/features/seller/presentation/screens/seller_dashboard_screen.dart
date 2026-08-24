@@ -306,12 +306,15 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
         listenable: _tabController,
         builder: (context, _) {
           if (_tabController.index == 0) {
-            return FloatingActionButton(
-              key: keys.seller.addProductFab,
-              onPressed: () => context.push('/seller/add'),
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.add),
+            return Semantics(
+              identifier: 'add_product_fab',
+              child: FloatingActionButton(
+                key: keys.seller.addProductFab,
+                onPressed: () => context.push('/seller/add'),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                child: const Icon(Icons.add),
+              ),
             );
           }
           if (_tabController.index == 2) {
@@ -1287,8 +1290,10 @@ class _ProductTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      key: keys.seller.productTile(product.id),
+    return Semantics(
+      identifier: 'product_tile_${product.id}',
+      child: Material(
+        key: keys.seller.productTile(product.id),
       color: context.surfaceColor,
       borderRadius: BorderRadius.circular(AppSizes.radiusLg),
       child: InkWell(
@@ -1389,25 +1394,31 @@ class _ProductTile extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      KeyedSubtree(
-                        key: keys.seller.editProductButton(product.id),
-                        child: _ActionIconBtn(
-                          icon: Icons.edit_outlined,
-                          color: AppColors.primary,
-                          bgColor: AppColors.primaryLight,
-                          onPressed: isSaving ? null : onEdit,
-                          tooltip: AppStrings.edit,
+                      Semantics(
+                        identifier: 'edit_product_button_${product.id}',
+                        child: KeyedSubtree(
+                          key: keys.seller.editProductButton(product.id),
+                          child: _ActionIconBtn(
+                            icon: Icons.edit_outlined,
+                            color: AppColors.primary,
+                            bgColor: AppColors.primaryLight,
+                            onPressed: isSaving ? null : onEdit,
+                            tooltip: AppStrings.edit,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
-                      KeyedSubtree(
-                        key: keys.seller.deleteProductButton(product.id),
-                        child: _ActionIconBtn(
-                          icon: Icons.delete_outline_rounded,
-                          color: AppColors.danger,
-                          bgColor: AppColors.dangerSurface,
-                          onPressed: isSaving ? null : onDelete,
-                          tooltip: AppStrings.delete,
+                      Semantics(
+                        identifier: 'delete_product_button_${product.id}',
+                        child: KeyedSubtree(
+                          key: keys.seller.deleteProductButton(product.id),
+                          child: _ActionIconBtn(
+                            icon: Icons.delete_outline_rounded,
+                            color: AppColors.danger,
+                            bgColor: AppColors.dangerSurface,
+                            onPressed: isSaving ? null : onDelete,
+                            tooltip: AppStrings.delete,
+                          ),
                         ),
                       ),
                     ],
@@ -1417,6 +1428,7 @@ class _ProductTile extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

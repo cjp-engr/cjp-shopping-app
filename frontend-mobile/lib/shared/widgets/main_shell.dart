@@ -216,12 +216,15 @@ class _MainShellState extends State<MainShell> {
                                 onTap: () => context.go('/wishlist'),
                               ),
                               if (isSeller)
-                                _NavItem(
-                                  key: keys.seller.sellerNavTab,
-                                  icon: Icons.storefront_outlined,
-                                  activeIcon: Icons.storefront_rounded,
-                                  isActive: index == 3,
-                                  onTap: () => context.go('/seller'),
+                                Semantics(
+                                  identifier: 'seller_nav_tab',
+                                  child: _NavItem(
+                                    key: keys.seller.sellerNavTab,
+                                    icon: Icons.storefront_outlined,
+                                    activeIcon: Icons.storefront_rounded,
+                                    isActive: index == 3,
+                                    onTap: () => context.go('/seller'),
+                                  ),
                                 ),
                               _NavItem(
                                 icon: Icons.person_outline_rounded,

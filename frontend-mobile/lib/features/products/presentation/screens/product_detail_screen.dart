@@ -687,8 +687,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton.icon(
-                            key: keys.products.addToCartButton,
+                          child: Semantics(
+                            identifier: 'add_to_cart_button',
+                            child: OutlinedButton.icon(
+                              key: keys.products.addToCartButton,
                             onPressed: canAdd
                                 ? () {
                                     context.read<CartBloc>().add(CartItemAdded(
@@ -703,6 +705,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                             icon: const Icon(Icons.shopping_bag_outlined, size: 18),
                             label: const Text(AppStrings.addToCart),
+                            ),
                           ),
                         ),
                         const SizedBox(width: AppSizes.sm),
@@ -794,9 +797,11 @@ class _VariantSelector extends StatelessWidget {
                 children: attr.values.map((value) {
                   final available = isValueAvailable(attr.name, value);
                   final selected = selectedAttrs[attr.name] == value;
-                  return GestureDetector(
-                    key: keys.products.variantValue(attr.name, value),
-                    onTap: available ? () => onAttrSelected(attr.name, value) : null,
+                  return Semantics(
+                    identifier: 'variant_value_${attr.name}_$value',
+                    child: GestureDetector(
+                      key: keys.products.variantValue(attr.name, value),
+                      onTap: available ? () => onAttrSelected(attr.name, value) : null,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -829,6 +834,7 @@ class _VariantSelector extends StatelessWidget {
                           decoration: !available ? TextDecoration.lineThrough : null,
                         ),
                       ),
+                    ),
                     ),
                   );
                 }).toList(),

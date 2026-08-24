@@ -415,37 +415,46 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppTextField(
-                      key: keys.seller.wizardAttrNameField,
-                      label: 'Attribute Name',
-                      controller: nameCtrl,
-                      hint: 'e.g. Color, Size, RAM…',
-                      prefixIcon: Icons.tune_outlined,
+                    Semantics(
+                      identifier: 'wizard_attr_name_field',
+                      child: AppTextField(
+                        key: keys.seller.wizardAttrNameField,
+                        label: 'Attribute Name',
+                        controller: nameCtrl,
+                        hint: 'e.g. Color, Size, RAM…',
+                        prefixIcon: Icons.tune_outlined,
+                      ),
                     ),
                     const SizedBox(height: AppSizes.sm),
                     Row(children: [
                       Expanded(
-                          child: AppTextField(
-                        key: keys.seller.wizardAttrAddValueField,
-                        label: 'Add Value',
-                        controller: valueCtrl,
-                        hint: 'e.g. Red, Small, 8GB…',
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => addValue(),
+                          child: Semantics(
+                        identifier: 'wizard_attr_add_value_field',
+                        child: AppTextField(
+                          key: keys.seller.wizardAttrAddValueField,
+                          label: 'Add Value',
+                          controller: valueCtrl,
+                          hint: 'e.g. Red, Small, 8GB…',
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => addValue(),
+                        ),
                       )),
                       const SizedBox(width: AppSizes.sm),
-                      GestureDetector(
-                        key: keys.seller.wizardAttrAddValueButton,
-                        onTap: addValue,
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius:
-                                BorderRadius.circular(AppSizes.radiusMd),
+                      Semantics(
+                        identifier: 'wizard_attr_add_value_button',
+                        child: GestureDetector(
+                          key: keys.seller.wizardAttrAddValueButton,
+                          onTap: addValue,
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius:
+                                  BorderRadius.circular(AppSizes.radiusMd),
+                            ),
+                            child: const Icon(Icons.add, color: Colors.white),
                           ),
-                          child: const Icon(Icons.add, color: Colors.white),
                         ),
                       ),
                     ]),
@@ -483,26 +492,29 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 onPressed: () => Navigator.pop(ctx),
                 child: const Text('Cancel'),
               ),
-              ElevatedButton(
-                key: keys.seller.wizardAttrConfirmButton,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary),
-                onPressed: () {
-                  final name = nameCtrl.text.trim();
-                  if (name.isEmpty || values.isEmpty) return;
-                  if (_variantAttrs
-                      .any((a) => a.name.toLowerCase() == name.toLowerCase())) {
-                    return;
-                  }
-                  setState(() {
-                    _variantAttrs.add(
-                        _VariantAttr(name: name, values: List.from(values)));
-                    _regenerateVariantRows();
-                  });
-                  Navigator.pop(ctx);
-                },
-                child: const Text('Add Attribute',
-                    style: TextStyle(color: Colors.white)),
+              Semantics(
+                identifier: 'wizard_attr_confirm_button',
+                child: ElevatedButton(
+                  key: keys.seller.wizardAttrConfirmButton,
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary),
+                  onPressed: () {
+                    final name = nameCtrl.text.trim();
+                    if (name.isEmpty || values.isEmpty) return;
+                    if (_variantAttrs
+                        .any((a) => a.name.toLowerCase() == name.toLowerCase())) {
+                      return;
+                    }
+                    setState(() {
+                      _variantAttrs.add(
+                          _VariantAttr(name: name, values: List.from(values)));
+                      _regenerateVariantRows();
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Add Attribute',
+                      style: TextStyle(color: Colors.white)),
+                ),
               ),
             ],
           );
@@ -589,29 +601,38 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              ListTile(
-                key: keys.seller.wizardGalleryOption,
-                leading: _iconBox(Icons.photo_library_outlined),
-                title: const Text(AppStrings.chooseFromGallery,
-                    style:
-                        TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                onTap: () => Navigator.pop(ctx, 'gallery'),
+              Semantics(
+                identifier: 'wizard_gallery_option',
+                child: ListTile(
+                  key: keys.seller.wizardGalleryOption,
+                  leading: _iconBox(Icons.photo_library_outlined),
+                  title: const Text(AppStrings.chooseFromGallery,
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  onTap: () => Navigator.pop(ctx, 'gallery'),
+                ),
               ),
-              ListTile(
-                key: keys.seller.wizardCameraOption,
-                leading: _iconBox(Icons.camera_alt_outlined),
-                title: const Text(AppStrings.takeAPhoto,
-                    style:
-                        TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                onTap: () => Navigator.pop(ctx, 'camera'),
+              Semantics(
+                identifier: 'wizard_camera_option',
+                child: ListTile(
+                  key: keys.seller.wizardCameraOption,
+                  leading: _iconBox(Icons.camera_alt_outlined),
+                  title: const Text(AppStrings.takeAPhoto,
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  onTap: () => Navigator.pop(ctx, 'camera'),
+                ),
               ),
-              ListTile(
-                key: keys.seller.wizardImageLinkOption,
-                leading: _iconBox(Icons.link_outlined),
-                title: const Text('Paste image link',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                onTap: () => Navigator.pop(ctx, 'url'),
+              Semantics(
+                identifier: 'wizard_image_link_option',
+                child: ListTile(
+                  key: keys.seller.wizardImageLinkOption,
+                  leading: _iconBox(Icons.link_outlined),
+                  title: const Text('Paste image link',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  onTap: () => Navigator.pop(ctx, 'url'),
+                ),
               ),
             ],
           ),
@@ -772,8 +793,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                         color: context.onSurfaceColor)),
               ),
               for (final cat in categories)
-                ListTile(
-                  key: keys.seller.categorySheetItem(cat),
+                Semantics(
+                  identifier: 'category_sheet_item_$cat',
+                  child: ListTile(
+                    key: keys.seller.categorySheetItem(cat),
                   leading: Container(
                     width: 40,
                     height: 40,
@@ -801,10 +824,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       ? const Icon(Icons.check_circle_rounded,
                           color: AppColors.primary, size: 20)
                       : null,
-                  onTap: () {
-                    setState(() => _selectedCategory = cat);
-                    Navigator.pop(ctx);
-                  },
+                    onTap: () {
+                      setState(() => _selectedCategory = cat);
+                      Navigator.pop(ctx);
+                    },
+                  ),
                 ),
               const SizedBox(height: AppSizes.sm),
             ],
@@ -874,11 +898,14 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           const SizedBox(height: AppSizes.md),
           _FormCard(
               child: Column(children: [
-            AppTextField(
-              key: keys.seller.wizardProductNameField,
-              label: AppStrings.productName,
-              controller: _nameCtrl,
-              prefixIcon: Icons.inventory_2_outlined,
+            Semantics(
+              identifier: 'wizard_product_name_field',
+              child: AppTextField(
+                key: keys.seller.wizardProductNameField,
+                label: AppStrings.productName,
+                controller: _nameCtrl,
+                prefixIcon: Icons.inventory_2_outlined,
+              ),
             ),
             const SizedBox(height: AppSizes.sm),
             BlocBuilder<ProductBloc, ProductState>(
@@ -891,50 +918,56 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     if (mounted) setState(() => _selectedCategory = null);
                   });
                 }
-                return GestureDetector(
-                  key: keys.seller.wizardCategorySelector,
-                  onTap: () => _showCategorySheet(context, categories),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 14),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: context.borderColor),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    ),
-                    child: Row(children: [
-                      Icon(
-                        _selectedCategory != null
-                            ? _categoryIcon(_selectedCategory!)
-                            : Icons.category_outlined,
-                        color: _selectedCategory != null
-                            ? AppColors.primary
-                            : context.onSurfaceMuted,
-                        size: 20,
+                return Semantics(
+                  identifier: 'wizard_category_selector',
+                  child: GestureDetector(
+                    key: keys.seller.wizardCategorySelector,
+                    onTap: () => _showCategorySheet(context, categories),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 14),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: context.borderColor),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                          child: Text(
-                        _selectedCategory ?? AppStrings.selectCategory,
-                        style: TextStyle(
-                          fontSize: 14,
+                      child: Row(children: [
+                        Icon(
+                          _selectedCategory != null
+                              ? _categoryIcon(_selectedCategory!)
+                              : Icons.category_outlined,
                           color: _selectedCategory != null
-                              ? context.onSurfaceColor
+                              ? AppColors.primary
                               : context.onSurfaceMuted,
+                          size: 20,
                         ),
-                      )),
-                      Icon(Icons.keyboard_arrow_down_rounded,
-                          color: context.onSurfaceMuted, size: 22),
-                    ]),
+                        const SizedBox(width: 12),
+                        Expanded(
+                            child: Text(
+                          _selectedCategory ?? AppStrings.selectCategory,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: _selectedCategory != null
+                                ? context.onSurfaceColor
+                                : context.onSurfaceMuted,
+                          ),
+                        )),
+                        Icon(Icons.keyboard_arrow_down_rounded,
+                            color: context.onSurfaceMuted, size: 22),
+                      ]),
+                    ),
                   ),
                 );
               },
             ),
             const SizedBox(height: AppSizes.sm),
-            AppTextField(
-              key: keys.seller.wizardBrandField,
-              label: AppStrings.brandOptional,
-              controller: _brandCtrl,
-              prefixIcon: Icons.storefront_outlined,
+            Semantics(
+              identifier: 'wizard_brand_field',
+              child: AppTextField(
+                key: keys.seller.wizardBrandField,
+                label: AppStrings.brandOptional,
+                controller: _brandCtrl,
+                prefixIcon: Icons.storefront_outlined,
+              ),
             ),
           ])),
           const SizedBox(height: AppSizes.md),
@@ -942,21 +975,27 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           const SizedBox(height: AppSizes.xs),
           Row(children: [
             Expanded(
-                child: _ConditionCard(
-              key: keys.seller.wizardBrandNewButton,
-              label: AppStrings.brandNew,
-              icon: Icons.fiber_new_outlined,
-              selected: _condition == 'new',
-              onTap: () => setState(() => _condition = 'new'),
+                child: Semantics(
+              identifier: 'wizard_brand_new_button',
+              child: _ConditionCard(
+                key: keys.seller.wizardBrandNewButton,
+                label: AppStrings.brandNew,
+                icon: Icons.fiber_new_outlined,
+                selected: _condition == 'new',
+                onTap: () => setState(() => _condition = 'new'),
+              ),
             )),
             const SizedBox(width: AppSizes.sm),
             Expanded(
-                child: _ConditionCard(
-              key: keys.seller.wizardUsedButton,
-              label: AppStrings.usedCondition,
-              icon: Icons.history_outlined,
-              selected: _condition == 'used',
-              onTap: () => setState(() => _condition = 'used'),
+                child: Semantics(
+              identifier: 'wizard_used_button',
+              child: _ConditionCard(
+                key: keys.seller.wizardUsedButton,
+                label: AppStrings.usedCondition,
+                icon: Icons.history_outlined,
+                selected: _condition == 'used',
+                onTap: () => setState(() => _condition = 'used'),
+              ),
             )),
           ]),
         ],
@@ -997,11 +1036,14 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                             fontSize: 12, color: context.onSurfaceMuted)),
                   ],
                 )),
-                Switch(
-                  key: keys.seller.wizardVariantsToggle,
-                  value: _hasVariants,
-                  onChanged: (val) => setState(() => _hasVariants = val),
-                  activeThumbColor: AppColors.primary,
+                Semantics(
+                  identifier: 'wizard_variants_toggle',
+                  child: Switch(
+                    key: keys.seller.wizardVariantsToggle,
+                    value: _hasVariants,
+                    onChanged: (val) => setState(() => _hasVariants = val),
+                    activeThumbColor: AppColors.primary,
+                  ),
                 ),
               ])),
 
@@ -1010,36 +1052,48 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               if (!_hasVariants) ...[
                 _FormCard(
                     child: Column(children: [
-                  AppTextField(
-                    key: keys.seller.wizardPriceField,
-                    label: AppStrings.priceLabel,
-                    controller: _priceCtrl,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    prefixIcon: Icons.attach_money,
+                  Semantics(
+                    identifier: 'wizard_price_field',
+                    child: AppTextField(
+                      key: keys.seller.wizardPriceField,
+                      label: AppStrings.priceLabel,
+                      controller: _priceCtrl,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      prefixIcon: Icons.attach_money,
+                    ),
                   ),
                   const SizedBox(height: AppSizes.sm),
-                  AppTextField(
-                    key: keys.seller.wizardStockField,
-                    label: AppStrings.stock,
-                    controller: _stockCtrl,
-                    keyboardType: TextInputType.number,
-                    prefixIcon: Icons.warehouse_outlined,
+                  Semantics(
+                    identifier: 'wizard_stock_field',
+                    child: AppTextField(
+                      key: keys.seller.wizardStockField,
+                      label: AppStrings.stock,
+                      controller: _stockCtrl,
+                      keyboardType: TextInputType.number,
+                      prefixIcon: Icons.warehouse_outlined,
+                    ),
                   ),
                   const SizedBox(height: AppSizes.sm),
-                  AppTextField(
-                    key: keys.seller.wizardSkuField,
-                    label: AppStrings.skuOptional,
-                    controller: _skuCtrl,
-                    prefixIcon: Icons.qr_code_outlined,
+                  Semantics(
+                    identifier: 'wizard_sku_field',
+                    child: AppTextField(
+                      key: keys.seller.wizardSkuField,
+                      label: AppStrings.skuOptional,
+                      controller: _skuCtrl,
+                      prefixIcon: Icons.qr_code_outlined,
+                    ),
                   ),
                   const SizedBox(height: AppSizes.sm),
-                  AppTextField(
-                    key: keys.seller.wizardDiscountField,
-                    label: AppStrings.discountOptional,
-                    controller: _discountCtrl,
-                    keyboardType: TextInputType.number,
-                    prefixIcon: Icons.percent_outlined,
+                  Semantics(
+                    identifier: 'wizard_discount_field',
+                    child: AppTextField(
+                      key: keys.seller.wizardDiscountField,
+                      label: AppStrings.discountOptional,
+                      controller: _discountCtrl,
+                      keyboardType: TextInputType.number,
+                      prefixIcon: Icons.percent_outlined,
+                    ),
                   ),
                 ])),
                 const SizedBox(height: AppSizes.md),
@@ -1058,27 +1112,30 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const _SectionLabel('Attributes'),
-                      GestureDetector(
-                        key: keys.seller.wizardAddAttributeButton,
-                        onTap: _showAddAttributeDialog,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(20),
+                      Semantics(
+                        identifier: 'wizard_add_attribute_button',
+                        child: GestureDetector(
+                          key: keys.seller.wizardAddAttributeButton,
+                          onTap: _showAddAttributeDialog,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.add, color: Colors.white, size: 14),
+                                  SizedBox(width: 4),
+                                  Text('Add',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white)),
+                                ]),
                           ),
-                          child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.add, color: Colors.white, size: 14),
-                                SizedBox(width: 4),
-                                Text('Add',
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white)),
-                              ]),
                         ),
                       ),
                     ]),
@@ -1157,12 +1214,15 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppTextField(
-                key: keys.seller.wizardDescriptionField,
-                label: AppStrings.description,
-                controller: _descCtrl,
-                maxLines: 5,
-                maxLength: 200,
+              Semantics(
+                identifier: 'wizard_description_field',
+                child: AppTextField(
+                  key: keys.seller.wizardDescriptionField,
+                  label: AppStrings.description,
+                  controller: _descCtrl,
+                  maxLines: 5,
+                  maxLength: 200,
+                ),
               ),
               const SizedBox(height: AppSizes.sm),
               Text(AppStrings.tags,
@@ -1174,25 +1234,31 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               const SizedBox(height: AppSizes.xs),
               Row(children: [
                 Expanded(
-                    child: AppTextField(
-                  key: keys.seller.wizardTagsField,
-                  label: AppStrings.addTag,
-                  controller: _tagCtrl,
-                  onFieldSubmitted: (_) => _addTag(),
-                  textInputAction: TextInputAction.done,
+                    child: Semantics(
+                  identifier: 'wizard_tags_field',
+                  child: AppTextField(
+                    key: keys.seller.wizardTagsField,
+                    label: AppStrings.addTag,
+                    controller: _tagCtrl,
+                    onFieldSubmitted: (_) => _addTag(),
+                    textInputAction: TextInputAction.done,
+                  ),
                 )),
                 const SizedBox(width: AppSizes.sm),
-                GestureDetector(
-                  key: keys.seller.wizardAddTagButton,
-                  onTap: _addTag,
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                Semantics(
+                  identifier: 'wizard_add_tag_button',
+                  child: GestureDetector(
+                    key: keys.seller.wizardAddTagButton,
+                    onTap: _addTag,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      ),
+                      child: const Icon(Icons.add, color: Colors.white, size: 22),
                     ),
-                    child: const Icon(Icons.add, color: Colors.white, size: 22),
                   ),
                 ),
               ]),
@@ -1405,12 +1471,15 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   children: [
                     Text('PRICE (\$)', style: labelStyle),
                     const SizedBox(height: 4),
-                    _InlineField(
-                        key: keys.seller.wizardVariantPriceField(row.label),
-                        ctrl: row.priceCtrl,
-                        prefix: '\$',
-                        hint: '0.00',
-                        numeric: true),
+                    Semantics(
+                      identifier: 'wizard_variant_price_field_${row.label}',
+                      child: _InlineField(
+                          key: keys.seller.wizardVariantPriceField(row.label),
+                          ctrl: row.priceCtrl,
+                          prefix: '\$',
+                          hint: '0.00',
+                          numeric: true),
+                    ),
                   ]),
             ),
             const SizedBox(width: 8),
@@ -1421,11 +1490,14 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   children: [
                     Text('STOCK', style: labelStyle),
                     const SizedBox(height: 4),
-                    _InlineField(
-                        key: keys.seller.wizardVariantStockField(row.label),
-                        ctrl: row.stockCtrl,
-                        hint: '0',
-                        numeric: true),
+                    Semantics(
+                      identifier: 'wizard_variant_stock_field_${row.label}',
+                      child: _InlineField(
+                          key: keys.seller.wizardVariantStockField(row.label),
+                          ctrl: row.stockCtrl,
+                          hint: '0',
+                          numeric: true),
+                    ),
                   ]),
             ),
             const SizedBox(width: 8),
@@ -1436,12 +1508,15 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   children: [
                     Text('DISC %', style: labelStyle),
                     const SizedBox(height: 4),
-                    _InlineField(
-                        key: keys.seller.wizardVariantDiscountField(row.label),
-                        ctrl: row.discountCtrl,
-                        suffix: '%',
-                        hint: '0',
-                        numeric: true),
+                    Semantics(
+                      identifier: 'wizard_variant_discount_field_${row.label}',
+                      child: _InlineField(
+                          key: keys.seller.wizardVariantDiscountField(row.label),
+                          ctrl: row.discountCtrl,
+                          suffix: '%',
+                          hint: '0',
+                          numeric: true),
+                    ),
                   ]),
             ),
           ]),
@@ -1453,10 +1528,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('SKU (OPTIONAL)', style: labelStyle),
             const SizedBox(height: 4),
-            _InlineField(
-                key: keys.seller.wizardVariantSkuField(row.label),
-                ctrl: row.skuCtrl,
-                hint: 'e.g. SKU-001'),
+            Semantics(
+              identifier: 'wizard_variant_sku_field_${row.label}',
+              child: _InlineField(
+                  key: keys.seller.wizardVariantSkuField(row.label),
+                  ctrl: row.skuCtrl,
+                  hint: 'e.g. SKU-001'),
+            ),
           ]),
         ),
         // Sale price preview
@@ -1730,19 +1808,22 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             ),
           ]).map((o) => Padding(
                 padding: const EdgeInsets.only(bottom: AppSizes.xs),
-                child: _ShippingOptionCard(
-                  key: o.$5,
-                  label: o.$2,
-                  subtitle: o.$3,
-                  icon: o.$4,
-                  checked: _shippingOptions.contains(o.$1),
-                  onTap: () => setState(() {
-                    if (_shippingOptions.contains(o.$1)) {
-                      _shippingOptions.remove(o.$1);
-                    } else {
-                      _shippingOptions.add(o.$1);
-                    }
-                  }),
+                child: Semantics(
+                  identifier: 'wizard_shipping_option_${o.$1}',
+                  child: _ShippingOptionCard(
+                    key: o.$5,
+                    label: o.$2,
+                    subtitle: o.$3,
+                    icon: o.$4,
+                    checked: _shippingOptions.contains(o.$1),
+                    onTap: () => setState(() {
+                      if (_shippingOptions.contains(o.$1)) {
+                        _shippingOptions.remove(o.$1);
+                      } else {
+                        _shippingOptions.add(o.$1);
+                      }
+                    }),
+                  ),
                 ),
               )),
           const SizedBox(height: AppSizes.md),
@@ -1750,21 +1831,27 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           const SizedBox(height: AppSizes.xs),
           Row(children: [
             Expanded(
-                child: _ShippingFeeCard(
-              key: keys.seller.wizardFreeShippingButton,
-              label: AppStrings.freeShipping,
-              subtitle: 'You absorb the cost',
-              selected: _shippingFee == 'free',
-              onTap: () => setState(() => _shippingFee = 'free'),
+                child: Semantics(
+              identifier: 'wizard_free_shipping_button',
+              child: _ShippingFeeCard(
+                key: keys.seller.wizardFreeShippingButton,
+                label: AppStrings.freeShipping,
+                subtitle: 'You absorb the cost',
+                selected: _shippingFee == 'free',
+                onTap: () => setState(() => _shippingFee = 'free'),
+              ),
             )),
             const SizedBox(width: AppSizes.sm),
             Expanded(
-                child: _ShippingFeeCard(
-              key: keys.seller.wizardBuyerPaysButton,
-              label: AppStrings.feeByBuyer,
-              subtitle: 'Added at checkout',
-              selected: _shippingFee == 'buyer_pays',
-              onTap: () => setState(() => _shippingFee = 'buyer_pays'),
+                child: Semantics(
+              identifier: 'wizard_buyer_pays_button',
+              child: _ShippingFeeCard(
+                key: keys.seller.wizardBuyerPaysButton,
+                label: AppStrings.feeByBuyer,
+                subtitle: 'Added at checkout',
+                selected: _shippingFee == 'buyer_pays',
+                onTap: () => setState(() => _shippingFee = 'buyer_pays'),
+              ),
             )),
           ]),
           if (_shippingFee == 'buyer_pays') ...[
@@ -1790,15 +1877,18 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                             ),
                           ),
                           Expanded(
-                            child: AppTextField(
-                              key: keys.seller.wizardShippingFeeField(opt),
-                              label: '',
-                              controller: _shippingFeeAmountCtrls[opt]!,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                      decimal: true),
-                              prefixIcon: Icons.attach_money,
-                              hint: '0.00',
+                            child: Semantics(
+                              identifier: 'wizard_shipping_fee_field_$opt',
+                              child: AppTextField(
+                                key: keys.seller.wizardShippingFeeField(opt),
+                                label: '',
+                                controller: _shippingFeeAmountCtrls[opt]!,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                                prefixIcon: Icons.attach_money,
+                                hint: '0.00',
+                              ),
                             ),
                           ),
                         ],
@@ -1956,21 +2046,27 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           const SizedBox(width: AppSizes.sm),
           if (_currentPage < 5)
             Expanded(
-                child: AppButton(
-                    key: keys.seller.wizardNextButton,
-                    label: 'Next',
-                    onPressed: _nextPage))
+                child: Semantics(
+              identifier: 'wizard_next_button',
+              child: AppButton(
+                  key: keys.seller.wizardNextButton,
+                  label: 'Next',
+                  onPressed: _nextPage),
+            ))
           else
             Expanded(
               child: BlocBuilder<SellerBloc, SellerState>(
                 buildWhen: (p, c) => p.status != c.status,
-                builder: (context, state) => AppButton(
-                  key: keys.seller.wizardPublishButton,
-                  label: _isEditing
-                      ? AppStrings.saveChanges
-                      : AppStrings.publishListing,
-                  loading: state.status == SellerStatus.saving,
-                  onPressed: _submit,
+                builder: (context, state) => Semantics(
+                  identifier: 'wizard_publish_button',
+                  child: AppButton(
+                    key: keys.seller.wizardPublishButton,
+                    label: _isEditing
+                        ? AppStrings.saveChanges
+                        : AppStrings.publishListing,
+                    loading: state.status == SellerStatus.saving,
+                    onPressed: _submit,
+                  ),
                 ),
               ),
             ),
@@ -2533,7 +2629,10 @@ class _MultiImagePicker extends StatelessWidget {
           if (ni < files.length) {
             return _ImageTile(file: files[ni], onRemove: () => onRemove(ni));
           }
-          return _AddTile(key: keys.seller.wizardAddImageTile, onTap: onAdd);
+          return Semantics(
+            identifier: 'wizard_add_image_tile',
+            child: _AddTile(key: keys.seller.wizardAddImageTile, onTap: onAdd),
+          );
         },
       ),
     );
@@ -2562,26 +2661,35 @@ class _ImageLinkDialogState extends State<_ImageLinkDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Add image link'),
-      content: TextField(
-        key: keys.seller.wizardImageLinkField,
-        controller: _ctrl,
-        autofocus: true,
-        decoration: const InputDecoration(
-          hintText: 'https://example.com/image.jpg',
+      content: Semantics(
+        identifier: 'wizard_image_link_field',
+        child: TextField(
+          key: keys.seller.wizardImageLinkField,
+          controller: _ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'https://example.com/image.jpg',
+          ),
+          keyboardType: TextInputType.url,
+          onSubmitted: (v) => Navigator.pop(context, v.trim()),
         ),
-        keyboardType: TextInputType.url,
-        onSubmitted: (v) => Navigator.pop(context, v.trim()),
       ),
       actions: [
-        TextButton(
-          key: keys.seller.wizardImageLinkCancelButton,
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+        Semantics(
+          identifier: 'wizard_image_link_cancel_button',
+          child: TextButton(
+            key: keys.seller.wizardImageLinkCancelButton,
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
         ),
-        TextButton(
-          key: keys.seller.wizardImageLinkAddButton,
-          onPressed: () => Navigator.pop(context, _ctrl.text.trim()),
-          child: const Text('Add'),
+        Semantics(
+          identifier: 'wizard_image_link_add_button',
+          child: TextButton(
+            key: keys.seller.wizardImageLinkAddButton,
+            onPressed: () => Navigator.pop(context, _ctrl.text.trim()),
+            child: const Text('Add'),
+          ),
         ),
       ],
     );
