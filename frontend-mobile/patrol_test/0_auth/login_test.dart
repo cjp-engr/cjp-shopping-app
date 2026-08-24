@@ -6,7 +6,7 @@ import '../test_app.dart';
 import '../test_credentials.dart';
 
 void main() {
-  testApp('logs_test in and verifies the home screen', tags: ['smoke'],
+  testApp('logs in and verifies the home screen', tags: ['smoke'],
       ($, modules) async {
     await modules.auth.login(
       email: TestCredentials.sellerEmail,
