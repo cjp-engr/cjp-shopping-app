@@ -16,7 +16,7 @@ class TestCredentials {
   );
 
   static const baseUrl = String.fromEnvironment(
-    'BASE_URLt',
+    'BASE_URL',
     defaultValue: 'http://10.0.2.2:5000',
   );
 }
