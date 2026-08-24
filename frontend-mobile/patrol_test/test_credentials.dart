@@ -14,4 +14,9 @@ class TestCredentials {
     'TEST_PASSWORD',
     defaultValue: 'Test750!!',
   );
+
+  static const baseUrl = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://10.0.2.2:5000',
+  );
 }
