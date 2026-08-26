@@ -66,7 +66,9 @@ class _MainShellState extends State<MainShell> {
     if (!mounted) return;
     final authState = context.read<AuthBloc>().state;
     if (authState.status != AuthStatus.authenticated) return;
-    if (authState.user?.isSeller ?? false) return; // sellers use the seller dashboard
+    if (authState.user?.isSeller ?? false) {
+      return;
+    } // sellers use the seller dashboard
     _fetchToReceiveCount();
   }
 
@@ -216,15 +218,13 @@ class _MainShellState extends State<MainShell> {
                                 onTap: () => context.go('/wishlist'),
                               ),
                               if (isSeller)
-                                Semantics(
-                                  identifier: 'seller_nav_tab',
-                                  child: _NavItem(
-                                    key: keys.seller.sellerNavTab,
-                                    icon: Icons.storefront_outlined,
-                                    activeIcon: Icons.storefront_rounded,
-                                    isActive: index == 3,
-                                    onTap: () => context.go('/seller'),
-                                  ),
+                                _NavItem(
+                                  key: keys.seller.sellerNavTab,
+                                  semanticsIdentifier: 'seller_nav_tab',
+                                  icon: Icons.storefront_outlined,
+                                  activeIcon: Icons.storefront_rounded,
+                                  isActive: index == 3,
+                                  onTap: () => context.go('/seller'),
                                 ),
                               _NavItem(
                                 icon: Icons.person_outline_rounded,
@@ -254,6 +254,7 @@ class _NavItem extends StatelessWidget {
   final bool isActive;
   final int? badge;
   final VoidCallback onTap;
+  final String? semanticsIdentifier;
 
   const _NavItem({
     super.key,
@@ -262,64 +263,67 @@ class _NavItem extends StatelessWidget {
     required this.isActive,
     required this.onTap,
     this.badge,
+    this.semanticsIdentifier,
   });
 
   @override
   Widget build(BuildContext context) {
     final inactiveColor = context.onSurfaceMuted;
 
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  isActive ? activeIcon : icon,
-                  color: isActive ? AppColors.primary : inactiveColor,
-                  size: 26,
-                ),
-                if (badge != null)
-                  Positioned(
-                    right: -6,
-                    top: -4,
-                    child: Container(
-                      width: 16,
-                      height: 16,
-                      decoration: const BoxDecoration(
-                        color: AppColors.danger,
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '$badge',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800),
-                      ),
+    Widget child = GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(
+                isActive ? activeIcon : icon,
+                color: isActive ? AppColors.primary : inactiveColor,
+                size: 26,
+              ),
+              if (badge != null)
+                Positioned(
+                  right: -6,
+                  top: -4,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: const BoxDecoration(
+                      color: AppColors.danger,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$badge',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800),
                     ),
                   ),
-              ],
-            ),
-            if (isActive) ...[
-              const SizedBox(height: 4),
-              Container(
-                width: 4,
-                height: 4,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
                 ),
-              ),
             ],
+          ),
+          if (isActive) ...[
+            const SizedBox(height: 4),
+            Container(
+              width: 4,
+              height: 4,
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
           ],
-        ),
+        ],
       ),
     );
+    if (semanticsIdentifier != null) {
+      child = Semantics(identifier: semanticsIdentifier!, child: child);
+    }
+    return Expanded(child: child);
   }
 }
