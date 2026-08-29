@@ -1294,141 +1294,151 @@ class _ProductTile extends StatelessWidget {
       identifier: 'product_tile_${product.id}',
       child: Material(
         key: keys.seller.productTile(product.id),
-      color: context.surfaceColor,
-      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-      child: InkWell(
-        onTap: () => context.push('/products/${product.id}'),
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-            border: Border.all(color: context.borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(6),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSizes.sm + 2),
-            child: Row(
-              children: [
-                // Product image
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  child: product.image.isNotEmpty
-                      ? Image.network(
-                          product.image,
-                          width: 76,
-                          height: 76,
-                          fit: BoxFit.cover,
-                          cacheWidth: 152,
-                          cacheHeight: 152,
-                          errorBuilder: (_, __, ___) => _placeholder(),
-                        )
-                      : _placeholder(),
-                ),
-                const SizedBox(width: AppSizes.sm + 2),
-
-                // Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Category chip
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
-                          borderRadius:
-                              BorderRadius.circular(AppSizes.radiusFull),
-                        ),
-                        child: Text(
-                          product.category,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        product.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          height: 1.3,
-                          color: context.onSurfaceColor,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Text(
-                            '\$${product.price.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _StockBadge(product: product),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AppSizes.xs),
-
-                // Actions column — stop tap from bubbling to InkWell
-                GestureDetector(
-                  onTap: () {},
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Semantics(
-                        identifier: 'edit_product_button_${product.id}',
-                        child: KeyedSubtree(
-                          key: keys.seller.editProductButton(product.id),
-                          child: _ActionIconBtn(
-                            icon: Icons.edit_outlined,
-                            color: AppColors.primary,
-                            bgColor: AppColors.primaryLight,
-                            onPressed: isSaving ? null : onEdit,
-                            tooltip: AppStrings.edit,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Semantics(
-                        identifier: 'delete_product_button_${product.id}',
-                        child: KeyedSubtree(
-                          key: keys.seller.deleteProductButton(product.id),
-                          child: _ActionIconBtn(
-                            icon: Icons.delete_outline_rounded,
-                            color: AppColors.danger,
-                            bgColor: AppColors.dangerSurface,
-                            onPressed: isSaving ? null : onDelete,
-                            tooltip: AppStrings.delete,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+        child: InkWell(
+          onTap: () => context.push('/products/${product.id}'),
+          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+              border: Border.all(color: context.borderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(6),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.sm + 2),
+              child: Row(
+                children: [
+                  // Product image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    child: product.image.isNotEmpty
+                        ? Image.network(
+                            product.image,
+                            width: 76,
+                            height: 76,
+                            fit: BoxFit.cover,
+                            cacheWidth: 152,
+                            cacheHeight: 152,
+                            errorBuilder: (_, __, ___) => _placeholder(),
+                          )
+                        : _placeholder(),
+                  ),
+                  const SizedBox(width: AppSizes.sm + 2),
+
+                  // Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Category chip
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight,
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusFull),
+                          ),
+                          child: Semantics(
+                            identifier: 'product_tile_${product.category}',
+                            child: Text(
+                              product.category,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Semantics(
+                          identifier: 'product_tile_${product.name}',
+                          child: Text(
+                            product.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              height: 1.3,
+                              color: context.onSurfaceColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            Semantics(
+                              identifier:
+                                  'product_tile_${product.price.toStringAsFixed(2)}',
+                              child: Text(
+                                '\$${product.price.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _StockBadge(product: product),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.xs),
+
+                  // Actions column — stop tap from bubbling to InkWell
+                  GestureDetector(
+                    onTap: () {},
+                    behavior: HitTestBehavior.opaque,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Semantics(
+                          identifier: 'edit_product_button_${product.id}',
+                          child: KeyedSubtree(
+                            key: keys.seller.editProductButton(product.id),
+                            child: _ActionIconBtn(
+                              icon: Icons.edit_outlined,
+                              color: AppColors.primary,
+                              bgColor: AppColors.primaryLight,
+                              onPressed: isSaving ? null : onEdit,
+                              tooltip: AppStrings.edit,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Semantics(
+                          identifier: 'delete_product_button_${product.id}',
+                          child: KeyedSubtree(
+                            key: keys.seller.deleteProductButton(product.id),
+                            child: _ActionIconBtn(
+                              icon: Icons.delete_outline_rounded,
+                              color: AppColors.danger,
+                              bgColor: AppColors.dangerSurface,
+                              onPressed: isSaving ? null : onDelete,
+                              tooltip: AppStrings.delete,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -1500,12 +1510,15 @@ class _StockBadge extends StatelessWidget {
         color: color.withAlpha(22),
         borderRadius: BorderRadius.circular(AppSizes.radiusFull),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          color: color,
-          fontWeight: FontWeight.w600,
+      child: Semantics(
+        identifier: 'product_tile_$label',
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
