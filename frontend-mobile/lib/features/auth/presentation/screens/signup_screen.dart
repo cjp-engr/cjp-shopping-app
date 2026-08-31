@@ -82,9 +82,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       (i) => Container(
                         decoration: BoxDecoration(
                           color: const [
-                            Color(0xFF0C4A6E),
-                            Color(0xFF075985),
-                            Color(0xFF0369A1),
+                            Color(0xFF1A1A9E),
+                            Color(0xFF2525B8),
+                            Color(0xFF3D3DE8),
                           ][i % 3],
                         ),
                         child: const Icon(
@@ -130,22 +130,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(26),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.white.withAlpha(51),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.shopping_cart_rounded,
-                            color: Colors.white,
-                            size: 28,
-                          ),
+                        Image.asset(
+                          'assets/images/ic_launcher_foreground.png',
+                          width: 72,
+                          height: 72,
                         ),
                         const SizedBox(height: 8),
                         const Text(

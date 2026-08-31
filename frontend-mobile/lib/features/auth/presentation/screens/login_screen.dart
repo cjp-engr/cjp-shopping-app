@@ -74,9 +74,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       (i) => Container(
                         decoration: BoxDecoration(
                           color: const [
-                            Color(0xFF0C4A6E), // sky-950
-                            Color(0xFF075985), // sky-900
-                            Color(0xFF0369A1), // sky-800
+                            Color(0xFF1A1A9E), // indigo-950
+                            Color(0xFF2525B8), // indigo-900
+                            Color(0xFF3D3DE8), // indigo-700
                           ][i % 3],
                         ),
                         child: const Icon(
@@ -92,22 +92,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(26),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withAlpha(51),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.shopping_cart_rounded,
-                            color: Colors.white,
-                            size: 36,
-                          ),
+                        Image.asset(
+                          'assets/images/ic_launcher_foreground.png',
+                          width: 80,
+                          height: 80,
                         ),
                         const SizedBox(height: 12),
                         const Text(
