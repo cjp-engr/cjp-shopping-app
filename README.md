@@ -4,7 +4,8 @@
 
 A full-featured multi-seller e-commerce application with a React web frontend, Flutter mobile app, and Node.js/MongoDB backend, built with TypeScript, Tailwind CSS, Express, and Dart.
 
-  <img src="docs/images/toko-mart-read-me.png" alt="TokoMart" width="800" />
+  <img src="docs/images/tokomart_web.png" alt="TokoMart" width="800" />
+  <img src="docs/images/tokomart_mobile.png" alt="TokoMart" width="800" />
 
 </div>
 
