@@ -12,6 +12,7 @@ interface AuthContextType extends AuthState {
   updateProfile: (updates: Partial<User>) => Promise<void>;
   uploadAvatar: (file: File) => Promise<void>;
   addAddress: (addr: Omit<SavedAddress, '_id' | 'isDefault'> & { setAsDefault?: boolean }) => Promise<void>;
+  updateAddress: (id: string, addr: Omit<SavedAddress, '_id' | 'isDefault'>) => Promise<void>;
   deleteAddress: (id: string) => Promise<void>;
   setDefaultAddress: (id: string) => Promise<void>;
 }
@@ -139,6 +140,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthState(prev => ({ ...prev, user: prev.user ? { ...prev.user, savedAddresses: data.savedAddresses } : prev.user }));
   };
 
+  const updateAddress = async (id: string, addr: Omit<SavedAddress, '_id' | 'isDefault'>) => {
+    if (!authState.user) throw new Error('No user logged in');
+    const res = await fetch(`${API_ENDPOINTS.SAVED_ADDRESSES}/${id}`, {
+      method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(addr),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Update failed'); }
+    const data = await res.json();
+    setAuthState(prev => ({ ...prev, user: prev.user ? { ...prev.user, savedAddresses: data.savedAddresses } : prev.user }));
+  };
+
   const deleteAddress = async (id: string) => {
     if (!authState.user) throw new Error('No user logged in');
     const res = await fetch(API_ENDPOINTS.SAVED_ADDRESS(id), { method: 'DELETE', headers: getAuthHeaders() });
@@ -156,7 +167,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ ...authState, login, signup, logout, updateProfile, uploadAvatar, addAddress, deleteAddress, setDefaultAddress }}>
+    <AuthContext.Provider value={{ ...authState, login, signup, logout, updateProfile, uploadAvatar, addAddress, updateAddress, deleteAddress, setDefaultAddress }}>
       {children}
     </AuthContext.Provider>
   );
