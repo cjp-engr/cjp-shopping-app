@@ -315,6 +315,8 @@ export const Checkout: React.FC = () => {
 
   const handlePlaceOrder = async () => {
     if (!user) return;
+    setLoading(true);
+    setError(null);
 
     // Save new address to profile if user opted in
     if (selectedAddressId === 'new' && saveAddress) {
@@ -333,8 +335,6 @@ export const Checkout: React.FC = () => {
     }
 
     try {
-      setLoading(true);
-      setError(null);
 
       const selectedCard = paymentMode === 'saved'
         ? savedCards.find(c => c._id === selectedCardId)
