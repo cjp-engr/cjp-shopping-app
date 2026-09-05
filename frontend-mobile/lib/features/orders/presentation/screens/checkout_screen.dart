@@ -15,6 +15,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
@@ -51,6 +52,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _zipCtrl = TextEditingController();
   String _paymentType = 'credit-card';
   final _paymentSectionKey = GlobalKey<_PaymentSectionState>();
+  final _addressSectionKey = GlobalKey<_AddressSectionState>();
 
   // Per-seller voucher codes (key = sellerId or '__unknown__')
   final Map<String, TextEditingController> _voucherCtrls = {};
@@ -146,6 +148,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (!_formKey.currentState!.validate()) return;
     // Save payment method if user checked the box
     _paymentSectionKey.currentState?._maybeSaveCard();
+    // Save new address to profile if user opted in
+    if (_addressSectionKey.currentState?.selectedId == 'new' &&
+        _addressSectionKey.currentState?.saveAddress == true) {
+      context.read<AuthBloc>().add(AuthAddressAddRequested({
+        'street': _streetCtrl.text.trim(),
+        'city': _cityCtrl.text.trim(),
+        'state': _stateCtrl.text.trim(),
+        'zipCode': _zipCtrl.text.trim(),
+        'country': 'PH',
+      }));
+    }
     final user = context.read<AuthBloc>().state.user;
     if (user == null) return;
     // Only send the selected (checked) items to the order
@@ -329,6 +342,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 p.user?.savedAddresses !=
                                 c.user?.savedAddresses,
                             builder: (_, authState) => _AddressSection(
+                              key: _addressSectionKey,
                               savedAddresses:
                                   authState.user?.savedAddresses ?? const [],
                               streetCtrl: _streetCtrl,
@@ -475,6 +489,7 @@ class _AddressSection extends StatefulWidget {
   final TextEditingController streetCtrl, cityCtrl, stateCtrl, zipCtrl;
 
   const _AddressSection({
+    super.key,
     required this.savedAddresses,
     required this.streetCtrl,
     required this.cityCtrl,
@@ -488,6 +503,10 @@ class _AddressSection extends StatefulWidget {
 
 class _AddressSectionState extends State<_AddressSection> {
   late String _selectedId;
+  bool _saveAddress = false;
+
+  bool get saveAddress => _saveAddress;
+  String get selectedId => _selectedId;
 
   @override
   void initState() {
@@ -565,7 +584,10 @@ class _AddressSectionState extends State<_AddressSection> {
                 isDefault: addr.isDefault,
                 selected: _selectedId == addr.id,
                 onTap: () {
-                  setState(() => _selectedId = addr.id);
+                  setState(() {
+                    _selectedId = addr.id;
+                    _saveAddress = false;
+                  });
                   _fillFromAddress(addr);
                 },
               ),
@@ -643,6 +665,48 @@ class _AddressSectionState extends State<_AddressSection> {
                     textInputAction: TextInputAction.done,
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => setState(() => _saveAddress = !_saveAddress),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: _saveAddress
+                                    ? AppColors.primary
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(5),
+                                border: Border.all(
+                                  color: _saveAddress
+                                      ? AppColors.primary
+                                      : Colors.grey.shade400,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: _saveAddress
+                                  ? const Icon(Icons.check_rounded,
+                                      size: 14, color: Colors.white)
+                                  : null,
+                            ),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'Save this address to my profile',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),

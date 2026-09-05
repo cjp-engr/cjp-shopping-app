@@ -37,7 +37,7 @@ export const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { cart, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, addAddress } = useAuth();
 
   const [step, setStep] = useState<'shipping' | 'payment' | 'review'>('shipping');
   const [loading, setLoading] = useState(false);
@@ -80,6 +80,7 @@ export const Checkout: React.FC = () => {
     savedCards.find(c => c.isDefault)?._id ?? savedCards[0]?._id ?? ''
   );
   const [saveCard, setSaveCard] = useState(false);
+  const [saveAddress, setSaveAddress] = useState(false);
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
 
   // Inherit selections passed from Cart page
@@ -314,10 +315,26 @@ export const Checkout: React.FC = () => {
 
   const handlePlaceOrder = async () => {
     if (!user) return;
+    setLoading(true);
+    setError(null);
+
+    // Save new address to profile if user opted in
+    if (selectedAddressId === 'new' && saveAddress) {
+      try {
+        await addAddress({
+          label: 'Home',
+          street: shippingData.street,
+          city: shippingData.city,
+          state: shippingData.state,
+          zipCode: shippingData.zipCode,
+          country: shippingData.country || 'PH',
+        });
+      } catch {
+        // non-blocking — order proceeds regardless
+      }
+    }
 
     try {
-      setLoading(true);
-      setError(null);
 
       const selectedCard = paymentMode === 'saved'
         ? savedCards.find(c => c._id === selectedCardId)
@@ -466,6 +483,7 @@ export const Checkout: React.FC = () => {
                         setSelectedAddressId(addr._id);
                         setShippingData(prev => ({ ...prev, street: addr.street, city: addr.city, state: addr.state, zipCode: addr.zipCode, country: addr.country }));
                         setShippingErrors({});
+                        setSaveAddress(false);
                       }}
                       className={`w-full flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${selectedAddressId === addr._id ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'}`}
                     >
@@ -552,6 +570,17 @@ export const Checkout: React.FC = () => {
                         required
                       />
                     </div>
+
+                    {/* Save address checkbox */}
+                    <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300 mt-3">
+                      <input
+                        type="checkbox"
+                        checked={saveAddress}
+                        onChange={e => setSaveAddress(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      Save this address to my profile
+                    </label>
                   </>
                 )}
 
