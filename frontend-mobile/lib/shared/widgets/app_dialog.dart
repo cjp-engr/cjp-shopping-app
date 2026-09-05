@@ -113,14 +113,18 @@ class AppDialog extends StatelessWidget {
             // ── Title ──────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: titleColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  height: 1.3,
+              child: Semantics(
+                identifier:
+                    'dialog_title_${title.replaceAll(' ', '_').toLowerCase()}',
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                  ),
                 ),
               ),
             ),
@@ -175,7 +179,8 @@ class AppDialog extends StatelessWidget {
               child: _ActionButton(
                 key: keys.widgets.dialogCancelButton,
                 label: cancelLabel,
-                color: isDark ? const Color(0xFF64748B) : AppColors.textSecondary,
+                color:
+                    isDark ? const Color(0xFF64748B) : AppColors.textSecondary,
                 filled: false,
                 onTap: onCancel,
               ),

@@ -1347,7 +1347,7 @@ class _ProductTile extends StatelessWidget {
                                 BorderRadius.circular(AppSizes.radiusFull),
                           ),
                           child: Semantics(
-                            identifier: 'product_tile_category_${product.name}',
+                            identifier: 'product_tile_category_${product.id}',
                             child: Text(
                               product.category,
                               style: const TextStyle(
@@ -1360,7 +1360,7 @@ class _ProductTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 5),
                         Semantics(
-                          identifier: 'product_tile_name_${product.name}',
+                          identifier: 'product_tile_name_${product.id}',
                           child: Text(
                             product.name,
                             maxLines: 2,
@@ -1377,7 +1377,7 @@ class _ProductTile extends StatelessWidget {
                         Row(
                           children: [
                             Semantics(
-                              identifier: 'product_tile_price_${product.name}',
+                              identifier: 'product_tile_price_${product.id}',
                               child: Text(
                                 '\$${product.price.toStringAsFixed(2)}',
                                 style: const TextStyle(
@@ -1404,7 +1404,7 @@ class _ProductTile extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Semantics(
-                          identifier: 'edit_product_button_${product.name}',
+                          identifier: 'edit_product_button_${product.id}',
                           child: KeyedSubtree(
                             key: keys.seller.editProductButton(product.id),
                             child: _ActionIconBtn(
@@ -1418,7 +1418,7 @@ class _ProductTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Semantics(
-                          identifier: 'delete_product_button_${product.name}',
+                          identifier: 'delete_product_button_${product.id}',
                           child: KeyedSubtree(
                             key: keys.seller.deleteProductButton(product.id),
                             child: _ActionIconBtn(
@@ -1510,7 +1510,7 @@ class _StockBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSizes.radiusFull),
       ),
       child: Semantics(
-        identifier: 'product_tile_stock_${product.name}',
+        identifier: 'product_tile_stock_${product.id}',
         child: Text(
           label,
           style: TextStyle(
