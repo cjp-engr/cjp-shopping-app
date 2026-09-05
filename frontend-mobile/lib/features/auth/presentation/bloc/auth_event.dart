@@ -72,3 +72,11 @@ final class AuthAddressSetDefaultRequested extends AuthEvent {
   @override
   List<Object?> get props => [addressId];
 }
+
+final class AuthAddressEditRequested extends AuthEvent {
+  final String id;
+  final Map<String, dynamic> data;
+  AuthAddressEditRequested(this.id, this.data);
+  @override
+  List<Object?> get props => [id, data];
+}
