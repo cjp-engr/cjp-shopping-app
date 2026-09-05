@@ -112,21 +112,31 @@ export const getSavedAddresses = async (req: AuthRequest, res: Response, next: N
 export const addSavedAddress = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const User = (await import('../models/User.js')).default;
-    const user = await User.findById(req.user!.id);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-
     const { label, street, city, state, zipCode, country, setAsDefault } = req.body;
     if (!street || !city) {
       return res.status(400).json({ success: false, message: 'street and city are required' });
     }
-    if (setAsDefault) user.savedAddresses.forEach(a => { a.isDefault = false; });
-    user.savedAddresses.push({
-      label: label || 'Home', street, city,
-      state: state || '', zipCode: zipCode || '', country: country || '',
-      isDefault: setAsDefault || user.savedAddresses.length === 0,
-    });
-    await user.save();
-    res.status(201).json({ success: true, savedAddresses: user.savedAddresses });
+
+    // Check current address count to determine auto-default before any mutation
+    const existing = await User.findById(req.user!.id).select('savedAddresses');
+    if (!existing) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const shouldBeDefault = setAsDefault || existing.savedAddresses.length === 0;
+
+    // If this address should be default, clear all existing defaults first (atomic)
+    if (shouldBeDefault) {
+      await User.updateOne({ _id: req.user!.id }, { $set: { 'savedAddresses.$[].isDefault': false } });
+    }
+
+    // $push is atomic — safe against concurrent adds that would cause lost updates
+    const updated = await User.findByIdAndUpdate(
+      req.user!.id,
+      { $push: { savedAddresses: { label: label || 'Home', street, city, state: state || '', zipCode: zipCode || '', country: country || '', isDefault: shouldBeDefault } } },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ success: false, message: 'User not found' });
+
+    res.status(201).json({ success: true, savedAddresses: updated.savedAddresses });
   } catch (err) { next(err); }
 };
 
