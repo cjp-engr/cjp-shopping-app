@@ -28,7 +28,7 @@ import type { SavedAddress } from '../types/user';
 
 export const Profile: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout, updateProfile, uploadAvatar, addAddress, deleteAddress, setDefaultAddress } = useAuth();
+  const { user, logout, updateProfile, uploadAvatar, addAddress, updateAddress, deleteAddress, setDefaultAddress } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -383,6 +383,7 @@ export const Profile: React.FC = () => {
             onAdd={addAddress}
             onDelete={deleteAddress}
             onSetDefault={setDefaultAddress}
+            onUpdate={updateAddress}
           />
           <Card padding="lg">
             <div className="flex items-center justify-between mb-6">
@@ -549,15 +550,20 @@ interface SavedAddressesCardProps {
   onAdd: (addr: Omit<SavedAddress, '_id' | 'isDefault'> & { setAsDefault?: boolean }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onSetDefault: (id: string) => Promise<void>;
+  onUpdate: (id: string, addr: Omit<SavedAddress, '_id' | 'isDefault'>) => Promise<void>;
 }
 
-const SavedAddressesCard: React.FC<SavedAddressesCardProps> = ({ addresses, onAdd, onDelete, onSetDefault }) => {
+const SavedAddressesCard: React.FC<SavedAddressesCardProps> = ({ addresses, onAdd, onDelete, onSetDefault, onUpdate }) => {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState({ label: 'Home', street: '', city: '', state: '', zipCode: '' });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ label: 'Home', street: '', city: '', state: '', zipCode: '' });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -592,6 +598,31 @@ const SavedAddressesCard: React.FC<SavedAddressesCardProps> = ({ addresses, onAd
     try { await onSetDefault(id); } catch { /* ignore */ } finally { setSettingDefaultId(null); }
   };
 
+  const handleEditSave = async () => {
+    if (!editForm.street.trim() || !editForm.city.trim()) {
+      setEditError('Street and city are required');
+      return;
+    }
+    if (!editingId) return;
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      await onUpdate(editingId, {
+        label: editForm.label.trim() || 'Home',
+        street: editForm.street.trim(),
+        city: editForm.city.trim(),
+        state: editForm.state.trim(),
+        zipCode: editForm.zipCode.trim(),
+        country: '',
+      });
+      setEditingId(null);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   return (
     <Card padding="lg">
       <div className="flex items-center justify-between mb-4">
@@ -611,39 +642,80 @@ const SavedAddressesCard: React.FC<SavedAddressesCardProps> = ({ addresses, onAd
       )}
       <div className="space-y-3 mb-4">
         {addresses.map(addr => (
-          <div key={addr._id} className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-            <MapPin className="w-4 h-4 text-primary-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">{addr.label}</span>
-                {addr.isDefault && (
-                  <span className="text-xs bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 px-2 py-0.5 rounded-full font-medium">Default</span>
-                )}
+          <div key={addr._id}>
+            {editingId === addr._id ? (
+              /* ── Inline edit form ── */
+              <div className="border border-primary-300 dark:border-primary-600 rounded-xl p-4 space-y-3 bg-primary-50/30 dark:bg-primary-900/10">
+                {editError && <p className="text-sm text-red-600 dark:text-red-400">{editError}</p>}
+                <Input label="Label" name="label" value={editForm.label}
+                  onChange={e => setEditForm(f => ({ ...f, label: e.target.value }))}
+                  placeholder="e.g. Home, Office" fullWidth />
+                <Input label="Street Address" name="street" value={editForm.street}
+                  onChange={e => setEditForm(f => ({ ...f, street: e.target.value }))}
+                  placeholder="123 Main St" fullWidth required />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input label="City" name="city" value={editForm.city}
+                    onChange={e => setEditForm(f => ({ ...f, city: e.target.value }))}
+                    placeholder="Manila" fullWidth required />
+                  <Input label="State/Province" name="state" value={editForm.state}
+                    onChange={e => setEditForm(f => ({ ...f, state: e.target.value }))}
+                    placeholder="Metro Manila" fullWidth />
+                </div>
+                <Input label="ZIP Code" name="zipCode" value={editForm.zipCode}
+                  onChange={e => setEditForm(f => ({ ...f, zipCode: e.target.value }))}
+                  placeholder="1000" fullWidth />
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={() => { setEditingId(null); setEditError(null); }}>Cancel</Button>
+                  <Button size="sm" loading={editSaving} onClick={handleEditSave}>
+                    <Save className="w-4 h-4 mr-1" />
+                    Save
+                  </Button>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {[addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean).join(', ')}
-              </p>
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {!addr.isDefault && (
-                <button
-                  onClick={() => handleSetDefault(addr._id)}
-                  disabled={settingDefaultId === addr._id}
-                  title="Set as default"
-                  className="p-1.5 text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors disabled:opacity-40"
-                >
-                  <Star className="w-4 h-4" />
-                </button>
-              )}
-              <button
-                onClick={() => handleDelete(addr._id)}
-                disabled={deletingId === addr._id}
-                title="Delete address"
-                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-40"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+            ) : (
+              /* ── Address row (view mode) ── */
+              <div className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <MapPin className="w-4 h-4 text-primary-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{addr.label}</span>
+                    {addr.isDefault && (
+                      <span className="text-xs bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 px-2 py-0.5 rounded-full font-medium">Default</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {[addr.street, addr.city, addr.state, addr.zipCode].filter(Boolean).join(', ')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => { setEditingId(addr._id); setEditForm({ label: addr.label, street: addr.street, city: addr.city, state: addr.state, zipCode: addr.zipCode }); setEditError(null); }}
+                    title="Edit address"
+                    className="p-1.5 text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  {!addr.isDefault && (
+                    <button
+                      onClick={() => handleSetDefault(addr._id)}
+                      disabled={settingDefaultId === addr._id}
+                      title="Set as default"
+                      className="p-1.5 text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors disabled:opacity-40"
+                    >
+                      <Star className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(addr._id)}
+                    disabled={deletingId === addr._id}
+                    title="Delete address"
+                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-40"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -895,19 +895,19 @@ class _SavedAddressListState extends State<_SavedAddressList> {
     super.dispose();
   }
 
-  void _showAddSheet() {
-    _labelCtrl.text = 'Home';
-    _streetCtrl.clear();
-    _cityCtrl.clear();
-    _stateCtrl.clear();
-    _zipCtrl.clear();
+  void _showAddressSheet({SavedAddressEntity? existing}) {
+    final isEdit = existing != null;
+    _labelCtrl.text = existing?.label ?? 'Home';
+    _streetCtrl.text = existing?.street ?? '';
+    _cityCtrl.text = existing?.city ?? '';
+    _stateCtrl.text = existing?.state ?? '';
+    _zipCtrl.text = existing?.zipCode ?? '';
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
@@ -920,12 +920,14 @@ class _SavedAddressListState extends State<_SavedAddressList> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(AppStrings.addAddress,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(ctx).colorScheme.onSurface,
-                )),
+            Text(
+              isEdit ? AppStrings.editAddress : AppStrings.addAddress,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(ctx).colorScheme.onSurface,
+              ),
+            ),
             const SizedBox(height: AppSizes.sm),
             AppTextField(label: AppStrings.label, controller: _labelCtrl),
             const SizedBox(height: AppSizes.xs),
@@ -937,11 +939,9 @@ class _SavedAddressListState extends State<_SavedAddressList> {
             ),
             const SizedBox(height: AppSizes.xs),
             Row(children: [
-              Expanded(
-                  child: AppTextField(label: AppStrings.city, controller: _cityCtrl)),
+              Expanded(child: AppTextField(label: AppStrings.city, controller: _cityCtrl)),
               const SizedBox(width: AppSizes.sm),
-              Expanded(
-                  child: AppTextField(label: AppStrings.state, controller: _stateCtrl)),
+              Expanded(child: AppTextField(label: AppStrings.state, controller: _stateCtrl)),
             ]),
             const SizedBox(height: AppSizes.xs),
             AppTextField(
@@ -956,20 +956,20 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                 label: AppStrings.saveAddress,
                 loading: s.status == AuthStatus.loading,
                 onPressed: () {
-                  if (_streetCtrl.text.trim().isEmpty ||
-                      _cityCtrl.text.trim().isEmpty) {
-                    return;
+                  if (_streetCtrl.text.trim().isEmpty || _cityCtrl.text.trim().isEmpty) return;
+                  final payload = {
+                    'label': _labelCtrl.text.trim().isNotEmpty ? _labelCtrl.text.trim() : 'Home',
+                    'street': _streetCtrl.text.trim(),
+                    'city': _cityCtrl.text.trim(),
+                    'state': _stateCtrl.text.trim(),
+                    'zipCode': _zipCtrl.text.trim(),
+                    'country': '',
+                  };
+                  if (isEdit) {
+                    context.read<AuthBloc>().add(AuthAddressEditRequested(existing.id, payload));
+                  } else {
+                    context.read<AuthBloc>().add(AuthAddressAddRequested(payload));
                   }
-                  context.read<AuthBloc>().add(AuthAddressAddRequested({
-                        'label': _labelCtrl.text.trim().isNotEmpty
-                            ? _labelCtrl.text.trim()
-                            : 'Home',
-                        'street': _streetCtrl.text.trim(),
-                        'city': _cityCtrl.text.trim(),
-                        'state': _stateCtrl.text.trim(),
-                        'zipCode': _zipCtrl.text.trim(),
-                        'country': '',
-                      }));
                   Navigator.pop(ctx);
                 },
               ),
@@ -1092,6 +1092,13 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                           ],
                         ),
                       ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.primary),
+                        tooltip: AppStrings.editAddress,
+                        onPressed: () => _showAddressSheet(existing: addr),
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      ),
                       if (!addr.isDefault)
                         IconButton(
                           icon: Icon(Icons.star_border_rounded,
@@ -1127,7 +1134,7 @@ class _SavedAddressListState extends State<_SavedAddressList> {
             color: Theme.of(context).dividerColor.withAlpha(80),
           ),
           InkWell(
-            onTap: _showAddSheet,
+            onTap: () => _showAddressSheet(),
             borderRadius: const BorderRadius.vertical(
                 bottom: Radius.circular(AppSizes.radiusLg)),
             child: const Padding(

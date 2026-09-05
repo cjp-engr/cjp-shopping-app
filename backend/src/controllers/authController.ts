@@ -170,3 +170,29 @@ export const setDefaultAddress = async (req: AuthRequest, res: Response, next: N
     res.json({ success: true, savedAddresses: user.savedAddresses });
   } catch (err) { next(err); }
 };
+
+export const updateSavedAddress = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const User = (await import('../models/User.js')).default;
+    const { label, street, city, state, zipCode, country } = req.body;
+    if (!street || !city) {
+      return res.status(400).json({ success: false, message: 'street and city are required' });
+    }
+    const updated = await User.findOneAndUpdate(
+      { _id: req.user!.id, 'savedAddresses._id': req.params.id },
+      {
+        $set: {
+          'savedAddresses.$.label': label || 'Home',
+          'savedAddresses.$.street': street,
+          'savedAddresses.$.city': city,
+          'savedAddresses.$.state': state || '',
+          'savedAddresses.$.zipCode': zipCode || '',
+          'savedAddresses.$.country': country || '',
+        },
+      },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ success: false, message: 'User or address not found' });
+    res.json({ success: true, savedAddresses: updated.savedAddresses });
+  } catch (err) { next(err); }
+};
