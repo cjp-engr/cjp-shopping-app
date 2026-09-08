@@ -9,7 +9,7 @@ Patrol tests for the TokoMart Flutter mobile app.
 </div>
 <br />
 <div align="center">
-  <img src="../../docs/images/toko-mart-patrol-run-read-me-v2.gif" alt="TokoMart-Patrol" width="1000" />
+  <img src="../../docs/images/toko-mart-patrol-run-read-me-v3.gif" alt="TokoMart-Patrol" width="1000" />
 </div>
 
 &ensp;
