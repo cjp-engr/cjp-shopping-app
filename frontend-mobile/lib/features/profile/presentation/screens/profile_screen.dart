@@ -457,16 +457,17 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                 ],
               ),
-              clipBehavior: Clip.antiAlias,
-              child: uploadingPhoto
-                  ? Container(
-                      color: AppColors.primary.withAlpha(20),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.primary),
-                      ),
-                    )
-                  : buildAvatar(user.avatar, user.firstName),
+              child: ClipOval(
+                child: uploadingPhoto
+                    ? Container(
+                        color: AppColors.primary.withAlpha(20),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppColors.primary),
+                        ),
+                      )
+                    : buildAvatar(user.avatar, user.firstName),
+              ),
             ),
             GestureDetector(
               onTap: uploadingPhoto ? null : onPickPhoto,
