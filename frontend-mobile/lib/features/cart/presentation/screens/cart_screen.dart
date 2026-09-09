@@ -123,11 +123,23 @@ class _CartScreenState extends State<CartScreen> {
       body: BlocBuilder<CartBloc, CartState>(
         builder: (context, state) {
           if (state.items.isEmpty) {
-            return EmptyWidget(
-              message: AppStrings.emptyCart,
-              icon: Icons.shopping_cart_outlined,
-              actionLabel: AppStrings.browseProducts,
-              onAction: () => context.go('/'),
+            return RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () async {
+                context.read<CartBloc>().add(CartLoadRequested());
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  child: EmptyWidget(
+                    message: AppStrings.emptyCart,
+                    icon: Icons.shopping_cart_outlined,
+                    actionLabel: AppStrings.browseProducts,
+                    onAction: () => context.go('/'),
+                  ),
+                ),
+              ),
             );
           }
 

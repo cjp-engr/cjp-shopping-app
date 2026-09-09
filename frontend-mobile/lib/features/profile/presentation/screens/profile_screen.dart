@@ -26,6 +26,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _followStatsKey = GlobalKey<_FollowStatsRowState>();
   late final TextEditingController _firstCtrl;
   late final TextEditingController _lastCtrl;
   late final TextEditingController _phoneCtrl;
@@ -183,7 +184,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: AppColors.primary,
             onRefresh: () async {
               context.read<AuthBloc>().add(AuthCheckRequested());
-              await Future.delayed(const Duration(milliseconds: 600));
+              await Future.wait([
+                Future.delayed(const Duration(milliseconds: 600)),
+                _followStatsKey.currentState?.reload() ?? Future.value(),
+              ]);
             },
             child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -198,6 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   buildAvatar: _buildAvatar,
                   onPickPhoto: _pickPhoto,
                   followDs: widget.followDs,
+                  followStatsKey: _followStatsKey,
                 ),
 
                 const SizedBox(height: AppSizes.lg),
@@ -419,6 +424,7 @@ class _ProfileHeader extends StatelessWidget {
   final Widget Function(String?, String) buildAvatar;
   final VoidCallback onPickPhoto;
   final FollowRemoteDataSource? followDs;
+  final GlobalKey<_FollowStatsRowState>? followStatsKey;
 
   const _ProfileHeader({
     required this.user,
@@ -426,6 +432,7 @@ class _ProfileHeader extends StatelessWidget {
     required this.buildAvatar,
     required this.onPickPhoto,
     this.followDs,
+    this.followStatsKey,
   });
 
   @override
@@ -511,7 +518,7 @@ class _ProfileHeader extends StatelessWidget {
         ),
         if (followDs != null) ...[
           const SizedBox(height: AppSizes.md),
-          _FollowStatsRow(userId: user.id, followDs: followDs!),
+          _FollowStatsRow(key: followStatsKey ?? GlobalKey<_FollowStatsRowState>(), userId: user.id, followDs: followDs!),
         ],
       ],
     );
@@ -1176,7 +1183,7 @@ class _SavedAddressListState extends State<_SavedAddressList> {
 class _FollowStatsRow extends StatefulWidget {
   final String userId;
   final FollowRemoteDataSource followDs;
-  const _FollowStatsRow({required this.userId, required this.followDs});
+  const _FollowStatsRow({super.key, required this.userId, required this.followDs});
 
   @override
   State<_FollowStatsRow> createState() => _FollowStatsRowState();
@@ -1191,6 +1198,8 @@ class _FollowStatsRowState extends State<_FollowStatsRow> {
     super.initState();
     _load();
   }
+
+  Future<void> reload() => _load();
 
   Future<void> _load() async {
     try {
