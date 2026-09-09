@@ -18,6 +18,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthAddressAddRequested>(_onAddressAdd);
     on<AuthAddressDeleteRequested>(_onAddressDelete);
     on<AuthAddressSetDefaultRequested>(_onAddressSetDefault);
+    on<AuthAddressEditRequested>(_onAddressEdit);
   }
 
   Future<void> _onCheck(
@@ -126,6 +127,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (user == null) return;
     try {
       final addresses = await _repository.setDefaultAddress(event.addressId);
+      emit(state.copyWith(status: AuthStatus.authenticated, user: user.copyWith(savedAddresses: addresses)));
+    } catch (e) {
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onAddressEdit(AuthAddressEditRequested event, Emitter<AuthState> emit) async {
+    final user = state.user;
+    if (user == null) return;
+    emit(state.copyWith(status: AuthStatus.loading));
+    try {
+      final addresses = await _repository.editSavedAddress(event.id, event.data);
       emit(state.copyWith(status: AuthStatus.authenticated, user: user.copyWith(savedAddresses: addresses)));
     } catch (e) {
       emit(state.copyWith(status: AuthStatus.failure, errorMessage: e.toString()));

@@ -63,4 +63,8 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<List<SavedAddressEntity>> setDefaultAddress(String id) =>
       _remote.setDefaultAddress(id);
+
+  @override
+  Future<List<SavedAddressEntity>> editSavedAddress(String id, Map<String, dynamic> data) =>
+      _remote.editSavedAddress(id, data);
 }

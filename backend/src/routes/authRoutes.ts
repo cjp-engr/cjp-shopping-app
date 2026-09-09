@@ -3,6 +3,7 @@ import {
   signup, login, getMe, updateProfile, uploadAvatar,
   getPaymentMethods, addPaymentMethod, deletePaymentMethod,
   getSavedAddresses, addSavedAddress, deleteSavedAddress, setDefaultAddress,
+  updateSavedAddress,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import { avatarUpload } from '../middleware/upload.js';
@@ -23,5 +24,6 @@ router.get('/saved-addresses', protect, getSavedAddresses);
 router.post('/saved-addresses', protect, addSavedAddress);
 router.delete('/saved-addresses/:id', protect, deleteSavedAddress);
 router.put('/saved-addresses/:id/default', protect, setDefaultAddress);
+router.put('/saved-addresses/:id', protect, updateSavedAddress);
 
 export default router;

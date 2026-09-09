@@ -187,6 +187,7 @@ class AppStrings {
   static const String setAsDefault = 'Set as default';
   static const String deleteAddress = 'Delete address';
   static const String addAddress = 'Add Address';
+  static const String editAddress = 'Edit Address';
   static const String label = 'Label';
   static const String saveAddress = 'Save Address';
   static const String myShop = 'My Shop';
