@@ -25,6 +25,7 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   final Set<String> _selected = {};
   bool _initialised = false;
+  bool _checkingOut = false;
   // Per-seller delivery option selection (only relevant for buyer_pays sellers)
   final Map<String, String> _deliverySelections = {};
   // Per-seller voucher discounts (code → discountAmount)
@@ -107,6 +108,35 @@ class _CartScreenState extends State<CartScreen> {
       } else {
         _voucherSelections[sellerKey] = result;
       }
+    });
+  }
+
+  Future<void> _handleCheckout() async {
+    if (_checkingOut) return;
+    setState(() => _checkingOut = true);
+
+    final bloc = context.read<CartBloc>();
+    bloc.add(CartLoadRequested());
+
+    // Wait for the bloc to finish syncing
+    await bloc.stream
+        .firstWhere((s) => s.syncStatus != CartSyncStatus.syncing);
+
+    if (!mounted) return;
+    setState(() => _checkingOut = false);
+
+    final freshItems = context.read<CartBloc>().state.items;
+    if (freshItems.isEmpty) return;
+
+    // Only navigate with items that were previously selected and still exist
+    final stillSelected =
+        _selected.where((id) => freshItems.any((i) => i.product.id == id)).toSet();
+    if (stillSelected.isEmpty) return;
+
+    context.push('/checkout', extra: {
+      'selected': stillSelected,
+      'deliverySelections': Map<String, String>.from(_deliverySelections),
+      'voucherSelections': Map<String, VoucherSelection>.from(_voucherSelections),
     });
   }
 
@@ -329,16 +359,10 @@ class _CartScreenState extends State<CartScreen> {
               _CheckoutBar(
                 selectedCount: selectedCount,
                 total: total,
-                onCheckout: selectedCount == 0
+                checkingOut: _checkingOut,
+                onCheckout: selectedCount == 0 || _checkingOut
                     ? null
-                    : () => context.push('/checkout', extra: {
-                          'selected': Set<String>.from(_selected),
-                          'deliverySelections':
-                              Map<String, String>.from(_deliverySelections),
-                          'voucherSelections':
-                              Map<String, VoucherSelection>.from(
-                                  _voucherSelections),
-                        }),
+                    : _handleCheckout,
               ),
             ],
           );
@@ -690,11 +714,13 @@ class _OrderSummary extends StatelessWidget {
 class _CheckoutBar extends StatelessWidget {
   final int selectedCount;
   final double total;
+  final bool checkingOut;
   final VoidCallback? onCheckout;
 
   const _CheckoutBar({
     required this.selectedCount,
     required this.total,
+    required this.checkingOut,
     required this.onCheckout,
   });
 
@@ -759,16 +785,28 @@ class _CheckoutBar extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    onCheckout != null
-                        ? AppStrings.checkout
-                        : AppStrings.selectItems,
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w700),
-                  ),
-                  if (onCheckout != null) ...[
-                    const SizedBox(width: 6),
-                    const Icon(Icons.arrow_forward_rounded, size: 16),
+                  if (checkingOut)
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  else ...[
+                    Text(
+                      onCheckout != null
+                          ? AppStrings.checkout
+                          : AppStrings.selectItems,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                    if (onCheckout != null) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.arrow_forward_rounded, size: 16),
+                    ],
                   ],
                 ],
               ),

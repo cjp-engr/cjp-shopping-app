@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,9 +11,10 @@ import { SelectVoucherModal } from '../components/voucher/SelectVoucherModal';
 
 export const Cart: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, removeFromCart, updateQuantity, validateCart } = useCart();
+  const { cart, removeFromCart, updateQuantity, validateCart, syncCart } = useCart();
   const { isAuthenticated } = useAuth();
   const [removedCount, setRemovedCount] = useState(0);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   // On mount, verify all cart items still exist in the DB and remove stale ones
   useEffect(() => {
@@ -26,15 +27,17 @@ export const Cart: React.FC = () => {
   const [voucherSelections, setVoucherSelections] = useState<Record<string, { code: string; discountAmount: number }>>({});
   const [voucherModalKey, setVoucherModalKey] = useState<string | null>(null);
 
-  const handleCheckout = () => {
-    const couponCodes: Record<string, string> = {};
-    for (const [k, v] of Object.entries(voucherSelections)) {
-      if (v.code) couponCodes[k] = v.code;
+  const handleCheckout = useCallback(async () => {
+    if (!isAuthenticated) {
+      navigate('/login?redirect=/checkout', { state: { deliverySelections, voucherSelections } });
+      return;
     }
-    navigate(isAuthenticated ? '/checkout' : '/login?redirect=/checkout', {
-      state: { deliverySelections, voucherSelections },
-    });
-  };
+    setCheckingOut(true);
+    const freshItems = await syncCart();
+    setCheckingOut(false);
+    if (freshItems.length === 0) return; // cart renders empty state, no navigation needed
+    navigate('/checkout', { state: { deliverySelections, voucherSelections } });
+  }, [isAuthenticated, navigate, syncCart, deliverySelections, voucherSelections]);
 
   const handleIncrement = (productId: string, currentQuantity: number, stock: number, variantKey?: string) => {
     if (currentQuantity < stock) updateQuantity(productId, currentQuantity + 1, variantKey);
@@ -432,8 +435,8 @@ export const Cart: React.FC = () => {
               )}
             </div>
 
-            <Button fullWidth size="lg" onClick={handleCheckout} data-testid="checkout-btn">
-              Proceed to Checkout
+            <Button fullWidth size="lg" onClick={handleCheckout} disabled={checkingOut} data-testid="checkout-btn">
+              {checkingOut ? 'Checking...' : 'Proceed to Checkout'}
             </Button>
 
             {!isAuthenticated && (

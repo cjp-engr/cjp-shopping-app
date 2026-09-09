@@ -13,6 +13,7 @@ interface CartContextType {
   clearCart: () => void;
   getItemQuantity: (productId: string, variantKey?: string) => number;
   validateCart: () => Promise<number>;
+  syncCart: () => Promise<CartItem[]>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -179,7 +180,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   // On mount: if the user is already logged in, load their cart from the backend
   useEffect(() => {
     loadFromBackend().then(items => {
-      if (items && items.length > 0) {
+      if (items !== null) {
         skipNextSync.current = true;
         setCart(calculateCartTotals(items));
         storageService.set(STORAGE_KEYS.CART_DATA, items);
@@ -256,6 +257,17 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const clearCart = () => setCart(calculateCartTotals([]));
 
+  const syncCart = useCallback(async (): Promise<CartItem[]> => {
+    const items = await loadFromBackend();
+    if (items !== null) {
+      skipNextSync.current = true;
+      setCart(calculateCartTotals(items));
+      storageService.set(STORAGE_KEYS.CART_DATA, items);
+      return items;
+    }
+    return cart.items;
+  }, [cart.items]);
+
   const getItemQuantity = (productId: string, variantKey?: string) => {
     const key = variantKey ? `${productId}|${variantKey}` : productId;
     return cart.items.find(i => cartItemKey(i) === key)?.quantity ?? 0;
@@ -300,7 +312,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, getItemQuantity, validateCart }}
+      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, getItemQuantity, validateCart, syncCart }}
     >
       {children}
     </CartContext.Provider>
