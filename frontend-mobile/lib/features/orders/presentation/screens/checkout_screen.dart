@@ -15,6 +15,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
@@ -51,6 +52,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _zipCtrl = TextEditingController();
   String _paymentType = 'credit-card';
   final _paymentSectionKey = GlobalKey<_PaymentSectionState>();
+  final _addressSectionKey = GlobalKey<_AddressSectionState>();
 
   // Per-seller voucher codes (key = sellerId or '__unknown__')
   final Map<String, TextEditingController> _voucherCtrls = {};
@@ -146,6 +148,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (!_formKey.currentState!.validate()) return;
     // Save payment method if user checked the box
     _paymentSectionKey.currentState?._maybeSaveCard();
+    // Save new address to profile if user opted in
+    if (_addressSectionKey.currentState?.selectedId == 'new' &&
+        _addressSectionKey.currentState?.saveAddress == true) {
+      context.read<AuthBloc>().add(AuthAddressAddRequested({
+        'street': _streetCtrl.text.trim(),
+        'city': _cityCtrl.text.trim(),
+        'state': _stateCtrl.text.trim(),
+        'zipCode': _zipCtrl.text.trim(),
+        'country': 'PH',
+      }));
+    }
     final user = context.read<AuthBloc>().state.user;
     if (user == null) return;
     // Only send the selected (checked) items to the order
@@ -318,9 +331,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Column(
                 children: [
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.only(bottom: AppSizes.md),
-                      child: Column(
+                    child: RefreshIndicator(
+                      color: AppColors.primary,
+                      onRefresh: () async =>
+                          context.read<CartBloc>().add(CartLoadRequested()),
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: AppSizes.md),
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // ── Shipping address ──────────────────────────────
@@ -329,6 +347,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 p.user?.savedAddresses !=
                                 c.user?.savedAddresses,
                             builder: (_, authState) => _AddressSection(
+                              key: _addressSectionKey,
                               savedAddresses:
                                   authState.user?.savedAddresses ?? const [],
                               streetCtrl: _streetCtrl,
@@ -446,6 +465,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             grandTotal: grandTotal,
                           ),
                         ],
+                        ),
                       ),
                     ),
                   ),
@@ -475,6 +495,7 @@ class _AddressSection extends StatefulWidget {
   final TextEditingController streetCtrl, cityCtrl, stateCtrl, zipCtrl;
 
   const _AddressSection({
+    super.key,
     required this.savedAddresses,
     required this.streetCtrl,
     required this.cityCtrl,
@@ -488,6 +509,10 @@ class _AddressSection extends StatefulWidget {
 
 class _AddressSectionState extends State<_AddressSection> {
   late String _selectedId;
+  bool _saveAddress = false;
+
+  bool get saveAddress => _saveAddress;
+  String get selectedId => _selectedId;
 
   @override
   void initState() {
@@ -565,7 +590,10 @@ class _AddressSectionState extends State<_AddressSection> {
                 isDefault: addr.isDefault,
                 selected: _selectedId == addr.id,
                 onTap: () {
-                  setState(() => _selectedId = addr.id);
+                  setState(() {
+                    _selectedId = addr.id;
+                    _saveAddress = false;
+                  });
                   _fillFromAddress(addr);
                 },
               ),
@@ -596,53 +624,107 @@ class _AddressSectionState extends State<_AddressSection> {
               padding: const EdgeInsets.only(top: 12),
               child: Column(
                 children: [
-                  AppTextField(
-                    key: keys.orders.checkoutStreetField,
-                    label: 'Street Address',
-                    controller: widget.streetCtrl,
-                    prefixIcon: Icons.home_outlined,
-                    keyboardType: TextInputType.streetAddress,
-                    textInputAction: TextInputAction.next,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Required' : null,
+                  Semantics(
+                    identifier: 'checkout_street_field',
+                    child: AppTextField(
+                      key: keys.orders.checkoutStreetField,
+                      label: 'Street Address',
+                      controller: widget.streetCtrl,
+                      prefixIcon: Icons.home_outlined,
+                      keyboardType: TextInputType.streetAddress,
+                      textInputAction: TextInputAction.next,
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Required' : null,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
-                        child: AppTextField(
-                          key: keys.orders.checkoutCityField,
-                          label: 'City',
-                          controller: widget.cityCtrl,
-                          keyboardType: TextInputType.text,
-                          textInputAction: TextInputAction.next,
-                          validator: (v) =>
-                              v == null || v.trim().isEmpty ? 'Required' : null,
+                        child: Semantics(
+                          identifier: 'checkout_city_field',
+                          child: AppTextField(
+                            key: keys.orders.checkoutCityField,
+                            label: 'City',
+                            controller: widget.cityCtrl,
+                            keyboardType: TextInputType.text,
+                            textInputAction: TextInputAction.next,
+                            validator: (v) =>
+                                v == null || v.trim().isEmpty ? 'Required' : null,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: AppTextField(
-                          key: keys.orders.checkoutStateField,
-                          label: 'State / Province',
-                          controller: widget.stateCtrl,
-                          keyboardType: TextInputType.text,
-                          textInputAction: TextInputAction.next,
-                          validator: (v) =>
-                              v == null || v.trim().isEmpty ? 'Required' : null,
+                        child: Semantics(
+                          identifier: 'checkout_state_field',
+                          child: AppTextField(
+                            key: keys.orders.checkoutStateField,
+                            label: 'State / Province',
+                            controller: widget.stateCtrl,
+                            keyboardType: TextInputType.text,
+                            textInputAction: TextInputAction.next,
+                            validator: (v) =>
+                                v == null || v.trim().isEmpty ? 'Required' : null,
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
-                  AppTextField(
-                    key: keys.orders.checkoutZipField,
-                    label: 'ZIP Code',
-                    controller: widget.zipCtrl,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.done,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Required' : null,
+                  Semantics(
+                    identifier: 'checkout_zip_field',
+                    child: AppTextField(
+                      key: keys.orders.checkoutZipField,
+                      label: 'ZIP Code',
+                      controller: widget.zipCtrl,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Required' : null,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => setState(() => _saveAddress = !_saveAddress),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: _saveAddress
+                                    ? AppColors.primary
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(5),
+                                border: Border.all(
+                                  color: _saveAddress
+                                      ? AppColors.primary
+                                      : Colors.grey.shade400,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: _saveAddress
+                                  ? const Icon(Icons.check_rounded,
+                                      size: 14, color: Colors.white)
+                                  : null,
+                            ),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'Save this address to my profile',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -1393,11 +1475,14 @@ class _PaymentSectionState extends State<_PaymentSection> {
                   selected: _mode == _CardMode.saved,
                   onTap: () => setState(() => _mode = _CardMode.saved),
                 ),
-                _ModeChip(
-                  key: keys.orders.paymentNewCardTab,
-                  label: '+ New Card',
-                  selected: _mode == _CardMode.newCard,
-                  onTap: () => setState(() => _mode = _CardMode.newCard),
+                Semantics(
+                  identifier: 'payment_new_card_tab',
+                  child: _ModeChip(
+                    key: keys.orders.paymentNewCardTab,
+                    label: '+ New Card',
+                    selected: _mode == _CardMode.newCard,
+                    onTap: () => setState(() => _mode = _CardMode.newCard),
+                  ),
                 ),
               ]),
             ),
@@ -1664,9 +1749,11 @@ class _PaymentTypeOptions extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 8),
           child: Material(
             color: Colors.transparent,
-            child: InkWell(
-              key: keys.orders.paymentOption(p.$1),
-              onTap: () => onChanged(p.$1),
+            child: Semantics(
+              identifier: 'payment_option_${p.$1}',
+              child: InkWell(
+                key: keys.orders.paymentOption(p.$1),
+                onTap: () => onChanged(p.$1),
               borderRadius: BorderRadius.circular(AppSizes.radiusMd),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
@@ -1737,6 +1824,7 @@ class _PaymentTypeOptions extends StatelessWidget {
                   ),
                 ]),
               ),
+              ),
             ),
           ),
         );
@@ -1772,21 +1860,27 @@ class _CardDetailForm extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 4),
-        AppTextField(
-          key: keys.orders.checkoutCardNumberField,
-          label: 'Card Number',
-          controller: cardNumberCtrl,
-          keyboardType: TextInputType.number,
-          prefixIcon: Icons.credit_card_outlined,
+        Semantics(
+          identifier: 'checkout_card_number_field',
+          child: AppTextField(
+            key: keys.orders.checkoutCardNumberField,
+            label: 'Card Number',
+            controller: cardNumberCtrl,
+            keyboardType: TextInputType.number,
+            prefixIcon: Icons.credit_card_outlined,
+          ),
         ),
         const SizedBox(height: 10),
-        AppTextField(
-          key: keys.orders.checkoutCardHolderField,
-          label: 'Cardholder Name',
-          controller: cardHolderCtrl,
-          prefixIcon: Icons.person_outline,
-          keyboardType: TextInputType.name,
-          textInputAction: TextInputAction.next,
+        Semantics(
+          identifier: 'checkout_card_holder_field',
+          child: AppTextField(
+            key: keys.orders.checkoutCardHolderField,
+            label: 'Cardholder Name',
+            controller: cardHolderCtrl,
+            prefixIcon: Icons.person_outline,
+            keyboardType: TextInputType.name,
+            textInputAction: TextInputAction.next,
+          ),
         ),
         const SizedBox(height: 10),
         Row(children: [
@@ -2325,12 +2419,15 @@ class _BottomBar extends StatelessWidget {
           ),
           const SizedBox(width: AppSizes.md),
           Expanded(
-            child: AppButton(
-              key: keys.orders.placeOrderButton,
-              label: 'Place Order',
-              icon: Icons.lock_outline,
-              loading: loading,
-              onPressed: onPlace,
+            child: Semantics(
+              identifier: 'place_order_button',
+              child: AppButton(
+                key: keys.orders.placeOrderButton,
+                label: 'Place Order',
+                icon: Icons.lock_outline,
+                loading: loading,
+                onPressed: onPlace,
+              ),
             ),
           ),
         ],

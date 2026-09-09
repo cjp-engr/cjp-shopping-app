@@ -113,14 +113,18 @@ class AppDialog extends StatelessWidget {
             // ── Title ──────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: titleColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  height: 1.3,
+              child: Semantics(
+                identifier:
+                    'dialog_title_${title.replaceAll(' ', '_').toLowerCase()}',
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                  ),
                 ),
               ),
             ),
@@ -153,12 +157,15 @@ class AppDialog extends StatelessWidget {
             ),
 
             // ── Actions (stacked vertically for clarity) ───────────────────
-            _ActionButton(
-              key: keys.widgets.dialogConfirmButton,
-              label: confirmLabel,
-              color: actionColor,
-              filled: true,
-              onTap: onConfirm,
+            Semantics(
+              identifier: 'dialog_confirm_button',
+              child: _ActionButton(
+                key: keys.widgets.dialogConfirmButton,
+                label: confirmLabel,
+                color: actionColor,
+                filled: true,
+                onTap: onConfirm,
+              ),
             ),
             Divider(
               height: 1,
@@ -167,12 +174,16 @@ class AppDialog extends StatelessWidget {
                   ? Colors.white.withValues(alpha: 0.08)
                   : AppColors.border,
             ),
-            _ActionButton(
-              key: keys.widgets.dialogCancelButton,
-              label: cancelLabel,
-              color: isDark ? const Color(0xFF64748B) : AppColors.textSecondary,
-              filled: false,
-              onTap: onCancel,
+            Semantics(
+              identifier: 'dialog_cancel_button',
+              child: _ActionButton(
+                key: keys.widgets.dialogCancelButton,
+                label: cancelLabel,
+                color:
+                    isDark ? const Color(0xFF64748B) : AppColors.textSecondary,
+                filled: false,
+                onTap: onCancel,
+              ),
             ),
             const SizedBox(height: AppSizes.xs),
           ],

@@ -107,4 +107,14 @@ class AuthRemoteDataSource {
       throw mapDioError(e);
     }
   }
+
+  Future<List<SavedAddressModel>> editSavedAddress(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/auth/saved-addresses/$id', data: data);
+      final raw = response.data['savedAddresses'] as List;
+      return raw.map((a) => SavedAddressModel.fromJson(a as Map<String, dynamic>)).toList();
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
 }

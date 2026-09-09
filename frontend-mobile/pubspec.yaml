@@ -50,6 +50,15 @@ dev_dependencies:
   mocktail: ^1.0.4
   patrol: ^4.7.1
   patrol_mcp: ^0.1.4
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/app_icon1.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#3D3DE8"
+  adaptive_icon_foreground: "assets/images/app_icon1.png"
 
 flutter:
   uses-material-design: true

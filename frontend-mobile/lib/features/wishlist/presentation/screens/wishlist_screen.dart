@@ -141,7 +141,11 @@ class _WishlistScreenState extends State<WishlistScreen> {
                         const SizedBox(height: AppSizes.sm),
                     itemBuilder: (_, i) {
                       final product = state.items[i];
-                      final originalPrice = product.price * 1.4;
+                      final discount = product.discount ?? 0;
+                      final hasDiscount = discount > 0;
+                      final originalPrice = hasDiscount
+                          ? product.price / (1 - discount / 100)
+                          : null;
                       return GestureDetector(
                         onTap: () => context.push('/products/${product.id}'),
                         child: Container(
@@ -260,15 +264,16 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                                   color: onSurface,
                                                 ),
                                               ),
-                                              Text(
-                                                '\$${originalPrice.toStringAsFixed(0)}',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  color: muted,
-                                                  decoration: TextDecoration
-                                                      .lineThrough,
+                                              if (hasDiscount && originalPrice != null)
+                                                Text(
+                                                  '\$${originalPrice.toStringAsFixed(0)}',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: muted,
+                                                    decoration: TextDecoration
+                                                        .lineThrough,
+                                                  ),
                                                 ),
-                                              ),
                                             ],
                                           ),
                                           GestureDetector(

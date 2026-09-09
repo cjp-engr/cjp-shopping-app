@@ -15,4 +15,5 @@ abstract class AuthRepository {
   Future<List<SavedAddressEntity>> addSavedAddress(Map<String, dynamic> data);
   Future<List<SavedAddressEntity>> deleteSavedAddress(String id);
   Future<List<SavedAddressEntity>> setDefaultAddress(String id);
+  Future<List<SavedAddressEntity>> editSavedAddress(String id, Map<String, dynamic> data);
 }

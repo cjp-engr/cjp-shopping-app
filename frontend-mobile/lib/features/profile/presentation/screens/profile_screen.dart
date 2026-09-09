@@ -26,6 +26,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _followStatsKey = GlobalKey<_FollowStatsRowState>();
   late final TextEditingController _firstCtrl;
   late final TextEditingController _lastCtrl;
   late final TextEditingController _phoneCtrl;
@@ -179,10 +180,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final user = state.user;
           if (user == null) return const SizedBox.shrink();
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-                AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.xl),
-            child: Column(
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async {
+              context.read<AuthBloc>().add(AuthCheckRequested());
+              await Future.wait([
+                Future.delayed(const Duration(milliseconds: 600)),
+                _followStatsKey.currentState?.reload() ?? Future.value(),
+              ]);
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.xl),
+              child: Column(
               children: [
                 // ── Avatar + identity header ─────────────────────────────────
                 _ProfileHeader(
@@ -191,6 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   buildAvatar: _buildAvatar,
                   onPickPhoto: _pickPhoto,
                   followDs: widget.followDs,
+                  followStatsKey: _followStatsKey,
                 ),
 
                 const SizedBox(height: AppSizes.lg),
@@ -396,6 +408,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ],
             ),
+            ),
           );
         },
       ),
@@ -411,6 +424,7 @@ class _ProfileHeader extends StatelessWidget {
   final Widget Function(String?, String) buildAvatar;
   final VoidCallback onPickPhoto;
   final FollowRemoteDataSource? followDs;
+  final GlobalKey<_FollowStatsRowState>? followStatsKey;
 
   const _ProfileHeader({
     required this.user,
@@ -418,6 +432,7 @@ class _ProfileHeader extends StatelessWidget {
     required this.buildAvatar,
     required this.onPickPhoto,
     this.followDs,
+    this.followStatsKey,
   });
 
   @override
@@ -442,16 +457,17 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                 ],
               ),
-              clipBehavior: Clip.antiAlias,
-              child: uploadingPhoto
-                  ? Container(
-                      color: AppColors.primary.withAlpha(20),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.primary),
-                      ),
-                    )
-                  : buildAvatar(user.avatar, user.firstName),
+              child: ClipOval(
+                child: uploadingPhoto
+                    ? Container(
+                        color: AppColors.primary.withAlpha(20),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppColors.primary),
+                        ),
+                      )
+                    : buildAvatar(user.avatar, user.firstName),
+              ),
             ),
             GestureDetector(
               onTap: uploadingPhoto ? null : onPickPhoto,
@@ -503,7 +519,7 @@ class _ProfileHeader extends StatelessWidget {
         ),
         if (followDs != null) ...[
           const SizedBox(height: AppSizes.md),
-          _FollowStatsRow(userId: user.id, followDs: followDs!),
+          _FollowStatsRow(key: followStatsKey, userId: user.id, followDs: followDs!),
         ],
       ],
     );
@@ -895,19 +911,19 @@ class _SavedAddressListState extends State<_SavedAddressList> {
     super.dispose();
   }
 
-  void _showAddSheet() {
-    _labelCtrl.text = 'Home';
-    _streetCtrl.clear();
-    _cityCtrl.clear();
-    _stateCtrl.clear();
-    _zipCtrl.clear();
+  void _showAddressSheet({SavedAddressEntity? existing}) {
+    final isEdit = existing != null;
+    _labelCtrl.text = existing?.label ?? 'Home';
+    _streetCtrl.text = existing?.street ?? '';
+    _cityCtrl.text = existing?.city ?? '';
+    _stateCtrl.text = existing?.state ?? '';
+    _zipCtrl.text = existing?.zipCode ?? '';
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
@@ -920,12 +936,14 @@ class _SavedAddressListState extends State<_SavedAddressList> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(AppStrings.addAddress,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(ctx).colorScheme.onSurface,
-                )),
+            Text(
+              isEdit ? AppStrings.editAddress : AppStrings.addAddress,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(ctx).colorScheme.onSurface,
+              ),
+            ),
             const SizedBox(height: AppSizes.sm),
             AppTextField(label: AppStrings.label, controller: _labelCtrl),
             const SizedBox(height: AppSizes.xs),
@@ -937,11 +955,9 @@ class _SavedAddressListState extends State<_SavedAddressList> {
             ),
             const SizedBox(height: AppSizes.xs),
             Row(children: [
-              Expanded(
-                  child: AppTextField(label: AppStrings.city, controller: _cityCtrl)),
+              Expanded(child: AppTextField(label: AppStrings.city, controller: _cityCtrl)),
               const SizedBox(width: AppSizes.sm),
-              Expanded(
-                  child: AppTextField(label: AppStrings.state, controller: _stateCtrl)),
+              Expanded(child: AppTextField(label: AppStrings.state, controller: _stateCtrl)),
             ]),
             const SizedBox(height: AppSizes.xs),
             AppTextField(
@@ -956,20 +972,20 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                 label: AppStrings.saveAddress,
                 loading: s.status == AuthStatus.loading,
                 onPressed: () {
-                  if (_streetCtrl.text.trim().isEmpty ||
-                      _cityCtrl.text.trim().isEmpty) {
-                    return;
+                  if (_streetCtrl.text.trim().isEmpty || _cityCtrl.text.trim().isEmpty) return;
+                  final payload = {
+                    'label': _labelCtrl.text.trim().isNotEmpty ? _labelCtrl.text.trim() : 'Home',
+                    'street': _streetCtrl.text.trim(),
+                    'city': _cityCtrl.text.trim(),
+                    'state': _stateCtrl.text.trim(),
+                    'zipCode': _zipCtrl.text.trim(),
+                    'country': '',
+                  };
+                  if (isEdit) {
+                    context.read<AuthBloc>().add(AuthAddressEditRequested(existing.id, payload));
+                  } else {
+                    context.read<AuthBloc>().add(AuthAddressAddRequested(payload));
                   }
-                  context.read<AuthBloc>().add(AuthAddressAddRequested({
-                        'label': _labelCtrl.text.trim().isNotEmpty
-                            ? _labelCtrl.text.trim()
-                            : 'Home',
-                        'street': _streetCtrl.text.trim(),
-                        'city': _cityCtrl.text.trim(),
-                        'state': _stateCtrl.text.trim(),
-                        'zipCode': _zipCtrl.text.trim(),
-                        'country': '',
-                      }));
                   Navigator.pop(ctx);
                 },
               ),
@@ -1092,6 +1108,13 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                           ],
                         ),
                       ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.primary),
+                        tooltip: AppStrings.editAddress,
+                        onPressed: () => _showAddressSheet(existing: addr),
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      ),
                       if (!addr.isDefault)
                         IconButton(
                           icon: Icon(Icons.star_border_rounded,
@@ -1127,7 +1150,7 @@ class _SavedAddressListState extends State<_SavedAddressList> {
             color: Theme.of(context).dividerColor.withAlpha(80),
           ),
           InkWell(
-            onTap: _showAddSheet,
+            onTap: () => _showAddressSheet(),
             borderRadius: const BorderRadius.vertical(
                 bottom: Radius.circular(AppSizes.radiusLg)),
             child: const Padding(
@@ -1161,7 +1184,7 @@ class _SavedAddressListState extends State<_SavedAddressList> {
 class _FollowStatsRow extends StatefulWidget {
   final String userId;
   final FollowRemoteDataSource followDs;
-  const _FollowStatsRow({required this.userId, required this.followDs});
+  const _FollowStatsRow({super.key, required this.userId, required this.followDs});
 
   @override
   State<_FollowStatsRow> createState() => _FollowStatsRowState();
@@ -1176,6 +1199,8 @@ class _FollowStatsRowState extends State<_FollowStatsRow> {
     super.initState();
     _load();
   }
+
+  Future<void> reload() => _load();
 
   Future<void> _load() async {
     try {

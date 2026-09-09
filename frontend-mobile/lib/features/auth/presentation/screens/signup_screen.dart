@@ -82,9 +82,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       (i) => Container(
                         decoration: BoxDecoration(
                           color: const [
-                            Color(0xFF0C4A6E),
-                            Color(0xFF075985),
-                            Color(0xFF0369A1),
+                            Color(0xFF1A1A9E),
+                            Color(0xFF2525B8),
+                            Color(0xFF3D3DE8),
                           ][i % 3],
                         ),
                         child: const Icon(
@@ -130,22 +130,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(26),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.white.withAlpha(51),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.shopping_cart_rounded,
-                            color: Colors.white,
-                            size: 28,
-                          ),
+                        Image.asset(
+                          'assets/images/ic_launcher_foreground.png',
+                          width: 72,
+                          height: 72,
                         ),
                         const SizedBox(height: 8),
                         const Text(
@@ -217,98 +205,117 @@ class _SignupScreenState extends State<SignupScreen> {
                             Row(
                               children: [
                                 Expanded(
-                                  child: AppTextField(
-                                    key: keys.auth.signupFirstNameField,
-                                    label: AppStrings.firstName,
-                                    controller: _firstCtrl,
-                                    prefixIcon: Icons.person_outline,
-                                    textInputAction: TextInputAction.next,
-                                    textCapitalization:
-                                        TextCapitalization.words,
-                                    validator: (v) =>
-                                        v == null || v.trim().isEmpty
-                                            ? 'Required'
-                                            : null,
+                                  child: Semantics(
+                                    identifier: 'signup_first_name_field',
+                                    child: AppTextField(
+                                      key: keys.auth.signupFirstNameField,
+                                      label: AppStrings.firstName,
+                                      controller: _firstCtrl,
+                                      prefixIcon: Icons.person_outline,
+                                      textInputAction: TextInputAction.next,
+                                      textCapitalization:
+                                          TextCapitalization.words,
+                                      validator: (v) =>
+                                          v == null || v.trim().isEmpty
+                                              ? 'Required'
+                                              : null,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: AppSizes.sm),
                                 Expanded(
-                                  child: AppTextField(
-                                    key: keys.auth.signupLastNameField,
-                                    label: AppStrings.lastName,
-                                    controller: _lastCtrl,
-                                    prefixIcon: Icons.person_outline,
-                                    textInputAction: TextInputAction.next,
-                                    textCapitalization:
-                                        TextCapitalization.words,
-                                    validator: (v) =>
-                                        v == null || v.trim().isEmpty
-                                            ? 'Required'
-                                            : null,
+                                  child: Semantics(
+                                    identifier: 'signup_last_name_field',
+                                    child: AppTextField(
+                                      key: keys.auth.signupLastNameField,
+                                      label: AppStrings.lastName,
+                                      controller: _lastCtrl,
+                                      prefixIcon: Icons.person_outline,
+                                      textInputAction: TextInputAction.next,
+                                      textCapitalization:
+                                          TextCapitalization.words,
+                                      validator: (v) =>
+                                          v == null || v.trim().isEmpty
+                                              ? 'Required'
+                                              : null,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: AppSizes.md),
-                            AppTextField(
-                              key: keys.auth.signupEmailField,
-                              label: AppStrings.email,
-                              controller: _emailCtrl,
-                              keyboardType: TextInputType.emailAddress,
-                              prefixIcon: Icons.email_outlined,
-                              textInputAction: TextInputAction.next,
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) {
-                                  return 'Email is required';
-                                }
-                                if (!v.contains('@')) {
-                                  return 'Enter a valid email';
-                                }
-                                return null;
-                              },
+                            Semantics(
+                              identifier: 'signup_email_field',
+                              child: AppTextField(
+                                key: keys.auth.signupEmailField,
+                                label: AppStrings.email,
+                                controller: _emailCtrl,
+                                keyboardType: TextInputType.emailAddress,
+                                prefixIcon: Icons.email_outlined,
+                                textInputAction: TextInputAction.next,
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Email is required';
+                                  }
+                                  if (!v.contains('@')) {
+                                    return 'Enter a valid email';
+                                  }
+                                  return null;
+                                },
+                              ),
                             ),
                             const SizedBox(height: AppSizes.md),
-                            AppTextField(
-                              key: keys.auth.signupPasswordField,
-                              label: AppStrings.password,
-                              controller: _passCtrl,
-                              obscure: true,
-                              prefixIcon: Icons.lock_outline,
-                              textInputAction: TextInputAction.next,
-                              validator: (v) {
-                                if (v == null || v.isEmpty) {
-                                  return 'Password is required';
-                                }
-                                if (v.length < 6) {
-                                  return 'Min 6 characters';
-                                }
-                                return null;
-                              },
+                            Semantics(
+                              identifier: 'signup_password_field',
+                              child: AppTextField(
+                                key: keys.auth.signupPasswordField,
+                                label: AppStrings.password,
+                                controller: _passCtrl,
+                                obscure: true,
+                                prefixIcon: Icons.lock_outline,
+                                textInputAction: TextInputAction.next,
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return 'Password is required';
+                                  }
+                                  if (v.length < 6) {
+                                    return 'Min 6 characters';
+                                  }
+                                  return null;
+                                },
+                              ),
                             ),
                             const SizedBox(height: AppSizes.md),
-                            AppTextField(
-                              key: keys.auth.signupConfirmPasswordField,
-                              label: AppStrings.confirmPassword,
-                              controller: _confirmCtrl,
-                              obscure: true,
-                              prefixIcon: Icons.lock_outline,
-                              textInputAction: TextInputAction.done,
-                              validator: (v) {
-                                if (v != _passCtrl.text) {
-                                  return 'Passwords do not match';
-                                }
-                                return null;
-                              },
+                            Semantics(
+                              identifier: 'signup_confirm_password_field',
+                              child: AppTextField(
+                                key: keys.auth.signupConfirmPasswordField,
+                                label: AppStrings.confirmPassword,
+                                controller: _confirmCtrl,
+                                obscure: true,
+                                prefixIcon: Icons.lock_outline,
+                                textInputAction: TextInputAction.done,
+                                validator: (v) {
+                                  if (v != _passCtrl.text) {
+                                    return 'Passwords do not match';
+                                  }
+                                  return null;
+                                },
+                              ),
                             ),
                             const SizedBox(height: AppSizes.xl),
                             BlocBuilder<AuthBloc, AuthState>(
                               buildWhen: (p, c) => p.status != c.status,
                               builder: (context, state) {
-                                return AppButton(
-                                  key: keys.auth.signupButton,
-                                  label: AppStrings.signup,
-                                  loading: state.status == AuthStatus.loading,
-                                  onPressed: _submit,
+                                return Semantics(
+                                  identifier: 'signup_button',
+                                  child: AppButton(
+                                    key: keys.auth.signupButton,
+                                    label: AppStrings.signup,
+                                    loading:
+                                        state.status == AuthStatus.loading,
+                                    onPressed: _submit,
+                                  ),
                                 );
                               },
                             ),
@@ -317,28 +324,31 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: AppSizes.lg),
                       Center(
-                        child: TextButton(
-                          key: keys.auth.signupSignInLink,
-                          onPressed: () => context.pop(),
-                          child: RichText(
-                            text: TextSpan(
-                              text: AppStrings.hasAccountPrefix,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withAlpha(153),
-                                fontSize: 14,
-                              ),
-                              children: const [
-                                TextSpan(
-                                  text: AppStrings.signInLink,
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                        child: Semantics(
+                          identifier: 'signup_sign_in_link',
+                          child: TextButton(
+                            key: keys.auth.signupSignInLink,
+                            onPressed: () => context.pop(),
+                            child: RichText(
+                              text: TextSpan(
+                                text: AppStrings.hasAccountPrefix,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withAlpha(153),
+                                  fontSize: 14,
                                 ),
-                              ],
+                                children: const [
+                                  TextSpan(
+                                    text: AppStrings.signInLink,
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

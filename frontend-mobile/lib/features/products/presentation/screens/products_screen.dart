@@ -220,8 +220,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                 border: Border.all(color: border),
               ),
-              child: TextField(
-                key: keys.products.searchField,
+              child: Semantics(
+                identifier: 'search_field',
+                child: TextField(
+                  key: keys.products.searchField,
                 controller: _searchCtrl,
                 style: TextStyle(color: onSurface),
                 keyboardType: TextInputType.text,
@@ -253,6 +255,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   setState(() => _searchActive = v.isNotEmpty);
                   if (v.length >= 2 || v.isEmpty) _load();
                 },
+                ),
               ),
             ),
           ),
@@ -360,15 +363,25 @@ class _ProductsScreenState extends State<ProductsScreen> {
         }
 
         if (state.products.isEmpty) {
-          return EmptyWidget(
-            message: AppStrings.noProducts,
-            icon: Icons.search_off_rounded,
-            actionLabel: AppStrings.clearFilters,
-            onAction: () {
-              _searchCtrl.clear();
-              setState(() => _selectedCategory = null);
-              _load();
-            },
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async => _load(refresh: true),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.6,
+                child: EmptyWidget(
+                  message: AppStrings.noProducts,
+                  icon: Icons.search_off_rounded,
+                  actionLabel: AppStrings.clearFilters,
+                  onAction: () {
+                    _searchCtrl.clear();
+                    setState(() => _selectedCategory = null);
+                    _load();
+                  },
+                ),
+              ),
+            ),
           );
         }
 
@@ -378,6 +391,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           child: CustomScrollView(
             key: keys.products.productList,
             controller: _scrollCtrl,
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               if (!_searchActive)
                 SliverToBoxAdapter(
@@ -427,11 +441,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       mainAxisSpacing: AppSizes.sm,
                     ),
                     delegate: SliverChildBuilderDelegate(
-                      (_, i) => ProductCard(
-                        key: keys.products.productCard(visibleProducts[i].name),
-                        product: visibleProducts[i],
-                        onTap: () =>
-                            context.push('/products/${visibleProducts[i].id}'),
+                      (_, i) => Semantics(
+                        identifier: 'product_card_${visibleProducts[i].name}',
+                        child: ProductCard(
+                          key: keys.products.productCard(visibleProducts[i].name),
+                          product: visibleProducts[i],
+                          onTap: () =>
+                              context.push('/products/${visibleProducts[i].id}'),
+                        ),
                       ),
                       childCount: visibleProducts.length,
                     ),
@@ -557,9 +574,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 .where((p) => p.sellerId == currentUserId)
                 .toList();
             if (myProducts.isEmpty) {
-              return const EmptyWidget(
-                icon: Icons.storefront_outlined,
-                message: AppStrings.noSellerProducts,
+              return RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () async => _load(refresh: true),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.6,
+                    child: const EmptyWidget(
+                      icon: Icons.storefront_outlined,
+                      message: AppStrings.noSellerProducts,
+                    ),
+                  ),
+                ),
               );
             }
 
@@ -618,10 +645,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 const SizedBox(height: AppSizes.sm),
                 Expanded(
                   child: filtered.isEmpty
-                      ? const Center(
-                          child: Text(
-                            AppStrings.noProductsInCategory,
-                            style: TextStyle(color: AppColors.textMuted),
+                      ? RefreshIndicator(
+                          color: AppColors.primary,
+                          onRefresh: () async => _load(refresh: true),
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.5,
+                              child: const Center(
+                                child: Text(
+                                  AppStrings.noProductsInCategory,
+                                  style: TextStyle(color: AppColors.textMuted),
+                                ),
+                              ),
+                            ),
                           ),
                         )
                       : RefreshIndicator(
@@ -638,11 +675,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               mainAxisSpacing: AppSizes.sm,
                             ),
                             itemCount: filtered.length,
-                            itemBuilder: (_, i) => ProductCard(
-                              key: keys.products.productCard(filtered[i].name),
-                              product: filtered[i],
-                              onTap: () =>
-                                  context.push('/products/${filtered[i].id}'),
+                            itemBuilder: (_, i) => Semantics(
+                              identifier: 'product_card_${filtered[i].name}',
+                              child: ProductCard(
+                                key: keys.products.productCard(filtered[i].name),
+                                product: filtered[i],
+                                onTap: () =>
+                                    context.push('/products/${filtered[i].id}'),
+                              ),
                             ),
                           ),
                         ),

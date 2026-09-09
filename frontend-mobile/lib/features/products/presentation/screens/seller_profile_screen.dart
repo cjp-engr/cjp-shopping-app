@@ -65,7 +65,8 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                           size: 48, color: AppColors.textMuted),
                       const SizedBox(height: AppSizes.md),
                       Text(
-                        state.sellerProfileError ?? AppStrings.failedToLoadSeller,
+                        state.sellerProfileError ??
+                            AppStrings.failedToLoadSeller,
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: AppColors.textSecondary),
                       ),
@@ -125,99 +126,99 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                       sellerId: widget.sellerId,
                     ),
                   ),
-                if (products.isEmpty)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.shopping_bag_outlined,
-                              size: 48, color: AppColors.textMuted),
-                          SizedBox(height: AppSizes.sm),
-                          Text(
-                            AppStrings.noProductsYet,
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
-                        ],
+                  if (products.isEmpty)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.shopping_bag_outlined,
+                                size: 48, color: AppColors.textMuted),
+                            SizedBox(height: AppSizes.sm),
+                            Text(
+                              AppStrings.noProductsYet,
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  )
-                else ...[
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSizes.md, AppSizes.md, AppSizes.md, 0),
-                    sliver: SliverToBoxAdapter(
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 3,
-                            height: 18,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Products',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: context.onSurfaceColor,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withAlpha(20),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '${products.length}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
+                    )
+                  else ...[
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSizes.md, AppSizes.md, AppSizes.md, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 3,
+                              height: 18,
+                              decoration: BoxDecoration(
                                 color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(2),
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              'Products',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: context.onSurfaceColor,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withAlpha(20),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '${products.length}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.all(AppSizes.md),
-                    sliver: SliverGrid(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final product = products[index];
-                          return ProductCard(
-                            key: ValueKey(product.id),
-                            product: product,
-                            onTap: () =>
-                                context.push('/products/${product.id}'),
-                          );
-                        },
-                        childCount: products.length,
-                      ),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: AppSizes.sm,
-                        mainAxisSpacing: AppSizes.sm,
-                        childAspectRatio: 0.72,
+                    SliverPadding(
+                      padding: const EdgeInsets.all(AppSizes.md),
+                      sliver: SliverGrid(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final product = products[index];
+                            return ProductCard(
+                              key: ValueKey(product.id),
+                              product: product,
+                              onTap: () =>
+                                  context.push('/products/${product.id}'),
+                            );
+                          },
+                          childCount: products.length,
+                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: AppSizes.sm,
+                          mainAxisSpacing: AppSizes.sm,
+                          childAspectRatio: 0.72,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
-            ),
-          );
-        },
-      ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -307,7 +308,7 @@ class _SellerHeader extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withAlpha(200), width: 3),
+                  border: Border.all(color: AppColors.primary, width: 3),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withAlpha(50),
@@ -338,8 +339,8 @@ class _SellerHeader extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       'Member since $joinYear',
-                      style: const TextStyle(
-                          fontSize: 13, color: Colors.white70),
+                      style:
+                          const TextStyle(fontSize: 13, color: Colors.white70),
                     ),
                   ],
                 ),
@@ -357,23 +358,19 @@ class _SellerHeader extends StatelessWidget {
               final followUser = followState.user;
               final isFollowing = followUser?.isFollowing ?? false;
               final followersCount = followUser?.followersCount ?? 0;
-              final isLoading =
-                  followState.status == UserProfileStatus.loading;
+              final isLoading = followState.status == UserProfileStatus.loading;
 
               return Column(
                 children: [
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: AppSizes.md),
+                    padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
                     child: IntrinsicHeight(
                       child: Row(
                         children: [
                           Expanded(
                             child: _StatColumn(
                               value: '$productCount',
-                              label: productCount == 1
-                                  ? 'Product'
-                                  : 'Products',
+                              label: productCount == 1 ? 'Product' : 'Products',
                               icon: Icons.shopping_bag_outlined,
                             ),
                           ),
@@ -398,8 +395,8 @@ class _SellerHeader extends StatelessWidget {
                   if (!isSelf) ...[
                     Divider(height: 1, color: context.borderColor),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(AppSizes.lg,
-                          AppSizes.md, AppSizes.lg, AppSizes.md),
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSizes.lg, AppSizes.md, AppSizes.lg, AppSizes.md),
                       child: SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
@@ -410,11 +407,10 @@ class _SellerHeader extends StatelessWidget {
                             foregroundColor: isFollowing
                                 ? context.onSurfaceColor
                                 : Colors.white,
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  AppSizes.radiusFull),
+                              borderRadius:
+                                  BorderRadius.circular(AppSizes.radiusFull),
                             ),
                           ),
                           onPressed: isLoading
@@ -441,7 +437,9 @@ class _SellerHeader extends StatelessWidget {
                                   size: 18,
                                 ),
                           label: Text(
-                            isFollowing ? AppStrings.unfollow : AppStrings.follow,
+                            isFollowing
+                                ? AppStrings.unfollow
+                                : AppStrings.follow,
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 14,

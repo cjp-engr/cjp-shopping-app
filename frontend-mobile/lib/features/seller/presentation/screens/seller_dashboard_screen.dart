@@ -295,6 +295,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
                     loading: _couponsLoading,
                     onDelete: _deleteCoupon,
                     onSave: _saveCoupon,
+                    onRefresh: _loadCoupons,
                   ),
                 ],
               ),
@@ -306,12 +307,15 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
         listenable: _tabController,
         builder: (context, _) {
           if (_tabController.index == 0) {
-            return FloatingActionButton(
-              key: keys.seller.addProductFab,
-              onPressed: () => context.push('/seller/add'),
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.add),
+            return Semantics(
+              identifier: 'add_product_fab',
+              child: FloatingActionButton(
+                key: keys.seller.addProductFab,
+                onPressed: () => context.push('/seller/add'),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                child: const Icon(Icons.add),
+              ),
             );
           }
           if (_tabController.index == 2) {
@@ -1287,133 +1291,151 @@ class _ProductTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      key: keys.seller.productTile(product.id),
-      color: context.surfaceColor,
-      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-      child: InkWell(
-        onTap: () => context.push('/products/${product.id}'),
+    return Semantics(
+      identifier: 'product_tile_${product.id}',
+      child: Material(
+        key: keys.seller.productTile(product.id),
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-            border: Border.all(color: context.borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(6),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSizes.sm + 2),
-            child: Row(
-              children: [
-                // Product image
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  child: product.image.isNotEmpty
-                      ? Image.network(
-                          product.image,
-                          width: 76,
-                          height: 76,
-                          fit: BoxFit.cover,
-                          cacheWidth: 152,
-                          cacheHeight: 152,
-                          errorBuilder: (_, __, ___) => _placeholder(),
-                        )
-                      : _placeholder(),
-                ),
-                const SizedBox(width: AppSizes.sm + 2),
-
-                // Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Category chip
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
-                          borderRadius:
-                              BorderRadius.circular(AppSizes.radiusFull),
-                        ),
-                        child: Text(
-                          product.category,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        product.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          height: 1.3,
-                          color: context.onSurfaceColor,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Text(
-                            '\$${product.price.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _StockBadge(product: product),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AppSizes.xs),
-
-                // Actions column — stop tap from bubbling to InkWell
-                GestureDetector(
-                  onTap: () {},
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      KeyedSubtree(
-                        key: keys.seller.editProductButton(product.id),
-                        child: _ActionIconBtn(
-                          icon: Icons.edit_outlined,
-                          color: AppColors.primary,
-                          bgColor: AppColors.primaryLight,
-                          onPressed: isSaving ? null : onEdit,
-                          tooltip: AppStrings.edit,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      KeyedSubtree(
-                        key: keys.seller.deleteProductButton(product.id),
-                        child: _ActionIconBtn(
-                          icon: Icons.delete_outline_rounded,
-                          color: AppColors.danger,
-                          bgColor: AppColors.dangerSurface,
-                          onPressed: isSaving ? null : onDelete,
-                          tooltip: AppStrings.delete,
-                        ),
-                      ),
-                    ],
-                  ),
+        child: InkWell(
+          onTap: () => context.push('/products/${product.id}'),
+          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+              border: Border.all(color: context.borderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(6),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
               ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.sm + 2),
+              child: Row(
+                children: [
+                  // Product image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    child: product.image.isNotEmpty
+                        ? Image.network(
+                            product.image,
+                            width: 76,
+                            height: 76,
+                            fit: BoxFit.cover,
+                            cacheWidth: 152,
+                            cacheHeight: 152,
+                            errorBuilder: (_, __, ___) => _placeholder(),
+                          )
+                        : _placeholder(),
+                  ),
+                  const SizedBox(width: AppSizes.sm + 2),
+
+                  // Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Category chip
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight,
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusFull),
+                          ),
+                          child: Semantics(
+                            identifier: 'product_tile_category_${product.id}',
+                            child: Text(
+                              product.category,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Semantics(
+                          identifier: 'product_tile_name_${product.id}',
+                          child: Text(
+                            product.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              height: 1.3,
+                              color: context.onSurfaceColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            Semantics(
+                              identifier: 'product_tile_price_${product.id}',
+                              child: Text(
+                                '\$${product.price.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _StockBadge(product: product),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.xs),
+
+                  // Actions column — stop tap from bubbling to InkWell
+                  GestureDetector(
+                    onTap: () {},
+                    behavior: HitTestBehavior.opaque,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Semantics(
+                          identifier: 'edit_product_button_${product.id}',
+                          child: KeyedSubtree(
+                            key: keys.seller.editProductButton(product.id),
+                            child: _ActionIconBtn(
+                              icon: Icons.edit_outlined,
+                              color: AppColors.primary,
+                              bgColor: AppColors.primaryLight,
+                              onPressed: isSaving ? null : onEdit,
+                              tooltip: AppStrings.edit,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Semantics(
+                          identifier: 'delete_product_button_${product.id}',
+                          child: KeyedSubtree(
+                            key: keys.seller.deleteProductButton(product.id),
+                            child: _ActionIconBtn(
+                              icon: Icons.delete_outline_rounded,
+                              color: AppColors.danger,
+                              bgColor: AppColors.dangerSurface,
+                              onPressed: isSaving ? null : onDelete,
+                              tooltip: AppStrings.delete,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1488,12 +1510,15 @@ class _StockBadge extends StatelessWidget {
         color: color.withAlpha(22),
         borderRadius: BorderRadius.circular(AppSizes.radiusFull),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          color: color,
-          fontWeight: FontWeight.w600,
+      child: Semantics(
+        identifier: 'product_tile_stock_${product.id}',
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -2063,12 +2088,14 @@ class _VouchersTab extends StatelessWidget {
   final Future<void> Function(String id) onDelete;
   final Future<void> Function(Map<String, dynamic> data, {String? editId})
       onSave;
+  final Future<void> Function() onRefresh;
 
   const _VouchersTab({
     required this.coupons,
     required this.loading,
     required this.onDelete,
     required this.onSave,
+    required this.onRefresh,
   });
 
   @override
@@ -2077,25 +2104,40 @@ class _VouchersTab extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
     if (coupons.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.local_offer_outlined, size: 64, color: Colors.grey[300]),
-            const SizedBox(height: 12),
-            Text(AppStrings.noVouchersYet,
-                style: TextStyle(fontSize: 15, color: Colors.grey[500])),
-            const SizedBox(height: 6),
-            Text(AppStrings.tapToCreateVoucher,
-                style: TextStyle(fontSize: 13, color: Colors.grey[400])),
-          ],
+      return RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: onRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.local_offer_outlined,
+                      size: 64, color: Colors.grey[300]),
+                  const SizedBox(height: 12),
+                  Text(AppStrings.noVouchersYet,
+                      style: TextStyle(fontSize: 15, color: Colors.grey[500])),
+                  const SizedBox(height: 6),
+                  Text(AppStrings.tapToCreateVoucher,
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey[400])),
+                ],
+              ),
+            ),
+          ),
         ),
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.all(AppSizes.md),
-      itemCount: coupons.length,
-      itemBuilder: (ctx, i) {
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: onRefresh,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(AppSizes.md),
+        itemCount: coupons.length,
+        itemBuilder: (ctx, i) {
         final c = coupons[i];
         final daysLeft = c.daysLeft;
         final isExpired = c.isExpired;
@@ -2254,6 +2296,7 @@ class _VouchersTab extends StatelessWidget {
           ),
         );
       },
+      ),
     );
   }
 }
