@@ -125,9 +125,8 @@ class _CartScreenState extends State<CartScreen> {
           if (state.items.isEmpty) {
             return RefreshIndicator(
               color: AppColors.primary,
-              onRefresh: () async {
-                context.read<CartBloc>().add(CartLoadRequested());
-              },
+              onRefresh: () async =>
+                  context.read<CartBloc>().add(CartLoadRequested()),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: SizedBox(
@@ -247,14 +246,13 @@ class _CartScreenState extends State<CartScreen> {
               Expanded(
                 child: RefreshIndicator(
                   color: AppColors.primary,
-                  onRefresh: () async {
-                    context.read<CartBloc>().add(CartLoadRequested());
-                  },
+                  onRefresh: () async =>
+                      context.read<CartBloc>().add(CartLoadRequested()),
                   child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.md),
-                  children: [
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.md),
+                    children: [
                     for (final entry in sellerGroups.entries) ...[
                       _SellerGroupHeader(
                         sellerKey: entry.key,
@@ -324,7 +322,7 @@ class _CartScreenState extends State<CartScreen> {
                       total: total,
                     ),
                     const SizedBox(height: AppSizes.md),
-                  ],
+                    ],
                   ),
                 ),
               ),
