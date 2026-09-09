@@ -32,8 +32,9 @@ class SellerAvatar extends StatelessWidget {
                 width: size,
                 height: size,
                 fit: BoxFit.cover,
-                loadingBuilder: (_, child, progress) =>
-                    progress == null ? child : _InitialsCircle(initials: _initials, size: size),
+                loadingBuilder: (_, child, progress) => progress == null
+                    ? child
+                    : _InitialsCircle(initials: _initials, size: size),
                 errorBuilder: (_, __, ___) =>
                     _InitialsCircle(initials: _initials, size: size),
               ),
