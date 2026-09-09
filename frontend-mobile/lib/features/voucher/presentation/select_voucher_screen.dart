@@ -220,7 +220,11 @@ class _SelectVoucherScreenState extends State<SelectVoucherScreen> {
                           ],
                         ),
                       )
-                    : ListView(
+                    : RefreshIndicator(
+                        color: AppColors.primary,
+                        onRefresh: _load,
+                        child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.only(top: 12, bottom: 100),
                         children: [
                           Padding(
@@ -241,6 +245,7 @@ class _SelectVoucherScreenState extends State<SelectVoucherScreen> {
                                 onTap: () => _selectCoupon(c),
                               )),
                         ],
+                        ),
                       ),
           ),
         ],

@@ -72,7 +72,20 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           final user = state.user!;
           final isOwn = currentUserId == user.id;
 
-          return NestedScrollView(
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async {
+              final bloc = context.read<UserProfileBloc>();
+              if (_tabController.index == 0) {
+                bloc.add(UserProfileFollowersRequested(widget.userId));
+              } else {
+                bloc.add(UserProfileFollowingRequested(widget.userId));
+              }
+              await bloc.stream.firstWhere(
+                (s) => s.status != UserProfileStatus.loading,
+              );
+            },
+            child: NestedScrollView(
             headerSliverBuilder: (_, __) => [
               SliverToBoxAdapter(
                 child: _ProfileHeader(
@@ -125,6 +138,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   emptyMessage: AppStrings.notFollowingAnyone,
                 ),
               ],
+            ),
             ),
           );
         },

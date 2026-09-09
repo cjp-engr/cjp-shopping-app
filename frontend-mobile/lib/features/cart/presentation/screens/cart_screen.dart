@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../keys.dart';
 import '../bloc/cart_bloc.dart';
+import '../bloc/cart_event.dart';
 import '../bloc/cart_state.dart';
 import '../widgets/cart_item_tile.dart';
 import '../../domain/entities/cart_item_entity.dart';
@@ -122,11 +123,23 @@ class _CartScreenState extends State<CartScreen> {
       body: BlocBuilder<CartBloc, CartState>(
         builder: (context, state) {
           if (state.items.isEmpty) {
-            return EmptyWidget(
-              message: AppStrings.emptyCart,
-              icon: Icons.shopping_cart_outlined,
-              actionLabel: AppStrings.browseProducts,
-              onAction: () => context.go('/'),
+            return RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () async {
+                context.read<CartBloc>().add(CartLoadRequested());
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  child: EmptyWidget(
+                    message: AppStrings.emptyCart,
+                    icon: Icons.shopping_cart_outlined,
+                    actionLabel: AppStrings.browseProducts,
+                    onAction: () => context.go('/'),
+                  ),
+                ),
+              ),
             );
           }
 
@@ -232,7 +245,13 @@ class _CartScreenState extends State<CartScreen> {
           return Column(
             children: [
               Expanded(
-                child: ListView(
+                child: RefreshIndicator(
+                  color: AppColors.primary,
+                  onRefresh: () async {
+                    context.read<CartBloc>().add(CartLoadRequested());
+                  },
+                  child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(
                       AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.md),
                   children: [
@@ -306,6 +325,7 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                     const SizedBox(height: AppSizes.md),
                   ],
+                  ),
                 ),
               ),
               _CheckoutBar(
