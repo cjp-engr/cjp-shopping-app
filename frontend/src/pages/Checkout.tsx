@@ -36,7 +36,7 @@ type PaymentMode = 'saved' | 'new';
 export const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { cart, clearCart } = useCart();
+  const { cart, clearCart, removeFromCart } = useCart();
   const { user, addAddress } = useAuth();
 
   const [step, setStep] = useState<'shipping' | 'payment' | 'review'>('shipping');
@@ -84,7 +84,30 @@ export const Checkout: React.FC = () => {
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
 
   // Inherit selections passed from Cart page
-  const cartState = location.state as { deliverySelections?: Record<string, string>; voucherSelections?: Record<string, { code: string; discountAmount: number }> } | null;
+  const cartState = location.state as {
+    deliverySelections?: Record<string, string>;
+    voucherSelections?: Record<string, { code: string; discountAmount: number }>;
+    selectedItems?: string[];
+  } | null;
+
+  // Keys of items the user selected on the cart page; fall back to all items
+  const selectedItemKeys = useMemo(
+    () => new Set(
+      cartState?.selectedItems ??
+      cart.items.map(i => i.selectedVariant?.key ? `${i.product.id}|${i.selectedVariant.key}` : i.product.id)
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  // Only the items the user chose to check out
+  const checkoutItems = useMemo(
+    () => cart.items.filter(i => {
+      const key = i.selectedVariant?.key ? `${i.product.id}|${i.selectedVariant.key}` : i.product.id;
+      return selectedItemKeys.has(key);
+    }),
+    [cart.items, selectedItemKeys]
+  );
 
   // Per-seller voucher state: { sellerId -> { code, discountAmount } }
   const [voucherSelections, setVoucherSelections] = useState<Record<string, { code: string; discountAmount: number }>>(
@@ -111,7 +134,7 @@ export const Checkout: React.FC = () => {
       shippingOptions: string[]; shippingFee: string | undefined; shippingFeeAmounts: Record<string, number>;
       selectedDelivery: string | undefined;
     }>();
-    for (const cartItem of cart.items) {
+    for (const cartItem of checkoutItems) {
       const key = cartItem.product.sellerId ?? '__unknown__';
       if (!map.has(key)) {
         map.set(key, {
@@ -163,7 +186,7 @@ export const Checkout: React.FC = () => {
       group.storeTotal = netSubtotal + group.shipping + group.tax;
     }
     return Array.from(map.values());
-  }, [cart.items, voucherSelections, deliverySelections]);
+  }, [checkoutItems, voucherSelections, deliverySelections]);
 
   // Persist default delivery option in state (matches review UI default)
   useEffect(() => {
@@ -376,9 +399,17 @@ export const Checkout: React.FC = () => {
       for (const [sellerId, v] of Object.entries(voucherSelections)) {
         if (v.code) couponCodes[sellerId] = v.code;
       }
-      const orders = await orderService.createOrder(checkoutData, cart, user.id, couponCodes, resolvedDeliverySelections);
+      const checkoutCart = { ...cart, items: checkoutItems };
+      const orders = await orderService.createOrder(checkoutData, checkoutCart, user.id, couponCodes, resolvedDeliverySelections);
       orderPlaced.current = true;
-      clearCart();
+      // Remove only the checked-out items so deselected cart items are preserved
+      if (checkoutItems.length === cart.items.length) {
+        clearCart();
+      } else {
+        for (const item of checkoutItems) {
+          removeFromCart(item.product.id, item.selectedVariant?.key);
+        }
+      }
       navigate(`/orders?success=${orders[0]?.id ?? ''}`);
     } catch (err) {
       setError(formatNetworkError(err));
@@ -387,7 +418,7 @@ export const Checkout: React.FC = () => {
     }
   };
 
-  if (cart.items.length === 0 && !orderPlaced.current) {
+  if (checkoutItems.length === 0 && !orderPlaced.current) {
     navigate('/cart');
     return null;
   }
@@ -1185,7 +1216,7 @@ export const Checkout: React.FC = () => {
                 </div>
               )}
               <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
-                <span>Total ({cart.totalItems} items)</span>
+                <span>Total ({checkoutItems.reduce((s, i) => s + i.quantity, 0)} items)</span>
                 <span className="text-primary-600">{formatCurrency(sellerGroups.reduce((s, g) => s + g.storeTotal, 0))}</span>
               </div>
             </div>

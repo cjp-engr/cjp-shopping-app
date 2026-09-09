@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState, useCallback } from 'react';
+import React, { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -40,13 +40,22 @@ export const Cart: React.FC = () => {
     () => new Set(cart.items.map(getItemKey))
   );
 
-  // Auto-select newly added items; clean up items removed from cart
+  // Track every key that has ever appeared in the cart so we can distinguish
+  // a user-deselected item (known key, not in selectedItems) from a brand-new
+  // item (unknown key) that should be auto-selected.
+  const knownItemKeys = useRef<Set<string>>(new Set(cart.items.map(getItemKey)));
+
   useEffect(() => {
     const currentKeys = new Set(cart.items.map(getItemKey));
     setSelectedItems(prev => {
       const next = new Set(prev);
+      // Remove items that are no longer in the cart
       for (const key of prev) if (!currentKeys.has(key)) next.delete(key);
-      for (const key of currentKeys) if (!prev.has(key)) next.add(key);
+      // Auto-select only items that have never been seen before (truly new)
+      for (const key of currentKeys) {
+        if (!knownItemKeys.current.has(key)) next.add(key);
+      }
+      knownItemKeys.current = currentKeys;
       return next;
     });
   }, [cart.items]);
