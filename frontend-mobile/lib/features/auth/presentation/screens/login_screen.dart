@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.splashBg,
+      backgroundColor: Theme.of(context).cardColor,
       body: BlocListener<AuthBloc, AuthState>(
         listenWhen: (prev, curr) => prev.status != curr.status,
         listener: (context, state) {
@@ -62,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
               top: 0,
               left: 0,
               right: 0,
-              height: MediaQuery.of(context).size.height * 0.44,
+              bottom: 0,
               child: Stack(
                 children: [
                   GridView.count(
@@ -70,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     padding: EdgeInsets.zero,
                     children: List.generate(
-                      9,
+                      12,
                       (i) => Container(
                         decoration: BoxDecoration(
                           color: const [
@@ -88,9 +88,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   // Logo mark
-                  Center(
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: MediaQuery.of(context).size.height * 0.50,
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Image.asset(
                           'assets/images/ic_launcher_foreground.png',
@@ -114,8 +118,11 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             // Form card
-            Align(
-              alignment: Alignment.bottomCenter,
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.45,
+              left: 0,
+              right: 0,
+              bottom: 0,
               child: Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardColor,

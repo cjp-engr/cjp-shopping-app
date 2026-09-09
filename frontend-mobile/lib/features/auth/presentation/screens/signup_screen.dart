@@ -132,15 +132,15 @@ class _SignupScreenState extends State<SignupScreen> {
                       children: [
                         Image.asset(
                           'assets/images/ic_launcher_foreground.png',
-                          width: 72,
-                          height: 72,
+                          width: 80,
+                          height: 80,
                         ),
                         const SizedBox(height: 8),
                         const Text(
                           'TokoMart',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 17,
+                            fontSize: 22,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.4,
                           ),
