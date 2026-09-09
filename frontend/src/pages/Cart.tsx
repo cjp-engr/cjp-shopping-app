@@ -1,19 +1,27 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import type { CartItem } from '../types/cart';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { formatCurrency } from '../utils/formatters';
 import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ShoppingBag, Lock, Ticket } from 'lucide-react';
-import { TAX_RATE, SHIPPING_COST } from '../utils/constants';
+import { TAX_RATE } from '../utils/constants';
 import { SelectVoucherModal } from '../components/voucher/SelectVoucherModal';
+
+// Stable key for a cart item (handles variants)
+const getItemKey = (item: CartItem): string =>
+  item.selectedVariant?.key
+    ? `${item.product.id}|${item.selectedVariant.key}`
+    : item.product.id;
 
 export const Cart: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, removeFromCart, updateQuantity, validateCart } = useCart();
+  const { cart, removeFromCart, updateQuantity, validateCart, syncCart } = useCart();
   const { isAuthenticated } = useAuth();
   const [removedCount, setRemovedCount] = useState(0);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   // On mount, verify all cart items still exist in the DB and remove stale ones
   useEffect(() => {
@@ -26,15 +34,66 @@ export const Cart: React.FC = () => {
   const [voucherSelections, setVoucherSelections] = useState<Record<string, { code: string; discountAmount: number }>>({});
   const [voucherModalKey, setVoucherModalKey] = useState<string | null>(null);
 
-  const handleCheckout = () => {
-    const couponCodes: Record<string, string> = {};
-    for (const [k, v] of Object.entries(voucherSelections)) {
-      if (v.code) couponCodes[k] = v.code;
-    }
-    navigate(isAuthenticated ? '/checkout' : '/login?redirect=/checkout', {
-      state: { deliverySelections, voucherSelections },
+  // ── Item selection ────────────────────────────────────────────────────────
+
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(
+    () => new Set(cart.items.map(getItemKey))
+  );
+
+  // Auto-select newly added items; clean up items removed from cart
+  useEffect(() => {
+    const currentKeys = new Set(cart.items.map(getItemKey));
+    setSelectedItems(prev => {
+      const next = new Set(prev);
+      for (const key of prev) if (!currentKeys.has(key)) next.delete(key);
+      for (const key of currentKeys) if (!prev.has(key)) next.add(key);
+      return next;
+    });
+  }, [cart.items]);
+
+  const toggleItem = (key: string) => {
+    setSelectedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
     });
   };
+
+  const toggleSeller = (sellerItems: CartItem[]) => {
+    const keys = sellerItems.map(getItemKey);
+    const allSel = keys.every(k => selectedItems.has(k));
+    setSelectedItems(prev => {
+      const next = new Set(prev);
+      if (allSel) keys.forEach(k => next.delete(k));
+      else keys.forEach(k => next.add(k));
+      return next;
+    });
+  };
+
+  const allSelected = cart.items.length > 0 && cart.items.every(i => selectedItems.has(getItemKey(i)));
+  const someSelected = !allSelected && cart.items.some(i => selectedItems.has(getItemKey(i)));
+
+  const toggleAll = () => {
+    if (allSelected) setSelectedItems(new Set());
+    else setSelectedItems(new Set(cart.items.map(getItemKey)));
+  };
+
+  // ── Checkout ─────────────────────────────────────────────────────────────
+
+  const handleCheckout = useCallback(async () => {
+    if (!isAuthenticated) {
+      navigate('/login?redirect=/checkout', { state: { deliverySelections, voucherSelections, selectedItems: [...selectedItems] } });
+      return;
+    }
+    setCheckingOut(true);
+    const freshItems = await syncCart();
+    setCheckingOut(false);
+    // After sync, intersect our selection with whatever is still in the cart
+    const freshKeys = new Set(freshItems.map(getItemKey));
+    const stillSelected = [...selectedItems].filter(k => freshKeys.has(k));
+    if (stillSelected.length === 0) return;
+    navigate('/checkout', { state: { deliverySelections, voucherSelections, selectedItems: stillSelected } });
+  }, [isAuthenticated, navigate, syncCart, deliverySelections, voucherSelections, selectedItems]);
 
   const handleIncrement = (productId: string, currentQuantity: number, stock: number, variantKey?: string) => {
     if (currentQuantity < stock) updateQuantity(productId, currentQuantity + 1, variantKey);
@@ -50,10 +109,10 @@ export const Cart: React.FC = () => {
       ? product.price * (1 - product.discount / 100)
       : product.price;
 
-  // Group items by seller for rendering
+  // Group items by seller for rendering — subtotals include selected items only
   const sellerGroups = useMemo(() => {
     const map = new Map<string, {
-      sellerName: string; items: typeof cart.items; subtotal: number; discount: number;
+      sellerName: string; items: CartItem[]; subtotal: number; discount: number;
       voucherDiscount: number;
       shippingMode: 'free' | 'buyer_pays' | 'unknown';
       shippingOptions: string[];
@@ -76,25 +135,33 @@ export const Cart: React.FC = () => {
         ? (sv.discount && sv.discount > 0 ? sv.price * (1 - sv.discount / 100) : sv.price)
         : null;
       const effPrice = variantEffPrice != null ? variantEffPrice : effectivePrice(cartItem.product);
-      group.subtotal += effPrice * cartItem.quantity;
-      // Track discount savings (variant or product level)
-      if (sv && sv.discount && sv.discount > 0) {
-        group.discount += (sv.price - effPrice) * cartItem.quantity;
-      } else if (!sv && cartItem.product.discount && cartItem.product.discount > 0) {
-        group.discount += (cartItem.product.price - effPrice) * cartItem.quantity;
+
+      // Only count selected items in financial totals
+      if (selectedItems.has(getItemKey(cartItem))) {
+        group.subtotal += effPrice * cartItem.quantity;
+        if (sv && sv.discount && sv.discount > 0) {
+          group.discount += (sv.price - effPrice) * cartItem.quantity;
+        } else if (!sv && cartItem.product.discount && cartItem.product.discount > 0) {
+          group.discount += (cartItem.product.price - effPrice) * cartItem.quantity;
+        }
       }
-      // Voucher discount (overrides each loop but same seller so idempotent)
+      // Voucher discount (idempotent per seller)
       group.voucherDiscount = voucherSelections[key]?.discountAmount ?? 0;
-      // Capture seller's shippingFee config from first product that has it
       if (group.shippingMode === 'unknown' && cartItem.product.shippingFee) {
         group.shippingMode = cartItem.product.shippingFee === 'free' ? 'free' : 'buyer_pays';
       }
-      // Collect all delivery options across this seller's products
       for (const opt of cartItem.product.shippingOptions ?? []) {
         if (!group.shippingOptions.includes(opt)) group.shippingOptions.push(opt);
       }
     }
     for (const [key, group] of map.entries()) {
+      // If seller has no selected items, don't show a cost breakdown
+      if (group.subtotal === 0 && group.discount === 0) {
+        group.shipping = 0;
+        group.tax = 0;
+        group.storeTotal = 0;
+        continue;
+      }
       const netSubtotal = Math.max(0, group.subtotal - group.voucherDiscount);
       if (group.shippingMode === 'free') {
         group.shipping = 0;
@@ -109,10 +176,11 @@ export const Cart: React.FC = () => {
       group.storeTotal = netSubtotal + Math.max(0, group.shipping) + group.tax;
     }
     return Array.from(map.entries()).map(([key, group]) => ({ ...group, key }));
-  }, [cart.items, deliverySelections, voucherSelections]);
+  }, [cart.items, deliverySelections, voucherSelections, selectedItems]);
 
-  const hasUnknownShipping = sellerGroups.some(g => g.shipping === -1);
-  const allFreeShipping = sellerGroups.length > 0 && sellerGroups.every(g => g.shippingMode === 'free');
+  const selectedCount = cart.items.filter(i => selectedItems.has(getItemKey(i))).length;
+  const hasUnknownShipping = sellerGroups.some(g => g.subtotal > 0 && g.shipping === -1);
+  const allFreeShipping = sellerGroups.length > 0 && sellerGroups.filter(g => g.subtotal > 0).every(g => g.shippingMode === 'free');
   const totalDiscount = sellerGroups.reduce((s, g) => s + g.discount + g.voucherDiscount, 0);
   const summarySubtotal = sellerGroups.reduce((s, g) => s + g.subtotal + g.discount, 0);
   const summaryShipping = sellerGroups.reduce((s, g) => s + Math.max(0, g.shipping), 0);
@@ -151,6 +219,7 @@ export const Cart: React.FC = () => {
           <button onClick={() => setRemovedCount(0)} className="flex-shrink-0 font-semibold hover:underline">Dismiss</button>
         </div>
       )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -168,10 +237,24 @@ export const Cart: React.FC = () => {
         </button>
       </div>
 
+      {/* Global select-all row */}
+      <label className="flex items-center gap-3 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          ref={el => { if (el) el.indeterminate = someSelected; }}
+          onChange={toggleAll}
+          className="w-4 h-4 rounded accent-primary-600 cursor-pointer"
+        />
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Select All ({selectedCount}/{cart.totalItems} selected)
+        </span>
+      </label>
+
       {/* Per-seller shipping banners */}
       {allFreeShipping && (
         <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-4 flex items-center gap-3">
-          <Tag className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+          <Ticket className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
           <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">You've unlocked <span className="font-bold">free shipping!</span></p>
         </div>
       )}
@@ -181,13 +264,25 @@ export const Cart: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           {sellerGroups.map((group) => {
             const activeVoucher = voucherSelections[group.key];
+            const sellerAllSelected = group.items.every(i => selectedItems.has(getItemKey(i)));
+            const sellerSomeSelected = !sellerAllSelected && group.items.some(i => selectedItems.has(getItemKey(i)));
+            const sellerHasSelection = group.items.some(i => selectedItems.has(getItemKey(i)));
             return (
             <div key={group.key} className="space-y-3" data-testid={`cart-seller-group-${group.key}`}>
               {/* Seller header */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  🏪 {group.sellerName}
-                </span>
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={sellerAllSelected}
+                    ref={el => { if (el) el.indeterminate = sellerSomeSelected; }}
+                    onChange={() => toggleSeller(group.items)}
+                    className="w-4 h-4 rounded accent-primary-600 cursor-pointer"
+                  />
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    🏪 {group.sellerName}
+                  </span>
+                </label>
                 {group.shippingMode === 'free' && (
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                     Free Shipping
@@ -198,6 +293,8 @@ export const Cart: React.FC = () => {
               {group.items.map((cartItem) => {
                 const { product, quantity, selectedVariant } = cartItem;
                 const variantKey = selectedVariant?.key;
+                const itemKey = getItemKey(cartItem);
+                const isItemSelected = selectedItems.has(itemKey);
                 const effPrice = selectedVariant
                   ? (selectedVariant.discount && selectedVariant.discount > 0
                       ? selectedVariant.price * (1 - selectedVariant.discount / 100)
@@ -210,8 +307,24 @@ export const Cart: React.FC = () => {
                 const discountPct = hasVariantDiscount ? selectedVariant!.discount! : (product.discount ?? 0);
                 const displayImage = selectedVariant?.image || product.image;
                 return (
-                  <Card key={variantKey ?? product.id} padding="none" data-testid={`cart-item-${product.id}${selectedVariant ? `-${selectedVariant._id ?? selectedVariant.key}` : ''}`}>
-                    <div className="flex gap-4 p-4">
+                  <Card
+                    key={variantKey ?? product.id}
+                    padding="none"
+                    data-testid={`cart-item-${product.id}${selectedVariant ? `-${selectedVariant._id ?? selectedVariant.key}` : ''}`}
+                    className={!isItemSelected ? 'opacity-60' : ''}
+                  >
+                    <div className="flex gap-3 p-4">
+                      {/* Checkbox */}
+                      <div className="flex items-center pt-0.5">
+                        <input
+                          type="checkbox"
+                          checked={isItemSelected}
+                          onChange={() => toggleItem(itemKey)}
+                          className="w-4 h-4 rounded accent-primary-600 cursor-pointer"
+                          aria-label={`Select ${product.name}`}
+                        />
+                      </div>
+
                       {/* Image */}
                       <div
                         className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 cursor-pointer"
@@ -223,7 +336,7 @@ export const Cart: React.FC = () => {
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <h3
-                          className="font-semibold text-gray-900 text-sm mb-0.5 cursor-pointer hover:text-primary-600 line-clamp-2 leading-snug"
+                          className="font-semibold text-gray-900 dark:text-white text-sm mb-0.5 cursor-pointer hover:text-primary-600 line-clamp-2 leading-snug"
                           onClick={() => navigate(`/products/${product.id}`)}
                         >
                           {product.name}
@@ -292,8 +405,8 @@ export const Cart: React.FC = () => {
                 );
               })}
 
-              {/* Delivery option selector for buyer_pays sellers */}
-              {group.shippingMode === 'buyer_pays' && group.shippingOptions.length > 0 && (
+              {/* Delivery option selector — only when seller has selected items */}
+              {sellerHasSelection && group.shippingMode === 'buyer_pays' && group.shippingOptions.length > 0 && (
                 <div className="rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/40 px-4 py-3" data-testid={`delivery-select-${group.key}`}>
                   <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1.5">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -330,64 +443,68 @@ export const Cart: React.FC = () => {
                 </div>
               )}
 
-              {/* Shop voucher row */}
-              <button
-                onClick={() => setVoucherModalKey(group.key)}
-                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-dashed border-primary-300 dark:border-primary-700 bg-primary-50/40 dark:bg-primary-900/10 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
-                data-testid={`select-voucher-btn-${group.key}`}
-              >
-                <span className="flex items-center gap-2 text-xs font-medium text-primary-600 dark:text-primary-400">
-                  <Ticket className="w-3.5 h-3.5" />
-                  {activeVoucher ? `Voucher: ${activeVoucher.code}` : 'Apply Shop Voucher'}
-                </span>
-                {activeVoucher ? (
-                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                    -{formatCurrency(activeVoucher.discountAmount)}
+              {/* Shop voucher row — only when seller has selected items */}
+              {sellerHasSelection && (
+                <button
+                  onClick={() => setVoucherModalKey(group.key)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-dashed border-primary-300 dark:border-primary-700 bg-primary-50/40 dark:bg-primary-900/10 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                  data-testid={`select-voucher-btn-${group.key}`}
+                >
+                  <span className="flex items-center gap-2 text-xs font-medium text-primary-600 dark:text-primary-400">
+                    <Ticket className="w-3.5 h-3.5" />
+                    {activeVoucher ? `Voucher: ${activeVoucher.code}` : 'Apply Shop Voucher'}
                   </span>
-                ) : (
-                  <span className="text-xs text-gray-400">Select →</span>
-                )}
-              </button>
-
-              {/* Per-seller cost breakdown */}
-              <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 px-4 py-3 space-y-1.5 text-sm">
-                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                  <span>Order Amount</span>
-                  <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.subtotal + group.discount)}</span>
-                </div>
-                {group.discount > 0 && (
-                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
-                    <span>Product Discount</span>
-                    <span className="font-medium">-{formatCurrency(group.discount)}</span>
-                  </div>
-                )}
-                {group.voucherDiscount > 0 && (
-                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
-                    <span>Voucher</span>
-                    <span className="font-medium">-{formatCurrency(group.voucherDiscount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                  <span>Shipping</span>
-                  {group.shipping === -1 ? (
-                    <span className="font-medium text-gray-400 dark:text-gray-500 italic text-xs self-center">Select option above</span>
-                  ) : (
-                    <span className={`font-medium ${group.shipping === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>
-                      {group.shipping === 0 ? 'FREE' : formatCurrency(group.shipping)}
+                  {activeVoucher ? (
+                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                      -{formatCurrency(activeVoucher.discountAmount)}
                     </span>
+                  ) : (
+                    <span className="text-xs text-gray-400">Select →</span>
                   )}
+                </button>
+              )}
+
+              {/* Per-seller cost breakdown — only when seller has selected items */}
+              {sellerHasSelection && (
+                <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 px-4 py-3 space-y-1.5 text-sm">
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Order Amount</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.subtotal + group.discount)}</span>
+                  </div>
+                  {group.discount > 0 && (
+                    <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+                      <span>Product Discount</span>
+                      <span className="font-medium">-{formatCurrency(group.discount)}</span>
+                    </div>
+                  )}
+                  {group.voucherDiscount > 0 && (
+                    <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+                      <span>Voucher</span>
+                      <span className="font-medium">-{formatCurrency(group.voucherDiscount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Shipping</span>
+                    {group.shipping === -1 ? (
+                      <span className="font-medium text-gray-400 dark:text-gray-500 italic text-xs self-center">Select option above</span>
+                    ) : (
+                      <span className={`font-medium ${group.shipping === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                        {group.shipping === 0 ? 'FREE' : formatCurrency(group.shipping)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Tax (8%)</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.tax)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-gray-200 dark:border-gray-600 pt-1.5 font-semibold">
+                    <span className="text-gray-800 dark:text-gray-200">
+                      {group.shipping === -1 ? 'Subtotal + Tax' : 'Store Total'}
+                    </span>
+                    <span className="text-primary-600 dark:text-primary-400">{formatCurrency(group.storeTotal)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                  <span>Tax (8%)</span>
-                  <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(group.tax)}</span>
-                </div>
-                <div className="flex justify-between border-t border-gray-200 dark:border-gray-600 pt-1.5 font-semibold">
-                  <span className="text-gray-800 dark:text-gray-200">
-                    {group.shipping === -1 ? 'Subtotal + Tax' : 'Store Total'}
-                  </span>
-                  <span className="text-primary-600 dark:text-primary-400">{formatCurrency(group.storeTotal)}</span>
-                </div>
-              </div>
+              )}
             </div>
             );
           })}
@@ -396,11 +513,11 @@ export const Cart: React.FC = () => {
         {/* Order Summary */}
         <div className="lg:col-span-1">
           <Card padding="lg" className="sticky top-20" data-testid="cart-summary">
-            <h2 className="text-lg font-bold text-gray-900 mb-5">Order Summary</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">Order Summary</h2>
 
             <div className="space-y-3 text-sm mb-5">
               <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                <span>Subtotal ({cart.totalItems} items)</span>
+                <span>Subtotal ({selectedCount} {selectedCount === 1 ? 'item' : 'items'} selected)</span>
                 <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(summarySubtotal)}</span>
               </div>
               {totalDiscount > 0 && (
@@ -432,8 +549,14 @@ export const Cart: React.FC = () => {
               )}
             </div>
 
-            <Button fullWidth size="lg" onClick={handleCheckout} data-testid="checkout-btn">
-              Proceed to Checkout
+            <Button
+              fullWidth
+              size="lg"
+              onClick={handleCheckout}
+              disabled={selectedCount === 0 || checkingOut}
+              data-testid="checkout-btn"
+            >
+              {checkingOut ? 'Checking...' : selectedCount === 0 ? 'Select items to checkout' : 'Proceed to Checkout'}
             </Button>
 
             {!isAuthenticated && (
@@ -442,7 +565,7 @@ export const Cart: React.FC = () => {
               </p>
             )}
 
-            <div className="mt-5 pt-5 border-t border-gray-100 flex items-center justify-center gap-2 text-xs text-gray-400">
+            <div className="mt-5 pt-5 border-t border-gray-100 dark:border-gray-700 flex items-center justify-center gap-2 text-xs text-gray-400">
               <Lock className="w-3.5 h-3.5" />
               Secured with 256-bit SSL encryption
             </div>
