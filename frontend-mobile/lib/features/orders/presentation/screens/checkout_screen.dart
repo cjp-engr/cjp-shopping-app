@@ -333,13 +333,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   Expanded(
                     child: RefreshIndicator(
                       color: AppColors.primary,
-                      onRefresh: () async {
-                        context.read<CartBloc>().add(CartLoadRequested());
-                      },
+                      onRefresh: () async =>
+                          context.read<CartBloc>().add(CartLoadRequested()),
                       child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(bottom: AppSizes.md),
-                      child: Column(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: AppSizes.md),
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // ── Shipping address ──────────────────────────────
@@ -466,7 +465,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             grandTotal: grandTotal,
                           ),
                         ],
-                      ),
+                        ),
                       ),
                     ),
                   ),

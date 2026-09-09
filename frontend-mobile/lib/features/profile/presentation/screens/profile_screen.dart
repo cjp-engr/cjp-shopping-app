@@ -190,10 +190,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ]);
             },
             child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(
-                AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.xl),
-            child: Column(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.xl),
+              child: Column(
               children: [
                 // ── Avatar + identity header ─────────────────────────────────
                 _ProfileHeader(
@@ -408,8 +408,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ],
             ),
-            ),   // closes SingleChildScrollView
-          );     // closes RefreshIndicator
+            ),
+          );
         },
       ),
     );
@@ -518,7 +518,7 @@ class _ProfileHeader extends StatelessWidget {
         ),
         if (followDs != null) ...[
           const SizedBox(height: AppSizes.md),
-          _FollowStatsRow(key: followStatsKey ?? GlobalKey<_FollowStatsRowState>(), userId: user.id, followDs: followDs!),
+          _FollowStatsRow(key: followStatsKey, userId: user.id, followDs: followDs!),
         ],
       ],
     );

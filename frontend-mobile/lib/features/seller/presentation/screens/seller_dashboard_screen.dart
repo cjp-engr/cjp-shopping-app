@@ -2111,9 +2111,9 @@ class _VouchersTab extends StatelessWidget {
       color: AppColors.primary,
       onRefresh: onRefresh,
       child: ListView.builder(
-      padding: const EdgeInsets.all(AppSizes.md),
-      itemCount: coupons.length,
-      itemBuilder: (ctx, i) {
+        padding: const EdgeInsets.all(AppSizes.md),
+        itemCount: coupons.length,
+        itemBuilder: (ctx, i) {
         final c = coupons[i];
         final daysLeft = c.daysLeft;
         final isExpired = c.isExpired;
