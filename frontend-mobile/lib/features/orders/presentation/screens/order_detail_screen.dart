@@ -210,7 +210,16 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
         title: Text(sellerName ?? AppStrings.orderDetails),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async {
+          final user = context.read<AuthBloc>().state.user;
+          if (user != null) {
+            context.read<OrderBloc>().add(OrdersLoadRequested(user.id));
+          }
+          await _fetchReviews();
+        },
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSizes.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -696,6 +705,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
 
             const SizedBox(height: AppSizes.xl),
           ],
+        ),
         ),
       ),
     );
