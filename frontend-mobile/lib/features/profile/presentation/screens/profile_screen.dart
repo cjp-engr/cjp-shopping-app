@@ -179,7 +179,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final user = state.user;
           if (user == null) return const SizedBox.shrink();
 
-          return SingleChildScrollView(
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async {
+              context.read<AuthBloc>().add(AuthCheckRequested());
+              await Future.delayed(const Duration(milliseconds: 600));
+            },
+            child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(
                 AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.xl),
             child: Column(
@@ -396,7 +403,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ],
             ),
-          );
+            ),   // closes SingleChildScrollView
+          );     // closes RefreshIndicator
         },
       ),
     );
