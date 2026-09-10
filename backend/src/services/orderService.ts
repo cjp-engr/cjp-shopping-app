@@ -1,6 +1,7 @@
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Coupon from '../models/Coupon.js';
+import Cart from '../models/Cart.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 interface OrderItem {
@@ -209,6 +210,22 @@ export async function createOrders(params: CreateOrderParams) {
 
     createdOrders.push(order);
   }
+
+  // Remove ordered items from the user's server-side cart
+  const orderedProductIds = items.map(i => i.productId);
+  await Cart.findOneAndUpdate(
+    { userId },
+    {
+      $pull: {
+        'sellers.$[].items': { product: { $in: orderedProductIds } },
+      },
+    },
+  );
+  // Drop any seller groups that are now empty
+  await Cart.findOneAndUpdate(
+    { userId },
+    { $pull: { sellers: { items: { $size: 0 } } } },
+  );
 
   return createdOrders;
 }

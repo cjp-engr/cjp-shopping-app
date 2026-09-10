@@ -148,7 +148,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ? variantSelected!.images
               : baseImages;
 
-          return CustomScrollView(
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async {
+              context
+                  .read<ProductBloc>()
+                  .add(ProductDetailRequested(widget.productId));
+              await context.read<ProductBloc>().stream.firstWhere(
+                    (s) =>
+                        s.status != ProductStatus.loading ||
+                        s.selectedProduct != null,
+                  );
+            },
+            child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverAppBar(
                 expandedHeight: 340,
@@ -606,6 +619,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               ),
             ],
+            ),
           );
         },
       ),

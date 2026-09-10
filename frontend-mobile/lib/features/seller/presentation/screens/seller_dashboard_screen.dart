@@ -295,6 +295,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
                     loading: _couponsLoading,
                     onDelete: _deleteCoupon,
                     onSave: _saveCoupon,
+                    onRefresh: _loadCoupons,
                   ),
                 ],
               ),
@@ -2063,12 +2064,14 @@ class _VouchersTab extends StatelessWidget {
   final Future<void> Function(String id) onDelete;
   final Future<void> Function(Map<String, dynamic> data, {String? editId})
       onSave;
+  final Future<void> Function() onRefresh;
 
   const _VouchersTab({
     required this.coupons,
     required this.loading,
     required this.onDelete,
     required this.onSave,
+    required this.onRefresh,
   });
 
   @override
@@ -2077,25 +2080,40 @@ class _VouchersTab extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
     if (coupons.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.local_offer_outlined, size: 64, color: Colors.grey[300]),
-            const SizedBox(height: 12),
-            Text(AppStrings.noVouchersYet,
-                style: TextStyle(fontSize: 15, color: Colors.grey[500])),
-            const SizedBox(height: 6),
-            Text(AppStrings.tapToCreateVoucher,
-                style: TextStyle(fontSize: 13, color: Colors.grey[400])),
-          ],
+      return RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: onRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.local_offer_outlined,
+                      size: 64, color: Colors.grey[300]),
+                  const SizedBox(height: 12),
+                  Text(AppStrings.noVouchersYet,
+                      style: TextStyle(fontSize: 15, color: Colors.grey[500])),
+                  const SizedBox(height: 6),
+                  Text(AppStrings.tapToCreateVoucher,
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey[400])),
+                ],
+              ),
+            ),
+          ),
         ),
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.all(AppSizes.md),
-      itemCount: coupons.length,
-      itemBuilder: (ctx, i) {
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: onRefresh,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(AppSizes.md),
+        itemCount: coupons.length,
+        itemBuilder: (ctx, i) {
         final c = coupons[i];
         final daysLeft = c.daysLeft;
         final isExpired = c.isExpired;
@@ -2254,6 +2272,7 @@ class _VouchersTab extends StatelessWidget {
           ),
         );
       },
+      ),
     );
   }
 }
