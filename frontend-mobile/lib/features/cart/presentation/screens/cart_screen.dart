@@ -34,38 +34,44 @@ class _CartScreenState extends State<CartScreen> {
   @override
   void initState() {
     super.initState();
-    // Refresh cart from backend on every visit and auto-select all items
     final bloc = context.read<CartBloc>();
     final currentItems = bloc.state.items;
-    final ids = currentItems.map((i) => i.product.id).toSet();
-    _selected.addAll(ids);
-    _knownProductIds.addAll(ids);
+    for (final item in currentItems) {
+      _knownProductIds.add(item.product.id);
+      if (item.isSelected) _selected.add(item.product.id);
+    }
     bloc.add(CartLoadRequested());
   }
 
-  void _toggleItem(String productId) {
+  void _toggleItem(CartItemEntity item) {
+    final id = item.product.id;
+    final nowSelected = !_selected.contains(id);
     setState(() {
-      if (_selected.contains(productId)) {
-        _selected.remove(productId);
-      } else {
-        _selected.add(productId);
-      }
+      if (nowSelected) _selected.add(id); else _selected.remove(id);
     });
+    context.read<CartBloc>().add(CartItemSelectionChanged(
+      id,
+      isSelected: nowSelected,
+      variantLabel: item.selectedVariant?.label,
+    ));
   }
 
   void _toggleSeller(String sellerKey, List<CartItemEntity> items) {
     final allSelected = items.every((i) => _selected.contains(i.product.id));
+    final nowSelected = !allSelected;
     setState(() {
-      if (allSelected) {
-        for (final i in items) {
-          _selected.remove(i.product.id);
-        }
-      } else {
-        for (final i in items) {
-          _selected.add(i.product.id);
-        }
+      for (final i in items) {
+        if (nowSelected) _selected.add(i.product.id); else _selected.remove(i.product.id);
       }
     });
+    final bloc = context.read<CartBloc>();
+    for (final i in items) {
+      bloc.add(CartItemSelectionChanged(
+        i.product.id,
+        isSelected: nowSelected,
+        variantLabel: i.selectedVariant?.label,
+      ));
+    }
   }
 
   // Effective price after variant or product-level percentage discount
@@ -169,7 +175,13 @@ class _CartScreenState extends State<CartScreen> {
           final newIds = incoming.difference(_knownProductIds);
           final removedIds = _knownProductIds.difference(incoming);
           setState(() {
-            _selected.addAll(newIds);
+            // Restore isSelected for new items from backend value
+            for (final item in state.items) {
+              if (newIds.contains(item.product.id)) {
+                if (item.isSelected) _selected.add(item.product.id);
+                else _selected.remove(item.product.id);
+              }
+            }
             _selected.removeAll(removedIds);
             _knownProductIds
               ..addAll(incoming)
@@ -317,7 +329,7 @@ class _CartScreenState extends State<CartScreen> {
                         (item) => _SelectableItemTile(
                           item: item,
                           isSelected: _selected.contains(item.product.id),
-                          onToggle: () => _toggleItem(item.product.id),
+                          onToggle: () => _toggleItem(item),
                         ),
                       ),
                       if (sellerSummaries.containsKey(entry.key)) ...[

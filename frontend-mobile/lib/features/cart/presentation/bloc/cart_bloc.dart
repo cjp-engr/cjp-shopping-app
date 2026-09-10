@@ -12,6 +12,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<CartItemAdded>(_onAdd);
     on<CartItemRemoved>(_onRemove);
     on<CartItemQuantityChanged>(_onQuantityChanged);
+    on<CartItemSelectionChanged>(_onSelectionChanged);
     on<CartCleared>(_onClear);
     on<CartItemsCheckedOut>(_onCheckedOut);
     on<CartServerUpdated>(_onServerUpdated);
@@ -86,6 +87,16 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       return i.copyWith(
         quantity: event.quantity.clamp(1, i.effectiveStock),
       );
+    }).toList();
+    emit(state.copyWith(items: updated));
+    _syncInBackground(updated);
+  }
+
+  Future<void> _onSelectionChanged(
+      CartItemSelectionChanged event, Emitter<CartState> emit) async {
+    final updated = state.items.map((i) {
+      if (!_matches(i, event.productId, event.variantLabel)) return i;
+      return i.copyWith(isSelected: event.isSelected);
     }).toList();
     emit(state.copyWith(items: updated));
     _syncInBackground(updated);

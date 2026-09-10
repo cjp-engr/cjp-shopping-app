@@ -42,7 +42,9 @@ export const syncCart = async (req: AuthRequest, res: Response) => {
         stock?: number;
         image?: string;
         sku?: string;
+        discount?: number;
         quantity: number;
+        isSelected?: boolean;
       }[];
     };
 
@@ -72,7 +74,9 @@ export const syncCart = async (req: AuthRequest, res: Response) => {
         stock: i.stock,
         image: i.image,
         sku: i.sku,
+        discount: i.discount,
         quantity: i.quantity,
+        isSelected: i.isSelected ?? true,
       })),
     }));
 

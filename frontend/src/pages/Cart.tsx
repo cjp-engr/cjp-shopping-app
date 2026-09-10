@@ -18,7 +18,7 @@ const getItemKey = (item: CartItem): string =>
 
 export const Cart: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, removeFromCart, updateQuantity, validateCart, syncCart } = useCart();
+  const { cart, removeFromCart, updateQuantity, setItemSelected, validateCart, syncCart } = useCart();
   const { isAuthenticated } = useAuth();
   const [removedCount, setRemovedCount] = useState(0);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -37,55 +37,62 @@ export const Cart: React.FC = () => {
 
   // ── Item selection ────────────────────────────────────────────────────────
 
+  // Selection is driven by cart.items[].isSelected from the backend
   const [selectedItems, setSelectedItems] = useState<Set<string>>(
-    () => new Set(cart.items.map(getItemKey))
+    () => new Set(cart.items.filter(i => i.isSelected).map(getItemKey))
   );
 
-  // Track every key that has ever appeared in the cart so we can distinguish
-  // a user-deselected item (known key, not in selectedItems) from a brand-new
-  // item (unknown key) that should be auto-selected.
   const knownItemKeys = useRef<Set<string>>(new Set(cart.items.map(getItemKey)));
 
   useEffect(() => {
     const currentKeys = new Set(cart.items.map(getItemKey));
     setSelectedItems(prev => {
       const next = new Set(prev);
-      // Remove items that are no longer in the cart
+      // Remove items no longer in the cart
       for (const key of prev) if (!currentKeys.has(key)) next.delete(key);
-      // Auto-select only items that have never been seen before (truly new)
-      for (const key of currentKeys) {
-        if (!knownItemKeys.current.has(key)) next.add(key);
+      // For items new to the cart: use isSelected from backend; for known items: preserve local state
+      for (const item of cart.items) {
+        const key = getItemKey(item);
+        if (!knownItemKeys.current.has(key)) {
+          if (item.isSelected) next.add(key); else next.delete(key);
+        }
       }
       knownItemKeys.current = currentKeys;
       return next;
     });
   }, [cart.items]);
 
-  const toggleItem = (key: string) => {
+  const toggleItem = (key: string, item: CartItem) => {
+    const nowSelected = !selectedItems.has(key);
     setSelectedItems(prev => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
+    setItemSelected(item.product.id, nowSelected, item.selectedVariant?.key);
   };
 
   const toggleSeller = (sellerItems: CartItem[]) => {
     const keys = sellerItems.map(getItemKey);
     const allSel = keys.every(k => selectedItems.has(k));
+    const nowSelected = !allSel;
     setSelectedItems(prev => {
       const next = new Set(prev);
       if (allSel) keys.forEach(k => next.delete(k));
       else keys.forEach(k => next.add(k));
       return next;
     });
+    sellerItems.forEach(i => setItemSelected(i.product.id, nowSelected, i.selectedVariant?.key));
   };
 
   const allSelected = cart.items.length > 0 && cart.items.every(i => selectedItems.has(getItemKey(i)));
   const someSelected = !allSelected && cart.items.some(i => selectedItems.has(getItemKey(i)));
 
   const toggleAll = () => {
-    if (allSelected) setSelectedItems(new Set());
-    else setSelectedItems(new Set(cart.items.map(getItemKey)));
+    const nowSelected = !allSelected;
+    if (nowSelected) setSelectedItems(new Set(cart.items.map(getItemKey)));
+    else setSelectedItems(new Set());
+    cart.items.forEach(i => setItemSelected(i.product.id, nowSelected, i.selectedVariant?.key));
   };
 
   // ── Checkout ─────────────────────────────────────────────────────────────
@@ -329,7 +336,7 @@ export const Cart: React.FC = () => {
                         <input
                           type="checkbox"
                           checked={isItemSelected}
-                          onChange={() => toggleItem(itemKey)}
+                          onChange={() => toggleItem(itemKey, cartItem)}
                           className="w-4 h-4 rounded accent-primary-600 cursor-pointer"
                           aria-label={`Select ${product.name}`}
                         />
