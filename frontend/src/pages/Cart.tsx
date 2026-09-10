@@ -23,10 +23,11 @@ export const Cart: React.FC = () => {
   const [removedCount, setRemovedCount] = useState(0);
   const [checkingOut, setCheckingOut] = useState(false);
 
-  // On mount, verify all cart items still exist in the DB and remove stale ones
+  // On mount: sync from backend first, then validate stock
   useEffect(() => {
-    validateCart().then(n => { if (n > 0) setRemovedCount(n); });
-  }, [validateCart]);
+    syncCart().then(() => validateCart()).then(n => { if (n > 0) setRemovedCount(n); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Per-seller delivery option selection (for buyer_pays sellers)
   const [deliverySelections, setDeliverySelections] = useState<Record<string, string>>({});

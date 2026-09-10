@@ -24,12 +24,24 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final Set<String> _selected = {};
-  bool _initialised = false;
+  final Set<String> _knownProductIds = {};
   bool _checkingOut = false;
   // Per-seller delivery option selection (only relevant for buyer_pays sellers)
   final Map<String, String> _deliverySelections = {};
   // Per-seller voucher discounts (code → discountAmount)
   final Map<String, VoucherSelection> _voucherSelections = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // Refresh cart from backend on every visit and auto-select all items
+    final bloc = context.read<CartBloc>();
+    final currentItems = bloc.state.items;
+    final ids = currentItems.map((i) => i.product.id).toSet();
+    _selected.addAll(ids);
+    _knownProductIds.addAll(ids);
+    bloc.add(CartLoadRequested());
+  }
 
   void _toggleItem(String productId) {
     setState(() {
@@ -150,7 +162,20 @@ class _CartScreenState extends State<CartScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: BlocBuilder<CartBloc, CartState>(
+      body: BlocConsumer<CartBloc, CartState>(
+        listenWhen: (prev, curr) => prev.items != curr.items,
+        listener: (context, state) {
+          final incoming = state.items.map((i) => i.product.id).toSet();
+          final newIds = incoming.difference(_knownProductIds);
+          final removedIds = _knownProductIds.difference(incoming);
+          setState(() {
+            _selected.addAll(newIds);
+            _selected.removeAll(removedIds);
+            _knownProductIds
+              ..addAll(incoming)
+              ..removeAll(removedIds);
+          });
+        },
         builder: (context, state) {
           if (state.items.isEmpty) {
             return RefreshIndicator(
@@ -170,11 +195,6 @@ class _CartScreenState extends State<CartScreen> {
                 ),
               ),
             );
-          }
-
-          if (!_initialised) {
-            _selected.addAll(state.items.map((i) => i.product.id));
-            _initialised = true;
           }
 
           final sellerGroups = <String, List<CartItemEntity>>{};
