@@ -4,8 +4,13 @@
 
 Browser-driven end-to-end tests for the TokoMart web frontend.
 
-  <img src="../../../docs/images/toko-mart-playwright-read-me.png" alt="TokoMart-Playwright" width="800" />
+  <img src="../../../docs/images/toko-mart-playwright-read-me-v2.png" alt="TokoMart-Playwright" width="1000" />
+</div>
 
+<br />
+
+<div align="center">
+  <img src="../../../docs/images/toko-mart-playwright-run-read-me-v1.gif" alt="TokoMart-Playwright-gif" width="1000" />
 </div>
 
 ---
