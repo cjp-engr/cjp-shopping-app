@@ -47,7 +47,11 @@ class _CartScreenState extends State<CartScreen> {
     final id = item.product.id;
     final nowSelected = !_selected.contains(id);
     setState(() {
-      if (nowSelected) _selected.add(id); else _selected.remove(id);
+      if (nowSelected) {
+        _selected.add(id);
+      } else {
+        _selected.remove(id);
+      }
     });
     context.read<CartBloc>().add(CartItemSelectionChanged(
       id,
@@ -61,7 +65,11 @@ class _CartScreenState extends State<CartScreen> {
     final nowSelected = !allSelected;
     setState(() {
       for (final i in items) {
-        if (nowSelected) _selected.add(i.product.id); else _selected.remove(i.product.id);
+        if (nowSelected) {
+          _selected.add(i.product.id);
+        } else {
+          _selected.remove(i.product.id);
+        }
       }
     });
     final bloc = context.read<CartBloc>();
@@ -74,38 +82,13 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
-  // Effective price after variant or product-level percentage discount
-  double _effectivePrice(CartItemEntity item) {
-    final v = item.selectedVariant;
-    if (v != null) {
-      final disc = v.discount;
-      return disc != null && disc > 0 ? v.price * (1 - disc / 100) : v.price;
-    }
-    final disc = item.product.discount;
-    if (disc == null || disc <= 0) return item.product.price;
-    return item.product.price * (1 - disc / 100);
-  }
+  double _selectedSubtotal(List<CartItemEntity> all) => all
+      .where((i) => _selected.contains(i.product.id))
+      .fold(0.0, (s, i) => s + i.subtotal);
 
-  double _selectedSubtotal(List<CartItemEntity> all) =>
-      all.where((i) => _selected.contains(i.product.id)).fold(
-            0,
-            (s, i) => s + _effectivePrice(i) * i.quantity,
-          );
-
-  // Total discount across selected items (variant or product level)
-  double _totalDiscount(List<CartItemEntity> all) {
-    return all.where((i) => _selected.contains(i.product.id)).fold(0.0, (s, i) {
-      final v = i.selectedVariant;
-      if (v != null) {
-        final disc = v.discount;
-        if (disc == null || disc <= 0) return s;
-        return s + (v.price - _effectivePrice(i)) * i.quantity;
-      }
-      final disc = i.product.discount;
-      if (disc == null || disc <= 0) return s;
-      return s + (i.product.price - _effectivePrice(i)) * i.quantity;
-    });
-  }
+  double _totalDiscount(List<CartItemEntity> all) => all
+      .where((i) => _selected.contains(i.product.id))
+      .fold(0.0, (s, i) => s + (i.rawPrice - i.effectivePrice) * i.quantity);
 
   Future<void> _openVoucherScreen(
       String sellerKey, String sellerName, double orderAmount) async {
@@ -246,10 +229,10 @@ class _CartScreenState extends State<CartScreen> {
                   .toList();
               if (sellerSelected.isEmpty) continue;
               final sub = sellerSelected.fold<double>(
-                  0, (s, i) => s + _effectivePrice(i) * i.quantity);
+                  0, (s, i) => s + i.subtotal);
               final disc = sellerSelected.fold<double>(
                 0,
-                (s, i) => s + (i.rawPrice - _effectivePrice(i)) * i.quantity,
+                (s, i) => s + (i.rawPrice - i.effectivePrice) * i.quantity,
               );
               final voucherDisc =
                   _voucherSelections[entry.key]?.discountAmount ?? 0.0;
