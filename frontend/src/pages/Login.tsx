@@ -3,7 +3,17 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
-import { LogIn, AlertCircle, ShoppingCart, ShieldCheck, Zap, BadgePercent } from 'lucide-react';
+import { LogIn, AlertCircle, ShieldCheck, Zap, BadgePercent } from 'lucide-react';
+
+const AppIcon = () => (
+  <svg width="36" height="36" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+    <rect width="512" height="512" rx="104" fill="#fff" fillOpacity="0.15"/>
+    <path d="M199 195 A57 57 0 0 1 313 195" fill="none" stroke="#fff" strokeWidth="28" strokeLinecap="round"/>
+    <rect x="136" y="205" width="240" height="194" rx="28" fill="#fff"/>
+    <rect x="201" y="256" width="110" height="31" rx="15.5" fill="#FF7A00"/>
+    <rect x="237" y="275" width="38" height="105" rx="19" fill="#FF7A00"/>
+  </svg>
+);
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -56,10 +66,6 @@ export const Login: React.FC = () => {
         {/* Left Panel – Branding */}
         <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 p-10 text-white">
           <div>
-            <div className="flex items-center gap-2 mb-10">
-              <ShoppingCart className="w-7 h-7" />
-              <span className="text-2xl font-extrabold tracking-tight">TokoMart</span>
-            </div>
             <h2 className="text-3xl font-bold leading-snug mb-4">
               Welcome back!<br />Great to see you.
             </h2>

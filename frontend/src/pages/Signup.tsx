@@ -79,10 +79,6 @@ export const Signup: React.FC = () => {
         {/* Left Panel */}
         <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 p-10 text-white">
           <div>
-            <div className="flex items-center gap-2 mb-10">
-              <ShoppingCart className="w-7 h-7" />
-              <span className="text-2xl font-extrabold tracking-tight">TokoMart</span>
-            </div>
             <h2 className="text-3xl font-bold leading-snug mb-4">
               Join thousands of<br />happy shoppers.
             </h2>
