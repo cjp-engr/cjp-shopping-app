@@ -4,8 +4,6 @@
 
 HTTP-layer tests for the TokoMart backend API. These tests hit a real running backend at `:5000` — no mocks, no browser.
 
-  <img src="../../../docs/images/toko-mart-playwright-read-me.png" alt="TokoMart-Playwright" width="800" />
-
 </div>
 
 ---
