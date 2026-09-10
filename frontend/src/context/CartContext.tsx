@@ -10,6 +10,7 @@ interface CartContextType {
   addToCart: (product: Product, quantity?: number, selectedVariant?: SelectedVariant) => void;
   removeFromCart: (productId: string, variantKey?: string) => void;
   updateQuantity: (productId: string, quantity: number, variantKey?: string) => void;
+  setItemSelected: (productId: string, isSelected: boolean, variantKey?: string) => void;
   clearCart: () => void;
   getItemQuantity: (productId: string, variantKey?: string) => number;
   validateCart: () => Promise<number>;
@@ -30,15 +31,19 @@ interface CartProviderProps {
   children: ReactNode;
 }
 
-const cartItemKey = (item: CartItem): string =>
-  item.selectedVariant ? `${item.product.id}|${item.selectedVariant.key}` : item.product.id;
+export const buildCartKey = (productId: string, variantKey?: string): string =>
+  variantKey ? `${productId}|${variantKey}` : productId;
 
-const variantEffectivePrice = (v: SelectedVariant): number =>
-  v.discount ? v.price * (1 - v.discount / 100) : v.price;
+const cartItemKey = (item: CartItem): string =>
+  buildCartKey(item.product.id, item.selectedVariant?.key);
+
+const getEffectivePrice = (price: number, discount?: number | null): number =>
+  discount && discount > 0 ? price * (1 - discount / 100) : price;
 
 const calculateCartTotals = (items: CartItem[]): Cart => {
   const subtotal = items.reduce((sum, item) => {
-    const price = item.selectedVariant ? variantEffectivePrice(item.selectedVariant) : item.product.price;
+    const sv = item.selectedVariant;
+    const price = sv ? getEffectivePrice(sv.price, sv.discount) : item.product.price;
     return sum + price * item.quantity;
   }, 0);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -67,6 +72,7 @@ const syncToBackend = (items: CartItem[]) => {
         sku: i.selectedVariant?.sku ?? i.product.sku,
         discount: i.selectedVariant?.discount,
         quantity: i.quantity,
+        isSelected: i.isSelected,
       })),
     }),
   }).catch(() => {});
@@ -109,7 +115,8 @@ const loadFromBackend = async (): Promise<CartItem[] | null> => {
             .join('|');
           // Fall back to current product variant data if discount wasn't stored in cart
           const productVariant = Array.isArray(p.variants)
-            ? p.variants.find((v: any) => v._id?.toString() === entry.variantId?.toString())
+            ? p.variants.find((v: { _id?: unknown; discount?: number }) =>
+                v._id?.toString() === entry.variantId?.toString())
             : undefined;
           selectedVariant = {
             _id: entry.variantId,
@@ -143,6 +150,7 @@ const loadFromBackend = async (): Promise<CartItem[] | null> => {
           },
           quantity: entry.quantity,
           selectedVariant,
+          isSelected: entry.isSelected ?? true,
         });
       }
     }
@@ -161,6 +169,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   // Track whether the current cart state came from a backend load so we don't
   // immediately re-sync it back before the items settle.
   const skipNextSync = useRef(false);
+  const cartItemsRef = useRef(cart.items);
+
+  // Keep ref in sync so syncCart fallback is never stale
+  useEffect(() => {
+    cartItemsRef.current = cart.items;
+  }, [cart.items]);
 
   // Persist to localStorage on every change
   useEffect(() => {
@@ -216,7 +230,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const addToCart = (product: Product, quantity: number = 1, selectedVariant?: SelectedVariant) => {
     setCart(prevCart => {
-      const key = selectedVariant ? `${product.id}|${selectedVariant.key}` : product.id;
+      const key = buildCartKey(product.id, selectedVariant?.key);
       const effectiveStock = selectedVariant?.stock ?? product.stock;
       const existingIndex = prevCart.items.findIndex(i => cartItemKey(i) === key);
       let newItems: CartItem[];
@@ -229,7 +243,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       } else {
         newItems = [
           ...prevCart.items,
-          { product, quantity: Math.min(quantity, effectiveStock), selectedVariant },
+          { product, quantity: Math.min(quantity, effectiveStock), selectedVariant, isSelected: true },
         ];
       }
       return calculateCartTotals(newItems);
@@ -237,13 +251,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   };
 
   const removeFromCart = (productId: string, variantKey?: string) => {
-    const key = variantKey ? `${productId}|${variantKey}` : productId;
+    const key = buildCartKey(productId, variantKey);
     setCart(prev => calculateCartTotals(prev.items.filter(i => cartItemKey(i) !== key)));
   };
 
   const updateQuantity = (productId: string, quantity: number, variantKey?: string) => {
     if (quantity <= 0) { removeFromCart(productId, variantKey); return; }
-    const key = variantKey ? `${productId}|${variantKey}` : productId;
+    const key = buildCartKey(productId, variantKey);
     setCart(prev =>
       calculateCartTotals(
         prev.items.map(i => {
@@ -251,6 +265,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           const effectiveStock = i.selectedVariant?.stock ?? i.product.stock;
           return { ...i, quantity: Math.min(quantity, effectiveStock) };
         })
+      )
+    );
+  };
+
+  const setItemSelected = (productId: string, isSelected: boolean, variantKey?: string) => {
+    const key = buildCartKey(productId, variantKey);
+    setCart(prev =>
+      calculateCartTotals(
+        prev.items.map(i => cartItemKey(i) === key ? { ...i, isSelected } : i)
       )
     );
   };
@@ -265,11 +288,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       storageService.set(STORAGE_KEYS.CART_DATA, items);
       return items;
     }
-    return cart.items;
-  }, [cart.items]);
+    return cartItemsRef.current;
+  }, []);
 
   const getItemQuantity = (productId: string, variantKey?: string) => {
-    const key = variantKey ? `${productId}|${variantKey}` : productId;
+    const key = buildCartKey(productId, variantKey);
     return cart.items.find(i => cartItemKey(i) === key)?.quantity ?? 0;
   };
 
@@ -301,18 +324,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     if (staleItems.length === 0) return 0;
 
-    const staleKeys = new Set(
-      staleItems.map(s => s.variantKey ? `${s.id}|${s.variantKey}` : s.id)
-    );
+    const staleKeys = new Set(staleItems.map(s => buildCartKey(s.id, s.variantKey)));
     setCart(prev => calculateCartTotals(
-      prev.items.filter(i => !staleKeys.has(i.selectedVariant ? `${i.product.id}|${i.selectedVariant.key}` : i.product.id))
+      prev.items.filter(i => !staleKeys.has(cartItemKey(i)))
     ));
     return staleItems.length;
   }, []);
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, getItemQuantity, validateCart, syncCart }}
+      value={{ cart, addToCart, removeFromCart, updateQuantity, setItemSelected, clearCart, getItemQuantity, validateCart, syncCart }}
     >
       {children}
     </CartContext.Provider>

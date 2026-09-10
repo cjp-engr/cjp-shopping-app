@@ -1,7 +1,14 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
 import { AuthRequest } from '../middleware/auth.js';
+
+const serverError = (res: Response, error: unknown) =>
+  res.status(500).json({
+    success: false,
+    message: error instanceof Error ? error.message : 'Server error',
+  });
 
 // Populate product fields + seller name/avatar within each seller group
 const POPULATE = [
@@ -21,10 +28,7 @@ export const getCart = async (req: AuthRequest, res: Response) => {
     // Return sellers array so the client can render grouped by seller
     res.json({ success: true, sellers: cart?.sellers ?? [] });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'Server error',
-    });
+    serverError(res, error);
   }
 };
 
@@ -42,17 +46,21 @@ export const syncCart = async (req: AuthRequest, res: Response) => {
         stock?: number;
         image?: string;
         sku?: string;
+        discount?: number;
         quantity: number;
+        isSelected?: boolean;
       }[];
     };
 
     // Group by sellerId — batch-fetch all products in one query
     const validItems = (items ?? []).filter(i => i.quantity > 0);
     const productIds = validItems.map(i => i.productId);
-    const products = await Product.find({ _id: { $in: productIds } }).select('sellerId price');
+    const products = await Product.find({ _id: { $in: productIds } })
+      .select('sellerId price')
+      .lean<{ _id: mongoose.Types.ObjectId; sellerId?: mongoose.Types.ObjectId; price: number }[]>();
     const productById = new Map(products.map(p => [
       p._id.toString(),
-      { sellerId: p.sellerId?.toString() ?? '__unknown__', price: (p as any).price as number },
+      { sellerId: p.sellerId?.toString() ?? '__unknown__', price: p.price },
     ]));
 
     const sellerMap = new Map<string, typeof validItems>();
@@ -72,7 +80,9 @@ export const syncCart = async (req: AuthRequest, res: Response) => {
         stock: i.stock,
         image: i.image,
         sku: i.sku,
+        discount: i.discount,
         quantity: i.quantity,
+        isSelected: i.isSelected ?? true,
       })),
     }));
 
@@ -84,10 +94,7 @@ export const syncCart = async (req: AuthRequest, res: Response) => {
 
     res.json({ success: true, sellers: cart?.sellers ?? [] });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'Server error',
-    });
+    serverError(res, error);
   }
 };
 
@@ -103,9 +110,6 @@ export const clearCart = async (req: AuthRequest, res: Response) => {
     );
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'Server error',
-    });
+    serverError(res, error);
   }
 };

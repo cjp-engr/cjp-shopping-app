@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
+import { useCart, buildCartKey } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import type { CartItem } from '../types/cart';
 import { Card } from '../components/common/Card';
@@ -10,23 +10,27 @@ import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ShoppingBag, Lock, Ticket
 import { TAX_RATE } from '../utils/constants';
 import { SelectVoucherModal } from '../components/voucher/SelectVoucherModal';
 
-// Stable key for a cart item (handles variants)
 const getItemKey = (item: CartItem): string =>
-  item.selectedVariant?.key
-    ? `${item.product.id}|${item.selectedVariant.key}`
-    : item.product.id;
+  buildCartKey(item.product.id, item.selectedVariant?.key);
+
+const getEffectivePrice = (price: number, discount?: number | null): number =>
+  discount && discount > 0 ? price * (1 - discount / 100) : price;
 
 export const Cart: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, removeFromCart, updateQuantity, validateCart, syncCart } = useCart();
+  const { cart, removeFromCart, updateQuantity, setItemSelected, validateCart, syncCart } = useCart();
   const { isAuthenticated } = useAuth();
   const [removedCount, setRemovedCount] = useState(0);
   const [checkingOut, setCheckingOut] = useState(false);
 
-  // On mount, verify all cart items still exist in the DB and remove stale ones
+  // On mount: sync from backend first, then validate stock
   useEffect(() => {
-    validateCart().then(n => { if (n > 0) setRemovedCount(n); });
-  }, [validateCart]);
+    syncCart()
+      .then(() => validateCart())
+      .then(n => { if (n > 0) setRemovedCount(n); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Per-seller delivery option selection (for buyer_pays sellers)
   const [deliverySelections, setDeliverySelections] = useState<Record<string, string>>({});
@@ -36,55 +40,66 @@ export const Cart: React.FC = () => {
 
   // ── Item selection ────────────────────────────────────────────────────────
 
+  // Selection is driven by cart.items[].isSelected from the backend
   const [selectedItems, setSelectedItems] = useState<Set<string>>(
-    () => new Set(cart.items.map(getItemKey))
+    () => new Set(cart.items.filter(i => i.isSelected).map(getItemKey))
   );
 
-  // Track every key that has ever appeared in the cart so we can distinguish
-  // a user-deselected item (known key, not in selectedItems) from a brand-new
-  // item (unknown key) that should be auto-selected.
   const knownItemKeys = useRef<Set<string>>(new Set(cart.items.map(getItemKey)));
 
   useEffect(() => {
     const currentKeys = new Set(cart.items.map(getItemKey));
     setSelectedItems(prev => {
       const next = new Set(prev);
-      // Remove items that are no longer in the cart
+      // Remove items no longer in the cart
       for (const key of prev) if (!currentKeys.has(key)) next.delete(key);
-      // Auto-select only items that have never been seen before (truly new)
-      for (const key of currentKeys) {
-        if (!knownItemKeys.current.has(key)) next.add(key);
+      // For items new to the cart: use isSelected from backend; for known items: preserve local state
+      for (const item of cart.items) {
+        const key = getItemKey(item);
+        if (!knownItemKeys.current.has(key)) {
+          if (item.isSelected) {
+            next.add(key);
+          } else {
+            next.delete(key);
+          }
+        }
       }
       knownItemKeys.current = currentKeys;
       return next;
     });
   }, [cart.items]);
 
-  const toggleItem = (key: string) => {
+  const toggleItem = (key: string, item: CartItem) => {
+    const nowSelected = !selectedItems.has(key);
     setSelectedItems(prev => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
+    setItemSelected(item.product.id, nowSelected, item.selectedVariant?.key);
   };
 
   const toggleSeller = (sellerItems: CartItem[]) => {
     const keys = sellerItems.map(getItemKey);
     const allSel = keys.every(k => selectedItems.has(k));
+    const nowSelected = !allSel;
     setSelectedItems(prev => {
       const next = new Set(prev);
       if (allSel) keys.forEach(k => next.delete(k));
       else keys.forEach(k => next.add(k));
       return next;
     });
+    sellerItems.forEach(i => setItemSelected(i.product.id, nowSelected, i.selectedVariant?.key));
   };
 
   const allSelected = cart.items.length > 0 && cart.items.every(i => selectedItems.has(getItemKey(i)));
   const someSelected = !allSelected && cart.items.some(i => selectedItems.has(getItemKey(i)));
 
   const toggleAll = () => {
-    if (allSelected) setSelectedItems(new Set());
-    else setSelectedItems(new Set(cart.items.map(getItemKey)));
+    const nowSelected = !allSelected;
+    if (nowSelected) setSelectedItems(new Set(cart.items.map(getItemKey)));
+    else setSelectedItems(new Set());
+    cart.items.forEach(i => setItemSelected(i.product.id, nowSelected, i.selectedVariant?.key));
   };
 
   // ── Checkout ─────────────────────────────────────────────────────────────
@@ -112,12 +127,6 @@ export const Cart: React.FC = () => {
     if (currentQuantity > 1) updateQuantity(productId, currentQuantity - 1, variantKey);
   };
 
-  // Effective price after product-level % discount
-  const effectivePrice = (product: typeof cart.items[0]['product']) =>
-    product.discount && product.discount > 0
-      ? product.price * (1 - product.discount / 100)
-      : product.price;
-
   // Group items by seller for rendering — subtotals include selected items only
   const sellerGroups = useMemo(() => {
     const map = new Map<string, {
@@ -140,10 +149,9 @@ export const Cart: React.FC = () => {
       const group = map.get(key)!;
       group.items.push(cartItem);
       const sv = cartItem.selectedVariant;
-      const variantEffPrice = sv
-        ? (sv.discount && sv.discount > 0 ? sv.price * (1 - sv.discount / 100) : sv.price)
-        : null;
-      const effPrice = variantEffPrice != null ? variantEffPrice : effectivePrice(cartItem.product);
+      const effPrice = sv
+        ? getEffectivePrice(sv.price, sv.discount)
+        : getEffectivePrice(cartItem.product.price, cartItem.product.discount);
 
       // Only count selected items in financial totals
       if (selectedItems.has(getItemKey(cartItem))) {
@@ -305,10 +313,8 @@ export const Cart: React.FC = () => {
                 const itemKey = getItemKey(cartItem);
                 const isItemSelected = selectedItems.has(itemKey);
                 const effPrice = selectedVariant
-                  ? (selectedVariant.discount && selectedVariant.discount > 0
-                      ? selectedVariant.price * (1 - selectedVariant.discount / 100)
-                      : selectedVariant.price)
-                  : effectivePrice(product);
+                  ? getEffectivePrice(selectedVariant.price, selectedVariant.discount)
+                  : getEffectivePrice(product.price, product.discount);
                 const effectiveStock = selectedVariant?.stock ?? product.stock;
                 const hasVariantDiscount = !!(selectedVariant?.discount && selectedVariant.discount > 0);
                 const hasDiscount = hasVariantDiscount || (!selectedVariant && !!(product.discount && product.discount > 0));
@@ -328,7 +334,7 @@ export const Cart: React.FC = () => {
                         <input
                           type="checkbox"
                           checked={isItemSelected}
-                          onChange={() => toggleItem(itemKey)}
+                          onChange={() => toggleItem(itemKey, cartItem)}
                           className="w-4 h-4 rounded accent-primary-600 cursor-pointer"
                           aria-label={`Select ${product.name}`}
                         />

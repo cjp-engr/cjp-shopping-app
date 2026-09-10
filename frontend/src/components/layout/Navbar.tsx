@@ -3,12 +3,12 @@ import { Link, useLocation } from 'react-router-dom';
 import { ShoppingCart, User, LogOut, Package, Store, Menu, X, ChevronDown, Sun, Moon } from 'lucide-react';
 
 const AppIcon = () => (
-  <svg width="32" height="32" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
-    <rect width="64" height="64" rx="14" fill="#3B3BF9"/>
-    <path d="M20 26h24l-3 18H23L20 26z" fill="white" opacity="0.95"/>
-    <path d="M27 26c0-2.76 2.24-5 5-5s5 2.24 5 5" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-    <rect x="25" y="30" width="14" height="10" rx="2" fill="#3B3BF9" opacity="0.5"/>
-    <circle cx="46" cy="18" r="7" fill="#F97316"/>
+  <svg width="32" height="32" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+    <rect width="512" height="512" rx="104" fill="#3B5BFF"/>
+    <path d="M199 195 A57 57 0 0 1 313 195" fill="none" stroke="#fff" strokeWidth="28" strokeLinecap="round"/>
+    <rect x="136" y="205" width="240" height="194" rx="28" fill="#fff"/>
+    <rect x="201" y="256" width="110" height="31" rx="15.5" fill="#FF7A00"/>
+    <rect x="237" y="275" width="38" height="105" rx="19" fill="#FF7A00"/>
   </svg>
 );
 import { useAuth } from '../../context/AuthContext';
@@ -48,7 +48,9 @@ const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
             <AppIcon />
-            <span className="text-2xl font-extrabold text-primary-600 tracking-tight">TokoMart</span>
+            <span className="text-2xl font-extrabold tracking-tight">
+              <span style={{ color: '#3B5BFF' }}>Toko</span><span style={{ color: '#FF7A00' }}>Mart</span>
+            </span>
           </Link>
 
           {/* Desktop Nav Links */}
