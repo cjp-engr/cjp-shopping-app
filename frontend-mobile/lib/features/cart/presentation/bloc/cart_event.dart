@@ -39,6 +39,16 @@ final class CartItemQuantityChanged extends CartEvent {
   List<Object?> get props => [productId, variantLabel, quantity];
 }
 
+final class CartItemSelectionChanged extends CartEvent {
+  final String productId;
+  final bool isSelected;
+  final String? variantLabel;
+  CartItemSelectionChanged(this.productId, {required this.isSelected, this.variantLabel});
+
+  @override
+  List<Object?> get props => [productId, variantLabel, isSelected];
+}
+
 final class CartCleared extends CartEvent {}
 
 /// Remove only the given product IDs (checked-out items), keep the rest.

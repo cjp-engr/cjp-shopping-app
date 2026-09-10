@@ -27,6 +27,7 @@ class CartRemoteDataSource {
         final entry = <String, dynamic>{
           'productId': i.product.id,
           'quantity': i.quantity,
+          'isSelected': i.isSelected,
         };
         final v = i.selectedVariant;
         if (v != null) {
@@ -101,6 +102,7 @@ class CartRemoteDataSource {
           product: product,
           quantity: quantity,
           selectedVariant: selectedVariant,
+          isSelected: (map['isSelected'] as bool?) ?? true,
         ));
       }
     }

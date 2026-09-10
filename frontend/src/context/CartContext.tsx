@@ -10,6 +10,7 @@ interface CartContextType {
   addToCart: (product: Product, quantity?: number, selectedVariant?: SelectedVariant) => void;
   removeFromCart: (productId: string, variantKey?: string) => void;
   updateQuantity: (productId: string, quantity: number, variantKey?: string) => void;
+  setItemSelected: (productId: string, isSelected: boolean, variantKey?: string) => void;
   clearCart: () => void;
   getItemQuantity: (productId: string, variantKey?: string) => number;
   validateCart: () => Promise<number>;
@@ -67,6 +68,7 @@ const syncToBackend = (items: CartItem[]) => {
         sku: i.selectedVariant?.sku ?? i.product.sku,
         discount: i.selectedVariant?.discount,
         quantity: i.quantity,
+        isSelected: i.isSelected,
       })),
     }),
   }).catch(() => {});
@@ -143,6 +145,7 @@ const loadFromBackend = async (): Promise<CartItem[] | null> => {
           },
           quantity: entry.quantity,
           selectedVariant,
+          isSelected: entry.isSelected ?? true,
         });
       }
     }
@@ -229,7 +232,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       } else {
         newItems = [
           ...prevCart.items,
-          { product, quantity: Math.min(quantity, effectiveStock), selectedVariant },
+          { product, quantity: Math.min(quantity, effectiveStock), selectedVariant, isSelected: true },
         ];
       }
       return calculateCartTotals(newItems);
@@ -251,6 +254,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           const effectiveStock = i.selectedVariant?.stock ?? i.product.stock;
           return { ...i, quantity: Math.min(quantity, effectiveStock) };
         })
+      )
+    );
+  };
+
+  const setItemSelected = (productId: string, isSelected: boolean, variantKey?: string) => {
+    const key = variantKey ? `${productId}|${variantKey}` : productId;
+    setCart(prev =>
+      calculateCartTotals(
+        prev.items.map(i => cartItemKey(i) === key ? { ...i, isSelected } : i)
       )
     );
   };
@@ -312,7 +324,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, getItemQuantity, validateCart, syncCart }}
+      value={{ cart, addToCart, removeFromCart, updateQuantity, setItemSelected, clearCart, getItemQuantity, validateCart, syncCart }}
     >
       {children}
     </CartContext.Provider>
