@@ -31,12 +31,12 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 // 0 = unlimited. Defaults: auth 10/15 min, api 100/min.
 // Override via env vars to use small values in rate-limit tests.
-const authMax = parseInt(process.env.RATE_LIMIT_AUTH_MAX ?? '10');
-const apiMax  = parseInt(process.env.RATE_LIMIT_API_MAX  ?? '100');
+const authMax = parseInt(process.env.RATE_LIMIT_AUTH_MAX ?? '10') || Infinity;
+const apiMax  = parseInt(process.env.RATE_LIMIT_API_MAX  ?? '100') || Infinity;
 
 // Stricter limit for auth endpoints — prevents brute-force and signup spam
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 60 * 1000,
   max: authMax,
   standardHeaders: true,
   legacyHeaders: false,

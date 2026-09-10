@@ -13,6 +13,10 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 5_000 },
   fullyParallel: true,
+  use: {
+    launchOptions: { args: ['--start-maximized'] },
+    viewport: null,
+  },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: [['html', { open: 'never' }], ['line'], ['allure-playwright']],
@@ -26,6 +30,7 @@ export default defineConfig({
     {
       name: 'seller-setup',
       testMatch: /tests\/auth\/seller\.setup\.ts/,
+      dependencies: ['buyer-setup'],
       use: { baseURL: WEB_URL, channel: 'chrome' },
     },
 
