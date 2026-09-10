@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
+import { useCart, buildCartKey } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import type { CartItem } from '../types/cart';
 import { Card } from '../components/common/Card';
@@ -10,11 +10,11 @@ import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ShoppingBag, Lock, Ticket
 import { TAX_RATE } from '../utils/constants';
 import { SelectVoucherModal } from '../components/voucher/SelectVoucherModal';
 
-// Stable key for a cart item (handles variants)
 const getItemKey = (item: CartItem): string =>
-  item.selectedVariant?.key
-    ? `${item.product.id}|${item.selectedVariant.key}`
-    : item.product.id;
+  buildCartKey(item.product.id, item.selectedVariant?.key);
+
+const getEffectivePrice = (price: number, discount?: number | null): number =>
+  discount && discount > 0 ? price * (1 - discount / 100) : price;
 
 export const Cart: React.FC = () => {
   const navigate = useNavigate();
@@ -25,7 +25,10 @@ export const Cart: React.FC = () => {
 
   // On mount: sync from backend first, then validate stock
   useEffect(() => {
-    syncCart().then(() => validateCart()).then(n => { if (n > 0) setRemovedCount(n); });
+    syncCart()
+      .then(() => validateCart())
+      .then(n => { if (n > 0) setRemovedCount(n); })
+      .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -54,7 +57,11 @@ export const Cart: React.FC = () => {
       for (const item of cart.items) {
         const key = getItemKey(item);
         if (!knownItemKeys.current.has(key)) {
-          if (item.isSelected) next.add(key); else next.delete(key);
+          if (item.isSelected) {
+            next.add(key);
+          } else {
+            next.delete(key);
+          }
         }
       }
       knownItemKeys.current = currentKeys;
@@ -120,12 +127,6 @@ export const Cart: React.FC = () => {
     if (currentQuantity > 1) updateQuantity(productId, currentQuantity - 1, variantKey);
   };
 
-  // Effective price after product-level % discount
-  const effectivePrice = (product: typeof cart.items[0]['product']) =>
-    product.discount && product.discount > 0
-      ? product.price * (1 - product.discount / 100)
-      : product.price;
-
   // Group items by seller for rendering — subtotals include selected items only
   const sellerGroups = useMemo(() => {
     const map = new Map<string, {
@@ -148,10 +149,9 @@ export const Cart: React.FC = () => {
       const group = map.get(key)!;
       group.items.push(cartItem);
       const sv = cartItem.selectedVariant;
-      const variantEffPrice = sv
-        ? (sv.discount && sv.discount > 0 ? sv.price * (1 - sv.discount / 100) : sv.price)
-        : null;
-      const effPrice = variantEffPrice != null ? variantEffPrice : effectivePrice(cartItem.product);
+      const effPrice = sv
+        ? getEffectivePrice(sv.price, sv.discount)
+        : getEffectivePrice(cartItem.product.price, cartItem.product.discount);
 
       // Only count selected items in financial totals
       if (selectedItems.has(getItemKey(cartItem))) {
@@ -313,10 +313,8 @@ export const Cart: React.FC = () => {
                 const itemKey = getItemKey(cartItem);
                 const isItemSelected = selectedItems.has(itemKey);
                 const effPrice = selectedVariant
-                  ? (selectedVariant.discount && selectedVariant.discount > 0
-                      ? selectedVariant.price * (1 - selectedVariant.discount / 100)
-                      : selectedVariant.price)
-                  : effectivePrice(product);
+                  ? getEffectivePrice(selectedVariant.price, selectedVariant.discount)
+                  : getEffectivePrice(product.price, product.discount);
                 const effectiveStock = selectedVariant?.stock ?? product.stock;
                 const hasVariantDiscount = !!(selectedVariant?.discount && selectedVariant.discount > 0);
                 const hasDiscount = hasVariantDiscount || (!selectedVariant && !!(product.discount && product.discount > 0));
