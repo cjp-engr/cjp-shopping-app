@@ -155,14 +155,16 @@ class _CartScreenState extends State<CartScreen> {
         listenWhen: (prev, curr) => prev.items != curr.items,
         listener: (context, state) {
           final incoming = state.items.map((i) => i.product.id).toSet();
-          final newIds = incoming.difference(_knownProductIds);
           final removedIds = _knownProductIds.difference(incoming);
           setState(() {
-            // Restore isSelected for new items from backend value
+            // Always sync isSelected from bloc state — covers both cross-device
+            // refreshes (server load) and local toggles (CartItemSelectionChanged
+            // already wrote the correct value into the bloc before this fires).
             for (final item in state.items) {
-              if (newIds.contains(item.product.id)) {
-                if (item.isSelected) _selected.add(item.product.id);
-                else _selected.remove(item.product.id);
+              if (item.isSelected) {
+                _selected.add(item.product.id);
+              } else {
+                _selected.remove(item.product.id);
               }
             }
             _selected.removeAll(removedIds);
