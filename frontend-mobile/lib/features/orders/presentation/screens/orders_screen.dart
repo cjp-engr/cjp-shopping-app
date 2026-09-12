@@ -73,88 +73,91 @@ class _OrdersScreenState extends State<OrdersScreen>
       builder: (context, state) {
         final orders = state.orders;
 
-        return Scaffold(
-          key: keys.orders.ordersScreen,
-          appBar: AppBar(
-            title: const Text(AppStrings.orders),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(48),
-              child: TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: context.onSurfaceSecondary,
-                indicatorColor: AppColors.primary,
-                indicatorWeight: 2.5,
-                dividerColor: context.borderColor,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-                tabs: _kTabs.map((tab) {
-                  final count = tab.filter(orders).length;
-                  return Tab(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(tab.label,
-                            style: const TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w600)),
-                        if (count > 0) ...[
-                          const SizedBox(width: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withAlpha(26),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '$count',
+        return Semantics(
+          identifier: 'orders_screen',
+          child: Scaffold(
+            key: keys.orders.ordersScreen,
+            appBar: AppBar(
+              title: const Text(AppStrings.orders),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(48),
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: context.onSurfaceSecondary,
+                  indicatorColor: AppColors.primary,
+                  indicatorWeight: 2.5,
+                  dividerColor: context.borderColor,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  tabs: _kTabs.map((tab) {
+                    final count = tab.filter(orders).length;
+                    return Tab(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(tab.label,
                               style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary),
+                                  fontSize: 13, fontWeight: FontWeight.w600)),
+                          if (count > 0) ...[
+                            const SizedBox(width: 5),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withAlpha(26),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$count',
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary),
+                              ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
-                    ),
-                  );
-                }).toList(),
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
             ),
+            body: state.status == OrderStatus.loading
+                ? const LoadingWidget()
+                : state.status == OrderStatus.failure
+                    ? ErrorWidget2(
+                        message: state.errorMessage ?? AppStrings.genericError,
+                        onRetry: () {
+                          final user = context.read<AuthBloc>().state.user;
+                          if (user != null) {
+                            context
+                                .read<OrderBloc>()
+                                .add(OrdersLoadRequested(user.id));
+                          }
+                        },
+                      )
+                    : TabBarView(
+                        controller: _tabController,
+                        children: _kTabs.map((tab) {
+                          final filtered = tab.filter(orders);
+                          return _OrderList(
+                            orders: filtered,
+                            emptyLabel: tab.label,
+                            onRefresh: () async {
+                              final user = context.read<AuthBloc>().state.user;
+                              if (user != null) {
+                                context
+                                    .read<OrderBloc>()
+                                    .add(OrdersLoadRequested(user.id));
+                              }
+                            },
+                          );
+                        }).toList(),
+                      ),
           ),
-          body: state.status == OrderStatus.loading
-              ? const LoadingWidget()
-              : state.status == OrderStatus.failure
-                  ? ErrorWidget2(
-                      message: state.errorMessage ?? AppStrings.genericError,
-                      onRetry: () {
-                        final user = context.read<AuthBloc>().state.user;
-                        if (user != null) {
-                          context
-                              .read<OrderBloc>()
-                              .add(OrdersLoadRequested(user.id));
-                        }
-                      },
-                    )
-                  : TabBarView(
-                      controller: _tabController,
-                      children: _kTabs.map((tab) {
-                        final filtered = tab.filter(orders);
-                        return _OrderList(
-                          orders: filtered,
-                          emptyLabel: tab.label,
-                          onRefresh: () async {
-                            final user = context.read<AuthBloc>().state.user;
-                            if (user != null) {
-                              context
-                                  .read<OrderBloc>()
-                                  .add(OrdersLoadRequested(user.id));
-                            }
-                          },
-                        );
-                      }).toList(),
-                    ),
         );
       },
     );
@@ -637,7 +640,9 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                                 BorderRadius.circular(AppSizes.radiusSm),
                           ),
                           textStyle: const TextStyle(
-                              fontFamily: 'PlusJakartaSans', fontSize: 13, fontWeight: FontWeight.w600),
+                              fontFamily: 'PlusJakartaSans',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
@@ -710,15 +715,18 @@ class _OrderItemRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.productName,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: context.onSurfaceColor,
+                Semantics(
+                  identifier: item.productName,
+                  child: Text(
+                    item.productName,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: context.onSurfaceColor,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 if (item.selectedAttributes.isNotEmpty) ...[
                   const SizedBox(height: 2),
