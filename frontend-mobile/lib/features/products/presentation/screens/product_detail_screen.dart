@@ -472,8 +472,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 product.sellerId != null &&
                                 product.sellerId == authState.user!.id;
 
-                            if (isOwn && !_previewMode)
+                            if (isOwn && !_previewMode) {
                               return const SizedBox.shrink();
+                            }
 
                             final selectedVariant =
                                 _findSelectedVariant(product);

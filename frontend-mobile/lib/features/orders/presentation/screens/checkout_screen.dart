@@ -152,12 +152,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (_addressSectionKey.currentState?.selectedId == 'new' &&
         _addressSectionKey.currentState?.saveAddress == true) {
       context.read<AuthBloc>().add(AuthAddressAddRequested({
-        'street': _streetCtrl.text.trim(),
-        'city': _cityCtrl.text.trim(),
-        'state': _stateCtrl.text.trim(),
-        'zipCode': _zipCtrl.text.trim(),
-        'country': 'PH',
-      }));
+            'street': _streetCtrl.text.trim(),
+            'city': _cityCtrl.text.trim(),
+            'state': _stateCtrl.text.trim(),
+            'zipCode': _zipCtrl.text.trim(),
+            'country': 'PH',
+          }));
     }
     final user = context.read<AuthBloc>().state.user;
     if (user == null) return;
@@ -339,132 +339,135 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.only(bottom: AppSizes.md),
                         child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // ── Shipping address ──────────────────────────────
-                          BlocBuilder<AuthBloc, AuthState>(
-                            buildWhen: (p, c) =>
-                                p.user?.savedAddresses !=
-                                c.user?.savedAddresses,
-                            builder: (_, authState) => _AddressSection(
-                              key: _addressSectionKey,
-                              savedAddresses:
-                                  authState.user?.savedAddresses ?? const [],
-                              streetCtrl: _streetCtrl,
-                              cityCtrl: _cityCtrl,
-                              stateCtrl: _stateCtrl,
-                              zipCtrl: _zipCtrl,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // ── Shipping address ──────────────────────────────
+                            BlocBuilder<AuthBloc, AuthState>(
+                              buildWhen: (p, c) =>
+                                  p.user?.savedAddresses !=
+                                  c.user?.savedAddresses,
+                              builder: (_, authState) => _AddressSection(
+                                key: _addressSectionKey,
+                                savedAddresses:
+                                    authState.user?.savedAddresses ?? const [],
+                                streetCtrl: _streetCtrl,
+                                cityCtrl: _cityCtrl,
+                                stateCtrl: _stateCtrl,
+                                zipCtrl: _zipCtrl,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
+                            const SizedBox(height: 8),
 
-                          // ── Seller cards ──────────────────────────────────
-                          ...groups.entries.map((entry) {
-                            final sellerKey = entry.key;
-                            final items = entry.value;
-                            final sellerName = items.first.product.sellerName;
-                            final groupGross = items.fold<double>(
-                                0, (s, i) => s + i.rawPrice * i.quantity);
-                            final groupSubtotal = items.fold<double>(0,
-                                (s, i) => s + effectivePrice(i) * i.quantity);
-                            final groupProductDiscount =
-                                groupGross - groupSubtotal;
-                            final groupVoucherDiscount =
-                                _voucherDiscounts[sellerKey] ?? 0.0;
-                            final afterDiscount =
-                                (groupSubtotal - groupVoucherDiscount)
-                                    .clamp(0.0, double.infinity);
+                            // ── Seller cards ──────────────────────────────────
+                            ...groups.entries.map((entry) {
+                              final sellerKey = entry.key;
+                              final items = entry.value;
+                              final sellerName = items.first.product.sellerName;
+                              final groupGross = items.fold<double>(
+                                  0, (s, i) => s + i.rawPrice * i.quantity);
+                              final groupSubtotal = items.fold<double>(0,
+                                  (s, i) => s + effectivePrice(i) * i.quantity);
+                              final groupProductDiscount =
+                                  groupGross - groupSubtotal;
+                              final groupVoucherDiscount =
+                                  _voucherDiscounts[sellerKey] ?? 0.0;
+                              final afterDiscount =
+                                  (groupSubtotal - groupVoucherDiscount)
+                                      .clamp(0.0, double.infinity);
 
-                            // Collect shipping options across all products (union)
-                            final shippingOptions = <String>[];
-                            String? shippingFee;
-                            Map<String, double> shippingFeeAmounts = {};
-                            for (final item in items) {
-                              for (final opt in item.product.shippingOptions) {
-                                if (!shippingOptions.contains(opt)) {
-                                  shippingOptions.add(opt);
+                              // Collect shipping options across all products (union)
+                              final shippingOptions = <String>[];
+                              String? shippingFee;
+                              Map<String, double> shippingFeeAmounts = {};
+                              for (final item in items) {
+                                for (final opt
+                                    in item.product.shippingOptions) {
+                                  if (!shippingOptions.contains(opt)) {
+                                    shippingOptions.add(opt);
+                                  }
+                                }
+                                shippingFee ??= item.product.shippingFee;
+                                if (shippingFeeAmounts.isEmpty) {
+                                  shippingFeeAmounts =
+                                      item.product.shippingFeeAmounts;
                                 }
                               }
-                              shippingFee ??= item.product.shippingFee;
-                              if (shippingFeeAmounts.isEmpty) {
-                                shippingFeeAmounts =
-                                    item.product.shippingFeeAmounts;
+
+                              final sellerSelectedOpt =
+                                  _deliverySelections[sellerKey] ??
+                                      shippingOptions.firstOrNull;
+                              double sellerShipping;
+                              if (shippingFee == 'free') {
+                                sellerShipping = 0.0;
+                              } else if (shippingFee == 'buyer_pays') {
+                                sellerShipping = (sellerSelectedOpt != null
+                                        ? shippingFeeAmounts[sellerSelectedOpt]
+                                        : null) ??
+                                    shippingFeeAmounts.values.firstOrNull ??
+                                    0.0;
+                              } else {
+                                sellerShipping =
+                                    afterDiscount < 50 ? 9.99 : 0.0;
                               }
-                            }
 
-                            final sellerSelectedOpt =
-                                _deliverySelections[sellerKey] ??
-                                    shippingOptions.firstOrNull;
-                            double sellerShipping;
-                            if (shippingFee == 'free') {
-                              sellerShipping = 0.0;
-                            } else if (shippingFee == 'buyer_pays') {
-                              sellerShipping = (sellerSelectedOpt != null
-                                      ? shippingFeeAmounts[sellerSelectedOpt]
-                                      : null) ??
-                                  shippingFeeAmounts.values.firstOrNull ??
-                                  0.0;
-                            } else {
-                              sellerShipping = afterDiscount < 50 ? 9.99 : 0.0;
-                            }
+                              final sellerTax = afterDiscount * 0.08;
+                              final storeTotal =
+                                  afterDiscount + sellerShipping + sellerTax;
 
-                            final sellerTax = afterDiscount * 0.08;
-                            final storeTotal =
-                                afterDiscount + sellerShipping + sellerTax;
+                              return _SellerCard(
+                                sellerName: sellerName,
+                                items: items,
+                                voucherCtrl: _voucherCtrl(sellerKey),
+                                messageCtrl: _messageCtrl(sellerKey),
+                                grossSubtotal: groupGross,
+                                productDiscount: groupProductDiscount,
+                                voucherDiscount: groupVoucherDiscount,
+                                sellerShipping: sellerShipping,
+                                sellerTax: sellerTax,
+                                storeTotal: storeTotal,
+                                onApplyVoucher: () =>
+                                    _applyVoucher(sellerKey, items),
+                                onOpenVoucherScreen: () => _openVoucherScreen(
+                                  sellerKey,
+                                  sellerName ?? 'Store',
+                                  groupSubtotal,
+                                ),
+                                shippingOptions: shippingOptions,
+                                selectedDelivery:
+                                    _deliverySelections[sellerKey],
+                                onDeliveryChanged: (opt) => setState(
+                                    () => _deliverySelections[sellerKey] = opt),
+                              );
+                            }),
 
-                            return _SellerCard(
-                              sellerName: sellerName,
-                              items: items,
-                              voucherCtrl: _voucherCtrl(sellerKey),
-                              messageCtrl: _messageCtrl(sellerKey),
-                              grossSubtotal: groupGross,
-                              productDiscount: groupProductDiscount,
-                              voucherDiscount: groupVoucherDiscount,
-                              sellerShipping: sellerShipping,
-                              sellerTax: sellerTax,
-                              storeTotal: storeTotal,
-                              onApplyVoucher: () =>
-                                  _applyVoucher(sellerKey, items),
-                              onOpenVoucherScreen: () => _openVoucherScreen(
-                                sellerKey,
-                                sellerName ?? 'Store',
-                                groupSubtotal,
+                            const SizedBox(height: 8),
+
+                            // ── Payment method ────────────────────────────────
+                            BlocBuilder<AuthBloc, AuthState>(
+                              buildWhen: (p, c) =>
+                                  p.user?.savedCards != c.user?.savedCards,
+                              builder: (_, authState) => _PaymentSection(
+                                key: _paymentSectionKey,
+                                selected: _paymentType,
+                                onChanged: (v) =>
+                                    setState(() => _paymentType = v),
+                                savedCards:
+                                    authState.user?.savedCards ?? const [],
                               ),
-                              shippingOptions: shippingOptions,
-                              selectedDelivery: _deliverySelections[sellerKey],
-                              onDeliveryChanged: (opt) => setState(
-                                  () => _deliverySelections[sellerKey] = opt),
-                            );
-                          }),
-
-                          const SizedBox(height: 8),
-
-                          // ── Payment method ────────────────────────────────
-                          BlocBuilder<AuthBloc, AuthState>(
-                            buildWhen: (p, c) =>
-                                p.user?.savedCards != c.user?.savedCards,
-                            builder: (_, authState) => _PaymentSection(
-                              key: _paymentSectionKey,
-                              selected: _paymentType,
-                              onChanged: (v) =>
-                                  setState(() => _paymentType = v),
-                              savedCards:
-                                  authState.user?.savedCards ?? const [],
                             ),
-                          ),
 
-                          const SizedBox(height: 8),
+                            const SizedBox(height: 8),
 
-                          // ── Order total breakdown ─────────────────────────
-                          _TotalBreakdown(
-                            grossSubtotal: grossSubtotal,
-                            productDiscount: productDiscountTotal,
-                            voucherDiscount: voucherTotal,
-                            totalShipping: totalShipping,
-                            totalTax: totalTax,
-                            grandTotal: grandTotal,
-                          ),
-                        ],
+                            // ── Order total breakdown ─────────────────────────
+                            _TotalBreakdown(
+                              grossSubtotal: grossSubtotal,
+                              productDiscount: productDiscountTotal,
+                              voucherDiscount: voucherTotal,
+                              totalShipping: totalShipping,
+                              totalTax: totalTax,
+                              grandTotal: grandTotal,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -649,8 +652,9 @@ class _AddressSectionState extends State<_AddressSection> {
                             controller: widget.cityCtrl,
                             keyboardType: TextInputType.text,
                             textInputAction: TextInputAction.next,
-                            validator: (v) =>
-                                v == null || v.trim().isEmpty ? 'Required' : null,
+                            validator: (v) => v == null || v.trim().isEmpty
+                                ? 'Required'
+                                : null,
                           ),
                         ),
                       ),
@@ -664,8 +668,9 @@ class _AddressSectionState extends State<_AddressSection> {
                             controller: widget.stateCtrl,
                             keyboardType: TextInputType.text,
                             textInputAction: TextInputAction.next,
-                            validator: (v) =>
-                                v == null || v.trim().isEmpty ? 'Required' : null,
+                            validator: (v) => v == null || v.trim().isEmpty
+                                ? 'Required'
+                                : null,
                           ),
                         ),
                       ),
@@ -1754,76 +1759,76 @@ class _PaymentTypeOptions extends StatelessWidget {
               child: InkWell(
                 key: keys.orders.paymentOption(p.$1),
                 onTap: () => onChanged(p.$1),
-              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary
-                          .withValues(alpha: isDark ? 0.15 : 0.06)
-                      : (isDark
-                          ? Colors.white.withValues(alpha: 0.04)
-                          : Colors.grey.shade50),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  border: Border.all(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                  decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primary
+                            .withValues(alpha: isDark ? 0.15 : 0.06)
                         : (isDark
-                            ? Colors.white.withValues(alpha: 0.1)
-                            : Colors.grey.shade200),
-                    width: isSelected ? 1.5 : 1,
-                  ),
-                ),
-                child: Row(children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : Colors.grey.shade400,
-                        width: isSelected ? 5.5 : 1.5,
-                      ),
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary.withValues(alpha: 0.12)
-                          : (isDark
-                              ? Colors.white.withValues(alpha: 0.06)
-                              : Colors.grey.shade100),
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Icon(p.$3,
-                        size: 17,
-                        color: isSelected
-                            ? AppColors.primary
-                            : context.onSurfaceMuted),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    p.$2,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                            ? Colors.white.withValues(alpha: 0.04)
+                            : Colors.grey.shade50),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    border: Border.all(
                       color: isSelected
                           ? AppColors.primary
-                          : context.onSurfaceColor,
+                          : (isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.grey.shade200),
+                      width: isSelected ? 1.5 : 1,
                     ),
                   ),
-                ]),
-              ),
+                  child: Row(children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.grey.shade400,
+                          width: isSelected ? 5.5 : 1.5,
+                        ),
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primary.withValues(alpha: 0.12)
+                            : (isDark
+                                ? Colors.white.withValues(alpha: 0.06)
+                                : Colors.grey.shade100),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Icon(p.$3,
+                          size: 17,
+                          color: isSelected
+                              ? AppColors.primary
+                              : context.onSurfaceMuted),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      p.$2,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected
+                            ? AppColors.primary
+                            : context.onSurfaceColor,
+                      ),
+                    ),
+                  ]),
+                ),
               ),
             ),
           ),
@@ -1886,6 +1891,7 @@ class _CardDetailForm extends StatelessWidget {
         Row(children: [
           Expanded(
               child: _ExpiryPickerField(
+            identifier: 'expiry_month_field',
             label: 'Expiry Month',
             value: expiryMonth,
             items: months,
@@ -1894,6 +1900,7 @@ class _CardDetailForm extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
               child: _ExpiryPickerField(
+            identifier: 'expiry_year_field',
             label: 'Expiry Year',
             value: expiryYear,
             items: years,
@@ -1908,11 +1915,13 @@ class _CardDetailForm extends StatelessWidget {
 class _ExpiryPickerField extends StatelessWidget {
   final String label;
   final String value;
+  final String identifier;
   final List<String> items;
   final ValueChanged<String> onChanged;
   const _ExpiryPickerField({
     required this.label,
     required this.value,
+    required this.identifier,
     required this.items,
     required this.onChanged,
   });
@@ -2034,17 +2043,30 @@ class _ExpiryPickerField extends StatelessWidget {
                           childCount: items.length,
                           builder: (_, i) {
                             final isSelected = i == tempIndex;
-                            return Center(
-                              child: Text(
-                                items[i],
-                                style: TextStyle(
-                                  fontSize: isSelected ? 22 : 16,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w700
-                                      : FontWeight.w400,
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : mutedColor,
+                            return Semantics(
+                              identifier: 'expiry_item_${items[i]}',
+                              child: GestureDetector(
+                                onTap: () {
+                                  controller.animateToItem(
+                                    i,
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                  setModalState(() => tempIndex = i);
+                                },
+                                child: Center(
+                                  child: Text(
+                                    items[i],
+                                    style: TextStyle(
+                                      fontSize: isSelected ? 22 : 16,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w400,
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : mutedColor,
+                                    ),
+                                  ),
                                 ),
                               ),
                             );
@@ -2099,12 +2121,15 @@ class _ExpiryPickerField extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: context.onSurfaceColor,
+                    Semantics(
+                      identifier: identifier,
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: context.onSurfaceColor,
+                        ),
                       ),
                     ),
                   ],
