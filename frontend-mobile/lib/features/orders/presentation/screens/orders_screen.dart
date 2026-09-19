@@ -689,6 +689,10 @@ class _OrderItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String selectedAttr = item.selectedAttributes.entries
+        .map((e) => '${e.key}: ${e.value}')
+        .join(' / ');
+
     return Padding(
       padding: const EdgeInsets.symmetric(
           horizontal: AppSizes.md, vertical: AppSizes.sm),
@@ -730,16 +734,18 @@ class _OrderItemRow extends StatelessWidget {
                 ),
                 if (item.selectedAttributes.isNotEmpty) ...[
                   const SizedBox(height: 2),
-                  Text(
-                    item.selectedAttributes.entries
-                        .map((e) => '${e.key}: ${e.value}')
-                        .join(' / '),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: context.onSurfaceSecondary,
+                  Semantics(
+                    identifier:
+                        'selected_variant_${selectedAttr.toLowerCase().replaceAll(RegExp(r'[:\s]+'), '_')}',
+                    child: Text(
+                      selectedAttr,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: context.onSurfaceSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
                 const SizedBox(height: 6),

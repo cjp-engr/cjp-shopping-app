@@ -75,9 +75,9 @@ class _CartItemTileState extends State<CartItemTile>
     _ctrl.reverse();
     _isOpen = false;
     context.read<CartBloc>().add(CartItemRemoved(
-      widget.item.product.id,
-      variantLabel: widget.item.selectedVariant?.label,
-    ));
+          widget.item.product.id,
+          variantLabel: widget.item.selectedVariant?.label,
+        ));
   }
 
   @override
@@ -162,8 +162,7 @@ class _CartItemTileState extends State<CartItemTile>
                     children: [
                       // Image
                       ClipRRect(
-                        borderRadius:
-                            BorderRadius.circular(AppSizes.radiusMd),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                         child: Image.network(
                           (item.selectedVariant?.image.isNotEmpty == true
                               ? item.selectedVariant!.image
@@ -214,14 +213,18 @@ class _CartItemTileState extends State<CartItemTile>
                             ],
                             if (item.selectedVariant != null) ...[
                               const SizedBox(height: 2),
-                              Text(
-                                item.selectedVariant!.label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: muted,
-                                  fontWeight: FontWeight.w500,
+                              Semantics(
+                                identifier:
+                                    'selected_variant_${item.selectedVariant!.label.toLowerCase().replaceAll(RegExp(r'[:\s]+'), '_')}',
+                                child: Text(
+                                  item.selectedVariant!.label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: muted,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
                             ],
@@ -303,12 +306,13 @@ class _CartItemTileState extends State<CartItemTile>
                                         icon: Icons.remove,
                                         activeColor: onSurface,
                                         mutedColor: muted,
-                                        onPressed: () =>
-                                            context.read<CartBloc>().add(
-                                                CartItemQuantityChanged(
-                                                    item.product.id,
-                                                    item.quantity - 1,
-                                                    variantLabel: item.selectedVariant?.label)),
+                                        onPressed: () => context
+                                            .read<CartBloc>()
+                                            .add(CartItemQuantityChanged(
+                                                item.product.id,
+                                                item.quantity - 1,
+                                                variantLabel: item
+                                                    .selectedVariant?.label)),
                                       ),
                                       Padding(
                                         padding: const EdgeInsets.symmetric(
@@ -326,15 +330,17 @@ class _CartItemTileState extends State<CartItemTile>
                                         icon: Icons.add,
                                         activeColor: onSurface,
                                         mutedColor: muted,
-                                        onPressed:
-                                            item.quantity < item.effectiveStock
-                                                ? () => context
-                                                    .read<CartBloc>()
-                                                    .add(CartItemQuantityChanged(
-                                                        item.product.id,
-                                                        item.quantity + 1,
-                                                        variantLabel: item.selectedVariant?.label))
-                                                : null,
+                                        onPressed: item.quantity <
+                                                item.effectiveStock
+                                            ? () => context
+                                                .read<CartBloc>()
+                                                .add(CartItemQuantityChanged(
+                                                    item.product.id,
+                                                    item.quantity + 1,
+                                                    variantLabel: item
+                                                        .selectedVariant
+                                                        ?.label))
+                                            : null,
                                       ),
                                     ],
                                   ),
