@@ -830,16 +830,20 @@ class _AddressOption extends StatelessWidget {
                     Row(
                       children: [
                         Flexible(
-                          child: Text(
-                            label,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: selected
-                                  ? AppColors.primary
-                                  : context.onSurfaceColor,
+                          child: Semantics(
+                            identifier:
+                                '${label.trim().toLowerCase().replaceAll(' ', '_')}_delivery_option',
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: selected
+                                    ? AppColors.primary
+                                    : context.onSurfaceColor,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (isDefault) ...[
@@ -1817,14 +1821,19 @@ class _PaymentTypeOptions extends StatelessWidget {
                               : context.onSurfaceMuted),
                     ),
                     const SizedBox(width: 10),
-                    Text(
-                      p.$2,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected
-                            ? AppColors.primary
-                            : context.onSurfaceColor,
+                    Semantics(
+                      identifier: isSelected
+                          ? '${p.$2.toLowerCase().replaceAll(' ', '_')}_selected'
+                          : p.$2.toLowerCase().replaceAll(' ', '_'),
+                      child: Text(
+                        p.$2,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected
+                              ? AppColors.primary
+                              : context.onSurfaceColor,
+                        ),
                       ),
                     ),
                   ]),
