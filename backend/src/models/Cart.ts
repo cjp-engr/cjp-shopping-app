@@ -10,6 +10,7 @@ export interface ICartItem {
   sku?: string;
   discount?: number;
   quantity: number;
+  isSelected: boolean;
 }
 
 export interface ICartSeller {
@@ -33,6 +34,7 @@ const CartItemSchema = new Schema<ICartItem>({
   sku: { type: String },
   discount: { type: Number },
   quantity: { type: Number, required: true, min: 1, default: 1 },
+  isSelected: { type: Boolean, required: true, default: true },
 }, { _id: false });
 
 const CartSellerSchema = new Schema<ICartSeller>({

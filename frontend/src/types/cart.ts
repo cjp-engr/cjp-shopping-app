@@ -18,6 +18,7 @@ export interface CartItem {
   sellerId?: string;
   sellerName?: string;
   selectedVariant?: SelectedVariant;
+  isSelected: boolean;
 }
 
 export interface Cart {

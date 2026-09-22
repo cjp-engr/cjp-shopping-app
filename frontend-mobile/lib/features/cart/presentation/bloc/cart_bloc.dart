@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/cart_remote_datasource.dart';
 import '../../domain/entities/cart_item_entity.dart';
@@ -12,6 +14,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<CartItemAdded>(_onAdd);
     on<CartItemRemoved>(_onRemove);
     on<CartItemQuantityChanged>(_onQuantityChanged);
+    on<CartItemSelectionChanged>(_onSelectionChanged);
     on<CartCleared>(_onClear);
     on<CartItemsCheckedOut>(_onCheckedOut);
     on<CartServerUpdated>(_onServerUpdated);
@@ -91,9 +94,18 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     _syncInBackground(updated);
   }
 
-  Future<void> _onClear(CartCleared event, Emitter<CartState> emit) {
+  Future<void> _onSelectionChanged(
+      CartItemSelectionChanged event, Emitter<CartState> emit) async {
+    final updated = state.items.map((i) {
+      if (!_matches(i, event.productId, event.variantLabel)) return i;
+      return i.copyWith(isSelected: event.isSelected);
+    }).toList();
+    emit(state.copyWith(items: updated));
+    _syncInBackground(updated);
+  }
+
+  Future<void> _onClear(CartCleared event, Emitter<CartState> emit) async {
     emit(const CartState());
-    return Future.value();
   }
 
   Future<void> _onCheckedOut(
@@ -111,10 +123,12 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   void _syncInBackground(List<CartItemEntity> items) {
-    _remote.syncCart(items).then((serverItems) {
-      add(CartServerUpdated(serverItems));
-    }).catchError((_) {
-      // Sync failed silently; local state is still valid
-    });
+    unawaited(
+      _remote.syncCart(items).then((serverItems) {
+        add(CartServerUpdated(serverItems));
+      }).catchError((_) {
+        // Sync failed silently; local state is still valid
+      }),
+    );
   }
 }

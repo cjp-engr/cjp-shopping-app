@@ -24,70 +24,71 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final Set<String> _selected = {};
-  bool _initialised = false;
+  final Set<String> _knownProductIds = {};
   bool _checkingOut = false;
   // Per-seller delivery option selection (only relevant for buyer_pays sellers)
   final Map<String, String> _deliverySelections = {};
   // Per-seller voucher discounts (code → discountAmount)
   final Map<String, VoucherSelection> _voucherSelections = {};
 
-  void _toggleItem(String productId) {
+  @override
+  void initState() {
+    super.initState();
+    final bloc = context.read<CartBloc>();
+    final currentItems = bloc.state.items;
+    for (final item in currentItems) {
+      _knownProductIds.add(item.product.id);
+      if (item.isSelected) _selected.add(item.product.id);
+    }
+    bloc.add(CartLoadRequested());
+  }
+
+  void _toggleItem(CartItemEntity item) {
+    final id = item.product.id;
+    final nowSelected = !_selected.contains(id);
     setState(() {
-      if (_selected.contains(productId)) {
-        _selected.remove(productId);
+      if (nowSelected) {
+        _selected.add(id);
       } else {
-        _selected.add(productId);
+        _selected.remove(id);
       }
     });
+    context.read<CartBloc>().add(CartItemSelectionChanged(
+      id,
+      isSelected: nowSelected,
+      variantLabel: item.selectedVariant?.label,
+    ));
   }
 
   void _toggleSeller(String sellerKey, List<CartItemEntity> items) {
     final allSelected = items.every((i) => _selected.contains(i.product.id));
+    final nowSelected = !allSelected;
     setState(() {
-      if (allSelected) {
-        for (final i in items) {
+      for (final i in items) {
+        if (nowSelected) {
+          _selected.add(i.product.id);
+        } else {
           _selected.remove(i.product.id);
         }
-      } else {
-        for (final i in items) {
-          _selected.add(i.product.id);
-        }
       }
     });
-  }
-
-  // Effective price after variant or product-level percentage discount
-  double _effectivePrice(CartItemEntity item) {
-    final v = item.selectedVariant;
-    if (v != null) {
-      final disc = v.discount;
-      return disc != null && disc > 0 ? v.price * (1 - disc / 100) : v.price;
+    final bloc = context.read<CartBloc>();
+    for (final i in items) {
+      bloc.add(CartItemSelectionChanged(
+        i.product.id,
+        isSelected: nowSelected,
+        variantLabel: i.selectedVariant?.label,
+      ));
     }
-    final disc = item.product.discount;
-    if (disc == null || disc <= 0) return item.product.price;
-    return item.product.price * (1 - disc / 100);
   }
 
-  double _selectedSubtotal(List<CartItemEntity> all) =>
-      all.where((i) => _selected.contains(i.product.id)).fold(
-            0,
-            (s, i) => s + _effectivePrice(i) * i.quantity,
-          );
+  double _selectedSubtotal(List<CartItemEntity> all) => all
+      .where((i) => _selected.contains(i.product.id))
+      .fold(0.0, (s, i) => s + i.subtotal);
 
-  // Total discount across selected items (variant or product level)
-  double _totalDiscount(List<CartItemEntity> all) {
-    return all.where((i) => _selected.contains(i.product.id)).fold(0.0, (s, i) {
-      final v = i.selectedVariant;
-      if (v != null) {
-        final disc = v.discount;
-        if (disc == null || disc <= 0) return s;
-        return s + (v.price - _effectivePrice(i)) * i.quantity;
-      }
-      final disc = i.product.discount;
-      if (disc == null || disc <= 0) return s;
-      return s + (i.product.price - _effectivePrice(i)) * i.quantity;
-    });
-  }
+  double _totalDiscount(List<CartItemEntity> all) => all
+      .where((i) => _selected.contains(i.product.id))
+      .fold(0.0, (s, i) => s + (i.rawPrice - i.effectivePrice) * i.quantity);
 
   Future<void> _openVoucherScreen(
       String sellerKey, String sellerName, double orderAmount) async {
@@ -150,7 +151,28 @@ class _CartScreenState extends State<CartScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: BlocBuilder<CartBloc, CartState>(
+      body: BlocConsumer<CartBloc, CartState>(
+        listenWhen: (prev, curr) => prev.items != curr.items,
+        listener: (context, state) {
+          final incoming = state.items.map((i) => i.product.id).toSet();
+          final removedIds = _knownProductIds.difference(incoming);
+          setState(() {
+            // Always sync isSelected from bloc state — covers both cross-device
+            // refreshes (server load) and local toggles (CartItemSelectionChanged
+            // already wrote the correct value into the bloc before this fires).
+            for (final item in state.items) {
+              if (item.isSelected) {
+                _selected.add(item.product.id);
+              } else {
+                _selected.remove(item.product.id);
+              }
+            }
+            _selected.removeAll(removedIds);
+            _knownProductIds
+              ..addAll(incoming)
+              ..removeAll(removedIds);
+          });
+        },
         builder: (context, state) {
           if (state.items.isEmpty) {
             return RefreshIndicator(
@@ -170,11 +192,6 @@ class _CartScreenState extends State<CartScreen> {
                 ),
               ),
             );
-          }
-
-          if (!_initialised) {
-            _selected.addAll(state.items.map((i) => i.product.id));
-            _initialised = true;
           }
 
           final sellerGroups = <String, List<CartItemEntity>>{};
@@ -214,10 +231,10 @@ class _CartScreenState extends State<CartScreen> {
                   .toList();
               if (sellerSelected.isEmpty) continue;
               final sub = sellerSelected.fold<double>(
-                  0, (s, i) => s + _effectivePrice(i) * i.quantity);
+                  0, (s, i) => s + i.subtotal);
               final disc = sellerSelected.fold<double>(
                 0,
-                (s, i) => s + (i.rawPrice - _effectivePrice(i)) * i.quantity,
+                (s, i) => s + (i.rawPrice - i.effectivePrice) * i.quantity,
               );
               final voucherDisc =
                   _voucherSelections[entry.key]?.discountAmount ?? 0.0;
@@ -297,7 +314,7 @@ class _CartScreenState extends State<CartScreen> {
                         (item) => _SelectableItemTile(
                           item: item,
                           isSelected: _selected.contains(item.product.id),
-                          onToggle: () => _toggleItem(item.product.id),
+                          onToggle: () => _toggleItem(item),
                         ),
                       ),
                       if (sellerSummaries.containsKey(entry.key)) ...[

@@ -38,7 +38,7 @@ const Layout = () => {
         <div className="container mx-auto px-4 max-w-7xl py-10">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <p className="text-lg font-bold text-white mb-1">TokoMart</p>
+              <p className="text-lg font-bold mb-1"><span style={{ color: '#3B5BFF' }}>Toko</span><span style={{ color: '#FF7A00' }}>Mart</span></p>
               <p className="text-sm text-gray-400">Quality products at unbeatable prices.</p>
             </div>
             <div className="text-sm text-gray-500">

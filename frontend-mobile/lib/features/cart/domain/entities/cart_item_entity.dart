@@ -5,11 +5,13 @@ class CartItemEntity extends Equatable {
   final ProductEntity product;
   final int quantity;
   final ProductVariant? selectedVariant;
+  final bool isSelected;
 
   const CartItemEntity({
     required this.product,
     required this.quantity,
     this.selectedVariant,
+    this.isSelected = true,
   });
 
   double get rawPrice => selectedVariant?.price ?? product.price;
@@ -29,13 +31,14 @@ class CartItemEntity extends Equatable {
   int get effectiveStock => selectedVariant?.stock ?? product.stock;
   double get subtotal => effectivePrice * quantity;
 
-  CartItemEntity copyWith({int? quantity, ProductVariant? selectedVariant}) =>
+  CartItemEntity copyWith({int? quantity, ProductVariant? selectedVariant, bool? isSelected}) =>
       CartItemEntity(
         product: product,
         quantity: quantity ?? this.quantity,
         selectedVariant: selectedVariant ?? this.selectedVariant,
+        isSelected: isSelected ?? this.isSelected,
       );
 
   @override
-  List<Object?> get props => [product.id, selectedVariant?.label, quantity];
+  List<Object?> get props => [product.id, selectedVariant?.label, quantity, isSelected];
 }

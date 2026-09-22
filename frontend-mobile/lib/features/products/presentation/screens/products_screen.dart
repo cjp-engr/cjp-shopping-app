@@ -224,37 +224,37 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 identifier: 'search_field',
                 child: TextField(
                   key: keys.products.searchField,
-                controller: _searchCtrl,
-                style: TextStyle(color: onSurface),
-                keyboardType: TextInputType.text,
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  hintText: AppStrings.search,
-                  hintStyle: TextStyle(color: muted, fontSize: 14),
-                  prefixIcon: Icon(Icons.search, color: muted, size: 20),
-                  suffixIcon: _searchCtrl.text.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(Icons.clear, color: muted, size: 18),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                            _load();
-                            setState(() => _searchActive = false);
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: Colors.transparent,
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-                onTapOutside: (_) =>
-                    FocusManager.instance.primaryFocus?.unfocus(),
-                onChanged: (v) {
-                  setState(() => _searchActive = v.isNotEmpty);
-                  if (v.length >= 2 || v.isEmpty) _load();
-                },
+                  controller: _searchCtrl,
+                  style: TextStyle(color: onSurface),
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: AppStrings.search,
+                    hintStyle: TextStyle(color: muted, fontSize: 14),
+                    prefixIcon: Icon(Icons.search, color: muted, size: 20),
+                    suffixIcon: _searchCtrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.clear, color: muted, size: 18),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              _load();
+                              setState(() => _searchActive = false);
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  onTapOutside: (_) =>
+                      FocusManager.instance.primaryFocus?.unfocus(),
+                  onChanged: (v) {
+                    setState(() => _searchActive = v.isNotEmpty);
+                    if (v.length >= 2 || v.isEmpty) _load();
+                  },
                 ),
               ),
             ),
@@ -442,12 +442,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (_, i) => Semantics(
-                        identifier: 'product_card_${visibleProducts[i].name}',
+                        identifier: 'product_list',
                         child: ProductCard(
-                          key: keys.products.productCard(visibleProducts[i].name),
+                          key: keys.products
+                              .productCard(visibleProducts[i].name),
                           product: visibleProducts[i],
-                          onTap: () =>
-                              context.push('/products/${visibleProducts[i].id}'),
+                          onTap: () => context
+                              .push('/products/${visibleProducts[i].id}'),
                         ),
                       ),
                       childCount: visibleProducts.length,
@@ -678,7 +679,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             itemBuilder: (_, i) => Semantics(
                               identifier: 'product_card_${filtered[i].name}',
                               child: ProductCard(
-                                key: keys.products.productCard(filtered[i].name),
+                                key:
+                                    keys.products.productCard(filtered[i].name),
                                 product: filtered[i],
                                 onTap: () =>
                                     context.push('/products/${filtered[i].id}'),
