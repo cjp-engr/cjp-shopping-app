@@ -1484,14 +1484,12 @@ class _PaymentSectionState extends State<_PaymentSection> {
                   selected: _mode == _CardMode.saved,
                   onTap: () => setState(() => _mode = _CardMode.saved),
                 ),
-                Semantics(
+                _ModeChip(
+                  key: keys.orders.paymentNewCardTab,
                   identifier: 'payment_new_card_tab',
-                  child: _ModeChip(
-                    key: keys.orders.paymentNewCardTab,
-                    label: '+ New Card',
-                    selected: _mode == _CardMode.newCard,
-                    onTap: () => setState(() => _mode = _CardMode.newCard),
-                  ),
+                  label: '+ New Card',
+                  selected: _mode == _CardMode.newCard,
+                  onTap: () => setState(() => _mode = _CardMode.newCard),
                 ),
               ]),
             ),
@@ -1685,17 +1683,21 @@ class _ModeChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final String? identifier;
   const _ModeChip({
     super.key,
     required this.label,
     required this.selected,
     required this.onTap,
+    this.identifier,
   });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
+      child: Semantics(
+        identifier: identifier ?? '',
+        child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
@@ -1725,6 +1727,7 @@ class _ModeChip extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }
