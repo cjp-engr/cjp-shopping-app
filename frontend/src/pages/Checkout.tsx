@@ -1,5 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { stripePromise } from '../lib/stripe';
 import { SelectVoucherModal } from '../components/voucher/SelectVoucherModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -33,7 +35,7 @@ import {
 
 type PaymentMode = 'saved' | 'new';
 
-export const Checkout: React.FC = () => {
+const CheckoutInner: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { cart, clearCart, removeFromCart } = useCart();
@@ -82,6 +84,13 @@ export const Checkout: React.FC = () => {
   const [saveCard, setSaveCard] = useState(false);
   const [saveAddress, setSaveAddress] = useState(false);
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
+
+  // Stripe
+  const stripe = useStripe();
+  const elements = useElements();
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [stripeError, setStripeError] = useState<string | null>(null);
 
   // Inherit selections passed from Cart page
   const cartState = location.state as {
@@ -203,6 +212,24 @@ export const Checkout: React.FC = () => {
     });
   }, [sellerGroups]);
 
+  // Fetch PaymentIntent when user selects a card payment type
+  const grandTotal = sellerGroups.reduce((s, g) => s + g.storeTotal, 0);
+  useEffect(() => {
+    const isCard =
+      paymentData.type === 'credit-card' || paymentData.type === 'debit-card';
+    if (!isCard || clientSecret) return;
+
+    const totalCents = Math.round(grandTotal * 100);
+    orderService
+      .createPaymentIntent(totalCents)
+      .then(({ clientSecret: cs, paymentIntentId: pid }) => {
+        setClientSecret(cs);
+        setPaymentIntentId(pid);
+      })
+      .catch(() => setError('Could not initialise payment. Please try again.'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentData.type]);
+
   const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setShippingData((prev) => ({ ...prev, [name]: value }));
@@ -292,6 +319,39 @@ export const Checkout: React.FC = () => {
       window.scrollTo(0, 0);
       return;
     }
+
+    const isCard =
+      paymentData.type === 'credit-card' || paymentData.type === 'debit-card';
+
+    if (isCard && paymentMode === 'new') {
+      if (!stripe || !elements || !clientSecret) {
+        setError('Payment not ready. Please wait a moment and try again.');
+        return;
+      }
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) return;
+
+      setLoading(true);
+      setStripeError(null);
+
+      const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card: cardElement },
+      });
+
+      setLoading(false);
+
+      if (stripeErr) {
+        setStripeError(stripeErr.message ?? 'Card payment failed. Please try again.');
+        return;
+      }
+
+      if (paymentIntent?.status === 'succeeded') {
+        setStep('review');
+        window.scrollTo(0, 0);
+      }
+      return;
+    }
+
     if (!validatePayment()) return;
 
     if (saveCard) {
@@ -393,6 +453,7 @@ export const Checkout: React.FC = () => {
         paymentMethod,
         contactEmail: shippingData.email,
         contactPhone: shippingData.phone,
+        paymentIntentId: paymentIntentId ?? undefined,
       };
 
       const couponCodes: Record<string, string> = {};
@@ -767,93 +828,32 @@ export const Checkout: React.FC = () => {
                   </select>
                 </div>
 
-                {paymentData.type !== 'cash-on-delivery' && (<>
-                <Input
-                  label="Card Number"
-                  name="cardNumber"
-                  value={paymentData.cardNumber}
-                  onChange={handlePaymentChange}
-                  error={paymentErrors.cardNumber}
-                  placeholder="1234 5678 9012 3456"
-                  maxLength={16}
-                  fullWidth
-                  required
-                />
-
-                <Input
-                  label="Cardholder Name"
-                  name="cardHolder"
-                  value={paymentData.cardHolder}
-                  onChange={handlePaymentChange}
-                  error={paymentErrors.cardHolder}
-                  placeholder="John Doe"
-                  fullWidth
-                  required
-                />
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Expiry Month <span className="text-red-500">*</span>
+                {(paymentData.type === 'credit-card' || paymentData.type === 'debit-card') && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Card Details
                     </label>
-                    <select
-                      name="expiryMonth"
-                      value={paymentData.expiryMonth}
-                      onChange={handlePaymentChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      required
-                    >
-                      <option value="">MM</option>
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-                        <option key={month} value={month.toString().padStart(2, '0')}>
-                          {month.toString().padStart(2, '0')}
-                        </option>
-                      ))}
-                    </select>
-                    {paymentErrors.expiryMonth && (
-                      <p className="mt-1 text-sm text-red-500">{paymentErrors.expiryMonth}</p>
+                    <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700">
+                      <CardElement
+                        options={{
+                          style: {
+                            base: {
+                              fontSize: '16px',
+                              color: '#374151',
+                              '::placeholder': { color: '#9CA3AF' },
+                            },
+                          },
+                        }}
+                      />
+                    </div>
+                    {stripeError && (
+                      <p className="text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" />
+                        {stripeError}
+                      </p>
                     )}
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Expiry Year <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="expiryYear"
-                      value={paymentData.expiryYear}
-                      onChange={handlePaymentChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      required
-                    >
-                      <option value="">YYYY</option>
-                      {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i).map(
-                        (year) => (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        )
-                      )}
-                    </select>
-                    {paymentErrors.expiryYear && (
-                      <p className="mt-1 text-sm text-red-500">{paymentErrors.expiryYear}</p>
-                    )}
-                  </div>
-
-                  <Input
-                    label="CVV"
-                    name="cvv"
-                    value={paymentData.cvv}
-                    onChange={handlePaymentChange}
-                    error={paymentErrors.cvv}
-                    placeholder="123"
-                    maxLength={4}
-                    fullWidth
-                    required
-                  />
-                </div>
-
-                </>)}
+                )}
 
                 {paymentData.type !== 'cash-on-delivery' && (
                 <div className="flex items-center gap-2 p-4 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
@@ -1259,3 +1259,9 @@ export const Checkout: React.FC = () => {
     </div>
   );
 };
+
+export const Checkout: React.FC = () => (
+  <Elements stripe={stripePromise}>
+    <CheckoutInner />
+  </Elements>
+);
