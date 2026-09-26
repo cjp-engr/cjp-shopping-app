@@ -19,6 +19,7 @@ interface CreateOrderParams {
   sellerMessages?: Record<string, string>;
   couponCodes?: Record<string, string>;
   deliverySelections?: Record<string, string>;
+  paymentIntentId?: string;
 }
 
 async function applyCoupon(
@@ -71,7 +72,30 @@ async function restoreStock(items: Array<{ product: unknown; variantId?: string;
 }
 
 export async function createOrders(params: CreateOrderParams) {
-  const { userId, items, shippingAddress, paymentMethod, sellerMessages = {}, couponCodes = {}, deliverySelections = {} } = params;
+  const { userId, items, shippingAddress, paymentMethod, sellerMessages = {}, couponCodes = {}, deliverySelections = {}, paymentIntentId } = params;
+
+  const isCardPayment =
+    (paymentMethod as any).type === 'credit-card' ||
+    (paymentMethod as any).type === 'debit-card';
+
+  if (isCardPayment) {
+    if (!paymentIntentId) {
+      throw new AppError(402, 'paymentIntentId is required for card payments');
+    }
+
+    // Reject duplicate — one intent per order
+    const existing = await Order.findOne({ paymentIntentId });
+    if (existing) {
+      throw new AppError(409, 'This payment has already been used for an order');
+    }
+
+    // Verify with Stripe that the payment actually succeeded
+    const { retrievePaymentIntent } = await import('./stripeService.js');
+    const intent = await retrievePaymentIntent(paymentIntentId);
+    if (intent.status !== 'succeeded') {
+      throw new AppError(402, 'Payment not confirmed. Please complete payment before placing your order.');
+    }
+  }
 
   // Validate all products and group by seller in one pass
   const sellerGroups = new Map<string, Array<{
@@ -206,6 +230,7 @@ export async function createOrders(params: CreateOrderParams) {
       sellerMessages: sellerMessages[sellerKey] ? { [sellerKey]: sellerMessages[sellerKey] } : {},
       deliverySelections: selectedDeliveryOption ? { [sellerKey]: selectedDeliveryOption } : {},
       selectedDeliveryOption,
+      paymentIntentId: isCardPayment ? paymentIntentId : undefined,
     });
 
     createdOrders.push(order);
