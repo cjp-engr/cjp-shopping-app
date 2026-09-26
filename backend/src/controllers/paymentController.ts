@@ -16,14 +16,15 @@ export const createIntent = async (
     const userId = req.user!.id;
 
     // Recalculate total server-side — never trust frontend amount
-    const cart = await Cart.findOne({ userId }).populate('items.product');
-    if (!cart || cart.items.length === 0) {
+    const cart = await Cart.findOne({ userId }).populate('sellers.items.product');
+    const allItems = cart?.sellers?.flatMap((s: any) => s.items) ?? [];
+    if (!cart || allItems.length === 0) {
       res.status(400).json({ error: 'Cart is empty' });
       return;
     }
 
     const totalCents = Math.round(
-      cart.items.reduce((sum: number, item: any) => {
+      allItems.reduce((sum: number, item: any) => {
         const price: number = item.product?.price ?? 0;
         return sum + price * item.quantity * 100;
       }, 0),
