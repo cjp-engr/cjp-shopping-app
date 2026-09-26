@@ -18,6 +18,7 @@ import cartRoutes from './routes/cartRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 
 dotenv.config();
 
@@ -58,6 +59,10 @@ app.use(cors({
   credentials: true
 }));
 app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
+
+// Webhook needs raw body — must be before express.json()
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }), (req, _res, next) => { next(); });
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -76,6 +81,7 @@ app.use('/api/cart', apiLimiter, cartRoutes);
 app.use('/api/reviews', apiLimiter, reviewRoutes);
 app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/coupons', apiLimiter, couponRoutes);
+app.use('/api/payments', paymentRoutes);
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'TokoMart API', version: '1.0.0' });
