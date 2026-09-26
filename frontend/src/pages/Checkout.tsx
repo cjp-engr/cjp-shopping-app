@@ -212,12 +212,12 @@ const CheckoutInner: React.FC = () => {
     });
   }, [sellerGroups]);
 
-  // Fetch PaymentIntent when user selects a card payment type
+  // Fetch PaymentIntent when user selects a card payment type (new card only, not saved cards)
   const grandTotal = sellerGroups.reduce((s, g) => s + g.storeTotal, 0);
   useEffect(() => {
     const isCard =
       paymentData.type === 'credit-card' || paymentData.type === 'debit-card';
-    if (!isCard || clientSecret) return;
+    if (!isCard || paymentMode === 'saved' || clientSecret) return;
 
     const totalCents = Math.round(grandTotal * 100);
     orderService

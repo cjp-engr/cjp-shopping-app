@@ -16,7 +16,10 @@ import Order from '../../models/Order.js';
 describe('createOrders — Stripe verification', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('throws 402 when paymentIntentId is missing for card payment', async () => {
+  it('does NOT throw 402 when paymentIntentId is missing for card payment (saved/mock card path)', async () => {
+    // Without a paymentIntentId the saved-card path skips Stripe verification entirely.
+    // The call should proceed past the Stripe guard (and fail later on product lookup,
+    // not with a 402 from the Stripe guard).
     const { createOrders } = await import('../orderService.js');
     await expect(
       createOrders({
@@ -25,7 +28,7 @@ describe('createOrders — Stripe verification', () => {
         shippingAddress: {},
         paymentMethod: { type: 'credit-card' },
       }),
-    ).rejects.toMatchObject({ statusCode: 402 });
+    ).rejects.not.toMatchObject({ statusCode: 402 });
   });
 
   it('throws 409 when paymentIntentId already used', async () => {

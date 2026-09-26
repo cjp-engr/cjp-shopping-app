@@ -151,7 +151,7 @@ const OrderSchema = new Schema<IOrder>({
     min: 0
   },
   couponCode: { type: String },
-  paymentIntentId: { type: String, index: true },
+  paymentIntentId: { type: String, index: true, unique: true, sparse: true },
   tax: {
     type: Number,
     required: true,

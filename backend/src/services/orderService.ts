@@ -78,11 +78,7 @@ export async function createOrders(params: CreateOrderParams) {
     (paymentMethod as any).type === 'credit-card' ||
     (paymentMethod as any).type === 'debit-card';
 
-  if (isCardPayment) {
-    if (!paymentIntentId) {
-      throw new AppError(402, 'paymentIntentId is required for card payments');
-    }
-
+  if (isCardPayment && paymentIntentId) {
     // Reject duplicate — one intent per order
     const existing = await Order.findOne({ paymentIntentId });
     if (existing) {
@@ -96,6 +92,7 @@ export async function createOrders(params: CreateOrderParams) {
       throw new AppError(402, 'Payment not confirmed. Please complete payment before placing your order.');
     }
   }
+  // If isCardPayment && !paymentIntentId: saved/mock card path — skip Stripe verification
 
   // Validate all products and group by seller in one pass
   const sellerGroups = new Map<string, Array<{
