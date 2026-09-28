@@ -344,8 +344,20 @@ const CheckoutInner: React.FC = () => {
       setLoading(true);
       setStripeError(null);
 
+      // Create payment method first so we have card details (last4, expiry) for saving
+      const { paymentMethod, error: pmErr } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+      });
+
+      if (pmErr) {
+        setStripeError(pmErr.message ?? 'Card payment failed. Please try again.');
+        setLoading(false);
+        return;
+      }
+
       const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card: cardElement },
+        payment_method: paymentMethod!.id,
       });
 
       setLoading(false);
@@ -356,6 +368,26 @@ const CheckoutInner: React.FC = () => {
       }
 
       if (paymentIntent?.status === 'succeeded') {
+        if (saveCard) {
+          try {
+            const card = paymentMethod!.card;
+            const payload = {
+              type: paymentData.type,
+              last4: card?.last4 ?? '',
+              cardHolder: `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
+              expiryMonth: card?.exp_month?.toString() ?? '',
+              expiryYear: card?.exp_year?.toString() ?? '',
+              setAsDefault: savedCards.length === 0,
+            };
+            await fetch(API_ENDPOINTS.PAYMENT_METHODS, {
+              method: 'POST',
+              headers: getAuthHeaders(),
+              body: JSON.stringify(payload),
+            });
+          } catch (err) {
+            console.error('[saveCard] error:', err);
+          }
+        }
         setStep('review');
         window.scrollTo(0, 0);
       }
@@ -363,25 +395,6 @@ const CheckoutInner: React.FC = () => {
     }
 
     if (!validatePayment()) return;
-
-    if (saveCard) {
-      try {
-        await fetch(API_ENDPOINTS.PAYMENT_METHODS, {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            type: paymentData.type,
-            last4: paymentData.cardNumber.slice(-4),
-            cardHolder: paymentData.cardHolder,
-            expiryMonth: paymentData.expiryMonth,
-            expiryYear: paymentData.expiryYear,
-            setAsDefault: savedCards.length === 0,
-          }),
-        });
-      } catch {
-        // Non-critical: proceed even if save fails
-      }
-    }
     setStep('review');
     window.scrollTo(0, 0);
   };
