@@ -64,7 +64,7 @@ export const addPaymentMethod = async (req: AuthRequest, res: Response, next: Ne
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
     const { type, last4, cardHolder, expiryMonth, expiryYear, setAsDefault } = req.body;
-    if (!type || !last4 || !cardHolder || !expiryMonth || !expiryYear) {
+    if (!type || !last4 || !expiryMonth || !expiryYear) {
       return res.status(400).json({ success: false, message: 'Missing required card fields' });
     }
 
