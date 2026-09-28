@@ -63,7 +63,7 @@ export const addPaymentMethod = async (req: AuthRequest, res: Response, next: Ne
     const user = await User.findById(req.user!.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    const { type, last4, cardHolder, expiryMonth, expiryYear, setAsDefault } = req.body;
+    const { type, brand, last4, cardHolder, expiryMonth, expiryYear, setAsDefault } = req.body;
     if (!type || !last4 || !expiryMonth || !expiryYear) {
       return res.status(400).json({ success: false, message: 'Missing required card fields' });
     }
@@ -74,7 +74,7 @@ export const addPaymentMethod = async (req: AuthRequest, res: Response, next: Ne
     if (duplicate) return res.json({ success: true, paymentMethods: user.savedCards });
 
     if (setAsDefault) user.savedCards.forEach(c => { c.isDefault = false; });
-    user.savedCards.push({ type, last4, cardHolder, expiryMonth, expiryYear,
+    user.savedCards.push({ type, brand, last4, cardHolder, expiryMonth, expiryYear,
       isDefault: setAsDefault || user.savedCards.length === 0 });
     await user.save();
     res.status(201).json({ success: true, paymentMethods: user.savedCards });
@@ -95,6 +95,22 @@ export const deletePaymentMethod = async (req: AuthRequest, res: Response, next:
     if (user.savedCards.length > 0 && !user.savedCards.some(c => c.isDefault)) {
       user.savedCards[0].isDefault = true;
     }
+    await user.save();
+    res.json({ success: true, paymentMethods: user.savedCards });
+  } catch (err) { next(err); }
+};
+
+export const setDefaultPaymentMethod = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const User = (await import('../models/User.js')).default;
+    const user = await User.findById(req.user!.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const card = user.savedCards.find((c: any) => c._id?.toString() === req.params.id);
+    if (!card) return res.status(404).json({ success: false, message: 'Card not found' });
+
+    user.savedCards.forEach((c: any) => { c.isDefault = false; });
+    card.isDefault = true;
     await user.save();
     res.json({ success: true, paymentMethods: user.savedCards });
   } catch (err) { next(err); }

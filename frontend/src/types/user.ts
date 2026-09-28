@@ -9,6 +9,7 @@ export interface Address {
 export interface SavedCard {
   _id: string;
   type: 'credit-card' | 'debit-card' | 'paypal';
+  brand?: string;
   last4: string;
   cardHolder: string;
   expiryMonth: string;

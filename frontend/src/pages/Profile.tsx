@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
+import { CardBrandIcon } from '../components/common/CardBrandIcon';
 import { formatDate } from '../utils/formatters';
 import {
   User,
@@ -21,14 +22,15 @@ import {
   Trash2,
   PlusCircle,
   Star,
+  CreditCard,
 } from 'lucide-react';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import orderService from '../services/orderService';
-import type { SavedAddress } from '../types/user';
+import type { SavedAddress, SavedCard } from '../types/user';
 
 export const Profile: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout, updateProfile, uploadAvatar, addAddress, updateAddress, deleteAddress, setDefaultAddress } = useAuth();
+  const { user, logout, updateProfile, uploadAvatar, addAddress, updateAddress, deleteAddress, setDefaultAddress, deletePaymentMethod, setDefaultPaymentMethod } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -385,6 +387,11 @@ export const Profile: React.FC = () => {
             onSetDefault={setDefaultAddress}
             onUpdate={updateAddress}
           />
+          <SavedCardsCard
+            cards={user.savedCards ?? []}
+            onDelete={deletePaymentMethod}
+            onSetDefault={setDefaultPaymentMethod}
+          />
           <Card padding="lg">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">
@@ -740,6 +747,110 @@ const SavedAddressesCard: React.FC<SavedAddressesCardProps> = ({ addresses, onAd
               Save Address
             </Button>
           </div>
+        </div>
+      )}
+    </Card>
+  );
+};
+
+// ── Saved Cards Card ──────────────────────────────────────────────────────────
+
+interface SavedCardsCardProps {
+  cards: SavedCard[];
+  onDelete: (id: string) => Promise<void>;
+  onSetDefault: (id: string) => Promise<void>;
+}
+
+const SavedCardsCard: React.FC<SavedCardsCardProps> = ({ cards, onDelete, onSetDefault }) => {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    setError(null);
+    try { await onDelete(id); } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete card');
+    } finally { setDeletingId(null); }
+  };
+
+  const handleSetDefault = async (id: string) => {
+    setSettingDefaultId(id);
+    setError(null);
+    try { await onSetDefault(id); } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to set default');
+    } finally { setSettingDefaultId(null); }
+  };
+
+  return (
+    <Card padding="lg">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <CreditCard className="w-5 h-5" />
+          Saved Cards
+        </h2>
+      </div>
+
+      {error && (
+        <p className="text-sm text-red-600 dark:text-red-400 mb-3">{error}</p>
+      )}
+
+      {cards.length === 0 ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No saved cards yet. Cards are saved during checkout.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {cards.map(card => (
+            <div
+              key={card._id}
+              className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <CardBrandIcon brand={card.brand} className="h-7 w-11 flex-shrink-0 rounded" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white capitalize">
+                      {card.type === 'credit-card' ? 'Credit Card' : card.type === 'debit-card' ? 'Debit Card' : 'Card'}
+                    </span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      •••• {card.last4}
+                    </span>
+                    {card.isDefault && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300 font-medium">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Expires {card.expiryMonth}/{card.expiryYear}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {!card.isDefault && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleSetDefault(card._id)}
+                    disabled={settingDefaultId === card._id}
+                  >
+                    {settingDefaultId === card._id ? 'Saving…' : 'Set Default'}
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleDelete(card._id)}
+                  disabled={deletingId === card._id}
+                  className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:text-red-400 dark:border-red-800"
+                >
+                  {deletingId === card._id ? 'Deleting…' : <Trash2 className="w-4 h-4" />}
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </Card>

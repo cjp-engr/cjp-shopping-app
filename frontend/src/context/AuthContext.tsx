@@ -15,6 +15,8 @@ interface AuthContextType extends AuthState {
   updateAddress: (id: string, addr: Omit<SavedAddress, '_id' | 'isDefault'>) => Promise<void>;
   deleteAddress: (id: string) => Promise<void>;
   setDefaultAddress: (id: string) => Promise<void>;
+  deletePaymentMethod: (id: string) => Promise<void>;
+  setDefaultPaymentMethod: (id: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -166,8 +168,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthState(prev => ({ ...prev, user: prev.user ? { ...prev.user, savedAddresses: data.savedAddresses } : prev.user }));
   };
 
+  const deletePaymentMethod = async (id: string) => {
+    if (!authState.user) throw new Error('No user logged in');
+    const res = await fetch(API_ENDPOINTS.PAYMENT_METHOD(id), { method: 'DELETE', headers: getAuthHeaders() });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+    setAuthState(prev => ({ ...prev, user: prev.user ? { ...prev.user, savedCards: data.paymentMethods } : prev.user }));
+  };
+
+  const setDefaultPaymentMethod = async (id: string) => {
+    if (!authState.user) throw new Error('No user logged in');
+    const res = await fetch(API_ENDPOINTS.PAYMENT_METHOD_DEFAULT(id), { method: 'PATCH', headers: getAuthHeaders() });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+    setAuthState(prev => ({ ...prev, user: prev.user ? { ...prev.user, savedCards: data.paymentMethods } : prev.user }));
+  };
+
   return (
-    <AuthContext.Provider value={{ ...authState, login, signup, logout, updateProfile, uploadAvatar, addAddress, updateAddress, deleteAddress, setDefaultAddress }}>
+    <AuthContext.Provider value={{ ...authState, login, signup, logout, updateProfile, uploadAvatar, addAddress, updateAddress, deleteAddress, setDefaultAddress, deletePaymentMethod, setDefaultPaymentMethod }}>
       {children}
     </AuthContext.Provider>
   );

@@ -14,6 +14,7 @@ import type { CheckoutData, PaymentMethod } from '../types/order';
 import type { SavedCard, SavedAddress } from '../types/user';
 import orderService from '../services/orderService';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
+import { CardBrandIcon } from '../components/common/CardBrandIcon';
 import {
   CreditCard,
   Lock,
@@ -39,7 +40,7 @@ const CheckoutInner: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { cart, clearCart, removeFromCart } = useCart();
-  const { user, addAddress } = useAuth();
+  const { user, addAddress, deletePaymentMethod } = useAuth();
 
   const [step, setStep] = useState<'shipping' | 'payment' | 'review'>('shipping');
   const [loading, setLoading] = useState(false);
@@ -373,6 +374,7 @@ const CheckoutInner: React.FC = () => {
             const card = paymentMethod!.card;
             const payload = {
               type: paymentData.type,
+              brand: card?.brand ?? '',
               last4: card?.last4 ?? '',
               cardHolder: `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
               expiryMonth: card?.exp_month?.toString() ?? '',
@@ -402,10 +404,7 @@ const CheckoutInner: React.FC = () => {
   const handleDeleteCard = async (cardId: string) => {
     setDeletingCardId(cardId);
     try {
-      await fetch(API_ENDPOINTS.PAYMENT_METHOD(cardId), {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-      });
+      await deletePaymentMethod(cardId);
       // If the deleted card was selected, reset selection
       if (selectedCardId === cardId) {
         const remaining = savedCards.filter(c => c._id !== cardId);
@@ -808,7 +807,7 @@ const CheckoutInner: React.FC = () => {
                       }`}>
                         {selectedCardId === card._id && <span className="w-2 h-2 rounded-full bg-primary-500" />}
                       </span>
-                      <CreditCard className="w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                      <CardBrandIcon brand={card.brand} className="h-7 w-11 flex-shrink-0 rounded" />
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-gray-900 dark:text-white capitalize">
                           {card.type.replace('-', ' ')} •••• {card.last4}
