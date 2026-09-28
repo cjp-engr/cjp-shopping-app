@@ -100,6 +100,22 @@ export const deletePaymentMethod = async (req: AuthRequest, res: Response, next:
   } catch (err) { next(err); }
 };
 
+export const setDefaultPaymentMethod = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const User = (await import('../models/User.js')).default;
+    const user = await User.findById(req.user!.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const card = user.savedCards.find((c: any) => c._id?.toString() === req.params.id);
+    if (!card) return res.status(404).json({ success: false, message: 'Card not found' });
+
+    user.savedCards.forEach((c: any) => { c.isDefault = false; });
+    card.isDefault = true;
+    await user.save();
+    res.json({ success: true, paymentMethods: user.savedCards });
+  } catch (err) { next(err); }
+};
+
 export const getSavedAddresses = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const User = (await import('../models/User.js')).default;
