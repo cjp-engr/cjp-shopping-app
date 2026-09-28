@@ -26,6 +26,7 @@ export const API_ENDPOINTS = {
   // Payment methods
   PAYMENT_METHODS: `${API_BASE_URL}/auth/payment-methods`,
   PAYMENT_METHOD: (id: string) => `${API_BASE_URL}/auth/payment-methods/${id}`,
+  PAYMENT_METHOD_DEFAULT: (id: string) => `${API_BASE_URL}/auth/payment-methods/${id}/default`,
 
   // Saved addresses
   SAVED_ADDRESSES: `${API_BASE_URL}/auth/saved-addresses`,
