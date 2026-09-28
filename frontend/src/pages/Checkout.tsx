@@ -91,6 +91,16 @@ const CheckoutInner: React.FC = () => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [stripeError, setStripeError] = useState<string | null>(null);
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains('dark'),
+  );
+  useEffect(() => {
+    const observer = new MutationObserver(() =>
+      setIsDark(document.documentElement.classList.contains('dark')),
+    );
+    observer.observe(document.documentElement, { attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Inherit selections passed from Cart page
   const cartState = location.state as {
@@ -836,10 +846,11 @@ const CheckoutInner: React.FC = () => {
                     <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700">
                       <CardElement
                         options={{
+                          hidePostalCode: true,
                           style: {
                             base: {
                               fontSize: '16px',
-                              color: '#374151',
+                              color: isDark ? '#F3F4F6' : '#374151',
                               '::placeholder': { color: '#9CA3AF' },
                             },
                           },
