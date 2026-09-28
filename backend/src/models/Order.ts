@@ -36,6 +36,7 @@ export interface IOrder extends Document {
   shipping: number;
   total: number;
   couponCode?: string;
+  paymentIntentId?: string;
   status: OrderStatus;
   estimatedDelivery?: Date;
   shippedAt?: Date;
@@ -150,6 +151,7 @@ const OrderSchema = new Schema<IOrder>({
     min: 0
   },
   couponCode: { type: String },
+  paymentIntentId: { type: String, index: true, unique: true, sparse: true },
   tax: {
     type: Number,
     required: true,

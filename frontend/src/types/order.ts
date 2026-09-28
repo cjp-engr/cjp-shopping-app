@@ -33,4 +33,5 @@ export interface CheckoutData {
   paymentMethod: PaymentMethod;
   contactEmail: string;
   contactPhone: string;
+  paymentIntentId?: string;
 }

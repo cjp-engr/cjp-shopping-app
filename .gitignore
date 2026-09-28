@@ -38,6 +38,11 @@ dist-ssr
 !.agents/skills
 
 .patrol.env
+.env
+.env.local
+.env.*.local
+frontend/.env
+backend/.env
 
 plans
 

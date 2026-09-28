@@ -4,6 +4,19 @@ import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import { resolveSelectedDeliveryOption } from '../utils/orderUtils';
 
 class OrderService {
+  async createPaymentIntent(amountInCents: number): Promise<{ clientSecret: string; paymentIntentId: string }> {
+    const response = await fetch(API_ENDPOINTS.PAYMENT_INTENT, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ amountInCents }),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to initialise payment');
+    }
+    return response.json();
+  }
+
   async createOrder(checkoutData: CheckoutData, cart: Cart, _userId: string, couponCodes?: Record<string, string>, deliverySelections?: Record<string, string>): Promise<Order[]> {
     const items = cart.items.map(item => ({
       productId: item.product.id,
@@ -19,6 +32,7 @@ class OrderService {
         items,
         shippingAddress: checkoutData.shippingAddress,
         paymentMethod: checkoutData.paymentMethod,
+        paymentIntentId: checkoutData.paymentIntentId,
         ...(couponCodes && Object.keys(couponCodes).length > 0 ? { couponCodes } : {}),
         ...(deliverySelections && Object.keys(deliverySelections).length > 0 ? { deliverySelections } : {}),
       })

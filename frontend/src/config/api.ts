@@ -20,6 +20,9 @@ export const API_ENDPOINTS = {
   ORDER_STATUS: (id: string) => `${API_BASE_URL}/orders/${id}/status`,
   ORDER_CONFIRM_RECEIVED: (id: string) => `${API_BASE_URL}/orders/${id}/confirm-received`,
 
+  // Payments
+  PAYMENT_INTENT: `${API_BASE_URL}/payments/create-intent`,
+
   // Payment methods
   PAYMENT_METHODS: `${API_BASE_URL}/auth/payment-methods`,
   PAYMENT_METHOD: (id: string) => `${API_BASE_URL}/auth/payment-methods/${id}`,
