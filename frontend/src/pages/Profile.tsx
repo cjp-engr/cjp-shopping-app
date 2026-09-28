@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
+import { CardBrandIcon } from '../components/common/CardBrandIcon';
 import { formatDate } from '../utils/formatters';
 import {
   User,
@@ -806,7 +807,7 @@ const SavedCardsCard: React.FC<SavedCardsCardProps> = ({ cards, onDelete, onSetD
               className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
             >
               <div className="flex items-center gap-3">
-                <CreditCard className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                <CardBrandIcon brand={card.brand} className="h-7 w-11 flex-shrink-0 rounded" />
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-900 dark:text-white capitalize">
