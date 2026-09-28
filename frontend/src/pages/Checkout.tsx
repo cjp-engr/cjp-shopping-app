@@ -238,7 +238,7 @@ const CheckoutInner: React.FC = () => {
       })
       .catch(() => setError('Could not initialise payment. Please try again.'));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentData.type]);
+  }, [paymentData.type, paymentMode]);
 
   const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

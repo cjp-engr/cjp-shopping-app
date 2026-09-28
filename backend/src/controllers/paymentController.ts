@@ -23,12 +23,12 @@ export const createIntent = async (
       return;
     }
 
-    const totalCents = Math.round(
-      allItems.reduce((sum: number, item: any) => {
-        const price: number = item.product?.price ?? 0;
-        return sum + price * item.quantity * 100;
-      }, 0),
-    );
+    const subtotal = allItems.reduce((sum: number, item: any) => {
+      const price: number = item.product?.price ?? 0;
+      return sum + price * item.quantity;
+    }, 0);
+    const tax = subtotal * 0.08;
+    const totalCents = Math.round((subtotal + tax) * 100);
 
     const { id, clientSecret } = await createPaymentIntent(totalCents, 'usd', {
       userId,
