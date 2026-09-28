@@ -39,7 +39,7 @@ const CheckoutInner: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { cart, clearCart, removeFromCart } = useCart();
-  const { user, addAddress } = useAuth();
+  const { user, addAddress, deletePaymentMethod } = useAuth();
 
   const [step, setStep] = useState<'shipping' | 'payment' | 'review'>('shipping');
   const [loading, setLoading] = useState(false);
@@ -402,10 +402,7 @@ const CheckoutInner: React.FC = () => {
   const handleDeleteCard = async (cardId: string) => {
     setDeletingCardId(cardId);
     try {
-      await fetch(API_ENDPOINTS.PAYMENT_METHOD(cardId), {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-      });
+      await deletePaymentMethod(cardId);
       // If the deleted card was selected, reset selection
       if (selectedCardId === cardId) {
         const remaining = savedCards.filter(c => c._id !== cardId);
