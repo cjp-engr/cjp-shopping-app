@@ -98,8 +98,7 @@ const CheckoutInner: React.FC = () => {
   // Stripe
   const stripe = useStripe();
   const elements = useElements();
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [pendingPaymentMethodId, setPendingPaymentMethodId] = useState<string | null>(null);
   const [stripeError, setStripeError] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(() =>
     document.documentElement.classList.contains('dark'),
@@ -321,45 +320,22 @@ const CheckoutInner: React.FC = () => {
 
   const handlePaymentSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
+    setStripeError(null);
 
-    // Saved card: create PaymentIntent and confirm with stored Stripe payment method
+    // Saved card: store PM ID and advance to review — Stripe charged at Place Order
     if (paymentMode === 'saved' && selectedCardId) {
       const savedCard = savedCards.find(c => c._id === selectedCardId);
-      if (!savedCard?.stripePaymentMethodId || !stripe) {
-        // No Stripe payment method ID stored (old card) — proceed without Stripe charge
-        setStep('review');
-        window.scrollTo(0, 0);
+      if (!savedCard?.stripePaymentMethodId) {
+        setStripeError('This card cannot be charged. Please remove it and add a new card through checkout.');
         return;
       }
-      setLoading(true);
-      setStripeError(null);
-      try {
-        const { clientSecret: cs, paymentIntentId: pid } = await orderService.createPaymentIntent(
-          Math.round(grandTotal * 100)
-        );
-        setClientSecret(cs);
-        setPaymentIntentId(pid);
-        const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(cs, {
-          payment_method: savedCard.stripePaymentMethodId,
-        });
-        if (stripeErr) {
-          setStripeError(stripeErr.message ?? 'Card payment failed. Please try again.');
-          return;
-        }
-        if (paymentIntent?.status === 'succeeded') {
-          setStep('review');
-          window.scrollTo(0, 0);
-        }
-      } catch {
-        setError('Could not process payment. Please try again.');
-      } finally {
-        setLoading(false);
-      }
+      setPendingPaymentMethodId(savedCard.stripePaymentMethodId);
+      setStep('review');
+      window.scrollTo(0, 0);
       return;
     }
 
-    const isCard =
-      paymentData.type === 'credit-card' || paymentData.type === 'debit-card';
+    const isCard = paymentData.type === 'credit-card' || paymentData.type === 'debit-card';
 
     if (isCard && paymentMode === 'new') {
       if (!stripe || !elements) {
@@ -370,51 +346,29 @@ const CheckoutInner: React.FC = () => {
       if (!cardElement) return;
 
       setLoading(true);
-      setStripeError(null);
 
-      // Create PaymentIntent with the exact grandTotal at submission time (includes shipping)
-      let freshSecret: string;
-      try {
-        const { clientSecret: cs, paymentIntentId: pid } = await orderService.createPaymentIntent(
-          Math.round(grandTotal * 100)
-        );
-        freshSecret = cs;
-        setClientSecret(cs);
-        setPaymentIntentId(pid);
-      } catch {
-        setError('Could not initialise payment. Please try again.');
-        setLoading(false);
-        return;
-      }
-
-      // Create payment method first so we have card details (last4, expiry) for saving
+      // Create payment method to validate card and get details for saving
       const { paymentMethod, error: pmErr } = await stripe.createPaymentMethod({
         type: 'card',
         card: cardElement,
       });
 
-      if (pmErr) {
-        setStripeError(pmErr.message ?? 'Card payment failed. Please try again.');
-        setLoading(false);
-        return;
-      }
-
-      const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(freshSecret, {
-        payment_method: paymentMethod!.id,
-      });
-
       setLoading(false);
 
-      if (stripeErr) {
-        setStripeError(stripeErr.message ?? 'Card payment failed. Please try again.');
+      if (pmErr) {
+        setStripeError(pmErr.message ?? 'Card error. Please try again.');
         return;
       }
 
-      if (paymentIntent?.status === 'succeeded') {
-        if (saveCard) {
-          try {
-            const card = paymentMethod!.card;
-            const payload = {
+      setPendingPaymentMethodId(paymentMethod!.id);
+
+      if (saveCard) {
+        try {
+          const card = paymentMethod!.card;
+          await fetch(API_ENDPOINTS.PAYMENT_METHODS, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
               type: paymentData.type,
               brand: card?.brand ?? '',
               last4: card?.last4 ?? '',
@@ -423,19 +377,15 @@ const CheckoutInner: React.FC = () => {
               expiryYear: card?.exp_year?.toString() ?? '',
               setAsDefault: savedCards.length === 0,
               stripePaymentMethodId: paymentMethod!.id,
-            };
-            await fetch(API_ENDPOINTS.PAYMENT_METHODS, {
-              method: 'POST',
-              headers: getAuthHeaders(),
-              body: JSON.stringify(payload),
-            });
-          } catch {
-            // best-effort — card save failure does not block checkout
-          }
+            }),
+          });
+        } catch {
+          // best-effort — card save failure does not block checkout
         }
-        setStep('review');
-        window.scrollTo(0, 0);
       }
+
+      setStep('review');
+      window.scrollTo(0, 0);
       return;
     }
 
@@ -465,6 +415,43 @@ const CheckoutInner: React.FC = () => {
     if (!user) return;
     setLoading(true);
     setError(null);
+
+    // Charge Stripe at order placement time
+    const isCardPayment = paymentMode === 'saved' ||
+      (paymentMode === 'new' && (paymentData.type === 'credit-card' || paymentData.type === 'debit-card'));
+
+    let finalPaymentIntentId: string | undefined;
+
+    if (isCardPayment) {
+      if (!stripe || !pendingPaymentMethodId) {
+        setError('Payment not ready. Please go back to the payment step and try again.');
+        setLoading(false);
+        return;
+      }
+      try {
+        const { clientSecret: cs, paymentIntentId: pid } = await orderService.createPaymentIntent(
+          Math.round(grandTotal * 100)
+        );
+        finalPaymentIntentId = pid;
+        const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(cs, {
+          payment_method: pendingPaymentMethodId,
+        });
+        if (stripeErr) {
+          setError(stripeErr.message ?? 'Card payment failed. Please go back and try again.');
+          setLoading(false);
+          return;
+        }
+        if (paymentIntent?.status !== 'succeeded') {
+          setError('Payment was not completed. Please go back and try again.');
+          setLoading(false);
+          return;
+        }
+      } catch {
+        setError('Could not process payment. Please try again.');
+        setLoading(false);
+        return;
+      }
+    }
 
     // Save new address to profile if user opted in
     if (selectedAddressId === 'new' && saveAddress) {
@@ -518,7 +505,7 @@ const CheckoutInner: React.FC = () => {
         paymentMethod,
         contactEmail: shippingData.email,
         contactPhone: shippingData.phone,
-        paymentIntentId: paymentIntentId ?? undefined,
+        paymentIntentId: finalPaymentIntentId,
       };
 
       const couponCodes: Record<string, string> = {};
@@ -960,7 +947,14 @@ const CheckoutInner: React.FC = () => {
 
               {/* ── Saved card mode: Back + Continue buttons ── */}
               {paymentMode === 'saved' && hasCards && (
-                <div className="flex justify-between pt-2">
+                <div className="space-y-3 pt-2">
+                  {stripeError && (
+                    <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      {stripeError}
+                    </p>
+                  )}
+                <div className="flex justify-between">
                   <Button variant="outline" onClick={() => setStep('shipping')}>Back</Button>
                   <Button
                     size="lg"
@@ -970,6 +964,7 @@ const CheckoutInner: React.FC = () => {
                   >
                     Review Order
                   </Button>
+                </div>
                 </div>
               )}
             </Card>
