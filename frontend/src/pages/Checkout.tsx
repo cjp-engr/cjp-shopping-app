@@ -319,8 +319,8 @@ const CheckoutInner: React.FC = () => {
     }
   };
 
-  const handlePaymentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePaymentSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
 
     // Saved card: create PaymentIntent and confirm with stored Stripe payment method
     if (paymentMode === 'saved' && selectedCardId) {
@@ -964,8 +964,9 @@ const CheckoutInner: React.FC = () => {
                   <Button variant="outline" onClick={() => setStep('shipping')}>Back</Button>
                   <Button
                     size="lg"
-                    disabled={!selectedCardId}
-                    onClick={() => { setStep('review'); window.scrollTo(0, 0); }}
+                    loading={loading}
+                    disabled={!selectedCardId || loading}
+                    onClick={() => handlePaymentSubmit()}
                   >
                     Review Order
                   </Button>
