@@ -32,7 +32,16 @@ import {
   ChevronRight,
   Truck,
   Zap,
+  Store,
 } from 'lucide-react';
+import { TAX_RATE } from '../utils/constants';
+import type { CartItem } from '../types/cart';
+
+const DELIVERY_META: Record<string, { label: string; sub: string; Icon: React.ElementType }> = {
+  standard: { label: 'Standard', sub: '3–7 business days', Icon: Truck },
+  express:  { label: 'Express',  sub: '1–2 business days', Icon: Zap },
+  pickup:   { label: 'Pickup',   sub: 'Ready in-store',    Icon: Store },
+};
 
 type PaymentMode = 'saved' | 'new';
 
@@ -140,7 +149,7 @@ const CheckoutInner: React.FC = () => {
     cartState?.deliverySelections ?? {}
   );
 
-  const effectivePrice = (product: typeof cart.items[0]['product']) =>
+  const effectivePrice = (product: CartItem['product']) =>
     product.discount && product.discount > 0
       ? product.price * (1 - product.discount / 100)
       : product.price;
@@ -148,7 +157,7 @@ const CheckoutInner: React.FC = () => {
   // Group cart items by seller for the Order Review and per-seller shipping display
   const sellerGroups = useMemo(() => {
     const map = new Map<string, {
-      sellerId: string; sellerName: string; items: typeof cart.items;
+      sellerId: string; sellerName: string; items: CartItem[];
       grossSubtotal: number; productDiscount: number; voucherDiscount: number;
       subtotal: number; shipping: number; tax: number; storeTotal: number;
       shippingOptions: string[]; shippingFee: string | undefined; shippingFeeAmounts: Record<string, number>;
@@ -202,7 +211,7 @@ const CheckoutInner: React.FC = () => {
       } else {
         group.shipping = 0;
       }
-      group.tax = netSubtotal * 0.08;
+      group.tax = netSubtotal * TAX_RATE;
       group.storeTotal = netSubtotal + group.shipping + group.tax;
     }
     return Array.from(map.values());
@@ -386,8 +395,8 @@ const CheckoutInner: React.FC = () => {
               headers: getAuthHeaders(),
               body: JSON.stringify(payload),
             });
-          } catch (err) {
-            console.error('[saveCard] error:', err);
+          } catch {
+            // best-effort — card save failure does not block checkout
           }
         }
         setStep('review');
@@ -1014,14 +1023,8 @@ const CheckoutInner: React.FC = () => {
                           </div>
                           <div className="p-3 flex flex-col sm:flex-row gap-2">
                             {group.shippingOptions.map((opt) => {
-                              const Icon = opt === 'express' ? Zap : opt === 'pickup' ? Package : Truck;
+                              const { label, sub, Icon } = DELIVERY_META[opt] ?? { label: opt, sub: '', Icon: Truck };
                               const selected = (deliverySelections[group.sellerId] ?? group.shippingOptions[0]) === opt;
-                              const meta: Record<string, { label: string; sub: string }> = {
-                                standard: { label: 'Standard', sub: '3–7 business days' },
-                                express:  { label: 'Express',  sub: '1–2 business days' },
-                                pickup:   { label: 'Pickup',   sub: 'Ready in-store'    },
-                              };
-                              const { label, sub } = meta[opt] ?? { label: opt, sub: '' };
                               const fee = group.shippingFee === 'buyer_pays' ? group.shippingFeeAmounts[opt] : undefined;
                               return (
                                 <button

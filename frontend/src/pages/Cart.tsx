@@ -16,6 +16,12 @@ const getItemKey = (item: CartItem): string =>
 const getEffectivePrice = (price: number, discount?: number | null): number =>
   discount && discount > 0 ? price * (1 - discount / 100) : price;
 
+const DELIVERY_META: Record<string, { label: string; sub: string; Icon: React.ElementType }> = {
+  standard: { label: 'Standard', sub: '3–7 business days', Icon: Truck },
+  express:  { label: 'Express',  sub: '1–2 business days', Icon: Zap },
+  pickup:   { label: 'Pickup',   sub: 'Ready in-store',    Icon: Store },
+};
+
 export const Cart: React.FC = () => {
   const navigate = useNavigate();
   const { cart, removeFromCart, updateQuantity, setItemSelected, validateCart, syncCart } = useCart();
@@ -296,8 +302,9 @@ export const Cart: React.FC = () => {
                     onChange={() => toggleSeller(group.items)}
                     className="w-4 h-4 rounded accent-primary-600 cursor-pointer"
                   />
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    🏪 {group.sellerName}
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <Store className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    {group.sellerName}
                   </span>
                 </label>
                 {group.shippingMode === 'free' && (
@@ -432,12 +439,7 @@ export const Cart: React.FC = () => {
                       const fee = group.items[0]?.product.shippingFeeAmounts?.[opt];
                       const currentSel = deliverySelections[group.key] ?? group.shippingOptions[0];
                       const isSelected = currentSel === opt;
-                      const meta: Record<string, { label: string; sub: string; Icon: typeof Truck }> = {
-                        standard: { label: 'Standard', sub: '3–7 business days', Icon: Truck },
-                        express:  { label: 'Express',  sub: '1–2 business days', Icon: Zap },
-                        pickup:   { label: 'Pickup',   sub: 'Ready in-store',    Icon: Store },
-                      };
-                      const { label, sub, Icon } = meta[opt] ?? { label: opt, sub: '', Icon: Truck };
+                      const { label, sub, Icon } = DELIVERY_META[opt] ?? { label: opt, sub: '', Icon: Truck };
                       return (
                         <button
                           key={opt}
