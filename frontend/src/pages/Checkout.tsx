@@ -321,9 +321,40 @@ const CheckoutInner: React.FC = () => {
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Saved card: create PaymentIntent and confirm with stored Stripe payment method
     if (paymentMode === 'saved' && selectedCardId) {
-      setStep('review');
-      window.scrollTo(0, 0);
+      const savedCard = savedCards.find(c => c._id === selectedCardId);
+      if (!savedCard?.stripePaymentMethodId || !stripe) {
+        // No Stripe payment method ID stored (old card) — proceed without Stripe charge
+        setStep('review');
+        window.scrollTo(0, 0);
+        return;
+      }
+      setLoading(true);
+      setStripeError(null);
+      try {
+        const { clientSecret: cs, paymentIntentId: pid } = await orderService.createPaymentIntent(
+          Math.round(grandTotal * 100)
+        );
+        setClientSecret(cs);
+        setPaymentIntentId(pid);
+        const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(cs, {
+          payment_method: savedCard.stripePaymentMethodId,
+        });
+        if (stripeErr) {
+          setStripeError(stripeErr.message ?? 'Card payment failed. Please try again.');
+          return;
+        }
+        if (paymentIntent?.status === 'succeeded') {
+          setStep('review');
+          window.scrollTo(0, 0);
+        }
+      } catch {
+        setError('Could not process payment. Please try again.');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -391,6 +422,7 @@ const CheckoutInner: React.FC = () => {
               expiryMonth: card?.exp_month?.toString() ?? '',
               expiryYear: card?.exp_year?.toString() ?? '',
               setAsDefault: savedCards.length === 0,
+              stripePaymentMethodId: paymentMethod!.id,
             };
             await fetch(API_ENDPOINTS.PAYMENT_METHODS, {
               method: 'POST',

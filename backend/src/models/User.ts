@@ -18,6 +18,7 @@ export interface ISavedCard {
   expiryMonth: string;
   expiryYear: string;
   isDefault: boolean;
+  stripePaymentMethodId?: string;
 }
 
 export interface ISavedAddress {
@@ -64,6 +65,7 @@ const SavedCardSchema = new Schema<ISavedCard>({
   expiryMonth: { type: String, required: true },
   expiryYear: { type: String, required: true },
   isDefault: { type: Boolean, default: false },
+  stripePaymentMethodId: { type: String },
 });
 
 const SavedAddressSchema = new Schema<ISavedAddress>({
