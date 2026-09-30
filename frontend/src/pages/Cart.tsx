@@ -146,7 +146,7 @@ export const Cart: React.FC = () => {
       const key = cartItem.product.sellerId ?? '__unknown__';
       if (!map.has(key)) {
         map.set(key, {
-          sellerName: cartItem.product.sellerName ?? 'Seller',
+          sellerName: cartItem.product.sellerName || 'Seller',
           items: [], subtotal: 0, discount: 0, voucherDiscount: 0,
           shippingMode: 'unknown', shippingOptions: [],
           shipping: 0, tax: 0, storeTotal: 0,

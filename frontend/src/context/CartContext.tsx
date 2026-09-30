@@ -94,8 +94,10 @@ const loadFromBackend = async (): Promise<CartItem[] | null> => {
     for (const seller of data.sellers ?? []) {
       const sellerIdStr =
         seller.sellerId?._id?.toString() ?? seller.sellerId?.toString() ?? '__unknown__';
-      const sellerName = seller.sellerId?.firstName
-        ? `${seller.sellerId.firstName} ${seller.sellerId.lastName ?? ''}`.trim()
+      // seller.sellerId is a raw ObjectId string (not populated); read name from the product's populated sellerId
+      const populatedSeller = seller.items?.[0]?.product?.sellerId;
+      const sellerName = populatedSeller?.firstName
+        ? `${populatedSeller.firstName} ${populatedSeller.lastName ?? ''}`.trim()
         : '';
 
       for (const entry of seller.items ?? []) {
