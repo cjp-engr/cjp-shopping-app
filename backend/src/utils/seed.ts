@@ -5,6 +5,17 @@ import User from '../models/User.js';
 
 dotenv.config();
 
+// Reusable shipping config helpers
+const ship = {
+  freeStd: { shippingOptions: ['standard'], shippingFee: 'free', shippingFeeAmounts: {} },
+  freeStdExpr: { shippingOptions: ['standard', 'express'], shippingFee: 'free', shippingFeeAmounts: {} },
+  freeAll: { shippingOptions: ['standard', 'express', 'pickup'], shippingFee: 'free', shippingFeeAmounts: {} },
+  paidStd: (s: number) => ({ shippingOptions: ['standard'], shippingFee: 'buyer_pays', shippingFeeAmounts: { standard: s } }),
+  paidStdExpr: (s: number, e: number) => ({ shippingOptions: ['standard', 'express'], shippingFee: 'buyer_pays', shippingFeeAmounts: { standard: s, express: e } }),
+  paidStdPickup: (s: number) => ({ shippingOptions: ['standard', 'pickup'], shippingFee: 'buyer_pays', shippingFeeAmounts: { standard: s, pickup: 0 } }),
+  paidAll: (s: number, e: number) => ({ shippingOptions: ['standard', 'express', 'pickup'], shippingFee: 'buyer_pays', shippingFeeAmounts: { standard: s, express: e, pickup: 0 } }),
+};
+
 const products = [
   // Electronics
   {
@@ -26,7 +37,8 @@ const products = [
       ['Bluetooth', '5.0'],
       ['Weight', '250g'],
       ['Warranty', '2 years']
-    ])
+    ]),
+    ...ship.freeStdExpr,
   },
   {
     name: 'Smartphone 128GB',
@@ -43,7 +55,8 @@ const products = [
       ['Storage', '128GB'],
       ['RAM', '8GB'],
       ['Camera', '48MP + 12MP + 5MP']
-    ])
+    ]),
+    ...ship.freeStdExpr,
   },
   {
     name: 'Laptop 15.6" Intel i7',
@@ -60,7 +73,8 @@ const products = [
       ['RAM', '16GB'],
       ['Storage', '512GB SSD'],
       ['Display', '15.6" Full HD']
-    ])
+    ]),
+    ...ship.paidStdExpr(9.99, 19.99),
   },
   {
     name: 'Wireless Mouse',
@@ -71,7 +85,8 @@ const products = [
     stock: 120,
     rating: 0,
     reviews: 0,
-    tags: ['wireless', 'mouse', 'ergonomic']
+    tags: ['wireless', 'mouse', 'ergonomic'],
+    ...ship.freeStd,
   },
   {
     name: '4K Webcam',
@@ -82,7 +97,8 @@ const products = [
     stock: 63,
     rating: 0,
     reviews: 0,
-    tags: ['webcam', '4K', 'streaming']
+    tags: ['webcam', '4K', 'streaming'],
+    ...ship.paidStdExpr(5.99, 11.99),
   },
   {
     name: 'Mechanical Keyboard RGB',
@@ -93,7 +109,8 @@ const products = [
     stock: 74,
     rating: 0,
     reviews: 0,
-    tags: ['keyboard', 'gaming', 'RGB']
+    tags: ['keyboard', 'gaming', 'RGB'],
+    ...ship.paidStdExpr(5.99, 11.99),
   },
   {
     name: 'Smart Watch',
@@ -104,7 +121,8 @@ const products = [
     stock: 52,
     rating: 0,
     reviews: 0,
-    tags: ['smartwatch', 'fitness', 'wearable']
+    tags: ['smartwatch', 'fitness', 'wearable'],
+    ...ship.freeStdExpr,
   },
   {
     name: 'Portable Bluetooth Speaker',
@@ -115,7 +133,8 @@ const products = [
     stock: 134,
     rating: 0,
     reviews: 0,
-    tags: ['speaker', 'bluetooth', 'portable']
+    tags: ['speaker', 'bluetooth', 'portable'],
+    ...ship.paidAll(4.99, 9.99),
   },
 
   // Clothing
@@ -133,7 +152,8 @@ const products = [
       ['Material', '100% Cotton'],
       ['Fit', 'Classic'],
       ['Care', 'Machine washable']
-    ])
+    ]),
+    ...ship.freeAll,
   },
   // ── Variant products ────────────────────────────────────────────────────────
   {
@@ -153,6 +173,7 @@ const products = [
       { attributes: new Map([['Size', 'L']]), price: 36.99, stock: 12, images: ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=400'] },
       { attributes: new Map([['Size', 'XL']]), price: 36.99, stock: 6, images: ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=400'] },
     ],
+    ...ship.paidStdExpr(3.99, 7.99),
   },
   {
     name: 'Trail Running Shoes',
@@ -172,6 +193,7 @@ const products = [
       { attributes: new Map([['Size', '10']]), price: 89.99, stock: 7, images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'] },
       { attributes: new Map([['Size', '11']]), price: 89.99, stock: 3, images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400'] },
     ],
+    ...ship.paidStdExpr(5.99, 12.99),
   },
   {
     name: 'Ceramic Coffee Mug',
@@ -189,6 +211,7 @@ const products = [
       { attributes: new Map([['Color', 'Black']]), price: 18.99, stock: 15, images: ['https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400'] },
       { attributes: new Map([['Color', 'Blue']]), price: 18.99, stock: 10, images: ['https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400'] },
     ],
+    ...ship.paidStdPickup(4.99),
   },
   {
     name: 'Leather Wallet',
@@ -206,6 +229,7 @@ const products = [
       { attributes: new Map([['Color', 'Black']]), price: 29.99, stock: 18, images: ['https://images.unsplash.com/photo-1627123424574-724758594e93?w=400'] },
       { attributes: new Map([['Color', 'Tan']]), price: 31.99, stock: 8, images: ['https://images.unsplash.com/photo-1627123424574-724758594e93?w=400'] },
     ],
+    ...ship.freeStdExpr,
   },
   {
     name: 'Yoga Leggings',
@@ -223,6 +247,7 @@ const products = [
       { attributes: new Map([['Size', 'M']]), price: 44.99, stock: 14, images: ['https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=400'] },
       { attributes: new Map([['Size', 'L']]), price: 44.99, stock: 9, images: ['https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=400'] },
     ],
+    ...ship.paidStdExpr(4.99, 9.99),
   },
   {
     name: 'Wireless Earbuds',
@@ -239,6 +264,7 @@ const products = [
       { attributes: new Map([['Color', 'White']]), price: 79.99, stock: 20, images: ['https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400'] },
       { attributes: new Map([['Color', 'Black']]), price: 79.99, stock: 25, images: ['https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400'] },
     ],
+    ...ship.freeStdExpr,
   },
   {
     name: 'Throw Blanket',
@@ -256,6 +282,7 @@ const products = [
       { attributes: new Map([['Color', 'Beige']]), price: 39.99, stock: 10, images: ['https://images.unsplash.com/photo-1580301762395-14d3e6509fa1?w=400'] },
       { attributes: new Map([['Color', 'Navy']]), price: 39.99, stock: 8, images: ['https://images.unsplash.com/photo-1580301762395-14d3e6509fa1?w=400'] },
     ],
+    ...ship.paidAll(6.99, 13.99),
   },
   {
     name: 'E2E Test Variant Tee',
@@ -273,6 +300,7 @@ const products = [
       { attributes: new Map([['Size', 'M']]), price: 54.99, stock: 10, images: ['https://images.unsplash.com/photo-1576566588028-4147f3842f3f?w=400'] },
       { attributes: new Map([['Size', 'L']]), price: 59.99, stock: 15, images: ['https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400'] },
     ],
+    ...ship.freeStd,
   },
   {
     name: 'Denim Jeans - Slim Fit',
@@ -283,7 +311,8 @@ const products = [
     stock: 85,
     rating: 0,
     reviews: 0,
-    tags: ['jeans', 'denim', 'slim-fit']
+    tags: ['jeans', 'denim', 'slim-fit'],
+    ...ship.paidStdExpr(4.99, 9.99),
   },
   {
     name: 'Running Shoes',
@@ -294,7 +323,8 @@ const products = [
     stock: 56,
     rating: 0,
     reviews: 0,
-    tags: ['shoes', 'running', 'athletic']
+    tags: ['shoes', 'running', 'athletic'],
+    ...ship.paidStdExpr(5.99, 11.99),
   },
   {
     name: 'Winter Jacket',
@@ -305,7 +335,8 @@ const products = [
     stock: 42,
     rating: 0,
     reviews: 0,
-    tags: ['jacket', 'winter', 'waterproof']
+    tags: ['jacket', 'winter', 'waterproof'],
+    ...ship.paidStdExpr(7.99, 14.99),
   },
   {
     name: 'Casual Sneakers',
@@ -316,7 +347,8 @@ const products = [
     stock: 92,
     rating: 0,
     reviews: 0,
-    tags: ['sneakers', 'casual', 'canvas']
+    tags: ['sneakers', 'casual', 'canvas'],
+    ...ship.freeStdExpr,
   },
   {
     name: 'Hoodie - Pullover',
@@ -327,7 +359,8 @@ const products = [
     stock: 110,
     rating: 0,
     reviews: 0,
-    tags: ['hoodie', 'casual', 'cotton']
+    tags: ['hoodie', 'casual', 'cotton'],
+    ...ship.freeStdExpr,
   },
   {
     name: 'Dress Shirt - Formal',
@@ -338,7 +371,8 @@ const products = [
     stock: 87,
     rating: 0,
     reviews: 0,
-    tags: ['shirt', 'formal', 'business']
+    tags: ['shirt', 'formal', 'business'],
+    ...ship.paidStdPickup(3.99),
   },
   {
     name: 'Leather Belt',
@@ -349,7 +383,8 @@ const products = [
     stock: 145,
     rating: 0,
     reviews: 0,
-    tags: ['belt', 'leather', 'accessory']
+    tags: ['belt', 'leather', 'accessory'],
+    ...ship.freeStd,
   },
 
   // Home & Garden
@@ -362,7 +397,8 @@ const products = [
     stock: 67,
     rating: 0,
     reviews: 0,
-    tags: ['lamp', 'lighting', 'modern']
+    tags: ['lamp', 'lighting', 'modern'],
+    ...ship.paidStdExpr(6.99, 13.99),
   },
   {
     name: 'Throw Pillow Set (4-Pack)',
@@ -373,7 +409,8 @@ const products = [
     stock: 88,
     rating: 0,
     reviews: 0,
-    tags: ['pillows', 'decor', 'home']
+    tags: ['pillows', 'decor', 'home'],
+    ...ship.paidAll(5.99, 11.99),
   },
   {
     name: 'Indoor Plant - Snake Plant',
@@ -384,7 +421,8 @@ const products = [
     stock: 135,
     rating: 0,
     reviews: 0,
-    tags: ['plant', 'indoor', 'air-purifying']
+    tags: ['plant', 'indoor', 'air-purifying'],
+    ...ship.paidStd(8.99),
   },
   {
     name: 'Coffee Table - Wood',
@@ -395,7 +433,8 @@ const products = [
     stock: 23,
     rating: 0,
     reviews: 0,
-    tags: ['furniture', 'table', 'wood']
+    tags: ['furniture', 'table', 'wood'],
+    ...ship.paidStdPickup(19.99),
   },
   {
     name: 'Wall Clock - Minimalist',
@@ -406,7 +445,8 @@ const products = [
     stock: 156,
     rating: 0,
     reviews: 0,
-    tags: ['clock', 'wall-decor', 'minimalist']
+    tags: ['clock', 'wall-decor', 'minimalist'],
+    ...ship.paidStdExpr(4.99, 9.99),
   },
   {
     name: 'Area Rug 5x7',
@@ -417,7 +457,8 @@ const products = [
     stock: 41,
     rating: 0,
     reviews: 0,
-    tags: ['rug', 'carpet', 'decor']
+    tags: ['rug', 'carpet', 'decor'],
+    ...ship.paidStdExpr(14.99, 24.99),
   },
   {
     name: 'Desk Organizer Set',
@@ -428,7 +469,8 @@ const products = [
     stock: 78,
     rating: 0,
     reviews: 0,
-    tags: ['organizer', 'office', 'bamboo']
+    tags: ['organizer', 'office', 'bamboo'],
+    ...ship.freeStdExpr,
   },
   {
     name: 'Scented Candle Set',
@@ -439,7 +481,8 @@ const products = [
     stock: 156,
     rating: 0,
     reviews: 0,
-    tags: ['candles', 'scented', 'decor']
+    tags: ['candles', 'scented', 'decor'],
+    ...ship.freeAll,
   },
 
   // Books
@@ -458,7 +501,8 @@ const products = [
       ['Publisher', 'Tech Books Inc'],
       ['Language', 'English'],
       ['ISBN', '978-1234567890']
-    ])
+    ]),
+    ...ship.freeStdExpr,
   },
   {
     name: 'Mystery Novel: The Lost Key',
@@ -469,7 +513,8 @@ const products = [
     stock: 145,
     rating: 0,
     reviews: 0,
-    tags: ['fiction', 'mystery', 'thriller']
+    tags: ['fiction', 'mystery', 'thriller'],
+    ...ship.freeStd,
   },
   {
     name: 'Cookbook: Healthy Recipes',
@@ -480,7 +525,8 @@ const products = [
     stock: 92,
     rating: 0,
     reviews: 0,
-    tags: ['cookbook', 'healthy', 'recipes']
+    tags: ['cookbook', 'healthy', 'recipes'],
+    ...ship.freeStd,
   },
   {
     name: 'Science Fiction: Galactic Wars',
@@ -491,7 +537,8 @@ const products = [
     stock: 67,
     rating: 0,
     reviews: 0,
-    tags: ['sci-fi', 'fiction', 'space']
+    tags: ['sci-fi', 'fiction', 'space'],
+    ...ship.freeStd,
   },
   {
     name: 'Self-Help: Mindful Living',
@@ -502,7 +549,8 @@ const products = [
     stock: 103,
     rating: 0,
     reviews: 0,
-    tags: ['self-help', 'mindfulness', 'wellness']
+    tags: ['self-help', 'mindfulness', 'wellness'],
+    ...ship.freeStdExpr,
   },
   {
     name: 'Biography: Innovators',
@@ -513,7 +561,8 @@ const products = [
     stock: 58,
     rating: 0,
     reviews: 0,
-    tags: ['biography', 'business', 'inspiration']
+    tags: ['biography', 'business', 'inspiration'],
+    ...ship.freeStd,
   },
   {
     name: 'Children\'s Picture Book',
@@ -524,7 +573,8 @@ const products = [
     stock: 198,
     rating: 0,
     reviews: 0,
-    tags: ['children', 'picture-book', 'education']
+    tags: ['children', 'picture-book', 'education'],
+    ...ship.freeStd,
   },
   {
     name: 'Travel Guide: Europe',
@@ -535,7 +585,8 @@ const products = [
     stock: 64,
     rating: 0,
     reviews: 0,
-    tags: ['travel', 'guide', 'europe']
+    tags: ['travel', 'guide', 'europe'],
+    ...ship.freeStd,
   },
 
   // Sports & Outdoors
@@ -548,7 +599,8 @@ const products = [
     stock: 112,
     rating: 0,
     reviews: 0,
-    tags: ['yoga', 'fitness', 'exercise']
+    tags: ['yoga', 'fitness', 'exercise'],
+    ...ship.paidAll(4.99, 9.99),
   },
   {
     name: 'Camping Tent - 4 Person',
@@ -559,7 +611,8 @@ const products = [
     stock: 34,
     rating: 0,
     reviews: 0,
-    tags: ['camping', 'tent', 'outdoor']
+    tags: ['camping', 'tent', 'outdoor'],
+    ...ship.paidStdExpr(12.99, 22.99),
   },
   {
     name: 'Dumbbell Set - Adjustable',
@@ -570,7 +623,8 @@ const products = [
     stock: 67,
     rating: 0,
     reviews: 0,
-    tags: ['fitness', 'weights', 'strength']
+    tags: ['fitness', 'weights', 'strength'],
+    ...ship.paidStdExpr(9.99, 17.99),
   },
   {
     name: 'Hiking Backpack - 40L',
@@ -581,7 +635,8 @@ const products = [
     stock: 45,
     rating: 0,
     reviews: 0,
-    tags: ['hiking', 'backpack', 'outdoor']
+    tags: ['hiking', 'backpack', 'outdoor'],
+    ...ship.paidStdExpr(6.99, 13.99),
   },
   {
     name: 'Basketball - Official Size',
@@ -592,7 +647,8 @@ const products = [
     stock: 98,
     rating: 0,
     reviews: 0,
-    tags: ['basketball', 'sports', 'outdoor']
+    tags: ['basketball', 'sports', 'outdoor'],
+    ...ship.freeAll,
   },
   {
     name: 'Bicycle Helmet',
@@ -603,7 +659,8 @@ const products = [
     stock: 76,
     rating: 0,
     reviews: 0,
-    tags: ['bicycle', 'helmet', 'safety']
+    tags: ['bicycle', 'helmet', 'safety'],
+    ...ship.paidStdExpr(5.99, 11.99),
   },
   {
     name: 'Resistance Bands Set',
@@ -614,7 +671,8 @@ const products = [
     stock: 142,
     rating: 0,
     reviews: 0,
-    tags: ['fitness', 'resistance-bands', 'exercise']
+    tags: ['fitness', 'resistance-bands', 'exercise'],
+    ...ship.freeStdExpr,
   },
   {
     name: 'Soccer Ball - Pro Quality',
@@ -625,7 +683,8 @@ const products = [
     stock: 89,
     rating: 0,
     reviews: 0,
-    tags: ['soccer', 'ball', 'sports']
+    tags: ['soccer', 'ball', 'sports'],
+    ...ship.freeAll,
   }
 ];
 
