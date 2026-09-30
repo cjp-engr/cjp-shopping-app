@@ -13,7 +13,7 @@ export async function createPaymentIntent(
     amount: amountInCents,
     currency,
     metadata,
-    automatic_payment_methods: { enabled: true },
+    payment_method_types: ['card'],
   });
   return { id: intent.id, clientSecret: intent.client_secret! };
 }
