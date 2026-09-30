@@ -237,7 +237,7 @@ const CheckoutInner: React.FC = () => {
   useEffect(() => {
     const isCard =
       paymentData.type === 'credit-card' || paymentData.type === 'debit-card';
-    if (!isCard || paymentMode === 'saved' || clientSecret) return;
+    if (!isCard || paymentMode === 'saved' || grandTotal <= 0) return;
 
     const totalCents = Math.round(grandTotal * 100);
     orderService
@@ -247,8 +247,7 @@ const CheckoutInner: React.FC = () => {
         setPaymentIntentId(pid);
       })
       .catch(() => setError('Could not initialise payment. Please try again.'));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentData.type, paymentMode]);
+  }, [paymentData.type, paymentMode, grandTotal]);
 
   const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
