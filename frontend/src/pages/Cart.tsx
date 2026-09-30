@@ -203,7 +203,6 @@ export const Cart: React.FC = () => {
 
   const selectedCount = cart.items.filter(i => selectedItems.has(getItemKey(i))).length;
   const hasUnknownShipping = sellerGroups.some(g => g.subtotal > 0 && g.shipping === -1);
-  const allFreeShipping = sellerGroups.length > 0 && sellerGroups.filter(g => g.subtotal > 0).every(g => g.shippingMode === 'free');
   const totalDiscount = sellerGroups.reduce((s, g) => s + g.discount + g.voucherDiscount, 0);
   const summarySubtotal = sellerGroups.reduce((s, g) => s + g.subtotal + g.discount, 0);
   const summaryShipping = sellerGroups.reduce((s, g) => s + Math.max(0, g.shipping), 0);
@@ -274,13 +273,6 @@ export const Cart: React.FC = () => {
         </span>
       </label>
 
-      {/* Per-seller shipping banners */}
-      {allFreeShipping && (
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-4 flex items-center gap-3">
-          <Ticket className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-          <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">You've unlocked <span className="font-bold">free shipping!</span></p>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Cart Items grouped by seller */}

@@ -42,10 +42,7 @@ export const Home: React.FC = () => {
         <div className="absolute top-8 right-48 w-24 h-24 bg-white/5 rounded-full hidden md:block" />
 
         <div className="relative max-w-2xl">
-          <span className="inline-block bg-white/15 text-white text-xs font-semibold px-3 py-1.5 rounded-full mb-5 tracking-wide uppercase">
-            Free shipping over $50
-          </span>
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-5 leading-tight tracking-tight">
+<h1 className="text-4xl md:text-5xl font-extrabold mb-5 leading-tight tracking-tight">
             Discover Amazing<br />Products at TokoMart
           </h1>
           <p className="text-base md:text-lg mb-8 text-primary-100 leading-relaxed max-w-lg">
