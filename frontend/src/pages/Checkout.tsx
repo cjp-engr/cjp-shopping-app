@@ -234,20 +234,8 @@ const CheckoutInner: React.FC = () => {
 
   // Fetch PaymentIntent when user selects a card payment type (new card only, not saved cards)
   const grandTotal = sellerGroups.reduce((s, g) => s + g.storeTotal, 0);
-  useEffect(() => {
-    const isCard =
-      paymentData.type === 'credit-card' || paymentData.type === 'debit-card';
-    if (!isCard || paymentMode === 'saved' || grandTotal <= 0) return;
-
-    const totalCents = Math.round(grandTotal * 100);
-    orderService
-      .createPaymentIntent(totalCents)
-      .then(({ clientSecret: cs, paymentIntentId: pid }) => {
-        setClientSecret(cs);
-        setPaymentIntentId(pid);
-      })
-      .catch(() => setError('Could not initialise payment. Please try again.'));
-  }, [paymentData.type, paymentMode, grandTotal]);
+  // PaymentIntent is created fresh in handlePaymentSubmit to guarantee
+  // the amount reflects the final grandTotal (including shipping) at submission time.
 
   const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -343,7 +331,7 @@ const CheckoutInner: React.FC = () => {
       paymentData.type === 'credit-card' || paymentData.type === 'debit-card';
 
     if (isCard && paymentMode === 'new') {
-      if (!stripe || !elements || !clientSecret) {
+      if (!stripe || !elements) {
         setError('Payment not ready. Please wait a moment and try again.');
         return;
       }
@@ -352,6 +340,21 @@ const CheckoutInner: React.FC = () => {
 
       setLoading(true);
       setStripeError(null);
+
+      // Create PaymentIntent with the exact grandTotal at submission time (includes shipping)
+      let freshSecret: string;
+      try {
+        const { clientSecret: cs, paymentIntentId: pid } = await orderService.createPaymentIntent(
+          Math.round(grandTotal * 100)
+        );
+        freshSecret = cs;
+        setClientSecret(cs);
+        setPaymentIntentId(pid);
+      } catch {
+        setError('Could not initialise payment. Please try again.');
+        setLoading(false);
+        return;
+      }
 
       // Create payment method first so we have card details (last4, expiry) for saving
       const { paymentMethod, error: pmErr } = await stripe.createPaymentMethod({
@@ -365,7 +368,7 @@ const CheckoutInner: React.FC = () => {
         return;
       }
 
-      const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(freshSecret, {
         payment_method: paymentMethod!.id,
       });
 
