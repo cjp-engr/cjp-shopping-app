@@ -307,12 +307,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
             if (!r.ok) return { id: item.product.id, remove: true };
             const data = await r.json();
             const p = data.product ?? data;
-            const variantKey = item.selectedVariant?.key;
-            const stock = variantKey
-              ? (p.variants?.find((v: { key?: string; _id?: string; stock?: number }) =>
-                  v.key === variantKey || v._id === variantKey)?.stock ?? 0)
+            const variantId = item.selectedVariant?._id;
+            const stock = variantId
+              ? (p.variants?.find((v: { _id?: string; stock?: number }) =>
+                  v._id?.toString() === variantId.toString())?.stock ?? 0)
               : (p.stock ?? 0);
-            return { id: item.product.id, variantKey, remove: stock <= 0 };
+            return { id: item.product.id, variantKey: item.selectedVariant?.key, remove: stock <= 0 };
           })
           .catch(() => ({ id: item.product.id, variantKey: undefined, remove: true }))
       )
