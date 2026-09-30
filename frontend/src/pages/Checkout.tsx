@@ -1007,30 +1007,61 @@ const CheckoutInner: React.FC = () => {
 
                       {/* Delivery option picker */}
                       {group.shippingOptions.length > 0 && (
-                        <div className="mt-3">
-                          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
-                            <Truck className="w-3.5 h-3.5" /> Delivery Method
-                          </p>
-                          <div className="flex flex-wrap gap-2">
+                        <div className="mt-3 rounded-xl border border-gray-100 dark:border-gray-700/60 overflow-hidden">
+                          <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-800/60 flex items-center gap-2">
+                            <Truck className="w-3.5 h-3.5 text-primary-500" />
+                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Delivery Method</span>
+                          </div>
+                          <div className="p-3 flex flex-col sm:flex-row gap-2">
                             {group.shippingOptions.map((opt) => {
-                              const label = opt === 'standard' ? 'Standard' : opt === 'express' ? 'Express' : 'Pickup';
                               const Icon = opt === 'express' ? Zap : opt === 'pickup' ? Package : Truck;
                               const selected = (deliverySelections[group.sellerId] ?? group.shippingOptions[0]) === opt;
+                              const meta: Record<string, { label: string; sub: string }> = {
+                                standard: { label: 'Standard', sub: '3–7 business days' },
+                                express:  { label: 'Express',  sub: '1–2 business days' },
+                                pickup:   { label: 'Pickup',   sub: 'Ready in-store'    },
+                              };
+                              const { label, sub } = meta[opt] ?? { label: opt, sub: '' };
+                              const fee = group.shippingFee === 'buyer_pays' ? group.shippingFeeAmounts[opt] : undefined;
                               return (
                                 <button
                                   key={opt}
                                   type="button"
                                   onClick={() => setDeliverySelections(prev => ({ ...prev, [group.sellerId]: opt }))}
-                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
+                                  className={`relative flex items-center gap-3 flex-1 px-4 py-3 rounded-lg border-2 text-left transition-all duration-150 ${
                                     selected
-                                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30 text-primary-700 dark:text-primary-300'
-                                      : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+                                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40 hover:border-primary-300 dark:hover:border-primary-700'
                                   }`}
                                 >
-                                  <Icon className="w-3.5 h-3.5" />
-                                  {label}
-                                  {group.shippingFee === 'buyer_pays' && group.shippingFeeAmounts[opt] != null && (
-                                    <span className="ml-0.5 text-xs opacity-75">({formatCurrency(group.shippingFeeAmounts[opt])})</span>
+                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                                    selected
+                                      ? 'bg-primary-500 text-white'
+                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                                  }`}>
+                                    <Icon className="w-4 h-4" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`text-sm font-semibold leading-tight ${selected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-800 dark:text-gray-200'}`}>
+                                      {label}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{sub}</p>
+                                  </div>
+                                  {fee != null && (
+                                    <div className="text-right flex-shrink-0">
+                                      <span className={`text-sm font-bold ${
+                                        fee === 0
+                                          ? 'text-emerald-600 dark:text-emerald-400'
+                                          : selected
+                                            ? 'text-primary-600 dark:text-primary-400'
+                                            : 'text-gray-700 dark:text-gray-300'
+                                      }`}>
+                                        {fee === 0 ? 'FREE' : formatCurrency(fee)}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {selected && (
+                                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary-500" />
                                   )}
                                 </button>
                               );
