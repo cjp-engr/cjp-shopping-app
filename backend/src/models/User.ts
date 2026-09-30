@@ -43,6 +43,7 @@ export interface IUser extends Document {
   address?: IAddress;
   savedCards: ISavedCard[];
   savedAddresses: ISavedAddress[];
+  stripeCustomerId?: string;
   following: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
@@ -127,7 +128,8 @@ const UserSchema = new Schema<IUser>({
   following: [{
     type: Schema.Types.ObjectId,
     ref: 'User',
-  }]
+  }],
+  stripeCustomerId: { type: String },
 }, {
   timestamps: true
 });

@@ -73,6 +73,19 @@ export const addPaymentMethod = async (req: AuthRequest, res: Response, next: Ne
     );
     if (duplicate) return res.json({ success: true, paymentMethods: user.savedCards });
 
+    // Attach PM to Stripe Customer so it can be reused across PaymentIntents
+    if (stripePaymentMethodId) {
+      const { getOrCreateStripeCustomer, attachPaymentMethodToCustomer } = await import('../services/stripeService.js');
+      try {
+        if (!user.stripeCustomerId) {
+          user.stripeCustomerId = await getOrCreateStripeCustomer(user.id, user.email);
+        }
+        await attachPaymentMethodToCustomer(stripePaymentMethodId, user.stripeCustomerId);
+      } catch {
+        // non-blocking — proceed even if attachment fails
+      }
+    }
+
     if (setAsDefault) user.savedCards.forEach(c => { c.isDefault = false; });
     user.savedCards.push({ type, brand, last4, cardHolder, expiryMonth, expiryYear,
       isDefault: setAsDefault || user.savedCards.length === 0, stripePaymentMethodId });

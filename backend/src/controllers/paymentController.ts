@@ -5,6 +5,7 @@ import Order from '../models/Order.js';
 import {
   createPaymentIntent,
   constructWebhookEvent,
+  getOrCreateStripeCustomer,
 } from '../services/stripeService.js';
 
 export const createIntent = async (
@@ -30,9 +31,15 @@ export const createIntent = async (
     const tax = subtotal * 0.08;
     const totalCents = Math.round((subtotal + tax) * 100);
 
-    const { id, clientSecret } = await createPaymentIntent(totalCents, 'usd', {
-      userId,
-    });
+    const User = (await import('../models/User.js')).default;
+    const user = await User.findById(userId).select('stripeCustomerId email');
+    let stripeCustomerId = user?.stripeCustomerId;
+    if (!stripeCustomerId && user) {
+      stripeCustomerId = await getOrCreateStripeCustomer(userId, user.email);
+      await User.updateOne({ _id: userId }, { stripeCustomerId });
+    }
+
+    const { id, clientSecret } = await createPaymentIntent(totalCents, 'usd', { userId }, stripeCustomerId);
 
     res.status(200).json({ clientSecret, paymentIntentId: id });
   } catch (err) {
