@@ -13,7 +13,6 @@ import { formatNetworkError } from '../utils/network';
 import type { CheckoutData, PaymentMethod } from '../types/order';
 import type { SavedCard, SavedAddress } from '../types/user';
 import orderService from '../services/orderService';
-import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import { CardBrandIcon } from '../components/common/CardBrandIcon';
 import {
   CreditCard,
@@ -43,6 +42,15 @@ const DELIVERY_META: Record<string, { label: string; sub: string; Icon: React.El
   pickup:   { label: 'Pickup',   sub: 'Ready in-store',    Icon: Store },
 };
 
+const STRIPE_ERROR_MESSAGES = {
+  NO_STRIPE_PM: 'This card cannot be charged. Please remove it and add a new card through checkout.',
+  PAYMENT_NOT_READY: 'Payment not ready. Please wait a moment and try again.',
+  CARD_ERROR: 'Card error. Please try again.',
+  PAYMENT_FAILED: 'Card payment failed. Please go back and try again.',
+  PAYMENT_INCOMPLETE: 'Payment was not completed. Please go back and try again.',
+  PROCESSING_ERROR: 'Could not process payment. Please try again.',
+} as const;
+
 type PaymentMode = 'saved' | 'new';
 
 const CheckoutInner: React.FC = () => {
@@ -54,6 +62,7 @@ const CheckoutInner: React.FC = () => {
   const [step, setStep] = useState<'shipping' | 'payment' | 'review'>('shipping');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // useRef preserves orderPlaced state across re-renders to prevent duplicate order creation
   const orderPlaced = useRef(false);
 
   const savedAddresses: SavedAddress[] = user?.savedAddresses ?? [];
@@ -100,6 +109,26 @@ const CheckoutInner: React.FC = () => {
   const elements = useElements();
   const [pendingPaymentMethodId, setPendingPaymentMethodId] = useState<string | null>(null);
   const [stripeError, setStripeError] = useState<string | null>(null);
+
+  // Helper: Check if payment mode is card-based
+  const isCardPayment = (mode: PaymentMode, type: string): boolean => {
+    return mode === 'saved' || (mode === 'new' && (type === 'credit-card' || type === 'debit-card'));
+  };
+
+  // Helper: Validate saved card has Stripe payment method
+  const validateSavedCard = (card: SavedCard | undefined): boolean => {
+    if (!card?.stripePaymentMethodId) {
+      setStripeError(STRIPE_ERROR_MESSAGES.NO_STRIPE_PM);
+      return false;
+    }
+    return true;
+  };
+
+  // Helper: Handle payment errors with consistent state reset
+  const handlePaymentError = (message: string) => {
+    setError(message);
+    setLoading(false);
+  };
   const [isDark, setIsDark] = useState(() =>
     document.documentElement.classList.contains('dark'),
   );
@@ -325,21 +354,17 @@ const CheckoutInner: React.FC = () => {
     // Saved card: store PM ID and advance to review — Stripe charged at Place Order
     if (paymentMode === 'saved' && selectedCardId) {
       const savedCard = savedCards.find(c => c._id === selectedCardId);
-      if (!savedCard?.stripePaymentMethodId) {
-        setStripeError('This card cannot be charged. Please remove it and add a new card through checkout.');
-        return;
-      }
-      setPendingPaymentMethodId(savedCard.stripePaymentMethodId);
+      if (!validateSavedCard(savedCard)) return;
+
+      setPendingPaymentMethodId(savedCard!.stripePaymentMethodId!);
       setStep('review');
       window.scrollTo(0, 0);
       return;
     }
 
-    const isCard = paymentData.type === 'credit-card' || paymentData.type === 'debit-card';
-
-    if (isCard && paymentMode === 'new') {
+    if (isCardPayment(paymentMode, paymentData.type)) {
       if (!stripe || !elements) {
-        setError('Payment not ready. Please wait a moment and try again.');
+        setError(STRIPE_ERROR_MESSAGES.PAYMENT_NOT_READY);
         return;
       }
       const cardElement = elements.getElement(CardElement);
@@ -356,7 +381,7 @@ const CheckoutInner: React.FC = () => {
       setLoading(false);
 
       if (pmErr) {
-        setStripeError(pmErr.message ?? 'Card error. Please try again.');
+        setStripeError(pmErr.message ?? STRIPE_ERROR_MESSAGES.CARD_ERROR);
         return;
       }
 
@@ -364,21 +389,7 @@ const CheckoutInner: React.FC = () => {
 
       if (saveCard) {
         try {
-          const card = paymentMethod!.card;
-          await fetch(API_ENDPOINTS.PAYMENT_METHODS, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-              type: paymentData.type,
-              brand: card?.brand ?? '',
-              last4: card?.last4 ?? '',
-              cardHolder: `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
-              expiryMonth: card?.exp_month?.toString() ?? '',
-              expiryYear: card?.exp_year?.toString() ?? '',
-              setAsDefault: savedCards.length === 0,
-              stripePaymentMethodId: paymentMethod!.id,
-            }),
-          });
+          await orderService.savePaymentMethod(paymentMethod!, user, savedCards.length === 0);
         } catch {
           // best-effort — card save failure does not block checkout
         }
@@ -417,15 +428,12 @@ const CheckoutInner: React.FC = () => {
     setError(null);
 
     // Charge Stripe at order placement time
-    const isCardPayment = paymentMode === 'saved' ||
-      (paymentMode === 'new' && (paymentData.type === 'credit-card' || paymentData.type === 'debit-card'));
-
+    const isCard = isCardPayment(paymentMode, paymentData.type);
     let finalPaymentIntentId: string | undefined;
 
-    if (isCardPayment) {
+    if (isCard) {
       if (!stripe || !pendingPaymentMethodId) {
-        setError('Payment not ready. Please go back to the payment step and try again.');
-        setLoading(false);
+        handlePaymentError(STRIPE_ERROR_MESSAGES.PAYMENT_NOT_READY);
         return;
       }
       try {
@@ -437,18 +445,17 @@ const CheckoutInner: React.FC = () => {
           payment_method: pendingPaymentMethodId,
         });
         if (stripeErr) {
-          setError(stripeErr.message ?? 'Card payment failed. Please go back and try again.');
-          setLoading(false);
+          handlePaymentError(stripeErr.message ?? STRIPE_ERROR_MESSAGES.PAYMENT_FAILED);
           return;
         }
         if (paymentIntent?.status !== 'succeeded') {
-          setError('Payment was not completed. Please go back and try again.');
-          setLoading(false);
+          handlePaymentError(STRIPE_ERROR_MESSAGES.PAYMENT_INCOMPLETE);
           return;
         }
-      } catch {
-        setError('Could not process payment. Please try again.');
-        setLoading(false);
+      } catch (err) {
+        console.error('Payment processing error:', err);
+        handlePaymentError(STRIPE_ERROR_MESSAGES.PROCESSING_ERROR);
+        setPendingPaymentMethodId(null);
         return;
       }
     }
