@@ -535,6 +535,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                           const SizedBox(height: 8),
 
+                          // ── Payment method ────────────────────────────────
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Payment Method', style: Theme.of(context).textTheme.titleMedium),
+                                const SizedBox(height: 12),
+                                RadioListTile<String>(
+                                  title: const Text('Credit/Debit Card'),
+                                  value: 'credit-card',
+                                  groupValue: _paymentType,
+                                  onChanged: (v) => setState(() => _paymentType = v!),
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                                RadioListTile<String>(
+                                  title: const Text('Cash on Delivery'),
+                                  value: 'cash-on-delivery',
+                                  groupValue: _paymentType,
+                                  onChanged: (v) => setState(() => _paymentType = v!),
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+
                           // â”€â”€ Order total breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                           _TotalBreakdown(
                             grossSubtotal: grossSubtotal,
