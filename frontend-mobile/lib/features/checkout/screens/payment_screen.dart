@@ -127,7 +127,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
   void _onPaymentStateChanged(BuildContext context, PaymentState state) {
     if (state is PaymentMethodsLoaded) {
       setState(() {
-        _savedMethods = state.savedMethods;
+        // Only overwrite cache on a genuine load (selectedMethod == null means fresh load, not a retry)
+        if (state.selectedMethod == null) {
+          _savedMethods = state.savedMethods;
+        }
         _savedMethodsFailed = false;
         // Only adopt selections that exist in the saved list; a new-card
         // selection also emits PaymentMethodsLoaded.
