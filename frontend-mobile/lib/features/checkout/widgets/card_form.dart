@@ -95,28 +95,42 @@ class _CardFormWidgetState extends State<CardFormWidget> {
       children: [
         // CardFormField for entering card details
         // Note: includes postal code and country fields (part of flutter_stripe)
-        CardFormField(
-          style: CardFormStyle(
-            backgroundColor: Colors.grey[50],
-            borderColor: Colors.grey[300],
-            borderRadius: 8,
-            fontSize: 16,
-            cursorColor: Colors.blue,
+        Theme(
+          data: Theme.of(context).copyWith(
+            textTheme: Theme.of(context).textTheme.apply(
+              fontFamily: 'PlusJakartaSans',
+            ),
+          ),
+          child: CardFormField(
+            style: CardFormStyle(
+              backgroundColor: Colors.grey[50],
+              borderColor: Colors.grey[300],
+              borderRadius: 8,
+              fontSize: 16,
+              cursorColor: Colors.blue,
+            ),
           ),
         ),
         const SizedBox(height: 16),
 
         // Checkbox to save card for future use
-        CheckboxListTile(
-          value: widget.shouldSaveCard,
-          onChanged: widget.isLoading
-              ? null
-              : (value) {
-                  widget.onSaveCardToggle();
-                },
-          title: const Text('Save this card for next time'),
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
+        Theme(
+          data: Theme.of(context).copyWith(
+            textTheme: Theme.of(context).textTheme.apply(
+              fontFamily: 'PlusJakartaSans',
+            ),
+          ),
+          child: CheckboxListTile(
+            value: widget.shouldSaveCard,
+            onChanged: widget.isLoading
+                ? null
+                : (value) {
+                    widget.onSaveCardToggle();
+                  },
+            title: const Text('Save this card for next time'),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+          ),
         ),
       ],
     );
