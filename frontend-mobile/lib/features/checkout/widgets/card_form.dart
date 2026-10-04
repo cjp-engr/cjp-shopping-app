@@ -51,7 +51,7 @@ class _CardFormWidgetState extends State<CardFormWidget> {
       );
 
       // Call parent callback with paymentMethodId and full paymentMethod object
-      widget.onCardCreated(paymentMethod.id as String, paymentMethod);
+      widget.onCardCreated(paymentMethod.id, paymentMethod);
 
       // Optional: Show success message
       if (mounted) {
@@ -64,7 +64,7 @@ class _CardFormWidgetState extends State<CardFormWidget> {
         );
       }
     } on StripeException catch (e) {
-      final errorCode = (e.error.code?.toString() ?? 'unknown_error');
+      final errorCode = (e.error.code.toString());
       final errorMessage = StripeErrorMessages.getErrorMessage(errorCode);
       _showErrorSnackBar(errorMessage);
     } catch (e) {
@@ -110,8 +110,8 @@ class _CardFormWidgetState extends State<CardFormWidget> {
           onChanged: widget.isLoading
               ? null
               : (value) {
-                    widget.onSaveCardToggle();
-                  },
+                  widget.onSaveCardToggle();
+                },
           title: const Text('Save this card for next time'),
           contentPadding: EdgeInsets.zero,
           controlAffinity: ListTileControlAffinity.leading,
