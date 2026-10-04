@@ -12,7 +12,7 @@ class StripeService {
         paymentMethodData: PaymentMethodData(),
       ),
     );
-    return paymentMethod.id as String;
+    return paymentMethod.id;
   }
 
   /// Confirm a PaymentIntent using client secret.
@@ -26,14 +26,14 @@ class StripeService {
   static Future<Map<String, dynamic>> confirmPayment(String clientSecret) async {
     try {
       final result = await Stripe.instance.confirmPayment(
-        clientSecret,
+        paymentIntentClientSecret: clientSecret,
       );
       return {
         'status': result.status.toString(),
         'error': null,
       };
     } on StripeException catch (e) {
-      final errorCode = e.error.code?.toString() ?? 'unknown_error';
+      final errorCode = (e.error.code ?? 'unknown_error').toString();
       return {
         'status': 'failed',
         'error': errorCode,
