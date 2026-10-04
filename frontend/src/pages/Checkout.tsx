@@ -32,7 +32,16 @@ import {
   ChevronRight,
   Truck,
   Zap,
+  Store,
 } from 'lucide-react';
+import { TAX_RATE } from '../utils/constants';
+import type { CartItem } from '../types/cart';
+
+const DELIVERY_META: Record<string, { label: string; sub: string; Icon: React.ElementType }> = {
+  standard: { label: 'Standard', sub: '3–7 business days', Icon: Truck },
+  express:  { label: 'Express',  sub: '1–2 business days', Icon: Zap },
+  pickup:   { label: 'Pickup',   sub: 'Ready in-store',    Icon: Store },
+};
 
 type PaymentMode = 'saved' | 'new';
 
@@ -89,8 +98,7 @@ const CheckoutInner: React.FC = () => {
   // Stripe
   const stripe = useStripe();
   const elements = useElements();
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [pendingPaymentMethodId, setPendingPaymentMethodId] = useState<string | null>(null);
   const [stripeError, setStripeError] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(() =>
     document.documentElement.classList.contains('dark'),
@@ -140,7 +148,7 @@ const CheckoutInner: React.FC = () => {
     cartState?.deliverySelections ?? {}
   );
 
-  const effectivePrice = (product: typeof cart.items[0]['product']) =>
+  const effectivePrice = (product: CartItem['product']) =>
     product.discount && product.discount > 0
       ? product.price * (1 - product.discount / 100)
       : product.price;
@@ -148,7 +156,7 @@ const CheckoutInner: React.FC = () => {
   // Group cart items by seller for the Order Review and per-seller shipping display
   const sellerGroups = useMemo(() => {
     const map = new Map<string, {
-      sellerId: string; sellerName: string; items: typeof cart.items;
+      sellerId: string; sellerName: string; items: CartItem[];
       grossSubtotal: number; productDiscount: number; voucherDiscount: number;
       subtotal: number; shipping: number; tax: number; storeTotal: number;
       shippingOptions: string[]; shippingFee: string | undefined; shippingFeeAmounts: Record<string, number>;
@@ -202,7 +210,7 @@ const CheckoutInner: React.FC = () => {
       } else {
         group.shipping = 0;
       }
-      group.tax = netSubtotal * 0.08;
+      group.tax = netSubtotal * TAX_RATE;
       group.storeTotal = netSubtotal + group.shipping + group.tax;
     }
     return Array.from(map.values());
@@ -225,21 +233,8 @@ const CheckoutInner: React.FC = () => {
 
   // Fetch PaymentIntent when user selects a card payment type (new card only, not saved cards)
   const grandTotal = sellerGroups.reduce((s, g) => s + g.storeTotal, 0);
-  useEffect(() => {
-    const isCard =
-      paymentData.type === 'credit-card' || paymentData.type === 'debit-card';
-    if (!isCard || paymentMode === 'saved' || clientSecret) return;
-
-    const totalCents = Math.round(grandTotal * 100);
-    orderService
-      .createPaymentIntent(totalCents)
-      .then(({ clientSecret: cs, paymentIntentId: pid }) => {
-        setClientSecret(cs);
-        setPaymentIntentId(pid);
-      })
-      .catch(() => setError('Could not initialise payment. Please try again.'));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentData.type, paymentMode]);
+  // PaymentIntent is created fresh in handlePaymentSubmit to guarantee
+  // the amount reflects the final grandTotal (including shipping) at submission time.
 
   const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -323,19 +318,27 @@ const CheckoutInner: React.FC = () => {
     }
   };
 
-  const handlePaymentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePaymentSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setStripeError(null);
+
+    // Saved card: store PM ID and advance to review — Stripe charged at Place Order
     if (paymentMode === 'saved' && selectedCardId) {
+      const savedCard = savedCards.find(c => c._id === selectedCardId);
+      if (!savedCard?.stripePaymentMethodId) {
+        setStripeError('This card cannot be charged. Please remove it and add a new card through checkout.');
+        return;
+      }
+      setPendingPaymentMethodId(savedCard.stripePaymentMethodId);
       setStep('review');
       window.scrollTo(0, 0);
       return;
     }
 
-    const isCard =
-      paymentData.type === 'credit-card' || paymentData.type === 'debit-card';
+    const isCard = paymentData.type === 'credit-card' || paymentData.type === 'debit-card';
 
     if (isCard && paymentMode === 'new') {
-      if (!stripe || !elements || !clientSecret) {
+      if (!stripe || !elements) {
         setError('Payment not ready. Please wait a moment and try again.');
         return;
       }
@@ -343,36 +346,29 @@ const CheckoutInner: React.FC = () => {
       if (!cardElement) return;
 
       setLoading(true);
-      setStripeError(null);
 
-      // Create payment method first so we have card details (last4, expiry) for saving
+      // Create payment method to validate card and get details for saving
       const { paymentMethod, error: pmErr } = await stripe.createPaymentMethod({
         type: 'card',
         card: cardElement,
       });
 
-      if (pmErr) {
-        setStripeError(pmErr.message ?? 'Card payment failed. Please try again.');
-        setLoading(false);
-        return;
-      }
-
-      const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: paymentMethod!.id,
-      });
-
       setLoading(false);
 
-      if (stripeErr) {
-        setStripeError(stripeErr.message ?? 'Card payment failed. Please try again.');
+      if (pmErr) {
+        setStripeError(pmErr.message ?? 'Card error. Please try again.');
         return;
       }
 
-      if (paymentIntent?.status === 'succeeded') {
-        if (saveCard) {
-          try {
-            const card = paymentMethod!.card;
-            const payload = {
+      setPendingPaymentMethodId(paymentMethod!.id);
+
+      if (saveCard) {
+        try {
+          const card = paymentMethod!.card;
+          await fetch(API_ENDPOINTS.PAYMENT_METHODS, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
               type: paymentData.type,
               brand: card?.brand ?? '',
               last4: card?.last4 ?? '',
@@ -380,19 +376,16 @@ const CheckoutInner: React.FC = () => {
               expiryMonth: card?.exp_month?.toString() ?? '',
               expiryYear: card?.exp_year?.toString() ?? '',
               setAsDefault: savedCards.length === 0,
-            };
-            await fetch(API_ENDPOINTS.PAYMENT_METHODS, {
-              method: 'POST',
-              headers: getAuthHeaders(),
-              body: JSON.stringify(payload),
-            });
-          } catch (err) {
-            console.error('[saveCard] error:', err);
-          }
+              stripePaymentMethodId: paymentMethod!.id,
+            }),
+          });
+        } catch {
+          // best-effort — card save failure does not block checkout
         }
-        setStep('review');
-        window.scrollTo(0, 0);
       }
+
+      setStep('review');
+      window.scrollTo(0, 0);
       return;
     }
 
@@ -422,6 +415,43 @@ const CheckoutInner: React.FC = () => {
     if (!user) return;
     setLoading(true);
     setError(null);
+
+    // Charge Stripe at order placement time
+    const isCardPayment = paymentMode === 'saved' ||
+      (paymentMode === 'new' && (paymentData.type === 'credit-card' || paymentData.type === 'debit-card'));
+
+    let finalPaymentIntentId: string | undefined;
+
+    if (isCardPayment) {
+      if (!stripe || !pendingPaymentMethodId) {
+        setError('Payment not ready. Please go back to the payment step and try again.');
+        setLoading(false);
+        return;
+      }
+      try {
+        const { clientSecret: cs, paymentIntentId: pid } = await orderService.createPaymentIntent(
+          Math.round(grandTotal * 100)
+        );
+        finalPaymentIntentId = pid;
+        const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(cs, {
+          payment_method: pendingPaymentMethodId,
+        });
+        if (stripeErr) {
+          setError(stripeErr.message ?? 'Card payment failed. Please go back and try again.');
+          setLoading(false);
+          return;
+        }
+        if (paymentIntent?.status !== 'succeeded') {
+          setError('Payment was not completed. Please go back and try again.');
+          setLoading(false);
+          return;
+        }
+      } catch {
+        setError('Could not process payment. Please try again.');
+        setLoading(false);
+        return;
+      }
+    }
 
     // Save new address to profile if user opted in
     if (selectedAddressId === 'new' && saveAddress) {
@@ -475,7 +505,7 @@ const CheckoutInner: React.FC = () => {
         paymentMethod,
         contactEmail: shippingData.email,
         contactPhone: shippingData.phone,
-        paymentIntentId: paymentIntentId ?? undefined,
+        paymentIntentId: finalPaymentIntentId,
       };
 
       const couponCodes: Record<string, string> = {};
@@ -917,15 +947,24 @@ const CheckoutInner: React.FC = () => {
 
               {/* ── Saved card mode: Back + Continue buttons ── */}
               {paymentMode === 'saved' && hasCards && (
-                <div className="flex justify-between pt-2">
+                <div className="space-y-3 pt-2">
+                  {stripeError && (
+                    <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      {stripeError}
+                    </p>
+                  )}
+                <div className="flex justify-between">
                   <Button variant="outline" onClick={() => setStep('shipping')}>Back</Button>
                   <Button
                     size="lg"
-                    disabled={!selectedCardId}
-                    onClick={() => { setStep('review'); window.scrollTo(0, 0); }}
+                    loading={loading}
+                    disabled={!selectedCardId || loading}
+                    onClick={() => handlePaymentSubmit()}
                   >
                     Review Order
                   </Button>
+                </div>
                 </div>
               )}
             </Card>
@@ -1007,30 +1046,55 @@ const CheckoutInner: React.FC = () => {
 
                       {/* Delivery option picker */}
                       {group.shippingOptions.length > 0 && (
-                        <div className="mt-3">
-                          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
-                            <Truck className="w-3.5 h-3.5" /> Delivery Method
-                          </p>
-                          <div className="flex flex-wrap gap-2">
+                        <div className="mt-3 rounded-xl border border-gray-100 dark:border-gray-700/60 overflow-hidden">
+                          <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-800/60 flex items-center gap-2">
+                            <Truck className="w-3.5 h-3.5 text-primary-500" />
+                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Delivery Method</span>
+                          </div>
+                          <div className="p-3 flex flex-col sm:flex-row gap-2">
                             {group.shippingOptions.map((opt) => {
-                              const label = opt === 'standard' ? 'Standard' : opt === 'express' ? 'Express' : 'Pickup';
-                              const Icon = opt === 'express' ? Zap : opt === 'pickup' ? Package : Truck;
+                              const { label, sub, Icon } = DELIVERY_META[opt] ?? { label: opt, sub: '', Icon: Truck };
                               const selected = (deliverySelections[group.sellerId] ?? group.shippingOptions[0]) === opt;
+                              const fee = group.shippingFee === 'buyer_pays' ? group.shippingFeeAmounts[opt] : undefined;
                               return (
                                 <button
                                   key={opt}
                                   type="button"
                                   onClick={() => setDeliverySelections(prev => ({ ...prev, [group.sellerId]: opt }))}
-                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
+                                  className={`relative flex items-center gap-3 flex-1 px-4 py-3 rounded-lg border-2 text-left transition-all duration-150 ${
                                     selected
-                                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-800/30 text-primary-700 dark:text-primary-300'
-                                      : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'
+                                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40 hover:border-primary-300 dark:hover:border-primary-700'
                                   }`}
                                 >
-                                  <Icon className="w-3.5 h-3.5" />
-                                  {label}
-                                  {group.shippingFee === 'buyer_pays' && group.shippingFeeAmounts[opt] != null && (
-                                    <span className="ml-0.5 text-xs opacity-75">({formatCurrency(group.shippingFeeAmounts[opt])})</span>
+                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                                    selected
+                                      ? 'bg-primary-500 text-white'
+                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                                  }`}>
+                                    <Icon className="w-4 h-4" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`text-sm font-semibold leading-tight ${selected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-800 dark:text-gray-200'}`}>
+                                      {label}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{sub}</p>
+                                  </div>
+                                  {fee != null && (
+                                    <div className="text-right flex-shrink-0">
+                                      <span className={`text-sm font-bold ${
+                                        fee === 0
+                                          ? 'text-emerald-600 dark:text-emerald-400'
+                                          : selected
+                                            ? 'text-primary-600 dark:text-primary-400'
+                                            : 'text-gray-700 dark:text-gray-300'
+                                      }`}>
+                                        {fee === 0 ? 'FREE' : formatCurrency(fee)}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {selected && (
+                                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary-500" />
                                   )}
                                 </button>
                               );

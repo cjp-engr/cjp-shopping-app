@@ -15,6 +15,7 @@ export interface SavedCard {
   expiryMonth: string;
   expiryYear: string;
   isDefault: boolean;
+  stripePaymentMethodId?: string;
 }
 
 export interface SavedAddress {

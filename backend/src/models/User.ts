@@ -18,6 +18,7 @@ export interface ISavedCard {
   expiryMonth: string;
   expiryYear: string;
   isDefault: boolean;
+  stripePaymentMethodId?: string;
 }
 
 export interface ISavedAddress {
@@ -42,6 +43,7 @@ export interface IUser extends Document {
   address?: IAddress;
   savedCards: ISavedCard[];
   savedAddresses: ISavedAddress[];
+  stripeCustomerId?: string;
   following: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
@@ -64,6 +66,7 @@ const SavedCardSchema = new Schema<ISavedCard>({
   expiryMonth: { type: String, required: true },
   expiryYear: { type: String, required: true },
   isDefault: { type: Boolean, default: false },
+  stripePaymentMethodId: { type: String },
 });
 
 const SavedAddressSchema = new Schema<ISavedAddress>({
@@ -125,7 +128,8 @@ const UserSchema = new Schema<IUser>({
   following: [{
     type: Schema.Types.ObjectId,
     ref: 'User',
-  }]
+  }],
+  stripeCustomerId: { type: String },
 }, {
   timestamps: true
 });

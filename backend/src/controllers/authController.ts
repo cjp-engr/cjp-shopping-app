@@ -63,7 +63,7 @@ export const addPaymentMethod = async (req: AuthRequest, res: Response, next: Ne
     const user = await User.findById(req.user!.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    const { type, brand, last4, cardHolder, expiryMonth, expiryYear, setAsDefault } = req.body;
+    const { type, brand, last4, cardHolder, expiryMonth, expiryYear, setAsDefault, stripePaymentMethodId } = req.body;
     if (!type || !last4 || !expiryMonth || !expiryYear) {
       return res.status(400).json({ success: false, message: 'Missing required card fields' });
     }
@@ -73,9 +73,22 @@ export const addPaymentMethod = async (req: AuthRequest, res: Response, next: Ne
     );
     if (duplicate) return res.json({ success: true, paymentMethods: user.savedCards });
 
+    // Attach PM to Stripe Customer so it can be reused across PaymentIntents
+    if (stripePaymentMethodId) {
+      const { getOrCreateStripeCustomer, attachPaymentMethodToCustomer } = await import('../services/stripeService.js');
+      try {
+        if (!user.stripeCustomerId) {
+          user.stripeCustomerId = await getOrCreateStripeCustomer(user.id, user.email);
+        }
+        await attachPaymentMethodToCustomer(stripePaymentMethodId, user.stripeCustomerId);
+      } catch {
+        // non-blocking — proceed even if attachment fails
+      }
+    }
+
     if (setAsDefault) user.savedCards.forEach(c => { c.isDefault = false; });
     user.savedCards.push({ type, brand, last4, cardHolder, expiryMonth, expiryYear,
-      isDefault: setAsDefault || user.savedCards.length === 0 });
+      isDefault: setAsDefault || user.savedCards.length === 0, stripePaymentMethodId });
     await user.save();
     res.status(201).json({ success: true, paymentMethods: user.savedCards });
   } catch (err) { next(err); }

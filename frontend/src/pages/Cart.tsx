@@ -6,7 +6,7 @@ import type { CartItem } from '../types/cart';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { formatCurrency } from '../utils/formatters';
-import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ShoppingBag, Lock, Ticket } from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ShoppingBag, Lock, Ticket, Truck, Zap, Store } from 'lucide-react';
 import { TAX_RATE } from '../utils/constants';
 import { SelectVoucherModal } from '../components/voucher/SelectVoucherModal';
 
@@ -15,6 +15,12 @@ const getItemKey = (item: CartItem): string =>
 
 const getEffectivePrice = (price: number, discount?: number | null): number =>
   discount && discount > 0 ? price * (1 - discount / 100) : price;
+
+const DELIVERY_META: Record<string, { label: string; sub: string; Icon: React.ElementType }> = {
+  standard: { label: 'Standard', sub: '3–7 business days', Icon: Truck },
+  express:  { label: 'Express',  sub: '1–2 business days', Icon: Zap },
+  pickup:   { label: 'Pickup',   sub: 'Ready in-store',    Icon: Store },
+};
 
 export const Cart: React.FC = () => {
   const navigate = useNavigate();
@@ -140,7 +146,7 @@ export const Cart: React.FC = () => {
       const key = cartItem.product.sellerId ?? '__unknown__';
       if (!map.has(key)) {
         map.set(key, {
-          sellerName: cartItem.product.sellerName ?? 'Seller',
+          sellerName: cartItem.product.sellerName || 'Seller',
           items: [], subtotal: 0, discount: 0, voucherDiscount: 0,
           shippingMode: 'unknown', shippingOptions: [],
           shipping: 0, tax: 0, storeTotal: 0,
@@ -197,7 +203,6 @@ export const Cart: React.FC = () => {
 
   const selectedCount = cart.items.filter(i => selectedItems.has(getItemKey(i))).length;
   const hasUnknownShipping = sellerGroups.some(g => g.subtotal > 0 && g.shipping === -1);
-  const allFreeShipping = sellerGroups.length > 0 && sellerGroups.filter(g => g.subtotal > 0).every(g => g.shippingMode === 'free');
   const totalDiscount = sellerGroups.reduce((s, g) => s + g.discount + g.voucherDiscount, 0);
   const summarySubtotal = sellerGroups.reduce((s, g) => s + g.subtotal + g.discount, 0);
   const summaryShipping = sellerGroups.reduce((s, g) => s + Math.max(0, g.shipping), 0);
@@ -268,13 +273,6 @@ export const Cart: React.FC = () => {
         </span>
       </label>
 
-      {/* Per-seller shipping banners */}
-      {allFreeShipping && (
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-4 flex items-center gap-3">
-          <Ticket className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-          <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">You've unlocked <span className="font-bold">free shipping!</span></p>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Cart Items grouped by seller */}
@@ -296,8 +294,9 @@ export const Cart: React.FC = () => {
                     onChange={() => toggleSeller(group.items)}
                     className="w-4 h-4 rounded accent-primary-600 cursor-pointer"
                   />
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    🏪 {group.sellerName}
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <Store className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    {group.sellerName}
                   </span>
                 </label>
                 {group.shippingMode === 'free' && (
@@ -422,34 +421,53 @@ export const Cart: React.FC = () => {
 
               {/* Delivery option selector — only when seller has selected items */}
               {sellerHasSelection && group.shippingMode === 'buyer_pays' && group.shippingOptions.length > 0 && (
-                <div className="rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/40 px-4 py-3" data-testid={`delivery-select-${group.key}`}>
-                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1.5">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12h12l1-12" />
-                    </svg>
-                    Delivery Option
-                  </p>
-                  <div className="flex flex-wrap gap-2">
+                <div className="rounded-xl border border-gray-100 dark:border-gray-700/60 overflow-hidden" data-testid={`delivery-select-${group.key}`}>
+                  <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-800/60 flex items-center gap-2">
+                    <Truck className="w-3.5 h-3.5 text-primary-500" />
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Delivery Method</span>
+                  </div>
+                  <div className="p-3 flex flex-col sm:flex-row gap-2">
                     {group.shippingOptions.map(opt => {
                       const fee = group.items[0]?.product.shippingFeeAmounts?.[opt];
                       const currentSel = deliverySelections[group.key] ?? group.shippingOptions[0];
                       const isSelected = currentSel === opt;
-                      const label = opt === 'standard' ? 'Standard' : opt === 'express' ? 'Express' : 'Pickup';
+                      const { label, sub, Icon } = DELIVERY_META[opt] ?? { label: opt, sub: '', Icon: Truck };
                       return (
                         <button
                           key={opt}
                           onClick={() => setDeliverySelections(prev => ({ ...prev, [group.key]: opt }))}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                          className={`relative flex items-center gap-3 flex-1 px-4 py-3 rounded-lg border-2 text-left transition-all duration-150 ${
                             isSelected
-                              ? 'bg-primary-600 text-white border-primary-600'
-                              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-primary-400'
+                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40 hover:border-primary-300 dark:hover:border-primary-700'
                           }`}
                         >
-                          {label}
-                          {fee !== undefined && (
-                            <span className={isSelected ? 'text-primary-100' : 'text-gray-400 dark:text-gray-500'}>
-                              {fee === 0 ? 'FREE' : formatCurrency(fee)}
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                            isSelected
+                              ? 'bg-primary-500 text-white'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                          }`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-semibold leading-tight ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-800 dark:text-gray-200'}`}>
+                              {label}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{sub}</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <span className={`text-sm font-bold ${
+                              fee === 0
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : isSelected
+                                  ? 'text-primary-600 dark:text-primary-400'
+                                  : 'text-gray-700 dark:text-gray-300'
+                            }`}>
+                              {fee === undefined ? '—' : fee === 0 ? 'FREE' : formatCurrency(fee)}
                             </span>
+                          </div>
+                          {isSelected && (
+                            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary-500" />
                           )}
                         </button>
                       );
