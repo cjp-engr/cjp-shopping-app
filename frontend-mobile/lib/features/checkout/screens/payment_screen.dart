@@ -49,6 +49,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String? _newCardMethodId;
   PaymentMethod? _newCardMethod;
   bool _shouldSaveCard = false;
+  final _cardFormKey = GlobalKey<State<CardFormWidget>>();
 
   // Saved cards tab. Cached here because PaymentBloc replaces its state while
   // paying, which would otherwise make the list disappear.
@@ -85,10 +86,44 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _selectedSavedMethod = method);
   }
 
-  void _handlePlaceOrder() {
-    final methodId = _activeMethodId;
-    if (methodId == null) return;
+  Future<void> _handlePlaceOrder() async {
     final bloc = context.read<PaymentBloc>();
+
+    // For new card tab, create payment method first if not already created
+    if (_isNewCardTab && _newCardMethodId == null) {
+      final cardFormState = _cardFormKey.currentState;
+      if (cardFormState == null) {
+        _showSnackBar('Card form error. Please try again.', Colors.red);
+        return;
+      }
+
+      // Cast to access createPaymentMethod - State<CardFormWidget> is the generic type
+      // but we know it's _CardFormWidgetState which has createPaymentMethod
+      try {
+        // Access the method dynamically
+        final method = cardFormState.runtimeType.toString();
+        // ignore: avoid_print
+        print('Card form state type: $method');
+
+        // Call createPaymentMethod via dynamic dispatch
+        final result = await (cardFormState as dynamic).createPaymentMethod();
+        if (!result || _newCardMethodId == null) {
+          // Error already shown in snackbar by CardFormWidget
+          return;
+        }
+      } catch (e) {
+        // ignore: avoid_print
+        print('Error creating payment method: $e');
+        _showSnackBar('Failed to create payment method. Please try again.', Colors.red);
+        return;
+      }
+    }
+
+    final methodId = _activeMethodId;
+    if (methodId == null) {
+      _showSnackBar('Please select a payment method.', Colors.red);
+      return;
+    }
 
     // PaymentBloc needs the method id (and save flag) registered before the
     // intent is created. SelectSavedPaymentMethod resets the save flag, so
@@ -229,15 +264,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               style: TextStyle(fontSize: 16),
                             ),
                     ),
-                    if (_isNewCardTab && _newCardMethodId == null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          'Enter your card and tap "Create Payment Method" first.',
-                          style: Theme.of(context).textTheme.bodySmall,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -289,6 +315,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   ) {
     if (_isNewCardTab) {
       return CardFormWidget(
+        key: _cardFormKey,
         onCardCreated: _onCardCreated,
         onSaveCardToggle: _onSaveCardToggle,
         shouldSaveCard: _shouldSaveCard,

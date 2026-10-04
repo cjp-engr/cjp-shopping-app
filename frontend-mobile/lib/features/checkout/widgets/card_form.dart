@@ -40,7 +40,8 @@ class CardFormWidget extends StatefulWidget {
 
 class _CardFormWidgetState extends State<CardFormWidget> {
   /// Create a PaymentMethod from the card details.
-  Future<void> _createPaymentMethod() async {
+  /// Returns true on success, false on failure. Errors shown via snackbar.
+  Future<bool> createPaymentMethod() async {
     try {
       // ignore: avoid_print
       print('Creating payment method...');
@@ -56,17 +57,7 @@ class _CardFormWidgetState extends State<CardFormWidget> {
       print('Payment method created: ${paymentMethod.id}');
       // Call parent callback with paymentMethodId and full paymentMethod object
       widget.onCardCreated(paymentMethod.id, paymentMethod);
-
-      // Optional: Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Payment method created successfully'),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      return true;
     } on StripeException catch (e) {
       // ignore: avoid_print
       print(
@@ -74,12 +65,14 @@ class _CardFormWidgetState extends State<CardFormWidget> {
       final errorCode = (e.error.code.toString());
       final errorMessage = StripeErrorMessages.getErrorMessage(errorCode);
       _showErrorSnackBar(errorMessage);
+      return false;
     } catch (e) {
       // ignore: avoid_print
       print('ERROR creating payment method: $e');
       _showErrorSnackBar(
         StripeErrorMessages.getErrorMessage('unknown_error'),
       );
+      return false;
     }
   }
 
@@ -124,26 +117,6 @@ class _CardFormWidgetState extends State<CardFormWidget> {
           title: const Text('Save this card for next time'),
           contentPadding: EdgeInsets.zero,
           controlAffinity: ListTileControlAffinity.leading,
-        ),
-        const SizedBox(height: 16),
-
-        // Button to create PaymentMethod
-        ElevatedButton(
-          onPressed: widget.isLoading ? null : _createPaymentMethod,
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 50),
-            disabledBackgroundColor: Colors.grey[300],
-          ),
-          child: widget.isLoading
-              ? const SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : const Text('Create Payment Method'),
         ),
       ],
     );
