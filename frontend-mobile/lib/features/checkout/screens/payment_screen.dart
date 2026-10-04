@@ -29,12 +29,12 @@ class PaymentScreen extends StatefulWidget {
   final VoidCallback onBack;
 
   const PaymentScreen({
-    Key? key,
+    super.key,
     required this.amountInCents,
     required this.cartItems,
     required this.onPaymentSuccess,
     required this.onBack,
-  }) : super(key: key);
+  });
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();

@@ -21,6 +21,7 @@ class PaymentService {
   async createPaymentIntent(
     userId: string,
     amountInCents: number,
+    stripePaymentMethodId?: string,
   ): Promise<{ clientSecret: string; paymentIntentId: string }> {
     if (!amountInCents || amountInCents <= 0) {
       throw new PaymentError(400, 'Invalid amount');
@@ -44,12 +45,13 @@ class PaymentService {
       await User.updateOne({ _id: userId }, { stripeCustomerId });
     }
 
-    // Create PaymentIntent
+    // Create PaymentIntent with payment method attached if provided
     const { id, clientSecret } = await stripeCreatePaymentIntent(
       amountInCents,
       'usd',
       { userId },
       stripeCustomerId,
+      stripePaymentMethodId,
     );
 
     return { paymentIntentId: id, clientSecret };

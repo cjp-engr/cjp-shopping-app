@@ -16,6 +16,7 @@ export async function createPaymentIntent(
   currency: string,
   metadata: Record<string, string>,
   customerId?: string,
+  paymentMethodId?: string,
 ): Promise<{ id: string; clientSecret: string }> {
   try {
     const intent = await stripe.paymentIntents.create({
@@ -24,6 +25,7 @@ export async function createPaymentIntent(
       metadata,
       payment_method_types: ['card'],
       ...(customerId ? { customer: customerId } : {}),
+      ...(paymentMethodId ? { payment_method: paymentMethodId } : {}),
     });
     return { id: intent.id, clientSecret: intent.client_secret! };
   } catch (err) {

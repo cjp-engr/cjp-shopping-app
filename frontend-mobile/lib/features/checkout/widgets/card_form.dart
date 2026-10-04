@@ -27,12 +27,12 @@ class CardFormWidget extends StatefulWidget {
   final bool isLoading;
 
   const CardFormWidget({
-    Key? key,
+    super.key,
     required this.onCardCreated,
     required this.onSaveCardToggle,
     required this.shouldSaveCard,
     required this.isLoading,
-  }) : super(key: key);
+  });
 
   @override
   State<CardFormWidget> createState() => _CardFormWidgetState();
@@ -69,7 +69,8 @@ class _CardFormWidgetState extends State<CardFormWidget> {
       }
     } on StripeException catch (e) {
       // ignore: avoid_print
-      print('StripeException creating payment method: ${e.error.code} - ${e.error.message}');
+      print(
+          'StripeException creating payment method: ${e.error.code} - ${e.error.message}');
       final errorCode = (e.error.code.toString());
       final errorMessage = StripeErrorMessages.getErrorMessage(errorCode);
       _showErrorSnackBar(errorMessage);

@@ -14,13 +14,13 @@ class OrderConfirmationScreen extends StatelessWidget {
   final VoidCallback onContinueShopping;
 
   const OrderConfirmationScreen({
-    Key? key,
+    super.key,
     required this.paymentIntentId,
     required this.order,
     required this.onContinueShopping,
     this.cardBrand,
     this.cardLast4,
-  }) : super(key: key);
+  });
 
   static String _money(double v) => '\$${v.toStringAsFixed(2)}';
 
