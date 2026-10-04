@@ -7,8 +7,12 @@ class StripeService {
   /// Returns the Stripe PaymentMethod ID (pm_...).
   /// Throws StripeException if card is invalid or network error.
   static Future<String> createPaymentMethod() async {
-    final paymentMethod = await Stripe.instance.createPaymentMethod();
-    return paymentMethod.id;
+    final paymentMethod = await Stripe.instance.createPaymentMethod(
+      params: const PaymentMethodParams.card(
+        paymentMethodData: PaymentMethodData(),
+      ),
+    );
+    return paymentMethod.id as String;
   }
 
   /// Confirm a PaymentIntent using client secret.
@@ -23,18 +27,16 @@ class StripeService {
     try {
       final result = await Stripe.instance.confirmPayment(
         clientSecret,
-        data: const PaymentMethodParams.card(
-          paymentMethodData: PaymentMethodData(),
-        ),
       );
       return {
         'status': result.status.toString(),
         'error': null,
       };
     } on StripeException catch (e) {
+      final errorCode = e.error.code?.toString() ?? 'unknown_error';
       return {
         'status': 'failed',
-        'error': e.error.code ?? 'unknown_error',
+        'error': errorCode,
       };
     } catch (e) {
       return {
