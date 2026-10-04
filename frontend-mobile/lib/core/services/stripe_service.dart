@@ -25,9 +25,12 @@ class StripeService {
   /// If 3D Secure is required, opens modal for user authentication.
   static Future<Map<String, dynamic>> confirmPayment(String clientSecret) async {
     try {
+      print('Starting confirmPayment with clientSecret: $clientSecret');
       final result = await Stripe.instance.confirmPayment(
         paymentIntentClientSecret: clientSecret,
       );
+      print('Stripe confirmPayment returned status: ${result.status}');
+      print('Full result object: paymentIntentId=${result.id}, clientSecret=${result.clientSecret}');
       return {
         'status': result.status.toString(),
         'error': null,
@@ -35,14 +38,20 @@ class StripeService {
     } on StripeException catch (e) {
       final errorCode = (e.error.code ?? 'unknown_error').toString();
       // Log full error details for debugging
-      print('StripeException: code=$errorCode, message=${e.error.message}');
+      print('StripeException caught:');
+      print('  code: $errorCode');
+      print('  message: ${e.error.message}');
+      print('  declineCode: ${e.error.declineCode}');
+      print('  rawException: ${e.error.exception}');
       return {
         'status': 'failed',
         'error': errorCode,
         'message': e.error.message,
+        'declineCode': e.error.declineCode,
       };
     } catch (e) {
       print('Non-Stripe error in confirmPayment: $e');
+      print('Error type: ${e.runtimeType}');
       return {
         'status': 'failed',
         'error': 'network_error',
