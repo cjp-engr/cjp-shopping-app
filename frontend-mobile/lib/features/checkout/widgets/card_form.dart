@@ -93,48 +93,16 @@ class _CardFormWidgetState extends State<CardFormWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Card Number Element
-        CardNumberElement(
-          style: CardFieldInputStyle(
+        // CardFormField for entering card details
+        // Note: includes postal code and country fields (part of flutter_stripe)
+        CardFormField(
+          style: CardFormStyle(
             backgroundColor: Colors.grey[50],
             borderColor: Colors.grey[300],
             borderRadius: 8,
             fontSize: 16,
             cursorColor: Colors.blue,
           ),
-          onCardNumberComplete: () {
-            // Optional: focus to next field
-          },
-        ),
-        const SizedBox(height: 16),
-
-        // Expiry and CVC in a row
-        Row(
-          children: [
-            Expanded(
-              child: CardExpiryElement(
-                style: CardFieldInputStyle(
-                  backgroundColor: Colors.grey[50],
-                  borderColor: Colors.grey[300],
-                  borderRadius: 8,
-                  fontSize: 16,
-                  cursorColor: Colors.blue,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: CardCvcElement(
-                style: CardFieldInputStyle(
-                  backgroundColor: Colors.grey[50],
-                  borderColor: Colors.grey[300],
-                  borderRadius: 8,
-                  fontSize: 16,
-                  cursorColor: Colors.blue,
-                ),
-              ),
-            ),
-          ],
         ),
         const SizedBox(height: 16),
 
