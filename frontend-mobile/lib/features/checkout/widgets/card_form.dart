@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart' show CardFormEditingController, CardFormField, CardFormStyle, Stripe, StripeException, PaymentMethodParams, PaymentMethodData;
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:toko_mart/core/constants/stripe_error_messages.dart';
 
 /// A StatefulWidget form for capturing new card details.
@@ -39,47 +39,16 @@ class CardFormWidget extends StatefulWidget {
 }
 
 class _CardFormWidgetState extends State<CardFormWidget> {
-  late final CardFormEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = CardFormEditingController();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  /// Validate the card form using the controller.
-  Future<bool> _validateForm() async {
-    final isValid = await _controller.validateCardForm();
-    if (!isValid) {
-      _showErrorSnackBar(
-        StripeErrorMessages.getErrorMessage('card_error'),
-      );
-    }
-    return isValid;
-  }
-
   /// Create a PaymentMethod from the card details.
   Future<void> _createPaymentMethod() async {
-    // Validate form first
-    final isValid = await _validateForm();
-    if (!isValid) return;
-
     try {
       // Create PaymentMethod using Stripe with card form data
+      // CardFormField manages validation internally
       final paymentMethod = await Stripe.instance.createPaymentMethod(
         params: const PaymentMethodParams.card(
           paymentMethodData: PaymentMethodData(),
         ),
       );
-
-      // Extract card details for reference
-      final cardDetails = paymentMethod.card;
 
       // Call parent callback with paymentMethodId and full paymentMethod object
       widget.onCardCreated(paymentMethod.id, paymentMethod);
@@ -95,8 +64,8 @@ class _CardFormWidgetState extends State<CardFormWidget> {
         );
       }
     } on StripeException catch (e) {
-      final errorMessage =
-          StripeErrorMessages.getErrorMessage(e.error.code);
+      final errorCode = e.error.code ?? 'unknown_error';
+      final errorMessage = StripeErrorMessages.getErrorMessage(errorCode);
       _showErrorSnackBar(errorMessage);
     } catch (e) {
       _showErrorSnackBar(
@@ -123,8 +92,8 @@ class _CardFormWidgetState extends State<CardFormWidget> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // CardFormField for entering card details
+        // Manages its own validation state
         CardFormField(
-          controller: _controller,
           style: CardFormStyle(
             backgroundColor: Colors.grey[50],
             borderColor: Colors.grey[300],
@@ -132,7 +101,6 @@ class _CardFormWidgetState extends State<CardFormWidget> {
             fontSize: 16,
             cursorColor: Colors.blue,
           ),
-          enabled: !widget.isLoading,
         ),
         const SizedBox(height: 16),
 
