@@ -51,7 +51,7 @@ class _CardFormWidgetState extends State<CardFormWidget> {
       );
 
       // Call parent callback with paymentMethodId and full paymentMethod object
-      widget.onCardCreated(paymentMethod.id, paymentMethod);
+      widget.onCardCreated(paymentMethod.id as String, paymentMethod);
 
       // Optional: Show success message
       if (mounted) {
@@ -64,7 +64,7 @@ class _CardFormWidgetState extends State<CardFormWidget> {
         );
       }
     } on StripeException catch (e) {
-      final errorCode = e.error.code ?? 'unknown_error';
+      final errorCode = (e.error.code?.toString() ?? 'unknown_error');
       final errorMessage = StripeErrorMessages.getErrorMessage(errorCode);
       _showErrorSnackBar(errorMessage);
     } catch (e) {

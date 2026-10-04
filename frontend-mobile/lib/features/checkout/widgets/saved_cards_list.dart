@@ -8,12 +8,12 @@ class SavedCardsListWidget extends StatelessWidget {
   final bool isLoading;
 
   const SavedCardsListWidget({
-    Key? key,
+    super.key,
     required this.savedMethods,
     required this.selectedMethod,
     required this.onCardSelected,
     required this.isLoading,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +41,7 @@ class SavedCardsListWidget extends StatelessWidget {
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8),
           child: ListTile(
-            leading: Radio<String>(
+            leading: Radio<String?>(
               value: method.id,
               groupValue: selectedMethod?.id,
               onChanged: isLoading ? null : (_) => onCardSelected(method),
