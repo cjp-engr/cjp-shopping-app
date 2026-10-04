@@ -5,7 +5,7 @@ import 'package:toko_mart/core/constants/stripe_error_messages.dart';
 /// A StatefulWidget form for capturing new card details.
 ///
 /// Displays CardFormField from flutter_stripe for entering card number, expiry, and CVC.
-/// Includes a checkbox to optionally save the card and a button to create a PaymentMethod.
+/// Includes a checkbox to optionally save the card.
 ///
 /// The widget communicates with its parent via callbacks:
 /// - [onCardCreated]: Called when PaymentMethod is successfully created

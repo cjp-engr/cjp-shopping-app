@@ -71,6 +71,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String? get _activeMethodId =>
       _isNewCardTab ? _newCardMethodId : _selectedSavedMethod?.id;
 
+  bool get _canPlaceOrder {
+    // For new card: button is enabled so user can create method on click
+    // For saved cards: button is enabled only if a card is selected
+    if (_isNewCardTab) return true;
+    return _activeMethodId != null;
+  }
+
   void _onCardCreated(String paymentMethodId, dynamic paymentMethod) {
     setState(() {
       _newCardMethodId = paymentMethodId;
@@ -220,7 +227,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
             final isLoading = state is CreatingPaymentIntent ||
                 state is ConfirmingPayment ||
                 state is SavingCard;
-            final canPlaceOrder = _activeMethodId != null && !isLoading;
 
             return SingleChildScrollView(
               child: Padding(
@@ -249,7 +255,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
-                      onPressed: canPlaceOrder ? _handlePlaceOrder : null,
+                      onPressed: (_canPlaceOrder && !isLoading) ? _handlePlaceOrder : null,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                       ),
