@@ -263,6 +263,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final client = await ApiClient.get();
     if (!mounted) return;
     final amountInCents = ((orderData['total'] as double) * 100).round();
+    // ignore: avoid_print
+    print('Opening PaymentScreen: total=${orderData['total']}, shipping=${orderData['shipping']}, tax=${orderData['tax']}, amountInCents=$amountInCents');
     _pendingPaymentIntentId = null;
     _pendingCardBrand = null;
     _pendingCardLast4 = null;

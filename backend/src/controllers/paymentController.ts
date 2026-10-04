@@ -11,12 +11,14 @@ export const createIntent = async (
   try {
     const userId = req.user!.id;
     const { amountInCents, stripePaymentMethodId } = req.body;
+    console.log(`[PaymentController] Creating payment intent: amountInCents=${amountInCents}, paymentMethodId=${stripePaymentMethodId}`);
 
     const { clientSecret, paymentIntentId } = await paymentService.createPaymentIntent(
       userId,
       amountInCents,
       stripePaymentMethodId,
     );
+    console.log(`[PaymentController] Payment intent created: ${paymentIntentId}`);
 
     res.status(200).json({ clientSecret, paymentIntentId });
   } catch (err) {

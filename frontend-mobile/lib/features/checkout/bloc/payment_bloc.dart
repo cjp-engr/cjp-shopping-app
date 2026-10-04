@@ -110,6 +110,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     }
     emit(const CreatingPaymentIntent());
     try {
+      // ignore: avoid_print
+      print('CreatePaymentIntent request: amountInCents=${event.amountInCents}, paymentMethodId=$_currentPaymentMethodId');
       final response = await apiService.post('/payments/create-intent', data: {
         'amountInCents': event.amountInCents,
         'stripePaymentMethodId': _currentPaymentMethodId,
