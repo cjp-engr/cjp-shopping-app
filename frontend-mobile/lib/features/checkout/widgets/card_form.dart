@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:flutter_stripe/flutter_stripe.dart' show CardFormEditingController, CardFormField, CardFormStyle, Stripe, StripeException, PaymentMethodParams, PaymentMethodData;
 import 'package:toko_mart/core/constants/stripe_error_messages.dart';
 
 /// A StatefulWidget form for capturing new card details.
@@ -71,8 +71,12 @@ class _CardFormWidgetState extends State<CardFormWidget> {
     if (!isValid) return;
 
     try {
-      // Create PaymentMethod using Stripe
-      final paymentMethod = await Stripe.instance.createPaymentMethod();
+      // Create PaymentMethod using Stripe with card form data
+      final paymentMethod = await Stripe.instance.createPaymentMethod(
+        params: const PaymentMethodParams.card(
+          paymentMethodData: PaymentMethodData(),
+        ),
+      );
 
       // Extract card details for reference
       final cardDetails = paymentMethod.card;
