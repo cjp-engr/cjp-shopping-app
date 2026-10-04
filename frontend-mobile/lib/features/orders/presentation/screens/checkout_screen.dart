@@ -22,6 +22,9 @@ import '../../../cart/presentation/bloc/cart_bloc.dart';
 import '../../../cart/domain/entities/cart_item_entity.dart';
 import '../../../cart/presentation/bloc/cart_event.dart';
 import '../../../cart/presentation/bloc/cart_state.dart';
+import 'package:toko_mart/features/checkout/bloc/payment_bloc.dart';
+import 'package:toko_mart/features/checkout/screens/order_confirmation_screen.dart';
+import 'package:toko_mart/features/checkout/screens/payment_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   /// Product IDs of the items selected in the cart for this checkout.
@@ -63,6 +66,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   // Per-seller delivery option selection (key = sellerId or '__unknown__')
   late final Map<String, String> _deliverySelections;
+
+  // Set while a card payment is in flight (PaymentScreen on the stack, order
+  // not yet confirmed). Used to route to OrderConfirmationScreen on success.
+  String? _pendingPaymentIntentId;
+  String? _pendingCardBrand;
+  String? _pendingCardLast4;
+
+  // Guard to prevent double-charge: set to true when order creation is initiated,
+  // prevents _submit from running again until navigation completes.
+  bool _completed = false;
 
   @override
   void dispose() {
@@ -145,6 +158,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   void _submit(CartState cart, Set<String> selectedIds) {
+    // Prevent double-charge: guard against multiple taps while order creation is in flight
+    if (_completed) return;
     if (!_formKey.currentState!.validate()) return;
     // Save payment method if user checked the box
     _paymentSectionKey.currentState?._maybeSaveCard();
@@ -209,7 +224,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final afterDiscount =
         (effectiveSubtotal - voucherTotal).clamp(0.0, double.infinity);
     final totalTax = afterDiscount * 0.08;
-    context.read<OrderBloc>().add(OrderCreateRequested({
+    final orderData = <String, dynamic>{
           'userId': user.id,
           'items': items,
           'shippingAddress': {
@@ -231,7 +246,62 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'tax': totalTax,
           'shipping': totalShipping,
           'total': afterDiscount + totalShipping + totalTax,
-        }));
+        };
+
+    // Cash on delivery skips the Stripe payment step.
+    if (paymentMethod['type'] == 'cash-on-delivery') {
+      _completed = true;
+      context.read<OrderBloc>().add(OrderCreateRequested(orderData));
+      return;
+    }
+    _openPaymentScreen(orderData, selectedItems);
+  }
+
+  /// Shipping -> Payment step. Pays via Stripe first; once the payment
+  /// succeeds the order is created with the resulting paymentIntentId and the
+  /// OrderBloc `placed` listener shows OrderConfirmationScreen.
+  Future<void> _openPaymentScreen(
+    Map<String, dynamic> orderData,
+    List<CartItemEntity> selectedItems,
+  ) async {
+    final client = await ApiClient.get();
+    if (!mounted) return;
+    final amountInCents = ((orderData['total'] as double) * 100).round();
+    _pendingPaymentIntentId = null;
+    _pendingCardBrand = null;
+    _pendingCardLast4 = null;
+
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (routeCtx) => BlocProvider<PaymentBloc>(
+          create: (_) => PaymentBloc(apiService: client.dio),
+          // Capture the selected card's brand/last4 for the confirmation
+          // screen; PaymentBloc does not retain them after payment.
+          child: BlocListener<PaymentBloc, PaymentState>(
+            listener: (_, state) {
+              if (state is PaymentMethodsLoaded &&
+                  state.selectedMethod != null) {
+                _pendingCardBrand = state.selectedMethod!.brand;
+                _pendingCardLast4 = state.selectedMethod!.last4;
+              }
+            },
+            child: PaymentScreen(
+              amountInCents: amountInCents,
+              cartItems: selectedItems,
+              onBack: () => Navigator.of(routeCtx).pop(),
+              onPaymentSuccess: (paymentIntentId) {
+                _pendingPaymentIntentId = paymentIntentId;
+                _completed = true;
+                context.read<OrderBloc>().add(OrderCreateRequested({
+                      ...orderData,
+                      'paymentIntentId': paymentIntentId,
+                    }));
+              },
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -241,16 +311,46 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       listener: (context, state) {
         if (state.status == OrderStatus.placed) {
           context.read<CartBloc>().add(CartItemsCheckedOut(widget.selectedIds));
-          context.go('/orders');
+          final intentId = _pendingPaymentIntentId;
+          if (intentId != null && state.placedOrders.isNotEmpty) {
+            _pendingPaymentIntentId = null;
+            // Replaces PaymentScreen (top of the stack) with the confirmation.
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => OrderConfirmationScreen(
+                  paymentIntentId: intentId,
+                  order: state.placedOrders.first,
+                  cardBrand: _pendingCardBrand,
+                  cardLast4: _pendingCardLast4,
+                  onContinueShopping: () => context.go('/'),
+                ),
+              ),
+            );
+          } else {
+            context.go('/orders');
+          }
         }
-        if (state.status == OrderStatus.failure) {}
+        if (state.status == OrderStatus.failure) {
+          if (_pendingPaymentIntentId != null) {
+            // Payment succeeded but order creation failed: leave the payment
+            // screen and tell the user (they were charged).
+            _pendingPaymentIntentId = null;
+            _completed = false; // Allow retry
+            Navigator.of(context).pop(); // PaymentScreen is on top
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(
+                  'Payment succeeded but the order could not be created: ${state.errorMessage ?? 'unknown error'}. Please contact support.'),
+              backgroundColor: Colors.red,
+            ));
+          }
+        }
       },
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Checkout'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.pop(),
+            onPressed: _completed ? null : () => context.pop(),
           ),
         ),
         body: BlocBuilder<CartBloc, CartState>(
