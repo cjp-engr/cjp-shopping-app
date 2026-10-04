@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../keys.dart';
@@ -30,10 +30,10 @@ class CheckoutScreen extends StatefulWidget {
   /// Product IDs of the items selected in the cart for this checkout.
   final Set<String> selectedIds;
 
-  /// Pre-selected delivery options from the cart screen (seller key → option).
+  /// Pre-selected delivery options from the cart screen (seller key â†’ option).
   final Map<String, String> initialDeliverySelections;
 
-  /// Pre-applied vouchers from the cart screen (seller key → VoucherSelection).
+  /// Pre-applied vouchers from the cart screen (seller key â†’ VoucherSelection).
   final Map<String, VoucherSelection> initialVoucherSelections;
 
   const CheckoutScreen({
@@ -54,7 +54,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _stateCtrl = TextEditingController();
   final _zipCtrl = TextEditingController();
   String _paymentType = 'credit-card';
-  final _paymentSectionKey = GlobalKey<_PaymentSectionState>();
   final _addressSectionKey = GlobalKey<_AddressSectionState>();
 
   // Per-seller voucher codes (key = sellerId or '__unknown__')
@@ -161,8 +160,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // Prevent double-charge: guard against multiple taps while order creation is in flight
     if (_completed) return;
     if (!_formKey.currentState!.validate()) return;
-    // Save payment method if user checked the box
-    _paymentSectionKey.currentState?._maybeSaveCard();
     // Save new address to profile if user opted in
     if (_addressSectionKey.currentState?.selectedId == 'new' &&
         _addressSectionKey.currentState?.saveAddress == true) {
@@ -190,8 +187,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }
       }
     }
-    final paymentMethod = _paymentSectionKey.currentState?.orderPaymentMethod ??
-        {'type': _paymentType};
+    final paymentMethod = {'type': _paymentType};
     final items = selectedItems.map((i) {
       final entry = <String, dynamic>{
         'productId': i.product.id,
@@ -413,7 +409,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               final selectedOpt = _deliverySelections[entry.key] ??
                   entry.value.first.product.shippingOptions.firstOrNull;
               if (grpFee == 'free') {
-                // free — add nothing
+                // free â€” add nothing
               } else if (grpFee == 'buyer_pays') {
                 totalShipping +=
                     (selectedOpt != null ? grpFeeAmounts[selectedOpt] : null) ??
@@ -441,7 +437,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // ── Shipping address ──────────────────────────────
+                          // â”€â”€ Shipping address â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                           BlocBuilder<AuthBloc, AuthState>(
                             buildWhen: (p, c) =>
                                 p.user?.savedAddresses !=
@@ -458,7 +454,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                           const SizedBox(height: 8),
 
-                          // ── Seller cards ──────────────────────────────────
+                          // â”€â”€ Seller cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                           ...groups.entries.map((entry) {
                             final sellerKey = entry.key;
                             final items = entry.value;
@@ -539,23 +535,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                           const SizedBox(height: 8),
 
-                          // ── Payment method ────────────────────────────────
-                          BlocBuilder<AuthBloc, AuthState>(
-                            buildWhen: (p, c) =>
-                                p.user?.savedCards != c.user?.savedCards,
-                            builder: (_, authState) => _PaymentSection(
-                              key: _paymentSectionKey,
-                              selected: _paymentType,
-                              onChanged: (v) =>
-                                  setState(() => _paymentType = v),
-                              savedCards:
-                                  authState.user?.savedCards ?? const [],
-                            ),
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          // ── Order total breakdown ─────────────────────────
+                          // â”€â”€ Order total breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                           _TotalBreakdown(
                             grossSubtotal: grossSubtotal,
                             productDiscount: productDiscountTotal,
@@ -570,7 +550,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   ),
 
-                  // ── Bottom bar ────────────────────────────────────────────
+                  // â”€â”€ Bottom bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   _BottomBar(
                     total: grandTotal,
                     saved: totalDiscount,
@@ -588,7 +568,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 }
 
-// ── Shipping address section ──────────────────────────────────────────────────
+// â”€â”€ Shipping address section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _AddressSection extends StatefulWidget {
   final List<SavedAddressEntity> savedAddresses;
@@ -650,7 +630,7 @@ class _AddressSectionState extends State<_AddressSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Section header ────────────────────────────────────────────
+          // â”€â”€ Section header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           Row(
             children: [
               Container(
@@ -676,7 +656,7 @@ class _AddressSectionState extends State<_AddressSection> {
           ),
           const SizedBox(height: 12),
 
-          // ── Saved address cards ───────────────────────────────────────
+          // â”€â”€ Saved address cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           ...widget.savedAddresses.map((addr) {
             final subtitle = [addr.street, addr.city, addr.state, addr.zipCode]
                 .where((s) => s.isNotEmpty)
@@ -700,7 +680,7 @@ class _AddressSectionState extends State<_AddressSection> {
             );
           }),
 
-          // ── New address option ────────────────────────────────────────
+          // â”€â”€ New address option â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           _AddressOption(
             label: 'New Address',
             subtitle: 'Enter a different delivery address',
@@ -713,7 +693,7 @@ class _AddressSectionState extends State<_AddressSection> {
             },
           ),
 
-          // ── New address form ──────────────────────────────────────────
+          // â”€â”€ New address form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 220),
             crossFadeState: _selectedId == 'new'
@@ -968,7 +948,7 @@ class _AddressOption extends StatelessWidget {
   }
 }
 
-// ── Per-seller card ───────────────────────────────────────────────────────────
+// â”€â”€ Per-seller card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _SellerCard extends StatelessWidget {
   final String? sellerName;
@@ -1052,7 +1032,7 @@ class _SellerCard extends StatelessWidget {
 
           if (shippingOptions.isNotEmpty) const Divider(height: 1),
 
-          // Shop Voucher row (tapping → voucher screen)
+          // Shop Voucher row (tapping â†’ voucher screen)
           _VoucherRow(
             controller: voucherCtrl,
             discount: voucherDiscount,
@@ -1070,7 +1050,7 @@ class _SellerCard extends StatelessWidget {
   }
 }
 
-// ── Item row inside seller card ───────────────────────────────────────────────
+// â”€â”€ Item row inside seller card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _CheckoutItemRow extends StatelessWidget {
   final CartItemEntity item;
@@ -1187,7 +1167,7 @@ class _CheckoutItemRow extends StatelessWidget {
   }
 }
 
-// ── Voucher row ───────────────────────────────────────────────────────────────
+// â”€â”€ Voucher row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _VoucherRow extends StatefulWidget {
   final TextEditingController controller;
@@ -1304,7 +1284,7 @@ class _VoucherRowState extends State<_VoucherRow> {
   }
 }
 
-// ── Message for seller row ────────────────────────────────────────────────────
+// â”€â”€ Message for seller row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _MessageRow extends StatefulWidget {
   final TextEditingController controller;
@@ -1385,818 +1365,6 @@ class _MessageRowState extends State<_MessageRow> {
     );
   }
 }
-
-// ── Payment method ────────────────────────────────────────────────────────────
-
-enum _CardMode { saved, newCard }
-
-class _PaymentSection extends StatefulWidget {
-  final String selected;
-  final ValueChanged<String> onChanged;
-  final List<SavedCardEntity> savedCards;
-
-  const _PaymentSection({
-    super.key,
-    required this.selected,
-    required this.onChanged,
-    this.savedCards = const [],
-  });
-
-  @override
-  State<_PaymentSection> createState() => _PaymentSectionState();
-}
-
-class _PaymentSectionState extends State<_PaymentSection> {
-  late _CardMode _mode;
-  late String _selectedCardId;
-  bool _saveCard = false;
-
-  // new-card form controllers
-  final _cardNumberCtrl = TextEditingController();
-  final _cardHolderCtrl = TextEditingController();
-  String _expiryMonth = '01';
-  String _expiryYear = DateTime.now().year.toString();
-
-  @override
-  void initState() {
-    super.initState();
-    _mode = widget.savedCards.isNotEmpty ? _CardMode.saved : _CardMode.newCard;
-    final def = widget.savedCards.where((c) => c.isDefault).firstOrNull ??
-        widget.savedCards.firstOrNull;
-    _selectedCardId = def?.id ?? '';
-  }
-
-  @override
-  void dispose() {
-    _cardNumberCtrl.dispose();
-    _cardHolderCtrl.dispose();
-    super.dispose();
-  }
-
-  void _maybeSaveCard() {
-    if (_saveCard && _mode == _CardMode.newCard) {
-      _savePaymentMethod();
-    }
-  }
-
-  Map<String, dynamic> get orderPaymentMethod {
-    if (widget.selected == 'cash-on-delivery') {
-      return {'type': 'cash-on-delivery'};
-    }
-    if (_mode == _CardMode.saved) {
-      final card =
-          widget.savedCards.where((c) => c.id == _selectedCardId).firstOrNull;
-      if (card != null) {
-        return {
-          'type': card.type,
-          'last4': card.last4,
-          'cardHolder': card.cardHolder,
-        };
-      }
-    }
-
-    final number = _cardNumberCtrl.text.replaceAll(' ', '');
-    return {
-      'type': widget.selected,
-      if (number.length >= 4) 'last4': number.substring(number.length - 4),
-      if (_cardHolderCtrl.text.trim().isNotEmpty)
-        'cardHolder': _cardHolderCtrl.text.trim(),
-    };
-  }
-
-  Future<void> _savePaymentMethod() async {
-    final num = _cardNumberCtrl.text.replaceAll(' ', '');
-    if (num.length < 4) return;
-    try {
-      await _http('POST', '/auth/payment-methods', {
-        'type': widget.selected,
-        'last4': num.substring(num.length - 4),
-        'cardHolder': _cardHolderCtrl.text.trim(),
-        'expiryMonth': _expiryMonth,
-        'expiryYear': _expiryYear,
-        'setAsDefault': widget.savedCards.isEmpty,
-      });
-    } catch (_) {/* best-effort */}
-  }
-
-  Future<void> _deleteCard(String id) async {
-    try {
-      await _http('DELETE', '/auth/payment-methods/$id', null);
-      if (!mounted) return;
-      setState(() {
-        if (_selectedCardId == id) {
-          final remaining = widget.savedCards.where((c) => c.id != id).toList();
-          _selectedCardId = remaining.firstOrNull?.id ?? '';
-          if (remaining.isEmpty) _mode = _CardMode.newCard;
-        }
-      });
-    } catch (_) {}
-  }
-
-  Future<void> _http(
-      String method, String path, Map<String, dynamic>? body) async {
-    final client = await ApiClient.get();
-    if (method == 'DELETE') {
-      await client.dio.delete(path);
-    } else {
-      await client.dio.post(path, data: body);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final hasSaved = widget.savedCards.isNotEmpty;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      color: context.surfaceColor,
-      padding: const EdgeInsets.fromLTRB(
-          AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Section header ────────────────────────────────────────────
-          Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.payment_rounded,
-                    size: 15, color: AppColors.primary),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Payment Method',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: context.onSurfaceColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          _PaymentTypeOptions(
-            selected: widget.selected,
-            onChanged: widget.onChanged,
-          ),
-          const SizedBox(height: 12),
-
-          // ── Mode toggle (only when saved cards exist) ──
-          if (hasSaved) ...[
-            Container(
-              height: 38,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(children: [
-                _ModeChip(
-                  label: 'Saved Card',
-                  selected: _mode == _CardMode.saved,
-                  onTap: () => setState(() => _mode = _CardMode.saved),
-                ),
-                _ModeChip(
-                  key: keys.orders.paymentNewCardTab,
-                  label: '+ New Card',
-                  selected: _mode == _CardMode.newCard,
-                  onTap: () => setState(() => _mode = _CardMode.newCard),
-                ),
-              ]),
-            ),
-            const SizedBox(height: 12),
-          ],
-
-          // ── Saved card list ──
-          if (_mode == _CardMode.saved && hasSaved)
-            Column(
-              children: widget.savedCards.map((card) {
-                final selected = _selectedCardId == card.id;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => setState(() => _selectedCardId = card.id),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeOut,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 11),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? AppColors.primary
-                                  .withValues(alpha: isDark ? 0.15 : 0.06)
-                              : (isDark
-                                  ? Colors.white.withValues(alpha: 0.04)
-                                  : Colors.grey.shade50),
-                          borderRadius:
-                              BorderRadius.circular(AppSizes.radiusMd),
-                          border: Border.all(
-                            color: selected
-                                ? AppColors.primary
-                                : (isDark
-                                    ? Colors.white.withValues(alpha: 0.1)
-                                    : Colors.grey.shade200),
-                            width: selected ? 1.5 : 1,
-                          ),
-                        ),
-                        child: Row(children: [
-                          // Radio dot
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: selected
-                                    ? AppColors.primary
-                                    : Colors.grey.shade400,
-                                width: selected ? 5.5 : 1.5,
-                              ),
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          // Card icon box
-                          Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? AppColors.primary.withValues(alpha: 0.12)
-                                  : (isDark
-                                      ? Colors.white.withValues(alpha: 0.06)
-                                      : Colors.grey.shade100),
-                              borderRadius: BorderRadius.circular(9),
-                            ),
-                            child: Icon(
-                              Icons.credit_card_rounded,
-                              size: 17,
-                              color: selected
-                                  ? AppColors.primary
-                                  : context.onSurfaceMuted,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${_capitalize(card.type.replaceAll('-', ' '))} •••• ${card.last4}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: selected
-                                        ? AppColors.primary
-                                        : context.onSurfaceColor,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${card.cardHolder} · ${card.expiryMonth}/${card.expiryYear}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    height: 1.4,
-                                    color: context.onSurfaceMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Semantics(
-                            label: 'Delete saved card',
-                            button: true,
-                            child: InkWell(
-                              onTap: () => _deleteCard(card.id),
-                              borderRadius: BorderRadius.circular(8),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Icon(Icons.delete_outline_rounded,
-                                    size: 18,
-                                    color: Colors.red.withValues(alpha: 0.8)),
-                              ),
-                            ),
-                          ),
-                        ]),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-
-          // ── New card details ──
-          if (_mode == _CardMode.newCard &&
-              widget.selected != 'cash-on-delivery') ...[
-            _CardDetailForm(
-              cardNumberCtrl: _cardNumberCtrl,
-              cardHolderCtrl: _cardHolderCtrl,
-              expiryMonth: _expiryMonth,
-              expiryYear: _expiryYear,
-              onMonthChanged: (v) => setState(() => _expiryMonth = v),
-              onYearChanged: (v) => setState(() => _expiryYear = v),
-            ),
-            const SizedBox(height: 10),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => setState(() => _saveCard = !_saveCard),
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                  child: Row(children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color:
-                            _saveCard ? AppColors.primary : Colors.transparent,
-                        borderRadius: BorderRadius.circular(5),
-                        border: Border.all(
-                          color: _saveCard
-                              ? AppColors.primary
-                              : Colors.grey.shade400,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: _saveCard
-                          ? const Icon(Icons.check_rounded,
-                              size: 14, color: Colors.white)
-                          : null,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Save this card for future purchases',
-                      style: TextStyle(
-                          fontSize: 13, color: context.onSurfaceColor),
-                    ),
-                  ]),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  String _capitalize(String s) =>
-      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
-}
-
-class _ModeChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  const _ModeChip({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          margin: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.25),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    )
-                  ]
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: selected
-                  ? Colors.white
-                  : context.onSurfaceColor.withValues(alpha: 0.6),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PaymentTypeOptions extends StatelessWidget {
-  final String selected;
-  final ValueChanged<String> onChanged;
-
-  const _PaymentTypeOptions({
-    required this.selected,
-    required this.onChanged,
-  });
-
-  static const _options = [
-    ('credit-card', 'Credit Card', Icons.credit_card_rounded),
-    ('debit-card', 'Debit Card', Icons.payment_rounded),
-    ('paypal', 'PayPal', Icons.account_balance_wallet_rounded),
-    ('cash-on-delivery', 'Cash on Delivery', Icons.payments_rounded),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: _options.map((p) {
-        final isSelected = selected == p.$1;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              key: keys.orders.paymentOption(p.$1),
-              onTap: () => onChanged(p.$1),
-              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary
-                          .withValues(alpha: isDark ? 0.15 : 0.06)
-                      : (isDark
-                          ? Colors.white.withValues(alpha: 0.04)
-                          : Colors.grey.shade50),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.primary
-                        : (isDark
-                            ? Colors.white.withValues(alpha: 0.1)
-                            : Colors.grey.shade200),
-                    width: isSelected ? 1.5 : 1,
-                  ),
-                ),
-                child: Row(children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : Colors.grey.shade400,
-                        width: isSelected ? 5.5 : 1.5,
-                      ),
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary.withValues(alpha: 0.12)
-                          : (isDark
-                              ? Colors.white.withValues(alpha: 0.06)
-                              : Colors.grey.shade100),
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Icon(p.$3,
-                        size: 17,
-                        color: isSelected
-                            ? AppColors.primary
-                            : context.onSurfaceMuted),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    p.$2,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected
-                          ? AppColors.primary
-                          : context.onSurfaceColor,
-                    ),
-                  ),
-                ]),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-class _CardDetailForm extends StatelessWidget {
-  final TextEditingController cardNumberCtrl;
-  final TextEditingController cardHolderCtrl;
-  final String expiryMonth;
-  final String expiryYear;
-  final ValueChanged<String> onMonthChanged;
-  final ValueChanged<String> onYearChanged;
-
-  const _CardDetailForm({
-    required this.cardNumberCtrl,
-    required this.cardHolderCtrl,
-    required this.expiryMonth,
-    required this.expiryYear,
-    required this.onMonthChanged,
-    required this.onYearChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final months = List.generate(12, (i) => (i + 1).toString().padLeft(2, '0'));
-    final years =
-        List.generate(10, (i) => (DateTime.now().year + i).toString());
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 4),
-        AppTextField(
-          key: keys.orders.checkoutCardNumberField,
-          label: 'Card Number',
-          controller: cardNumberCtrl,
-          keyboardType: TextInputType.number,
-          prefixIcon: Icons.credit_card_outlined,
-        ),
-        const SizedBox(height: 10),
-        AppTextField(
-          key: keys.orders.checkoutCardHolderField,
-          label: 'Cardholder Name',
-          controller: cardHolderCtrl,
-          prefixIcon: Icons.person_outline,
-          keyboardType: TextInputType.name,
-          textInputAction: TextInputAction.next,
-        ),
-        const SizedBox(height: 10),
-        Row(children: [
-          Expanded(
-              child: _ExpiryPickerField(
-            label: 'Expiry Month',
-            value: expiryMonth,
-            items: months,
-            onChanged: onMonthChanged,
-          )),
-          const SizedBox(width: 10),
-          Expanded(
-              child: _ExpiryPickerField(
-            label: 'Expiry Year',
-            value: expiryYear,
-            items: years,
-            onChanged: onYearChanged,
-          )),
-        ]),
-      ],
-    );
-  }
-}
-
-class _ExpiryPickerField extends StatelessWidget {
-  final String label;
-  final String value;
-  final List<String> items;
-  final ValueChanged<String> onChanged;
-  const _ExpiryPickerField({
-    required this.label,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  void _showPicker(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final initialIndex = items.indexOf(value).clamp(0, items.length - 1);
-    final controller = FixedExtentScrollController(initialItem: initialIndex);
-    final sheetBg = isDark ? const Color(0xFF1C1C2E) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF111827);
-    final mutedColor = isDark
-        ? Colors.white.withValues(alpha: 0.28)
-        : Colors.black.withValues(alpha: 0.3);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetCtx) => StatefulBuilder(
-        builder: (ctx, setModalState) {
-          int tempIndex =
-              controller.hasClients ? controller.selectedItem : initialIndex;
-          return Container(
-            decoration: BoxDecoration(
-              color: sheetBg,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Drag handle
-                Container(
-                  margin: const EdgeInsets.only(top: 10),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: mutedColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                // Header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 8, 0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: textColor,
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(sheetCtx).pop(),
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: mutedColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          onChanged(items[controller.hasClients
-                              ? controller.selectedItem
-                              : initialIndex]);
-                          Navigator.of(sheetCtx).pop();
-                        },
-                        child: const Text(
-                          'Done',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Wheel with highlight band
-                SizedBox(
-                  height: 240,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Selection highlight band
-                      Positioned(
-                        top: (240 - 52) / 2,
-                        left: 24,
-                        right: 24,
-                        child: Container(
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.2),
-                            ),
-                          ),
-                        ),
-                      ),
-                      ListWheelScrollView.useDelegate(
-                        controller: controller,
-                        itemExtent: 52,
-                        perspective: 0.002,
-                        diameterRatio: 2.2,
-                        physics: const FixedExtentScrollPhysics(),
-                        onSelectedItemChanged: (i) {
-                          setModalState(() => tempIndex = i);
-                        },
-                        childDelegate: ListWheelChildBuilderDelegate(
-                          childCount: items.length,
-                          builder: (_, i) {
-                            final isSelected = i == tempIndex;
-                            return Center(
-                              child: Text(
-                                items[i],
-                                style: TextStyle(
-                                  fontSize: isSelected ? 22 : 16,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w700
-                                      : FontWeight.w400,
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : mutedColor,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: MediaQuery.of(ctx).padding.bottom + 16),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _showPicker(context),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.04)
-                : Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : Colors.grey.shade200,
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: context.onSurfaceMuted,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: context.onSurfaceColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.expand_more_rounded,
-                  size: 20, color: context.onSurfaceMuted),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Order total breakdown ─────────────────────────────────────────────────────
 
 class _TotalBreakdown extends StatelessWidget {
   final double grossSubtotal;
@@ -2318,7 +1486,7 @@ class _TotalBreakdown extends StatelessWidget {
   }
 }
 
-// ── Delivery option row ───────────────────────────────────────────────────────
+// â”€â”€ Delivery option row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _DeliveryOptionRow extends StatelessWidget {
   final List<String> options;
@@ -2434,7 +1602,7 @@ class _DeliveryOptionRow extends StatelessWidget {
   }
 }
 
-// ── Bottom bar ────────────────────────────────────────────────────────────────
+// â”€â”€ Bottom bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _BottomBar extends StatelessWidget {
   final double total;
