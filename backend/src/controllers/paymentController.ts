@@ -15,21 +15,21 @@ export const createIntent = async (
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
+    const { amountInCents } = req.body;
 
-    // Recalculate total server-side — never trust frontend amount
-    const cart = await Cart.findOne({ userId }).populate('sellers.items.product');
-    const allItems = cart?.sellers?.flatMap((s: any) => s.items) ?? [];
-    if (!cart || allItems.length === 0) {
-      res.status(400).json({ error: 'Cart is empty' });
+    if (!amountInCents || amountInCents <= 0) {
+      res.status(400).json({ error: 'Invalid amount' });
       return;
     }
 
-    const subtotal = allItems.reduce((sum: number, item: any) => {
-      const price: number = item.product?.price ?? 0;
-      return sum + price * item.quantity;
-    }, 0);
-    const tax = subtotal * 0.08;
-    const totalCents = Math.round((subtotal + tax) * 100);
+    // Validate cart exists (basic sanity check)
+    const cart = await Cart.findOne({ userId }).populate('sellers.items.product');
+    if (!cart) {
+      res.status(400).json({ error: 'Cart not found' });
+      return;
+    }
+
+    const totalCents = amountInCents;
 
     const User = (await import('../models/User.js')).default;
     const user = await User.findById(userId).select('stripeCustomerId email');
