@@ -34,14 +34,19 @@ class StripeService {
       };
     } on StripeException catch (e) {
       final errorCode = (e.error.code ?? 'unknown_error').toString();
+      // Log full error details for debugging
+      print('StripeException: code=$errorCode, message=${e.error.message}');
       return {
         'status': 'failed',
         'error': errorCode,
+        'message': e.error.message,
       };
     } catch (e) {
+      print('Non-Stripe error in confirmPayment: $e');
       return {
         'status': 'failed',
         'error': 'network_error',
+        'message': e.toString(),
       };
     }
   }

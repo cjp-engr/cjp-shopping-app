@@ -114,15 +114,24 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         'amountInCents': event.amountInCents,
         'stripePaymentMethodId': _currentPaymentMethodId,
       });
+      print('CreatePaymentIntent response: ${response.data}');
       final intentId = (response.data['paymentIntentId'] ?? '').toString();
       final secret = (response.data['clientSecret'] ?? '').toString();
+      if (intentId.isEmpty || secret.isEmpty) {
+        print('ERROR: Missing paymentIntentId or clientSecret in response');
+        emit(const PaymentFailed(
+          errorMessage: StripeErrorMessages.paymentInitiationFailed,
+        ));
+        return;
+      }
       _currentPaymentIntentId = intentId;
       _currentClientSecret = secret;
       emit(PaymentIntentCreated(
         clientSecret: secret,
         paymentIntentId: intentId,
       ));
-    } catch (_) {
+    } catch (e) {
+      print('ERROR creating payment intent: $e');
       emit(const PaymentFailed(
         errorMessage: StripeErrorMessages.paymentInitiationFailed,
       ));
@@ -135,11 +144,15 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   ) async {
     emit(const ConfirmingPayment());
     try {
+      print('Confirming payment with clientSecret: ${event.clientSecret}');
       // StripeService.confirmPayment is static in this codebase.
       final result = await StripeService.confirmPayment(event.clientSecret);
+      print('ConfirmPayment result: $result');
       final error = result['error'];
       if (error != null) {
         final code = error.toString();
+        final message = result['message']?.toString() ?? '';
+        print('ConfirmPayment error: code=$code, message=$message');
         emit(PaymentFailed(
           errorMessage: StripeErrorMessages.getErrorMessage(code),
           errorCode: code,
@@ -147,7 +160,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       } else {
         emit(PaymentSucceeded(paymentIntentId: _currentPaymentIntentId ?? ''));
       }
-    } catch (_) {
+    } catch (e) {
+      print('ERROR confirming payment: $e');
       emit(const PaymentFailed(
         errorMessage: StripeErrorMessages.paymentConfirmationFailed,
       ));

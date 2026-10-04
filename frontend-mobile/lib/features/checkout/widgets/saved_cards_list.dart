@@ -36,7 +36,6 @@ class SavedCardsListWidget extends StatelessWidget {
       itemCount: savedMethods.length,
       itemBuilder: (context, index) {
         final method = savedMethods[index];
-        final isSelected = selectedMethod?.id == method.id;
 
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8),
@@ -47,7 +46,8 @@ class SavedCardsListWidget extends StatelessWidget {
               onChanged: isLoading ? null : (_) => onCardSelected(method),
             ),
             title: Text('${method.brand} •••• ${method.last4}'),
-            subtitle: Text('Expires ${method.expiryMonth}/${method.expiryYear}'),
+            subtitle:
+                Text('Expires ${method.expiryMonth}/${method.expiryYear}'),
             trailing: method.isDefault
                 ? Chip(
                     label: const Text('Default'),
