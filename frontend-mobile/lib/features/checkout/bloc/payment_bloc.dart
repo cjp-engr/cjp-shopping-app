@@ -36,7 +36,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   ) async {
     emit(const LoadingSavedPaymentMethods());
     try {
-      final response = await apiService.get('/payment-methods');
+      final response = await apiService.get('/auth/payment-methods');
       final list = (response.data['paymentMethods'] as List?) ?? [];
       final methods = list.map((pm) {
         final m = pm as Map<String, dynamic>;
@@ -110,7 +110,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     }
     emit(const CreatingPaymentIntent());
     try {
-      final response = await apiService.post('/payment-intents', data: {
+      final response = await apiService.post('/payments/create-intent', data: {
         'amountInCents': event.amountInCents,
         'stripePaymentMethodId': _currentPaymentMethodId,
       });
@@ -161,7 +161,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     if (!_shouldSaveCard) return;
     emit(const SavingCard());
     try {
-      await apiService.post('/payment-methods', data: {
+      await apiService.post('/auth/payment-methods', data: {
         'type': 'credit-card',
         'brand': event.brand,
         'last4': event.last4,
