@@ -42,6 +42,7 @@ class _CardFormWidgetState extends State<CardFormWidget> {
   /// Create a PaymentMethod from the card details.
   Future<void> _createPaymentMethod() async {
     try {
+      // ignore: avoid_print
       print('Creating payment method...');
       // Create PaymentMethod using Stripe with card form data
       // CardFormField manages validation internally
@@ -51,6 +52,7 @@ class _CardFormWidgetState extends State<CardFormWidget> {
         ),
       );
 
+      // ignore: avoid_print
       print('Payment method created: ${paymentMethod.id}');
       // Call parent callback with paymentMethodId and full paymentMethod object
       widget.onCardCreated(paymentMethod.id, paymentMethod);
@@ -66,11 +68,13 @@ class _CardFormWidgetState extends State<CardFormWidget> {
         );
       }
     } on StripeException catch (e) {
+      // ignore: avoid_print
       print('StripeException creating payment method: ${e.error.code} - ${e.error.message}');
       final errorCode = (e.error.code.toString());
       final errorMessage = StripeErrorMessages.getErrorMessage(errorCode);
       _showErrorSnackBar(errorMessage);
     } catch (e) {
+      // ignore: avoid_print
       print('ERROR creating payment method: $e');
       _showErrorSnackBar(
         StripeErrorMessages.getErrorMessage('unknown_error'),

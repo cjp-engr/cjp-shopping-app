@@ -114,10 +114,12 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         'amountInCents': event.amountInCents,
         'stripePaymentMethodId': _currentPaymentMethodId,
       });
+      // ignore: avoid_print
       print('CreatePaymentIntent response: ${response.data}');
       final intentId = (response.data['paymentIntentId'] ?? '').toString();
       final secret = (response.data['clientSecret'] ?? '').toString();
       if (intentId.isEmpty || secret.isEmpty) {
+        // ignore: avoid_print
         print('ERROR: Missing paymentIntentId or clientSecret in response');
         emit(const PaymentFailed(
           errorMessage: StripeErrorMessages.paymentInitiationFailed,
@@ -131,6 +133,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         paymentIntentId: intentId,
       ));
     } catch (e) {
+      // ignore: avoid_print
       print('ERROR creating payment intent: $e');
       emit(const PaymentFailed(
         errorMessage: StripeErrorMessages.paymentInitiationFailed,
@@ -144,14 +147,17 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   ) async {
     emit(const ConfirmingPayment());
     try {
+      // ignore: avoid_print
       print('Confirming payment with clientSecret: ${event.clientSecret}');
       // StripeService.confirmPayment is static in this codebase.
       final result = await StripeService.confirmPayment(event.clientSecret);
+      // ignore: avoid_print
       print('ConfirmPayment result: $result');
       final error = result['error'];
       if (error != null) {
         final code = error.toString();
         final message = result['message']?.toString() ?? '';
+        // ignore: avoid_print
         print('ConfirmPayment error: code=$code, message=$message');
         emit(PaymentFailed(
           errorMessage: StripeErrorMessages.getErrorMessage(code),
@@ -161,6 +167,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         emit(PaymentSucceeded(paymentIntentId: _currentPaymentIntentId ?? ''));
       }
     } catch (e) {
+      // ignore: avoid_print
       print('ERROR confirming payment: $e');
       emit(const PaymentFailed(
         errorMessage: StripeErrorMessages.paymentConfirmationFailed,
