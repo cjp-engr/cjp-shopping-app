@@ -216,7 +216,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         0, (s, i) => s + effectivePriceSubmit(i) * i.quantity);
     final voucherTotal =
         _voucherDiscounts.values.fold<double>(0, (s, d) => s + d);
-    final totalShipping = cart.shippingFor(sellerDiscounts: _voucherDiscounts);
+    final totalShipping = cart.shippingFor(
+      sellerDiscounts: _voucherDiscounts,
+      deliverySelections: deliverySelections,
+    );
     final afterDiscount =
         (effectiveSubtotal - voucherTotal).clamp(0.0, double.infinity);
     final totalTax = afterDiscount * 0.08;
