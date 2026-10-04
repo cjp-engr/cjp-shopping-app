@@ -4,7 +4,7 @@ import 'package:toko_mart/core/constants/stripe_error_messages.dart';
 
 /// A StatefulWidget form for capturing new card details.
 ///
-/// Displays CardFormField from flutter_stripe for entering card number, expiry, and CVC.
+/// Displays individual card elements (number, expiry, CVC) from flutter_stripe.
 /// Includes a checkbox to optionally save the card.
 ///
 /// The widget communicates with its parent via callbacks:
@@ -93,16 +93,48 @@ class _CardFormWidgetState extends State<CardFormWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // CardFormField for entering card details
-        // Manages its own validation state
-        CardFormField(
-          style: CardFormStyle(
+        // Card Number Element
+        CardNumberElement(
+          style: CardFieldInputStyle(
             backgroundColor: Colors.grey[50],
             borderColor: Colors.grey[300],
             borderRadius: 8,
             fontSize: 16,
             cursorColor: Colors.blue,
           ),
+          onCardNumberComplete: () {
+            // Optional: focus to next field
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Expiry and CVC in a row
+        Row(
+          children: [
+            Expanded(
+              child: CardExpiryElement(
+                style: CardFieldInputStyle(
+                  backgroundColor: Colors.grey[50],
+                  borderColor: Colors.grey[300],
+                  borderRadius: 8,
+                  fontSize: 16,
+                  cursorColor: Colors.blue,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: CardCvcElement(
+                style: CardFieldInputStyle(
+                  backgroundColor: Colors.grey[50],
+                  borderColor: Colors.grey[300],
+                  borderRadius: 8,
+                  fontSize: 16,
+                  cursorColor: Colors.blue,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
 
