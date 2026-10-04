@@ -13,6 +13,8 @@ class StripeErrorMessages {
     'lost_card': 'Your card has been reported as lost.',
     'stolen_card': 'Your card has been reported as stolen.',
     'network_error': 'Network error. Please check your connection and try again.',
+    'invalid_payment_method': 'This saved card is no longer valid. Please use another card.',
+    'payment_method_not_found': 'The payment method could not be found. Please try again.',
     'unknown_error': 'An unexpected error occurred. Please try again.',
     'payment_cancelled': 'Payment was cancelled.',
   };
