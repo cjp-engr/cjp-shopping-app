@@ -1,0 +1,170 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:toko_mart/core/constants/stripe_error_messages.dart';
+
+/// A StatefulWidget form for capturing new card details.
+///
+/// Displays CardFormField from flutter_stripe for entering card number, expiry, and CVC.
+/// Includes a checkbox to optionally save the card and a button to create a PaymentMethod.
+///
+/// The widget communicates with its parent via callbacks:
+/// - [onCardCreated]: Called when PaymentMethod is successfully created
+/// - [onSaveCardToggle]: Called when the save card checkbox is toggled
+class CardFormWidget extends StatefulWidget {
+  /// Callback when card is successfully created.
+  /// Parameters:
+  ///   - paymentMethodId: String (e.g., "pm_...")
+  ///   - paymentMethod: Dynamic object with id, card details, etc.
+  final Function(String paymentMethodId, dynamic paymentMethod) onCardCreated;
+
+  /// Callback when save card checkbox is toggled.
+  final VoidCallback onSaveCardToggle;
+
+  /// Current state of the "Save card" checkbox.
+  final bool shouldSaveCard;
+
+  /// Whether form is in loading state (button/form disabled).
+  final bool isLoading;
+
+  const CardFormWidget({
+    Key? key,
+    required this.onCardCreated,
+    required this.onSaveCardToggle,
+    required this.shouldSaveCard,
+    required this.isLoading,
+  }) : super(key: key);
+
+  @override
+  State<CardFormWidget> createState() => _CardFormWidgetState();
+}
+
+class _CardFormWidgetState extends State<CardFormWidget> {
+  late final CardFormEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = CardFormEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// Validate the card form using the controller.
+  Future<bool> _validateForm() async {
+    final isValid = await _controller.validateCardForm();
+    if (!isValid) {
+      _showErrorSnackBar(
+        StripeErrorMessages.getErrorMessage('card_error'),
+      );
+    }
+    return isValid;
+  }
+
+  /// Create a PaymentMethod from the card details.
+  Future<void> _createPaymentMethod() async {
+    // Validate form first
+    final isValid = await _validateForm();
+    if (!isValid) return;
+
+    try {
+      // Create PaymentMethod using Stripe
+      final paymentMethod = await Stripe.instance.createPaymentMethod();
+
+      // Extract card details for reference
+      final cardDetails = paymentMethod.card;
+
+      // Call parent callback with paymentMethodId and full paymentMethod object
+      widget.onCardCreated(paymentMethod.id, paymentMethod);
+
+      // Optional: Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment method created successfully'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } on StripeException catch (e) {
+      final errorMessage =
+          StripeErrorMessages.getErrorMessage(e.error.code);
+      _showErrorSnackBar(errorMessage);
+    } catch (e) {
+      _showErrorSnackBar(
+        StripeErrorMessages.getErrorMessage('unknown_error'),
+      );
+    }
+  }
+
+  /// Display an error message in a SnackBar.
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // CardFormField for entering card details
+        CardFormField(
+          controller: _controller,
+          style: CardFormStyle(
+            backgroundColor: Colors.grey[50],
+            borderColor: Colors.grey[300],
+            borderRadius: 8,
+            fontSize: 16,
+            cursorColor: Colors.blue,
+          ),
+          enabled: !widget.isLoading,
+        ),
+        const SizedBox(height: 16),
+
+        // Checkbox to save card for future use
+        CheckboxListTile(
+          value: widget.shouldSaveCard,
+          onChanged: widget.isLoading
+              ? null
+              : (value) {
+                    widget.onSaveCardToggle();
+                  },
+          title: const Text('Save this card for next time'),
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+        ),
+        const SizedBox(height: 16),
+
+        // Button to create PaymentMethod
+        ElevatedButton(
+          onPressed: widget.isLoading ? null : _createPaymentMethod,
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
+            disabledBackgroundColor: Colors.grey[300],
+          ),
+          child: widget.isLoading
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Text('Create Payment Method'),
+        ),
+      ],
+    );
+  }
+}
