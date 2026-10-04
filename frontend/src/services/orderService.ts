@@ -122,6 +122,32 @@ class OrderService {
     };
   }
 
+  async savePaymentMethod(
+    paymentMethod: any,
+    user: { firstName?: string; lastName?: string } | null,
+    isDefault: boolean,
+  ): Promise<void> {
+    const cardData = paymentMethod.card;
+    const response = await fetch(API_ENDPOINTS.PAYMENT_METHODS, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        type: 'credit-card',
+        brand: cardData?.brand ?? '',
+        last4: cardData?.last4 ?? '',
+        cardHolder: `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
+        expiryMonth: cardData?.exp_month?.toString() ?? '',
+        expiryYear: cardData?.exp_year?.toString() ?? '',
+        setAsDefault: isDefault,
+        stripePaymentMethodId: paymentMethod.id,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to save payment method');
+    }
+  }
+
   // Helper method to adapt backend order format to frontend format
   private adaptOrder(order: any): Order {
     return {

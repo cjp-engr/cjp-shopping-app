@@ -68,30 +68,38 @@ export const addPaymentMethod = async (req: AuthRequest, res: Response, next: Ne
       return res.status(400).json({ success: false, message: 'Missing required card fields' });
     }
 
+    // Check for duplicates
     const duplicate = user.savedCards.find(
       c => c.last4 === last4 && c.expiryMonth === expiryMonth && c.expiryYear === expiryYear,
     );
     if (duplicate) return res.json({ success: true, paymentMethods: user.savedCards });
 
-    // Attach PM to Stripe Customer so it can be reused across PaymentIntents
+    // Attach payment method to Stripe Customer for reusability
     if (stripePaymentMethodId) {
-      const { getOrCreateStripeCustomer, attachPaymentMethodToCustomer } = await import('../services/stripeService.js');
-      try {
-        if (!user.stripeCustomerId) {
-          user.stripeCustomerId = await getOrCreateStripeCustomer(user.id, user.email);
-        }
-        await attachPaymentMethodToCustomer(stripePaymentMethodId, user.stripeCustomerId);
-      } catch {
-        // non-blocking — proceed even if attachment fails
-      }
+      const paymentService = (await import('../services/paymentService.js')).default;
+      await paymentService.attachPaymentMethod(req.user!.id, stripePaymentMethodId);
     }
 
-    if (setAsDefault) user.savedCards.forEach(c => { c.isDefault = false; });
-    user.savedCards.push({ type, brand, last4, cardHolder, expiryMonth, expiryYear,
-      isDefault: setAsDefault || user.savedCards.length === 0, stripePaymentMethodId });
+    // Save card to user profile
+    if (setAsDefault) {
+      user.savedCards.forEach(c => { c.isDefault = false; });
+    }
+    user.savedCards.push({
+      type,
+      brand,
+      last4,
+      cardHolder,
+      expiryMonth,
+      expiryYear,
+      isDefault: setAsDefault || user.savedCards.length === 0,
+      stripePaymentMethodId,
+    });
     await user.save();
+
     res.status(201).json({ success: true, paymentMethods: user.savedCards });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const deletePaymentMethod = async (req: AuthRequest, res: Response, next: NextFunction) => {

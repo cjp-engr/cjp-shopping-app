@@ -1,12 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
-import Cart from '../models/Cart.js';
-import Order from '../models/Order.js';
-import {
-  createPaymentIntent,
-  constructWebhookEvent,
-  getOrCreateStripeCustomer,
-} from '../services/stripeService.js';
+import { constructWebhookEvent } from '../services/stripeService.js';
+import paymentService, { PaymentError } from '../services/paymentService.js';
 
 export const createIntent = async (
   req: AuthRequest,
@@ -17,32 +12,17 @@ export const createIntent = async (
     const userId = req.user!.id;
     const { amountInCents } = req.body;
 
-    if (!amountInCents || amountInCents <= 0) {
-      res.status(400).json({ error: 'Invalid amount' });
-      return;
-    }
+    const { clientSecret, paymentIntentId } = await paymentService.createPaymentIntent(
+      userId,
+      amountInCents,
+    );
 
-    // Validate cart exists (basic sanity check)
-    const cart = await Cart.findOne({ userId }).populate('sellers.items.product');
-    if (!cart) {
-      res.status(400).json({ error: 'Cart not found' });
-      return;
-    }
-
-    const totalCents = amountInCents;
-
-    const User = (await import('../models/User.js')).default;
-    const user = await User.findById(userId).select('stripeCustomerId email');
-    let stripeCustomerId = user?.stripeCustomerId;
-    if (!stripeCustomerId && user) {
-      stripeCustomerId = await getOrCreateStripeCustomer(userId, user.email);
-      await User.updateOne({ _id: userId }, { stripeCustomerId });
-    }
-
-    const { id, clientSecret } = await createPaymentIntent(totalCents, 'usd', { userId }, stripeCustomerId);
-
-    res.status(200).json({ clientSecret, paymentIntentId: id });
+    res.status(200).json({ clientSecret, paymentIntentId });
   } catch (err) {
+    if (err instanceof PaymentError) {
+      res.status(err.statusCode).json({ error: err.message });
+      return;
+    }
     next(err);
   }
 };
@@ -63,20 +43,13 @@ export const handleWebhook = async (
     return;
   }
 
-  const intentId: string =
-    (event.data.object as { id: string }).id;
+  const intentId: string = (event.data.object as { id: string }).id;
 
   try {
     if (event.type === 'payment_intent.succeeded') {
-      await Order.findOneAndUpdate(
-        { paymentIntentId: intentId },
-        { status: 'processing' },
-      );
+      await paymentService.handlePaymentIntentSucceeded(intentId);
     } else if (event.type === 'payment_intent.payment_failed') {
-      await Order.findOneAndUpdate(
-        { paymentIntentId: intentId },
-        { status: 'cancelled' },
-      );
+      await paymentService.handlePaymentIntentFailed(intentId);
     }
   } catch (err) {
     // Log but always return 200 — Stripe retries on non-200
