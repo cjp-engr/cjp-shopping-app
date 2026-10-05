@@ -30,10 +30,10 @@ class CheckoutScreen extends StatefulWidget {
   /// Product IDs of the items selected in the cart for this checkout.
   final Set<String> selectedIds;
 
-  /// Pre-selected delivery options from the cart screen (seller key â†’ option).
+  /// Pre-selected delivery options from the cart screen (seller key → option).
   final Map<String, String> initialDeliverySelections;
 
-  /// Pre-applied vouchers from the cart screen (seller key â†’ VoucherSelection).
+  /// Pre-applied vouchers from the cart screen (seller key → VoucherSelection).
   final Map<String, VoucherSelection> initialVoucherSelections;
 
   const CheckoutScreen({
@@ -164,12 +164,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (_addressSectionKey.currentState?.selectedId == 'new' &&
         _addressSectionKey.currentState?.saveAddress == true) {
       context.read<AuthBloc>().add(AuthAddressAddRequested({
-        'street': _streetCtrl.text.trim(),
-        'city': _cityCtrl.text.trim(),
-        'state': _stateCtrl.text.trim(),
-        'zipCode': _zipCtrl.text.trim(),
-        'country': 'PH',
-      }));
+            'street': _streetCtrl.text.trim(),
+            'city': _cityCtrl.text.trim(),
+            'state': _stateCtrl.text.trim(),
+            'zipCode': _zipCtrl.text.trim(),
+            'country': 'PH',
+          }));
     }
     final user = context.read<AuthBloc>().state.user;
     if (user == null) return;
@@ -224,28 +224,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         (effectiveSubtotal - voucherTotal).clamp(0.0, double.infinity);
     final totalTax = afterDiscount * 0.08;
     final orderData = <String, dynamic>{
-          'userId': user.id,
-          'items': items,
-          'shippingAddress': {
-            'street': _streetCtrl.text.trim(),
-            'city': _cityCtrl.text.trim(),
-            'state': _stateCtrl.text.trim(),
-            'zipCode': _zipCtrl.text.trim(),
-            'country': 'PH',
-          },
-          'paymentMethod': paymentMethod,
-          'sellerMessages': {
-            for (final e in _messageCtrls.entries)
-              if (e.value.text.trim().isNotEmpty) e.key: e.value.text.trim(),
-          },
-          'couponCodes': Map<String, String>.from(_appliedVoucherCodes),
-          'deliverySelections': deliverySelections,
-          'contactEmail': user.email,
-          'subtotal': afterDiscount,
-          'tax': totalTax,
-          'shipping': totalShipping,
-          'total': afterDiscount + totalShipping + totalTax,
-        };
+      'userId': user.id,
+      'items': items,
+      'shippingAddress': {
+        'street': _streetCtrl.text.trim(),
+        'city': _cityCtrl.text.trim(),
+        'state': _stateCtrl.text.trim(),
+        'zipCode': _zipCtrl.text.trim(),
+        'country': 'PH',
+      },
+      'paymentMethod': paymentMethod,
+      'sellerMessages': {
+        for (final e in _messageCtrls.entries)
+          if (e.value.text.trim().isNotEmpty) e.key: e.value.text.trim(),
+      },
+      'couponCodes': Map<String, String>.from(_appliedVoucherCodes),
+      'deliverySelections': deliverySelections,
+      'contactEmail': user.email,
+      'subtotal': afterDiscount,
+      'tax': totalTax,
+      'shipping': totalShipping,
+      'total': afterDiscount + totalShipping + totalTax,
+    };
 
     // Cash on delivery skips the Stripe payment step.
     if (paymentMethod['type'] == 'cash-on-delivery') {
@@ -267,7 +267,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (!mounted) return;
     final amountInCents = ((orderData['total'] as double) * 100).round();
     // ignore: avoid_print
-    print('Opening PaymentScreen: total=${orderData['total']}, shipping=${orderData['shipping']}, tax=${orderData['tax']}, amountInCents=$amountInCents');
+    print(
+        'Opening PaymentScreen: total=${orderData['total']}, shipping=${orderData['shipping']}, tax=${orderData['tax']}, amountInCents=$amountInCents');
     _pendingPaymentIntentId = null;
     _pendingCardBrand = null;
     _pendingCardLast4 = null;
@@ -440,144 +441,153 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.only(bottom: AppSizes.md),
                         child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // â”€â”€ Shipping address â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                          BlocBuilder<AuthBloc, AuthState>(
-                            buildWhen: (p, c) =>
-                                p.user?.savedAddresses !=
-                                c.user?.savedAddresses,
-                            builder: (_, authState) => _AddressSection(
-                              key: _addressSectionKey,
-                              savedAddresses:
-                                  authState.user?.savedAddresses ?? const [],
-                              streetCtrl: _streetCtrl,
-                              cityCtrl: _cityCtrl,
-                              stateCtrl: _stateCtrl,
-                              zipCtrl: _zipCtrl,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // â”€â”€ Shipping address â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                            BlocBuilder<AuthBloc, AuthState>(
+                              buildWhen: (p, c) =>
+                                  p.user?.savedAddresses !=
+                                  c.user?.savedAddresses,
+                              builder: (_, authState) => _AddressSection(
+                                key: _addressSectionKey,
+                                savedAddresses:
+                                    authState.user?.savedAddresses ?? const [],
+                                streetCtrl: _streetCtrl,
+                                cityCtrl: _cityCtrl,
+                                stateCtrl: _stateCtrl,
+                                zipCtrl: _zipCtrl,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
+                            const SizedBox(height: 8),
 
-                          // â”€â”€ Seller cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                          ...groups.entries.map((entry) {
-                            final sellerKey = entry.key;
-                            final items = entry.value;
-                            final sellerName = items.first.product.sellerName;
-                            final groupGross = items.fold<double>(
-                                0, (s, i) => s + i.rawPrice * i.quantity);
-                            final groupSubtotal = items.fold<double>(0,
-                                (s, i) => s + effectivePrice(i) * i.quantity);
-                            final groupProductDiscount =
-                                groupGross - groupSubtotal;
-                            final groupVoucherDiscount =
-                                _voucherDiscounts[sellerKey] ?? 0.0;
-                            final afterDiscount =
-                                (groupSubtotal - groupVoucherDiscount)
-                                    .clamp(0.0, double.infinity);
+                            // â”€â”€ Seller cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                            ...groups.entries.map((entry) {
+                              final sellerKey = entry.key;
+                              final items = entry.value;
+                              final sellerName = items.first.product.sellerName;
+                              final groupGross = items.fold<double>(
+                                  0, (s, i) => s + i.rawPrice * i.quantity);
+                              final groupSubtotal = items.fold<double>(0,
+                                  (s, i) => s + effectivePrice(i) * i.quantity);
+                              final groupProductDiscount =
+                                  groupGross - groupSubtotal;
+                              final groupVoucherDiscount =
+                                  _voucherDiscounts[sellerKey] ?? 0.0;
+                              final afterDiscount =
+                                  (groupSubtotal - groupVoucherDiscount)
+                                      .clamp(0.0, double.infinity);
 
-                            // Collect shipping options across all products (union)
-                            final shippingOptions = <String>[];
-                            String? shippingFee;
-                            Map<String, double> shippingFeeAmounts = {};
-                            for (final item in items) {
-                              for (final opt in item.product.shippingOptions) {
-                                if (!shippingOptions.contains(opt)) {
-                                  shippingOptions.add(opt);
+                              // Collect shipping options across all products (union)
+                              final shippingOptions = <String>[];
+                              String? shippingFee;
+                              Map<String, double> shippingFeeAmounts = {};
+                              for (final item in items) {
+                                for (final opt
+                                    in item.product.shippingOptions) {
+                                  if (!shippingOptions.contains(opt)) {
+                                    shippingOptions.add(opt);
+                                  }
+                                }
+                                shippingFee ??= item.product.shippingFee;
+                                if (shippingFeeAmounts.isEmpty) {
+                                  shippingFeeAmounts =
+                                      item.product.shippingFeeAmounts;
                                 }
                               }
-                              shippingFee ??= item.product.shippingFee;
-                              if (shippingFeeAmounts.isEmpty) {
-                                shippingFeeAmounts =
-                                    item.product.shippingFeeAmounts;
+
+                              final sellerSelectedOpt =
+                                  _deliverySelections[sellerKey] ??
+                                      shippingOptions.firstOrNull;
+                              double sellerShipping;
+                              if (shippingFee == 'free') {
+                                sellerShipping = 0.0;
+                              } else if (shippingFee == 'buyer_pays') {
+                                sellerShipping = (sellerSelectedOpt != null
+                                        ? shippingFeeAmounts[sellerSelectedOpt]
+                                        : null) ??
+                                    shippingFeeAmounts.values.firstOrNull ??
+                                    0.0;
+                              } else {
+                                sellerShipping =
+                                    afterDiscount < 50 ? 9.99 : 0.0;
                               }
-                            }
 
-                            final sellerSelectedOpt =
-                                _deliverySelections[sellerKey] ??
-                                    shippingOptions.firstOrNull;
-                            double sellerShipping;
-                            if (shippingFee == 'free') {
-                              sellerShipping = 0.0;
-                            } else if (shippingFee == 'buyer_pays') {
-                              sellerShipping = (sellerSelectedOpt != null
-                                      ? shippingFeeAmounts[sellerSelectedOpt]
-                                      : null) ??
-                                  shippingFeeAmounts.values.firstOrNull ??
-                                  0.0;
-                            } else {
-                              sellerShipping = afterDiscount < 50 ? 9.99 : 0.0;
-                            }
+                              final sellerTax = afterDiscount * 0.08;
+                              final storeTotal =
+                                  afterDiscount + sellerShipping + sellerTax;
 
-                            final sellerTax = afterDiscount * 0.08;
-                            final storeTotal =
-                                afterDiscount + sellerShipping + sellerTax;
+                              return _SellerCard(
+                                sellerName: sellerName,
+                                items: items,
+                                voucherCtrl: _voucherCtrl(sellerKey),
+                                messageCtrl: _messageCtrl(sellerKey),
+                                grossSubtotal: groupGross,
+                                productDiscount: groupProductDiscount,
+                                voucherDiscount: groupVoucherDiscount,
+                                sellerShipping: sellerShipping,
+                                sellerTax: sellerTax,
+                                storeTotal: storeTotal,
+                                onApplyVoucher: () =>
+                                    _applyVoucher(sellerKey, items),
+                                onOpenVoucherScreen: () => _openVoucherScreen(
+                                  sellerKey,
+                                  sellerName ?? 'Store',
+                                  groupSubtotal,
+                                ),
+                                shippingOptions: shippingOptions,
+                                selectedDelivery:
+                                    _deliverySelections[sellerKey],
+                                onDeliveryChanged: (opt) => setState(
+                                    () => _deliverySelections[sellerKey] = opt),
+                              );
+                            }),
 
-                            return _SellerCard(
-                              sellerName: sellerName,
-                              items: items,
-                              voucherCtrl: _voucherCtrl(sellerKey),
-                              messageCtrl: _messageCtrl(sellerKey),
-                              grossSubtotal: groupGross,
-                              productDiscount: groupProductDiscount,
-                              voucherDiscount: groupVoucherDiscount,
-                              sellerShipping: sellerShipping,
-                              sellerTax: sellerTax,
-                              storeTotal: storeTotal,
-                              onApplyVoucher: () =>
-                                  _applyVoucher(sellerKey, items),
-                              onOpenVoucherScreen: () => _openVoucherScreen(
-                                sellerKey,
-                                sellerName ?? 'Store',
-                                groupSubtotal,
+                            const SizedBox(height: 8),
+
+                            // ── Payment method ────────────────────────────────
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSizes.md),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Payment Method',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium),
+                                  const SizedBox(height: 12),
+                                  RadioListTile<String>(
+                                    title: const Text('Credit/Debit Card'),
+                                    value: 'credit-card',
+                                    groupValue: _paymentType,
+                                    onChanged: (v) =>
+                                        setState(() => _paymentType = v!),
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                  RadioListTile<String>(
+                                    title: const Text('Cash on Delivery'),
+                                    value: 'cash-on-delivery',
+                                    groupValue: _paymentType,
+                                    onChanged: (v) =>
+                                        setState(() => _paymentType = v!),
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ],
                               ),
-                              shippingOptions: shippingOptions,
-                              selectedDelivery: _deliverySelections[sellerKey],
-                              onDeliveryChanged: (opt) => setState(
-                                  () => _deliverySelections[sellerKey] = opt),
-                            );
-                          }),
-
-                          const SizedBox(height: 8),
-
-                          // ── Payment method ────────────────────────────────
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Payment Method', style: Theme.of(context).textTheme.titleMedium),
-                                const SizedBox(height: 12),
-                                RadioListTile<String>(
-                                  title: const Text('Credit/Debit Card'),
-                                  value: 'credit-card',
-                                  groupValue: _paymentType,
-                                  onChanged: (v) => setState(() => _paymentType = v!),
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                                RadioListTile<String>(
-                                  title: const Text('Cash on Delivery'),
-                                  value: 'cash-on-delivery',
-                                  groupValue: _paymentType,
-                                  onChanged: (v) => setState(() => _paymentType = v!),
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                              ],
                             ),
-                          ),
 
-                          const SizedBox(height: 8),
+                            const SizedBox(height: 8),
 
-                          // â”€â”€ Order total breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                          _TotalBreakdown(
-                            grossSubtotal: grossSubtotal,
-                            productDiscount: productDiscountTotal,
-                            voucherDiscount: voucherTotal,
-                            totalShipping: totalShipping,
-                            totalTax: totalTax,
-                            grandTotal: grandTotal,
-                          ),
-                        ],
+                            // â”€â”€ Order total breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                            _TotalBreakdown(
+                              grossSubtotal: grossSubtotal,
+                              productDiscount: productDiscountTotal,
+                              voucherDiscount: voucherTotal,
+                              totalShipping: totalShipping,
+                              totalTax: totalTax,
+                              grandTotal: grandTotal,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -663,7 +673,7 @@ class _AddressSectionState extends State<_AddressSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // â”€â”€ Section header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // Section header
           Row(
             children: [
               Container(
@@ -726,7 +736,7 @@ class _AddressSectionState extends State<_AddressSection> {
             },
           ),
 
-          // â”€â”€ New address form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // New address form
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 220),
             crossFadeState: _selectedId == 'new'
@@ -981,7 +991,7 @@ class _AddressOption extends StatelessWidget {
   }
 }
 
-// â”€â”€ Per-seller card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Per-seller card
 
 class _SellerCard extends StatelessWidget {
   final String? sellerName;
@@ -1065,7 +1075,7 @@ class _SellerCard extends StatelessWidget {
 
           if (shippingOptions.isNotEmpty) const Divider(height: 1),
 
-          // Shop Voucher row (tapping â†’ voucher screen)
+          // Shop Voucher row (tapping → voucher screen)
           _VoucherRow(
             controller: voucherCtrl,
             discount: voucherDiscount,
@@ -1083,7 +1093,7 @@ class _SellerCard extends StatelessWidget {
   }
 }
 
-// â”€â”€ Item row inside seller card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Item row inside seller card
 
 class _CheckoutItemRow extends StatelessWidget {
   final CartItemEntity item;
@@ -1200,7 +1210,7 @@ class _CheckoutItemRow extends StatelessWidget {
   }
 }
 
-// â”€â”€ Voucher row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Voucher row
 
 class _VoucherRow extends StatefulWidget {
   final TextEditingController controller;
