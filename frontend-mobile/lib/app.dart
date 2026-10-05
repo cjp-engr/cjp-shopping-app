@@ -42,6 +42,9 @@ import 'features/seller/presentation/bloc/seller_bloc.dart';
 import 'features/follow/data/datasources/follow_remote_datasource.dart';
 import 'package:dio/dio.dart';
 
+// Core Services
+import 'core/services/card_service.dart';
+
 class TokoMart extends StatefulWidget {
   final StorageService storageService;
   const TokoMart({super.key, required this.storageService});
@@ -52,6 +55,7 @@ class TokoMart extends StatefulWidget {
 
 class _TokoMartState extends State<TokoMart> {
   late final ApiClient _apiClient;
+  late final CardService _cardService;
   late final AuthBloc _authBloc;
   late final CartBloc _cartBloc;
   late final ProductBloc _productBloc;
@@ -63,6 +67,7 @@ class _TokoMartState extends State<TokoMart> {
   void initState() {
     super.initState();
     _apiClient = ApiClient(widget.storageService);
+    _cardService = CardService(_apiClient);
 
     // Auth
     final authDs = AuthRemoteDataSource(_apiClient.dio);
