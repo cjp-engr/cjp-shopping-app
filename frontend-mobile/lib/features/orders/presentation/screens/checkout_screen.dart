@@ -312,22 +312,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       listenWhen: (p, c) => p.status != c.status,
       listener: (context, state) {
         if (state.status == OrderStatus.placed) {
+          // Clear the checked-out items from cart immediately
           context.read<CartBloc>().add(CartItemsCheckedOut(widget.selectedIds));
           final intentId = _pendingPaymentIntentId;
           if (intentId != null && state.placedOrders.isNotEmpty) {
             _pendingPaymentIntentId = null;
-            // Replaces PaymentScreen (top of the stack) with the confirmation.
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => OrderConfirmationScreen(
-                  paymentIntentId: intentId,
-                  order: state.placedOrders.first,
-                  cardBrand: _pendingCardBrand,
-                  cardLast4: _pendingCardLast4,
-                  onContinueShopping: () => context.go('/'),
+            // Pop PaymentScreen and CheckoutScreen, then show OrderConfirmationScreen
+            Navigator.of(context)
+              ..pop() // Remove PaymentScreen
+              ..pop() // Remove CheckoutScreen
+              ..push(
+                MaterialPageRoute(
+                  builder: (_) => OrderConfirmationScreen(
+                    paymentIntentId: intentId,
+                    order: state.placedOrders.first,
+                    cardBrand: _pendingCardBrand,
+                    cardLast4: _pendingCardLast4,
+                    onContinueShopping: () => context.go('/'),
+                  ),
                 ),
-              ),
-            );
+              );
           } else {
             context.go('/orders');
           }
