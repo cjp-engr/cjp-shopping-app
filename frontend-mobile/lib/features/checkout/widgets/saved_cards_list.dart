@@ -15,6 +15,20 @@ class SavedCardsListWidget extends StatelessWidget {
     required this.isLoading,
   });
 
+  IconData _getCardIcon(String brand) {
+    final brandLower = brand.toLowerCase();
+    if (brandLower.contains('visa')) {
+      return Icons.credit_card;
+    } else if (brandLower.contains('mastercard') || brandLower.contains('master card')) {
+      return Icons.credit_card;
+    } else if (brandLower.contains('amex') || brandLower.contains('american')) {
+      return Icons.credit_card;
+    } else if (brandLower.contains('discover')) {
+      return Icons.credit_card;
+    }
+    return Icons.credit_card;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (savedMethods.isEmpty) {
@@ -90,15 +104,23 @@ class SavedCardsListWidget extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                Text(
-                                  '${method.brand} •••• ${method.last4}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
-                                      ),
+                                Icon(
+                                  _getCardIcon(method.brand),
+                                  size: 20,
+                                  color: Colors.grey[600],
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '${method.brand} •••• ${method.last4}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                  ),
                                 ),
                                 if (method.isDefault) ...[
                                   const SizedBox(width: 8),
