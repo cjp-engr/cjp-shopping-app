@@ -415,7 +415,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               final selectedOpt = _deliverySelections[entry.key] ??
                   entry.value.first.product.shippingOptions.firstOrNull;
               if (grpFee == 'free') {
-                // free â€” add nothing
+                // free - add nothing
               } else if (grpFee == 'buyer_pays') {
                 totalShipping +=
                     (selectedOpt != null ? grpFeeAmounts[selectedOpt] : null) ??
@@ -443,7 +443,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // â”€â”€ Shipping address â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                            // Shipping address
                             BlocBuilder<AuthBloc, AuthState>(
                               buildWhen: (p, c) =>
                                   p.user?.savedAddresses !=
@@ -460,7 +460,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ),
                             const SizedBox(height: 8),
 
-                            // â”€â”€ Seller cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                            // Seller cards
                             ...groups.entries.map((entry) {
                               final sellerKey = entry.key;
                               final items = entry.value;
@@ -578,7 +578,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                             const SizedBox(height: 8),
 
-                            // â”€â”€ Order total breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                            // Order total breakdown
                             _TotalBreakdown(
                               grossSubtotal: grossSubtotal,
                               productDiscount: productDiscountTotal,
@@ -593,7 +593,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   ),
 
-                  // â”€â”€ Bottom bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // Bottom bar
                   _BottomBar(
                     total: grandTotal,
                     saved: totalDiscount,
@@ -611,7 +611,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 }
 
-// â”€â”€ Shipping address section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Shipping address section
 
 class _AddressSection extends StatefulWidget {
   final List<SavedAddressEntity> savedAddresses;
@@ -699,7 +699,7 @@ class _AddressSectionState extends State<_AddressSection> {
           ),
           const SizedBox(height: 12),
 
-          // â”€â”€ Saved address cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // Saved address cards
           ...widget.savedAddresses.map((addr) {
             final subtitle = [addr.street, addr.city, addr.state, addr.zipCode]
                 .where((s) => s.isNotEmpty)
@@ -723,7 +723,7 @@ class _AddressSectionState extends State<_AddressSection> {
             );
           }),
 
-          // â”€â”€ New address option â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // New address option
           _AddressOption(
             label: 'New Address',
             subtitle: 'Enter a different delivery address',
