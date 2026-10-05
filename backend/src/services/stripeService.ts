@@ -16,15 +16,19 @@ export async function createPaymentIntent(
   currency: string,
   metadata: Record<string, string>,
   customerId?: string,
+  paymentMethodId?: string,
 ): Promise<{ id: string; clientSecret: string }> {
   try {
+    console.log(`[StripeService] Creating PaymentIntent: amount=${amountInCents}¢ (${amountInCents / 100}${currency}), customerId=${customerId}, paymentMethodId=${paymentMethodId}`);
     const intent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency,
       metadata,
       payment_method_types: ['card'],
       ...(customerId ? { customer: customerId } : {}),
+      ...(paymentMethodId ? { payment_method: paymentMethodId } : {}),
     });
+    console.log(`[StripeService] PaymentIntent created: ${intent.id}`);
     return { id: intent.id, clientSecret: intent.client_secret! };
   } catch (err) {
     throw new StripeError('Failed to create payment intent', err as Error);
