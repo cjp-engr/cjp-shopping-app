@@ -76,6 +76,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // prevents _submit from running again until navigation completes.
   bool _completed = false;
 
+  void _completeCheckout(BuildContext context) {
+    // Close order confirmation screen and checkout, navigate to home
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    context.go('/');
+  }
+
   @override
   void dispose() {
     _streetCtrl.dispose();
@@ -317,21 +323,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           final intentId = _pendingPaymentIntentId;
           if (intentId != null && state.placedOrders.isNotEmpty) {
             _pendingPaymentIntentId = null;
-            // Pop PaymentScreen and CheckoutScreen, then show OrderConfirmationScreen
-            Navigator.of(context)
-              ..pop() // Remove PaymentScreen
-              ..pop() // Remove CheckoutScreen
-              ..push(
-                MaterialPageRoute(
-                  builder: (_) => OrderConfirmationScreen(
-                    paymentIntentId: intentId,
-                    order: state.placedOrders.first,
-                    cardBrand: _pendingCardBrand,
-                    cardLast4: _pendingCardLast4,
-                    onContinueShopping: () => context.go('/'),
-                  ),
+            // Close payment screen, show order confirmation
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => OrderConfirmationScreen(
+                  paymentIntentId: intentId,
+                  order: state.placedOrders.first,
+                  cardBrand: _pendingCardBrand,
+                  cardLast4: _pendingCardLast4,
+                  onContinueShopping: () => _completeCheckout(context),
                 ),
-              );
+              ),
+            );
           } else {
             context.go('/orders');
           }
