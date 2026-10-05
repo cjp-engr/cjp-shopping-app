@@ -57,7 +57,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                     onPressed: () => context
                         .read<PaymentBloc>()
                         .add(const LoadSavedPaymentMethods()),
-                    child: const Text('Retry'),
+                    child: const Text(AppStrings.retry),
                   ),
                 ],
               ),
@@ -188,7 +188,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                               ),
                               const SizedBox(height: AppSizes.xs),
                               Text(
-                                'Expires $expiryText',
+                                '${AppStrings.cardExpiry} $expiryText',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Theme.of(context)
@@ -262,7 +262,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text(AppStrings.deleteCard),
         content: Text(
-          'Are you sure you want to delete ${method.brand.toUpperCase()} •••• ${method.last4}?',
+          '${AppStrings.deleteCardConfirmation}\n\n${method.brand.toUpperCase()} •••• ${method.last4}',
         ),
         actions: [
           TextButton(
@@ -275,9 +275,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
               // TODO: Implement delete functionality when backend support is added
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text(
-                    'Delete functionality will be available soon',
-                  ),
+                  content: Text(AppStrings.deleteFunctionalityUnavailable),
                 ),
               );
             },
