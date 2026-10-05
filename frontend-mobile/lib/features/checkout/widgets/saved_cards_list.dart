@@ -15,18 +15,116 @@ class SavedCardsListWidget extends StatelessWidget {
     required this.isLoading,
   });
 
-  IconData _getCardIcon(String brand) {
+  Widget _getCardBrandIcon(String brand) {
     final brandLower = brand.toLowerCase();
+
     if (brandLower.contains('visa')) {
-      return Icons.credit_card;
+      return Container(
+        width: 28,
+        height: 20,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(2),
+          color: const Color(0xFF1434CB),
+        ),
+        child: const Center(
+          child: Text(
+            'VISA',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 8,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      );
     } else if (brandLower.contains('mastercard') || brandLower.contains('master card')) {
-      return Icons.credit_card;
+      return SizedBox(
+        width: 28,
+        height: 20,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              left: 2,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEB001B),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 2,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF79E1B),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     } else if (brandLower.contains('amex') || brandLower.contains('american')) {
-      return Icons.credit_card;
+      return Container(
+        width: 28,
+        height: 20,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(2),
+          color: const Color(0xFF006FCF),
+        ),
+        child: const Center(
+          child: Text(
+            'AMX',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 7,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+      );
     } else if (brandLower.contains('discover')) {
-      return Icons.credit_card;
+      return Container(
+        width: 28,
+        height: 20,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(2),
+          color: const Color(0xFFFF5F00),
+        ),
+        child: const Center(
+          child: Text(
+            'DISC',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 7,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+      );
     }
-    return Icons.credit_card;
+
+    return Container(
+      width: 28,
+      height: 20,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(2),
+        color: Colors.grey[400],
+      ),
+      child: const Icon(
+        Icons.credit_card,
+        size: 12,
+        color: Colors.white,
+      ),
+    );
   }
 
   @override
@@ -104,15 +202,11 @@ class SavedCardsListWidget extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                Icon(
-                                  _getCardIcon(method.brand),
-                                  size: 20,
-                                  color: Colors.grey[600],
-                                ),
-                                const SizedBox(width: 8),
+                                _getCardBrandIcon(method.brand),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    '${method.brand} •••• ${method.last4}',
+                                    '•••• ${method.last4}',
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
