@@ -93,31 +93,70 @@ class _CardFormWidgetState extends State<CardFormWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Card details section header
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Text(
+            'Card Details',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              color: Colors.grey[700],
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+
         // CardFormField for entering card details
         // Note: includes postal code and country fields (part of flutter_stripe)
-        // flutter_stripe's CardFormField doesn't support custom fontFamily in CardFormStyle
         CardFormField(
           style: CardFormStyle(
             backgroundColor: Colors.grey[50],
             borderColor: Colors.grey[300],
-            borderRadius: 8,
+            borderRadius: 10,
             fontSize: 16,
-            cursorColor: Colors.blue,
+            cursorColor: const Color(0xFFD97706),
+            textColor: Colors.black87,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
 
-        // Checkbox to save card for future use
-        CheckboxListTile(
-          value: widget.shouldSaveCard,
-          onChanged: widget.isLoading
-              ? null
-              : (value) {
-                  widget.onSaveCardToggle();
-                },
-          title: const Text('Save this card for next time'),
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
+        // Save card checkbox with improved styling
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.isLoading ? null : widget.onSaveCardToggle,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: widget.shouldSaveCard,
+                    onChanged: widget.isLoading
+                        ? null
+                        : (value) {
+                            widget.onSaveCardToggle();
+                          },
+                    activeColor: const Color(0xFFD97706),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Save this card for next time',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[800],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ],
     );
