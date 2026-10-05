@@ -25,7 +25,8 @@ import 'package:toko_mart/features/checkout/widgets/saved_cards_list.dart';
 class PaymentScreen extends StatefulWidget {
   final int amountInCents;
   final List<dynamic> cartItems;
-  final void Function(String paymentIntentId) onPaymentSuccess;
+  final void Function(String paymentIntentId, String? paymentMethodId)
+      onPaymentSuccess;
   final VoidCallback onBack;
 
   const PaymentScreen({
@@ -197,7 +198,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
               expiryYear: card?.expYear ?? 0,
             ));
       }
-      widget.onPaymentSuccess(state.paymentIntentId);
+      // Only offer to save later when a new card was used and the user did
+      // not already opt in to saving it on this screen.
+      widget.onPaymentSuccess(
+        state.paymentIntentId,
+        _isNewCardTab && !_shouldSaveCard ? _newCardMethodId : null,
+      );
     } else if (state is PaymentFailed) {
       if (state.errorMessage == StripeErrorMessages.savedCardsFetchFailed) {
         setState(() => _savedMethodsFailed = true);

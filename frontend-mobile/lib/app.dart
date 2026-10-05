@@ -108,6 +108,7 @@ class _TokoMartState extends State<TokoMart> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        RepositoryProvider<CardService>.value(value: _cardService),
         BlocProvider(create: (_) => ThemeCubit()),
         BlocProvider(create: (_) => ConnectivityCubit()),
         BlocProvider.value(value: _authBloc),
