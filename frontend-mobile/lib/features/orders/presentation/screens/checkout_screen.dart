@@ -1327,7 +1327,7 @@ class _VoucherRowState extends State<_VoucherRow> {
   }
 }
 
-// â”€â”€ Message for seller row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Message for seller row
 
 class _MessageRow extends StatefulWidget {
   final TextEditingController controller;
@@ -1529,7 +1529,7 @@ class _TotalBreakdown extends StatelessWidget {
   }
 }
 
-// â”€â”€ Delivery option row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Delivery option row
 
 class _DeliveryOptionRow extends StatelessWidget {
   final List<String> options;
@@ -1645,7 +1645,7 @@ class _DeliveryOptionRow extends StatelessWidget {
   }
 }
 
-// â”€â”€ Bottom bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Bottom bar
 
 class _BottomBar extends StatelessWidget {
   final double total;
