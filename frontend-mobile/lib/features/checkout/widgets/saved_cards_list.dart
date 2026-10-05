@@ -206,7 +206,7 @@ class SavedCardsListWidget extends StatelessWidget {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    '•••• ${method.last4}',
+                                    '${method.brand} •••• ${method.last4}',
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
