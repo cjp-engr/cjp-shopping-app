@@ -35,7 +35,7 @@ const _order = OrderEntity(
   shipping: 0,
   total: 50,
   status: 'pending',
-  createdAt: null,
+  createdAt: '2026-10-04T00:00:00Z',
 );
 
 Widget _app(CardService svc, {String? pmId = 'pm_1', String? brand = 'visa'}) =>
