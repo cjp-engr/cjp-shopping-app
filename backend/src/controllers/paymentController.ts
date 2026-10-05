@@ -30,6 +30,35 @@ export const createIntent = async (
   }
 };
 
+export const saveCard = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const { stripePaymentMethodId } = req.body;
+    console.log(`[PaymentController] Saving card: userId=${userId}, paymentMethodId=${stripePaymentMethodId}`);
+
+    if (!stripePaymentMethodId) {
+      res.status(400).json({ error: 'Payment method ID required' });
+      return;
+    }
+
+    await paymentService.attachPaymentMethod(userId, stripePaymentMethodId);
+    console.log(`[PaymentController] Card saved successfully`);
+
+    res.status(200).json({ success: true, message: 'Card saved successfully' });
+  } catch (err) {
+    if (err instanceof PaymentError) {
+      res.status(err.statusCode).json({ error: err.message });
+      return;
+    }
+    console.error('Error saving card:', err);
+    next(err);
+  }
+};
+
 export const handleWebhook = async (
   req: Request,
   res: Response,
