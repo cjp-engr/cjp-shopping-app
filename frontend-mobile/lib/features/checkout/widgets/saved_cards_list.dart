@@ -20,11 +20,23 @@ class SavedCardsListWidget extends StatelessWidget {
     if (savedMethods.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            'No saved cards. Add a new card to continue.',
-            style: Theme.of(context).textTheme.bodyMedium,
-            textAlign: TextAlign.center,
+          padding: const EdgeInsets.symmetric(vertical: 32),
+          child: Column(
+            children: [
+              Icon(
+                Icons.credit_card_off_rounded,
+                size: 48,
+                color: Colors.grey[400],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No saved cards',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -36,25 +48,102 @@ class SavedCardsListWidget extends StatelessWidget {
       itemCount: savedMethods.length,
       itemBuilder: (context, index) {
         final method = savedMethods[index];
+        final isSelected = selectedMethod?.id == method.id;
 
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          child: ListTile(
-            leading: Radio<String?>(
-              value: method.id,
-              groupValue: selectedMethod?.id,
-              onChanged: isLoading ? null : (_) => onCardSelected(method),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: isLoading ? null : () => onCardSelected(method),
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFFD97706)
+                        : Colors.grey[300]!,
+                    width: isSelected ? 2 : 1,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  color: isSelected
+                      ? const Color(0xFFD97706).withOpacity(0.04)
+                      : Colors.transparent,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    children: [
+                      Radio<String?>(
+                        value: method.id,
+                        groupValue: selectedMethod?.id,
+                        onChanged: isLoading ? null : (_) => onCardSelected(method),
+                        activeColor: const Color(0xFFD97706),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  '${method.brand} •••• ${method.last4}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                ),
+                                if (method.isDefault) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF15803D)
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Default',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: const Color(0xFF15803D),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Expires ${method.expiryMonth}/${method.expiryYear}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            title: Text('${method.brand} •••• ${method.last4}'),
-            subtitle:
-                Text('Expires ${method.expiryMonth}/${method.expiryYear}'),
-            trailing: method.isDefault
-                ? Chip(
-                    label: const Text('Default'),
-                    backgroundColor: Colors.blue[100],
-                  )
-                : null,
-            enabled: !isLoading,
           ),
         );
       },

@@ -216,12 +216,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
       listener: _onPaymentStateChanged,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Payment'),
+          title: const Text(
+            'Payment Details',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.3,
+            ),
+          ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: widget.onBack,
+            tooltip: 'Go back',
           ),
+          elevation: 0,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black87,
         ),
+        backgroundColor: Colors.grey[50],
         body: BlocBuilder<PaymentBloc, PaymentState>(
           builder: (context, state) {
             final isLoading = state is CreatingPaymentIntent ||
@@ -230,46 +242,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
             return SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildOrderSummary(context),
+                    const SizedBox(height: 48),
+                    _buildPaymentMethodSection(context, state, isLoading),
+                    const SizedBox(height: 48),
+                    _buildPlaceOrderButton(isLoading),
                     const SizedBox(height: 24),
-                    DefaultTabController(
-                      length: 2,
-                      child: Column(
-                        children: [
-                          TabBar(
-                            onTap: (index) =>
-                                setState(() => _currentTabIndex = index),
-                            tabs: const [
-                              Tab(text: 'New Card'),
-                              Tab(text: 'Saved Cards'),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _buildTabContent(context, state, isLoading),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: (_canPlaceOrder && !isLoading) ? _handlePlaceOrder : null,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text(
-                              'Place Order',
-                              style: TextStyle(fontSize: 16),
-                            ),
-                    ),
                   ],
                 ),
               ),
@@ -280,33 +262,214 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
+  Widget _buildPaymentMethodSection(
+    BuildContext context,
+    PaymentState state,
+    bool isLoading,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Payment Method',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            letterSpacing: -0.3,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildTabButton(
+                        'New Card',
+                        _isNewCardTab,
+                        () => setState(() => _currentTabIndex = 0),
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildTabButton(
+                        'Saved Cards',
+                        !_isNewCardTab,
+                        () => setState(() => _currentTabIndex = 1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: _buildTabContent(context, state, isLoading),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabButton(String label, bool isActive, VoidCallback onTap) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                  color: isActive ? const Color(0xFFD97706) : Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (isActive)
+                Container(
+                  height: 3,
+                  width: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD97706),
+                    borderRadius: BorderRadius.circular(1.5),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceOrderButton(bool isLoading) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: FilledButton(
+        onPressed: (_canPlaceOrder && !isLoading) ? _handlePlaceOrder : null,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFFD97706),
+          disabledBackgroundColor: Colors.grey[300],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 2,
+        ),
+        child: isLoading
+            ? SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Colors.grey[700]!,
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Place Order',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 18,
+                    color: Colors.grey[50],
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
   Widget _buildOrderSummary(BuildContext context) {
     final total = widget.amountInCents / 100;
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Order Summary',
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                letterSpacing: -0.3,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text('Total:', style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  'Total Amount',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 Text(
                   '\$${total.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFD97706),
+                    fontSize: 24,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            Container(
+              height: 1,
+              color: Colors.grey[200],
+            ),
+            const SizedBox(height: 12),
             Text(
-              '${widget.cartItems.length} item(s)',
-              style: Theme.of(context).textTheme.bodySmall,
+              '${widget.cartItems.length} item${widget.cartItems.length != 1 ? 's' : ''}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
