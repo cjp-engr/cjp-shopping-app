@@ -4,6 +4,7 @@ import 'package:toko_mart/core/constants/app_colors.dart';
 import 'package:toko_mart/core/constants/app_sizes.dart';
 import 'package:toko_mart/core/constants/app_strings.dart';
 import 'package:toko_mart/features/checkout/bloc/payment_bloc.dart';
+import 'package:toko_mart/shared/widgets/card_brand_icon.dart';
 
 class PaymentMethodsScreen extends StatefulWidget {
   const PaymentMethodsScreen({super.key});
@@ -129,18 +130,18 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                     padding: const EdgeInsets.all(AppSizes.md),
                     child: Row(
                       children: [
-                        // ── Card icon ──────────────────────────────────
+                        // ── Card brand icon ────────────────────────────
                         Container(
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withAlpha(16),
-                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
-                            Icons.credit_card,
-                            size: 24,
-                            color: AppColors.primary,
+                          alignment: Alignment.center,
+                          child: CardBrandIcon(
+                            brand: method.brand,
+                            size: 40,
                           ),
                         ),
                         const SizedBox(width: AppSizes.md),

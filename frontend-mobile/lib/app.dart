@@ -33,6 +33,9 @@ import 'features/orders/presentation/bloc/order_bloc.dart';
 // Features - Wishlist
 import 'features/wishlist/presentation/bloc/wishlist_bloc.dart';
 
+// Features - Checkout
+import 'features/checkout/bloc/payment_bloc.dart';
+
 // Features - Seller
 import 'features/seller/data/datasources/seller_remote_datasource.dart';
 import 'features/seller/data/repositories/seller_repository_impl.dart';
@@ -61,6 +64,7 @@ class _TokoMartState extends State<TokoMart> {
   late final ProductBloc _productBloc;
   late final OrderBloc _orderBloc;
   late final SellerBloc _sellerBloc;
+  late final PaymentBloc _paymentBloc;
   late final FollowRemoteDataSource _followDs;
 
   @override
@@ -90,6 +94,9 @@ class _TokoMartState extends State<TokoMart> {
     // Cart
     _cartBloc = CartBloc(CartRemoteDataSource(_apiClient.dio));
 
+    // Checkout - Payment
+    _paymentBloc = PaymentBloc(apiService: _apiClient.dio);
+
     // Follow
     _followDs = FollowRemoteDataSource(_apiClient.dio);
   }
@@ -101,6 +108,7 @@ class _TokoMartState extends State<TokoMart> {
     _productBloc.close();
     _orderBloc.close();
     _sellerBloc.close();
+    _paymentBloc.close();
     super.dispose();
   }
 
@@ -117,6 +125,7 @@ class _TokoMartState extends State<TokoMart> {
         BlocProvider(create: (_) => WishlistBloc()),
         BlocProvider.value(value: _orderBloc),
         BlocProvider.value(value: _sellerBloc),
+        BlocProvider.value(value: _paymentBloc),
       ],
       child: _RouterWrapper(authBloc: _authBloc, cartBloc: _cartBloc, followDs: _followDs, dio: _apiClient.dio),
     );

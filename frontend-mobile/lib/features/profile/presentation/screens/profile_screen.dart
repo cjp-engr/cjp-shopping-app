@@ -15,7 +15,6 @@ import '../../../../core/theme/theme_cubit.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/app_text_field.dart';
-import 'payment_methods_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final FollowRemoteDataSource? followDs;
@@ -375,14 +374,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _SettingsRow(
                         icon: Icons.credit_card_outlined,
                         label: AppStrings.paymentMethods,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const PaymentMethodsScreen(),
-                            ),
-                          );
-                        },
+                        onTap: () => context.go('/payment-methods'),
                         showChevron: true,
                       ),
                       const _SettingsDivider(),

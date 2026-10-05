@@ -1,0 +1,10 @@
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- Card outline -->
+  <rect x="2" y="4" width="20" height="16" rx="2" fill="none" stroke="#006FCF" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- AMEX vertical stripe -->
+  <rect x="6" y="4" width="3" height="16" fill="#006FCF" opacity="0.15" rx="1"/>
+  <!-- Brand indicator dot -->
+  <circle cx="12" cy="6.5" r="1.5" fill="#006FCF"/>
+  <!-- Second accent -->
+  <rect x="15" y="4" width="2" height="16" fill="#006FCF" opacity="0.1" rx="1"/>
+</svg>

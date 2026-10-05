@@ -1,0 +1,8 @@
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- Card outline -->
+  <rect x="2" y="4" width="20" height="16" rx="2" fill="none" stroke="#1A1F71" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Visa branding stripe -->
+  <rect x="2" y="4" width="20" height="4" rx="2" fill="#1A1F71" opacity="0.1"/>
+  <!-- Brand indicator -->
+  <circle cx="19" cy="6.5" r="1.5" fill="#1A1F71"/>
+</svg>
