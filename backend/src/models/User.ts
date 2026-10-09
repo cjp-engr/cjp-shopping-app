@@ -14,7 +14,7 @@ export interface ISavedCard {
   type: 'credit-card' | 'debit-card' | 'paypal';
   brand?: string;
   last4: string;
-  cardHolder: string;
+  cardHolder?: string;
   expiryMonth: string;
   expiryYear: string;
   isDefault: boolean;
@@ -62,7 +62,7 @@ const SavedCardSchema = new Schema<ISavedCard>({
   type: { type: String, enum: ['credit-card', 'debit-card', 'paypal'], required: true },
   brand: { type: String },
   last4: { type: String, required: true },
-  cardHolder: { type: String, required: true },
+  cardHolder: { type: String },
   expiryMonth: { type: String, required: true },
   expiryYear: { type: String, required: true },
   isDefault: { type: Boolean, default: false },

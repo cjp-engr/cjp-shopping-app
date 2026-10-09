@@ -201,7 +201,23 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: AppSizes.sm),
+                        const SizedBox(width: AppSizes.xs),
+                        // ── Set as default button ──────────────────────
+                        IconButton(
+                          icon: Icon(
+                            method.isDefault ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                            size: 20,
+                            color: method.isDefault ? AppColors.success : Colors.grey,
+                          ),
+                          tooltip: 'Set as default',
+                          onPressed: method.isDefault ? null : () => _setAsDefault(context, method),
+                          padding: const EdgeInsets.all(6),
+                          constraints: const BoxConstraints(
+                            minWidth: 44,
+                            minHeight: 44,
+                          ),
+                        ),
+                        const SizedBox(width: AppSizes.xs),
                         // ── Delete button ──────────────────────────────
                         IconButton(
                           icon: Icon(
@@ -250,6 +266,26 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _setAsDefault(
+    BuildContext context,
+    SavedPaymentMethod method,
+  ) {
+    context.read<PaymentBloc>().add(
+          SetDefaultPaymentMethod(
+            paymentMethodId: method.id,
+          ),
+        );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${method.brand.toUpperCase()} •••• ${method.last4} set as default',
+        ),
+        backgroundColor: AppColors.success,
+        duration: const Duration(seconds: 2),
       ),
     );
   }

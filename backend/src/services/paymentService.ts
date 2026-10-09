@@ -1,7 +1,7 @@
 import {
   createPaymentIntent as stripeCreatePaymentIntent,
   getOrCreateStripeCustomer,
-  attachPaymentMethodToCustomer,
+  attachPaymentMethodToCustomer as stripeAttachPaymentMethod,
 } from './stripeService.js';
 import User from '../models/User.js';
 import Cart from '../models/Cart.js';
@@ -45,6 +45,17 @@ class PaymentService {
       await User.updateOne({ _id: userId }, { stripeCustomerId });
     }
 
+    // Attach payment method to customer BEFORE using it in PaymentIntent
+    // (Stripe won't allow reusing a payment method that was used without attachment)
+    if (stripePaymentMethodId) {
+      try {
+        await stripeAttachPaymentMethod(stripePaymentMethodId, stripeCustomerId);
+      } catch (err) {
+        // If already attached or other non-critical error, continue
+        console.log(`Note: Payment method attachment status: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
     // Create PaymentIntent with payment method attached if provided
     const { id, clientSecret } = await stripeCreatePaymentIntent(
       amountInCents,
@@ -77,13 +88,8 @@ class PaymentService {
       await User.updateOne({ _id: userId }, { stripeCustomerId });
     }
 
-    // Attach payment method
-    try {
-      await attachPaymentMethodToCustomer(stripePaymentMethodId, stripeCustomerId);
-    } catch (err) {
-      // Log but don't fail — PM attachment is non-critical
-      console.error('Failed to attach payment method:', err);
-    }
+    // Attach payment method to Stripe customer
+    await stripeAttachPaymentMethod(stripePaymentMethodId, stripeCustomerId);
   }
 
   async handlePaymentIntentSucceeded(paymentIntentId: string): Promise<void> {

@@ -22,6 +22,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   PaymentBloc({required this.apiService}) : super(const PaymentInitial()) {
     on<LoadSavedPaymentMethods>(_onLoadSavedPaymentMethods);
     on<SelectSavedPaymentMethod>(_onSelectSavedPaymentMethod);
+    on<SetDefaultPaymentMethod>(_onSetDefaultPaymentMethod);
     on<SelectNewCard>(_onSelectNewCard);
     on<SetSaveCardFlag>(_onSetSaveCardFlag);
     on<CreatePaymentIntent>(_onCreatePaymentIntent);
@@ -41,13 +42,13 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       final methods = list.map((pm) {
         final m = pm as Map<String, dynamic>;
         return SavedPaymentMethod(
-          id: (m['stripePaymentMethodId'] ?? m['_id'] ?? m['id'] ?? '')
-              .toString(),
+          id: (m['_id'] ?? m['id'] ?? '').toString(),
           brand: (m['brand'] ?? '').toString(),
           last4: (m['last4'] ?? '').toString(),
           expiryMonth: int.tryParse('${m['expiryMonth'] ?? ''}') ?? 0,
           expiryYear: int.tryParse('${m['expiryYear'] ?? ''}') ?? 0,
           isDefault: m['isDefault'] == true,
+          stripePaymentMethodId: m['stripePaymentMethodId']?.toString(),
         );
       }).toList();
       emit(PaymentMethodsLoaded(savedMethods: methods));
@@ -86,6 +87,36 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     ));
   }
 
+  Future<void> _onSetDefaultPaymentMethod(
+    SetDefaultPaymentMethod event,
+    Emitter<PaymentState> emit,
+  ) async {
+    try {
+      await apiService.patch(
+        '/auth/payment-methods/${event.paymentMethodId}/default',
+      );
+      // Reload saved payment methods to refresh the default status
+      final response = await apiService.get('/auth/payment-methods');
+      final list = (response.data['paymentMethods'] as List?) ?? [];
+      final methods = list
+          .whereType<Map<String, dynamic>>()
+          .map((m) => SavedPaymentMethod(
+                id: m['_id'] as String? ?? '',
+                brand: m['brand'] as String? ?? '',
+                last4: m['last4'] as String? ?? '',
+                expiryMonth: (m['expiryMonth'] as num?)?.toInt() ?? 0,
+                expiryYear: (m['expiryYear'] as num?)?.toInt() ?? 0,
+                isDefault: m['isDefault'] as bool? ?? false,
+                stripePaymentMethodId: m['stripePaymentMethodId'] as String?,
+              ))
+          .toList();
+      emit(PaymentMethodsLoaded(savedMethods: methods));
+    } catch (e) {
+      emit(const PaymentFailed(
+          errorMessage: 'Failed to set default payment method'));
+    }
+  }
+
   void _onSelectNewCard(SelectNewCard event, Emitter<PaymentState> emit) {
     _currentPaymentMethodId = null;
     _shouldSaveCard = false;
@@ -111,7 +142,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     emit(const CreatingPaymentIntent());
     try {
       // ignore: avoid_print
-      print('CreatePaymentIntent request: amountInCents=${event.amountInCents}, paymentMethodId=$_currentPaymentMethodId');
+      print(
+          'CreatePaymentIntent request: amountInCents=${event.amountInCents}, paymentMethodId=$_currentPaymentMethodId');
       final response = await apiService.post('/payments/create-intent', data: {
         'amountInCents': event.amountInCents,
         'stripePaymentMethodId': _currentPaymentMethodId,

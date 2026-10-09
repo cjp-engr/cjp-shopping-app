@@ -7,6 +7,7 @@ class SavedPaymentMethod extends Equatable {
   final int expiryMonth;
   final int expiryYear;
   final bool isDefault;
+  final String? stripePaymentMethodId;
 
   const SavedPaymentMethod({
     required this.id,
@@ -15,11 +16,12 @@ class SavedPaymentMethod extends Equatable {
     required this.expiryMonth,
     required this.expiryYear,
     required this.isDefault,
+    this.stripePaymentMethodId,
   });
 
   @override
   List<Object?> get props =>
-      [id, brand, last4, expiryMonth, expiryYear, isDefault];
+      [id, brand, last4, expiryMonth, expiryYear, isDefault, stripePaymentMethodId];
 }
 
 abstract class PaymentState extends Equatable {
