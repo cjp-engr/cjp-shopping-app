@@ -7,6 +7,8 @@ import User from '../models/User.js';
 import Cart from '../models/Cart.js';
 import Order from '../models/Order.js';
 
+const PAYMENT_CURRENCY = 'usd';
+
 export class PaymentError extends Error {
   constructor(
     public statusCode: number,
@@ -18,48 +20,58 @@ export class PaymentError extends Error {
 }
 
 class PaymentService {
-  async createPaymentIntent(
-    userId: string,
-    amountInCents: number,
-    stripePaymentMethodId?: string,
-  ): Promise<{ clientSecret: string; paymentIntentId: string }> {
-    if (!amountInCents || amountInCents <= 0) {
-      throw new PaymentError(400, 'Invalid amount');
-    }
-
-    // Verify cart exists
-    const cart = await Cart.findOne({ userId }).populate('sellers.items.product');
-    if (!cart) {
-      throw new PaymentError(400, 'Cart not found');
-    }
-
-    // Get or create Stripe Customer
+  private async getOrCreateCustomerForUser(userId: string): Promise<string> {
     const user = await User.findById(userId).select('stripeCustomerId email');
     if (!user) {
       throw new PaymentError(404, 'User not found');
     }
 
-    let stripeCustomerId = user.stripeCustomerId;
-    if (!stripeCustomerId) {
-      stripeCustomerId = await getOrCreateStripeCustomer(userId, user.email);
-      await User.updateOne({ _id: userId }, { stripeCustomerId });
+    if (user.stripeCustomerId) {
+      return user.stripeCustomerId;
     }
 
-    // Attach payment method to customer BEFORE using it in PaymentIntent
-    // (Stripe won't allow reusing a payment method that was used without attachment)
+    const customerId = await getOrCreateStripeCustomer(userId, user.email);
+    await User.updateOne({ _id: userId }, { stripeCustomerId: customerId });
+    return customerId;
+  }
+
+  private validateAmount(amount: number): void {
+    if (!amount || amount <= 0) {
+      throw new PaymentError(400, 'Invalid amount');
+    }
+  }
+
+  async createPaymentIntent(
+    userId: string,
+    amountInCents: number,
+    stripePaymentMethodId?: string,
+  ): Promise<{ clientSecret: string; paymentIntentId: string }> {
+    this.validateAmount(amountInCents);
+
+    const cart = await Cart.findOne({ userId }).populate('sellers.items.product');
+    if (!cart) {
+      throw new PaymentError(400, 'Cart not found');
+    }
+
+    const stripeCustomerId = await this.getOrCreateCustomerForUser(userId);
+
+    // Attempt to attach payment method if provided
+    // Note: If already attached to PaymentIntent, this will fail but we continue
+    // The PaymentIntent creation with setup_future_usage will handle attachment
     if (stripePaymentMethodId) {
       try {
         await stripeAttachPaymentMethod(stripePaymentMethodId, stripeCustomerId);
+        console.log(`[PaymentService] Payment method attached successfully`);
       } catch (err) {
-        // If already attached or other non-critical error, continue
-        console.log(`Note: Payment method attachment status: ${err instanceof Error ? err.message : String(err)}`);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.log(`[PaymentService] Attachment not critical, PaymentIntent will handle it: ${errMsg}`);
+        // Continue - PaymentIntent creation with setup_future_usage will save the method
       }
     }
 
-    // Create PaymentIntent with payment method attached if provided
     const { id, clientSecret } = await stripeCreatePaymentIntent(
       amountInCents,
-      'usd',
+      PAYMENT_CURRENCY,
       { userId },
       stripeCustomerId,
       stripePaymentMethodId,
@@ -72,23 +84,11 @@ class PaymentService {
     userId: string,
     stripePaymentMethodId: string,
   ): Promise<void> {
-    const user = await User.findById(userId).select('stripeCustomerId email');
-    if (!user) {
-      throw new PaymentError(404, 'User not found');
-    }
-
     if (!stripePaymentMethodId) {
       throw new PaymentError(400, 'Payment method ID required');
     }
 
-    // Get or create Stripe Customer
-    let stripeCustomerId = user.stripeCustomerId;
-    if (!stripeCustomerId) {
-      stripeCustomerId = await getOrCreateStripeCustomer(userId, user.email);
-      await User.updateOne({ _id: userId }, { stripeCustomerId });
-    }
-
-    // Attach payment method to Stripe customer
+    const stripeCustomerId = await this.getOrCreateCustomerForUser(userId);
     await stripeAttachPaymentMethod(stripePaymentMethodId, stripeCustomerId);
   }
 
