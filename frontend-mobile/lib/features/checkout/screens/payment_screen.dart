@@ -146,8 +146,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
       bloc.add(SetSaveCardFlag(_shouldSaveCard));
     } else {
       final method = _selectedSavedMethod!;
+      if (method.stripePaymentMethodId == null || method.stripePaymentMethodId!.isEmpty) {
+        _showSnackBar('This card is no longer valid. Please add a new card.', Colors.red);
+        return;
+      }
       bloc.add(SelectSavedPaymentMethod(
-        paymentMethodId: method.id,
+        paymentMethodId: method.stripePaymentMethodId!,
         brand: method.brand,
         last4: method.last4,
       ));
