@@ -148,7 +148,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     } catch (e) {
       developer.log('Failed to delete payment method: $e', name: 'PaymentBloc', level: 1000);
       emit(const PaymentFailed(
-        errorMessage: 'Failed to delete payment method. Please try again.',
+        errorMessage: StripeErrorMessages.failedToDeleteCard,
       ));
     }
   }

@@ -38,6 +38,8 @@ class StripeErrorMessages {
       'Failed to load saved cards. Please try again.';
   static const String failedToSetDefaultPaymentMethod =
       'Failed to set default payment method. Please try again.';
+  static const String failedToDeleteCard =
+      'Failed to delete payment method. Please try again.';
   static const String cardSaveFailed =
       'Card saved locally, but couldn\'t be saved to your account. You can add it manually later.';
 }

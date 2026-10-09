@@ -184,6 +184,10 @@ class AppStrings {
   static const String street = 'Street';
   static const String savedAddresses = 'Saved Addresses';
   static const String noSavedAddresses = 'No saved addresses';
+  static const String savedPaymentMethods = 'Saved Payment Methods';
+  static const String noSavedCards = 'No saved cards';
+  static const String deleteCard = 'Delete';
+  static const String failedToDeleteCard = 'Failed to delete payment method. Please try again.';
   static const String setAsDefault = 'Set as default';
   static const String deleteAddress = 'Delete address';
   static const String addAddress = 'Add Address';

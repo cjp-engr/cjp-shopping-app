@@ -1367,6 +1367,103 @@ class _SettingsRow extends StatelessWidget {
 
 // ── Saved Cards List ──────────────────────────────────────────────────────
 
+// ── Saved Card Item ──────────────────────────────────────────────────────────
+
+class _SavedCardItem extends StatelessWidget {
+  final SavedPaymentMethod method;
+  final VoidCallback onSetDefault;
+  final VoidCallback onDelete;
+
+  const _SavedCardItem({
+    required this.method,
+    required this.onSetDefault,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha(16),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Icon(Icons.credit_card_outlined,
+                size: 18, color: AppColors.primary),
+          ),
+          const SizedBox(width: AppSizes.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Text(
+                    '${method.brand} •••• ${method.last4}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  if (method.isDefault) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withAlpha(20),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                      ),
+                      child: const Text(
+                        AppStrings.defaultLabel,
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary),
+                      ),
+                    ),
+                  ],
+                ]),
+                Text(
+                  'Expires ${method.expiryMonth}/${method.expiryYear}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(130),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!method.isDefault)
+            IconButton(
+              icon: Icon(Icons.star_border_rounded,
+                  size: 20, color: AppColors.primary.withAlpha(180)),
+              tooltip: AppStrings.setAsDefault,
+              onPressed: onSetDefault,
+              padding: const EdgeInsets.all(6),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            ),
+          IconButton(
+            icon: Icon(Icons.delete_outline,
+                size: 20, color: Colors.red.withAlpha(200)),
+            tooltip: AppStrings.deleteCard,
+            onPressed: onDelete,
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Saved Cards List ──────────────────────────────────────────────────────────
+
 class _SavedCardsList extends StatelessWidget {
   final List<SavedPaymentMethod> methods;
   const _SavedCardsList({required this.methods});
@@ -1394,7 +1491,7 @@ class _SavedCardsList extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(AppSizes.md),
               child: Text(
-                'No saved cards',
+                AppStrings.noSavedCards,
                 style: TextStyle(
                   fontSize: 13,
                   color: Theme.of(context).colorScheme.onSurface.withAlpha(130),
@@ -1412,95 +1509,14 @@ class _SavedCardsList extends StatelessWidget {
                     indent: 52,
                     color: Theme.of(context).dividerColor.withAlpha(80),
                   ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.md, vertical: 10),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(16),
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: Icon(Icons.credit_card_outlined,
-                            size: 18, color: AppColors.primary),
-                      ),
-                      const SizedBox(width: AppSizes.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(children: [
-                              Text(
-                                '${method.brand} •••• ${method.last4}',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                              if (method.isDefault) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withAlpha(20),
-                                    borderRadius: BorderRadius.circular(
-                                        AppSizes.radiusFull),
-                                  ),
-                                  child: const Text(
-                                    AppStrings.defaultLabel,
-                                    style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.primary),
-                                  ),
-                                ),
-                              ],
-                            ]),
-                            Text(
-                              'Expires ${method.expiryMonth}/${method.expiryYear}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withAlpha(130),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (!method.isDefault)
-                        IconButton(
-                          icon: Icon(Icons.star_border_rounded,
-                              size: 20,
-                              color: AppColors.primary.withAlpha(180)),
-                          tooltip: AppStrings.setAsDefault,
-                          onPressed: () => context
-                              .read<PaymentBloc>()
-                              .add(SetDefaultPaymentMethod(method.id)),
-                          padding: const EdgeInsets.all(6),
-                          constraints:
-                              const BoxConstraints(minWidth: 36, minHeight: 36),
-                        ),
-                      IconButton(
-                        icon: Icon(Icons.delete_outline,
-                            size: 20, color: Colors.red.withAlpha(200)),
-                        tooltip: 'Delete',
-                        onPressed: () => context
-                            .read<PaymentBloc>()
-                            .add(DeletePaymentMethod(method.id)),
-                        padding: const EdgeInsets.all(6),
-                        constraints:
-                            const BoxConstraints(minWidth: 36, minHeight: 36),
-                      ),
-                    ],
-                  ),
+                _SavedCardItem(
+                  method: method,
+                  onSetDefault: () => context
+                      .read<PaymentBloc>()
+                      .add(SetDefaultPaymentMethod(method.id)),
+                  onDelete: () => context
+                      .read<PaymentBloc>()
+                      .add(DeletePaymentMethod(method.id)),
                 ),
               ],
             );

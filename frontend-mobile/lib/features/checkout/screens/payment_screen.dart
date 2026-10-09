@@ -190,7 +190,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           try {
             final defaultCard = state.savedMethods.firstWhere((m) => m.isDefault);
             _selectedSavedMethod = defaultCard;
-          } catch (e) {
+          } on StateError {
             // No default card found, user can select manually
           }
         }
