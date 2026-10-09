@@ -1,0 +1,8 @@
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- Card outline with slight tilt -->
+  <rect x="2" y="5" width="20" height="14" rx="2" fill="none" stroke="#E74C3C" stroke-width="1.5" stroke-linejoin="round" transform="rotate(-2 12 12)"/>
+  <!-- Unionpay brand bar -->
+  <rect x="2" y="5" width="20" height="3" rx="2" fill="#E74C3C" opacity="0.12" transform="rotate(-2 12 12)"/>
+  <!-- Corner accent -->
+  <circle cx="18" cy="8" r="1.2" fill="#E74C3C" opacity="0.8"/>
+</svg>

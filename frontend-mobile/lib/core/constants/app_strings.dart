@@ -346,6 +346,22 @@ class AppStrings {
   static const String browseProducts = 'Browse Products';
   static const String addToCartAction = 'Add to Cart';
 
+  // ── Payment Methods ──────────────────────────────────────────────────────
+  static const String paymentMethods = 'Payment Methods';
+  static const String savedPaymentMethods = 'Saved Payment Methods';
+  static const String noSavedCards = 'No saved cards';
+  static const String noSavedCardsDescription =
+      'Add a payment method to speed up checkout';
+  static const String deleteCard = 'Delete Card';
+  static const String cardDeletedSuccess = 'Card deleted successfully';
+  static const String failedToLoadPaymentMethods =
+      'Failed to load payment methods';
+  static const String cardExpiry = 'Expires';
+  static const String deleteCardConfirmation =
+      'Are you sure you want to delete this card?';
+  static const String deleteFunctionalityUnavailable =
+      'Delete functionality will be available soon';
+
   // ── Errors ────────────────────────────────────────────────────────────────
   static const String genericError = 'Something went wrong. Please try again.';
   static const String networkError = 'No internet connection.';

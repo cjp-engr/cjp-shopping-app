@@ -1,11 +1,15 @@
-﻿import express from 'express';
-import dotenv from 'dotenv';
+﻿import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '../.env') });
+
+import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { connectDB } from './config/database.js';
 import { startAutoCompleteJob } from './jobs/autoCompleteOrders.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
@@ -19,10 +23,6 @@ import reviewRoutes from './routes/reviewRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
-
-dotenv.config();
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:toko_mart/core/services/card_service.dart';
 import 'package:toko_mart/features/orders/domain/entities/order_entity.dart';
 
 /// Shown after a successful payment. Display-only: shows the order summary,
@@ -6,11 +8,15 @@ import 'package:toko_mart/features/orders/domain/entities/order_entity.dart';
 ///
 /// [cardBrand] / [cardLast4] describe the card used. [OrderEntity] does not
 /// carry them, so the caller (checkout flow) supplies them when known.
-class OrderConfirmationScreen extends StatelessWidget {
+class OrderConfirmationScreen extends StatefulWidget {
   final String paymentIntentId;
   final OrderEntity order;
   final String? cardBrand;
   final String? cardLast4;
+
+  /// Stripe PaymentMethod id of a newly entered, not-yet-saved card. When set
+  /// (with brand/last4) the user is offered to save the card.
+  final String? paymentMethodId;
   final VoidCallback onContinueShopping;
 
   const OrderConfirmationScreen({
@@ -20,12 +26,89 @@ class OrderConfirmationScreen extends StatelessWidget {
     required this.onContinueShopping,
     this.cardBrand,
     this.cardLast4,
+    this.paymentMethodId,
   });
 
   static String _money(double v) => '\$${v.toStringAsFixed(2)}';
 
+  @override
+  State<OrderConfirmationScreen> createState() =>
+      _OrderConfirmationScreenState();
+}
+
+class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
   static String _capitalize(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+  String? get cardBrand => widget.cardBrand;
+  String? get cardLast4 => widget.cardLast4;
+  OrderEntity get order => widget.order;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (cardBrand != null &&
+          cardLast4 != null &&
+          widget.paymentMethodId != null) {
+        _showSaveCardDialog(context);
+      }
+    });
+  }
+
+  Future<void> _showSaveCardDialog(BuildContext context) async {
+    final save = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Save this card?'),
+        content: Text(
+          'Save $_paymentLabel to your account for faster checkout next time.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Not Now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Save Card'),
+          ),
+        ],
+      ),
+    );
+    if (save == true && mounted) await _performSaveCard();
+  }
+
+  Future<void> _performSaveCard() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final service = context.read<CardService>();
+    try {
+      await service.saveCard(widget.paymentMethodId!);
+      messenger.showSnackBar(const SnackBar(
+        content: Text('Card saved successfully'),
+        backgroundColor: Colors.green,
+      ));
+    } on CardSavingException catch (e) {
+      _showSaveError(messenger, e.message);
+    } catch (_) {
+      _showSaveError(messenger, 'Could not save card. Please try again.');
+    }
+  }
+
+  void _showSaveError(ScaffoldMessengerState messenger, String message) {
+    messenger.showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.red,
+      action: SnackBarAction(
+        label: 'Retry',
+        textColor: Colors.white,
+        onPressed: () {
+          if (mounted) _performSaveCard();
+        },
+      ),
+    ));
+  }
 
   String get _paymentLabel {
     final brand = (cardBrand ?? '').trim();
@@ -113,7 +196,7 @@ class OrderConfirmationScreen extends StatelessWidget {
                                             style: theme.textTheme.bodyMedium),
                                         Text(
                                           'Qty ${item.quantity} × '
-                                          '${_money(item.salePrice)}',
+                                          '${OrderConfirmationScreen._money(item.salePrice)}',
                                           style: theme.textTheme.bodySmall
                                               ?.copyWith(
                                             color: scheme.onSurfaceVariant,
@@ -123,7 +206,7 @@ class OrderConfirmationScreen extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  Text(_money(item.saleTotal),
+                                  Text(OrderConfirmationScreen._money(item.saleTotal),
                                       style: theme.textTheme.bodyMedium),
                                 ],
                               ),
@@ -183,7 +266,7 @@ class OrderConfirmationScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 48,
                   child: FilledButton(
-                    onPressed: onContinueShopping,
+                    onPressed: widget.onContinueShopping,
                     child: const Text('Continue Shopping'),
                   ),
                 ),

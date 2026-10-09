@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import * as authService from '../services/authService.js';
+import { StripeError } from '../services/stripeService.js';
 
 export const signup = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -98,6 +99,9 @@ export const addPaymentMethod = async (req: AuthRequest, res: Response, next: Ne
 
     res.status(201).json({ success: true, paymentMethods: user.savedCards });
   } catch (err) {
+    if (err instanceof StripeError) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
     next(err);
   }
 };
@@ -127,7 +131,12 @@ export const setDefaultPaymentMethod = async (req: AuthRequest, res: Response, n
     const user = await User.findById(req.user!.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    const card = user.savedCards.find((c: any) => c._id?.toString() === req.params.id);
+    // Match by _id, id, or stripePaymentMethodId
+    const card = user.savedCards.find((c: any) =>
+      c._id?.toString() === req.params.id ||
+      c.id?.toString() === req.params.id ||
+      c.stripePaymentMethodId === req.params.id
+    );
     if (!card) return res.status(404).json({ success: false, message: 'Card not found' });
 
     user.savedCards.forEach((c: any) => { c.isDefault = false; });

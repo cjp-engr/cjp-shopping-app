@@ -26,6 +26,17 @@ class SelectSavedPaymentMethod extends PaymentEvent {
   List<Object?> get props => [paymentMethodId, brand, last4];
 }
 
+class SetDefaultPaymentMethod extends PaymentEvent {
+  final String paymentMethodId;
+
+  const SetDefaultPaymentMethod({
+    required this.paymentMethodId,
+  });
+
+  @override
+  List<Object?> get props => [paymentMethodId];
+}
+
 class SelectNewCard extends PaymentEvent {
   const SelectNewCard();
 }

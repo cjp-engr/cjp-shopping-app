@@ -71,6 +71,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String? _pendingPaymentIntentId;
   String? _pendingCardBrand;
   String? _pendingCardLast4;
+  String? _pendingPaymentMethodId;
 
   // Guard to prevent double-charge: set to true when order creation is initiated,
   // prevents _submit from running again until navigation completes.
@@ -277,6 +278,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'Opening PaymentScreen: total=${orderData['total']}, shipping=${orderData['shipping']}, tax=${orderData['tax']}, amountInCents=$amountInCents');
     _pendingPaymentIntentId = null;
     _pendingCardBrand = null;
+    _pendingPaymentMethodId = null;
     _pendingCardLast4 = null;
 
     await Navigator.of(context).push<void>(
@@ -297,8 +299,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               amountInCents: amountInCents,
               cartItems: selectedItems,
               onBack: () => Navigator.of(routeCtx).pop(),
-              onPaymentSuccess: (paymentIntentId) {
+              onPaymentSuccess: (paymentIntentId, paymentMethodId) {
                 _pendingPaymentIntentId = paymentIntentId;
+                _pendingPaymentMethodId = paymentMethodId;
                 _completed = true;
                 context.read<OrderBloc>().add(OrderCreateRequested({
                       ...orderData,
@@ -332,6 +335,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   order: state.placedOrders.first,
                   cardBrand: _pendingCardBrand,
                   cardLast4: _pendingCardLast4,
+                  paymentMethodId: _pendingPaymentMethodId,
                   onContinueShopping: () => _completeCheckout(context),
                 ),
               ),

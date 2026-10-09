@@ -13,6 +13,7 @@ import '../features/orders/presentation/screens/order_detail_screen.dart';
 import '../features/orders/presentation/screens/checkout_screen.dart';
 import '../features/voucher/presentation/select_voucher_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
+import '../features/profile/presentation/screens/payment_methods_screen.dart';
 import '../features/wishlist/presentation/screens/wishlist_screen.dart';
 import '../features/seller/presentation/screens/seller_dashboard_screen.dart';
 import '../features/seller/presentation/screens/add_edit_product_screen.dart';
@@ -166,6 +167,10 @@ GoRouter createRouter(AuthBloc authBloc,
           GoRoute(
             path: '/profile',
             builder: (_, __) => ProfileScreen(followDs: followDs),
+          ),
+          GoRoute(
+            path: '/payment-methods',
+            builder: (_, __) => const PaymentMethodsScreen(),
           ),
         ],
       ),

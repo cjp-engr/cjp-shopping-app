@@ -371,6 +371,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           showChevron: true,
                         ),
                       const _SettingsDivider(),
+                      _SettingsRow(
+                        icon: Icons.credit_card_outlined,
+                        label: AppStrings.paymentMethods,
+                        onTap: () => context.go('/payment-methods'),
+                        showChevron: true,
+                      ),
+                      const _SettingsDivider(),
                       BlocBuilder<ThemeCubit, ThemeMode>(
                         builder: (context, themeMode) {
                           final isDark = themeMode == ThemeMode.dark;

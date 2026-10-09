@@ -175,7 +175,7 @@ class _CheckoutHarnessState extends State<_CheckoutHarness> {
               amountInCents: _amountInCents,
               cartItems: const ['item-1'],
               onBack: () => Navigator.of(routeCtx).pop(),
-              onPaymentSuccess: (paymentIntentId) {
+              onPaymentSuccess: (paymentIntentId, _) {
                 _pendingIntentId = paymentIntentId;
                 widget.checkoutBloc.add(CheckoutPaymentSucceeded(
                   paymentIntentId,

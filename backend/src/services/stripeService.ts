@@ -1,8 +1,19 @@
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
-  apiVersion: '2026-08-26.dahlia' as any,
-});
+let stripe: Stripe;
+
+function getStripe(): Stripe {
+  if (!stripe) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) {
+      throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+    }
+    stripe = new Stripe(key, {
+      apiVersion: '2026-08-26.dahlia' as any,
+    });
+  }
+  return stripe;
+}
 
 export class StripeError extends Error {
   constructor(message: string, public originalError?: Error) {
@@ -20,7 +31,7 @@ export async function createPaymentIntent(
 ): Promise<{ id: string; clientSecret: string }> {
   try {
     console.log(`[StripeService] Creating PaymentIntent: amount=${amountInCents}¢ (${amountInCents / 100}${currency}), customerId=${customerId}, paymentMethodId=${paymentMethodId}`);
-    const intent = await stripe.paymentIntents.create({
+    const intent = await getStripe().paymentIntents.create({
       amount: amountInCents,
       currency,
       metadata,
@@ -40,12 +51,12 @@ export async function getOrCreateStripeCustomer(
   email: string,
 ): Promise<string> {
   try {
-    const existing = await stripe.customers.list({ email, limit: 1 });
+    const existing = await getStripe().customers.list({ email, limit: 1 });
     if (existing.data.length > 0) {
       return existing.data[0].id;
     }
 
-    const customer = await stripe.customers.create({
+    const customer = await getStripe().customers.create({
       email,
       metadata: { userId },
     });
@@ -60,8 +71,15 @@ export async function attachPaymentMethodToCustomer(
   customerId: string,
 ): Promise<void> {
   try {
-    await stripe.paymentMethods.attach(pmId, { customer: customerId });
+    await getStripe().paymentMethods.attach(pmId, { customer: customerId });
   } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    // If already attached or customer mismatch, that's fine — method exists as intended
+    if (errorMsg.includes('already') || errorMsg.includes('already_attached')) {
+      console.log(`[StripeService] Payment method ${pmId} already attached to customer ${customerId}`);
+      return;
+    }
+    console.error(`[StripeService] Failed to attach payment method ${pmId} to customer ${customerId}: ${errorMsg}`);
     throw new StripeError('Failed to attach payment method to customer', err as Error);
   }
 }
@@ -72,7 +90,7 @@ export function constructWebhookEvent(
   secret: string,
 ): Stripe.Event {
   try {
-    return stripe.webhooks.constructEvent(rawBody, signature, secret);
+    return getStripe().webhooks.constructEvent(rawBody, signature, secret);
   } catch (err) {
     throw new StripeError('Webhook signature verification failed', err as Error);
   }
@@ -80,7 +98,7 @@ export function constructWebhookEvent(
 
 export async function retrievePaymentIntent(id: string): Promise<Stripe.PaymentIntent> {
   try {
-    return await stripe.paymentIntents.retrieve(id);
+    return await getStripe().paymentIntents.retrieve(id);
   } catch (err) {
     throw new StripeError(`Failed to retrieve payment intent ${id}`, err as Error);
   }

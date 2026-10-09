@@ -1,6 +1,6 @@
 import express from 'express';
 import { protect } from '../middleware/auth.js';
-import { createIntent, handleWebhook } from '../controllers/paymentController.js';
+import { createIntent, handleWebhook, saveCard } from '../controllers/paymentController.js';
 
 const router = express.Router();
 
@@ -9,5 +9,8 @@ router.post('/webhook', handleWebhook);
 
 // Create PaymentIntent: requires auth
 router.post('/create-intent', protect, createIntent);
+
+// Save card to customer: requires auth
+router.post('/save-card', protect, saveCard);
 
 export default router;
