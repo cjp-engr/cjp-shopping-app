@@ -7,6 +7,7 @@ import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../checkout/bloc/payment_bloc.dart';
 import '../../../follow/data/datasources/follow_remote_datasource.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -48,6 +49,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _cityCtrl = TextEditingController(text: user?.address?.city ?? '');
     _stateCtrl = TextEditingController(text: user?.address?.state ?? '');
     _zipCtrl = TextEditingController(text: user?.address?.zipCode ?? '');
+
+    context.read<PaymentBloc>().add(const LoadSavedPaymentMethods());
   }
 
   @override
@@ -350,6 +353,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const _SectionLabel(AppStrings.savedAddresses),
                   const SizedBox(height: AppSizes.xs),
                   _SavedAddressList(addresses: user.savedAddresses),
+
+                  const SizedBox(height: AppSizes.md),
+
+                  // ── Saved Payment Methods ──────────────────────────────────
+                  const _SectionLabel(AppStrings.savedPaymentMethods),
+                  const SizedBox(height: AppSizes.xs),
+                  BlocBuilder<PaymentBloc, PaymentState>(
+                    builder: (context, state) {
+                      final methods = state is PaymentMethodsLoaded
+                        ? state.savedMethods
+                        : <SavedPaymentMethod>[];
+                      return _SavedCardsList(methods: methods);
+                    },
+                  ),
 
                   const SizedBox(height: AppSizes.md),
 
@@ -1343,6 +1360,168 @@ class _SettingsRow extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Saved Cards List ──────────────────────────────────────────────────────
+
+// ── Saved Card Item ──────────────────────────────────────────────────────────
+
+class _SavedCardItem extends StatelessWidget {
+  final SavedPaymentMethod method;
+  final VoidCallback onSetDefault;
+  final VoidCallback onDelete;
+
+  const _SavedCardItem({
+    required this.method,
+    required this.onSetDefault,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha(16),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Icon(Icons.credit_card_outlined,
+                size: 18, color: AppColors.primary),
+          ),
+          const SizedBox(width: AppSizes.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Text(
+                    '${method.brand} •••• ${method.last4}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  if (method.isDefault) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withAlpha(20),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                      ),
+                      child: const Text(
+                        AppStrings.defaultLabel,
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary),
+                      ),
+                    ),
+                  ],
+                ]),
+                Text(
+                  'Expires ${method.expiryMonth}/${method.expiryYear}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(130),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!method.isDefault)
+            IconButton(
+              icon: Icon(Icons.star_border_rounded,
+                  size: 20, color: AppColors.primary.withAlpha(180)),
+              tooltip: AppStrings.setAsDefault,
+              onPressed: onSetDefault,
+              padding: const EdgeInsets.all(6),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            ),
+          IconButton(
+            icon: Icon(Icons.delete_outline,
+                size: 20, color: Colors.red.withAlpha(200)),
+            tooltip: AppStrings.deleteCard,
+            onPressed: onDelete,
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Saved Cards List ──────────────────────────────────────────────────────────
+
+class _SavedCardsList extends StatelessWidget {
+  final List<SavedPaymentMethod> methods;
+  const _SavedCardsList({required this.methods});
+
+  @override
+  Widget build(BuildContext context) {
+    final cardColor = Theme.of(context).cardTheme.color ??
+        Theme.of(context).colorScheme.surface;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          if (methods.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(AppSizes.md),
+              child: Text(
+                AppStrings.noSavedCards,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(130),
+                ),
+              ),
+            ),
+          ...methods.asMap().entries.map((entry) {
+            final i = entry.key;
+            final method = entry.value;
+            return Column(
+              children: [
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    indent: 52,
+                    color: Theme.of(context).dividerColor.withAlpha(80),
+                  ),
+                _SavedCardItem(
+                  method: method,
+                  onSetDefault: () => context
+                      .read<PaymentBloc>()
+                      .add(SetDefaultPaymentMethod(method.id)),
+                  onDelete: () => context
+                      .read<PaymentBloc>()
+                      .add(DeletePaymentMethod(method.id)),
+                ),
+              ],
+            );
+          }),
+        ],
       ),
     );
   }

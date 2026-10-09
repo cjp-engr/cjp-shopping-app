@@ -185,6 +185,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
         if (selected != null &&
             state.savedMethods.any((m) => m.id == selected.id)) {
           _selectedSavedMethod = selected;
+        } else if (selected == null && _selectedSavedMethod == null) {
+          // On initial load, auto-select the default card if no selection exists
+          try {
+            final defaultCard = state.savedMethods.firstWhere((m) => m.isDefault);
+            _selectedSavedMethod = defaultCard;
+          } on StateError {
+            // No default card found, user can select manually
+          }
         }
       });
     } else if (state is PaymentIntentCreated) {
@@ -295,7 +303,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 12,
                 offset: const Offset(0, 2),
               ),

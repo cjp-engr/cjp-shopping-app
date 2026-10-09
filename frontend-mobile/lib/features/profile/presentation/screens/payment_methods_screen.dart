@@ -274,11 +274,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
     BuildContext context,
     SavedPaymentMethod method,
   ) {
-    context.read<PaymentBloc>().add(
-          SetDefaultPaymentMethod(
-            paymentMethodId: method.id,
-          ),
-        );
+    context.read<PaymentBloc>().add(SetDefaultPaymentMethod(method.id));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
