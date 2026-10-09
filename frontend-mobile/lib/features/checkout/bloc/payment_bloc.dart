@@ -17,7 +17,6 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
   String? _currentPaymentMethodId;
   String? _currentPaymentIntentId;
-  String? _currentClientSecret;
   bool _shouldSaveCard = false;
 
   PaymentBloc({required this.apiService}) : super(const PaymentInitial()) {
@@ -200,7 +199,6 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       }
 
       _currentPaymentIntentId = intentId;
-      _currentClientSecret = secret;
 
       developer.log('Payment intent created: $intentId', name: 'PaymentBloc');
       emit(PaymentIntentCreated(
@@ -283,7 +281,6 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   ) {
     _currentPaymentMethodId = null;
     _currentPaymentIntentId = null;
-    _currentClientSecret = null;
     _shouldSaveCard = false;
     emit(const PaymentInitial());
   }

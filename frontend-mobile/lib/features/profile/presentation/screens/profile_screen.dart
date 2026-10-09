@@ -1371,21 +1371,6 @@ class _SavedCardsList extends StatelessWidget {
   final List<SavedPaymentMethod> methods;
   const _SavedCardsList({required this.methods});
 
-  String _getCardIcon(String brand) {
-    switch (brand.toLowerCase()) {
-      case 'visa':
-        return '💳';
-      case 'mastercard':
-        return '💳';
-      case 'amex':
-        return '💳';
-      case 'diners':
-        return '💳';
-      default:
-        return '💳';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final cardColor = Theme.of(context).cardTheme.color ??
