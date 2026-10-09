@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import * as authService from '../services/authService.js';
 import { StripeError } from '../services/stripeService.js';
+import { sendSuccess, sendError, ErrorCodes, isRetryable } from '../utils/apiResponse.js';
 
 export const signup = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -53,8 +54,10 @@ export const getPaymentMethods = async (req: AuthRequest, res: Response, next: N
   try {
     const User = (await import('../models/User.js')).default;
     const user = await User.findById(req.user!.id).select('savedCards');
-    if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
-    res.json({ success: true, paymentMethods: user.savedCards });
+    if (!user) {
+      return sendError(res, 404, ErrorCodes.USER_NOT_FOUND, 'User not found', false);
+    }
+    return sendSuccess(res, 200, { paymentMethods: user.savedCards });
   } catch (err) { next(err); }
 };
 
@@ -62,18 +65,19 @@ export const addPaymentMethod = async (req: AuthRequest, res: Response, next: Ne
   try {
     const User = (await import('../models/User.js')).default;
     const user = await User.findById(req.user!.id);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!user) {
+      return sendError(res, 404, ErrorCodes.USER_NOT_FOUND, 'User not found', false);
+    }
 
     const { type, brand, last4, cardHolder, expiryMonth, expiryYear, setAsDefault, stripePaymentMethodId } = req.body;
-    if (!type || !last4 || !expiryMonth || !expiryYear) {
-      return res.status(400).json({ success: false, message: 'Missing required card fields' });
-    }
 
     // Check for duplicates
     const duplicate = user.savedCards.find(
       c => c.last4 === last4 && c.expiryMonth === expiryMonth && c.expiryYear === expiryYear,
     );
-    if (duplicate) return res.json({ success: true, paymentMethods: user.savedCards });
+    if (duplicate) {
+      return sendSuccess(res, 201, { paymentMethods: user.savedCards });
+    }
 
     // Attach payment method to Stripe Customer for reusability
     if (stripePaymentMethodId) {
@@ -97,10 +101,10 @@ export const addPaymentMethod = async (req: AuthRequest, res: Response, next: Ne
     });
     await user.save();
 
-    res.status(201).json({ success: true, paymentMethods: user.savedCards });
+    return sendSuccess(res, 201, { paymentMethods: user.savedCards });
   } catch (err) {
     if (err instanceof StripeError) {
-      return res.status(400).json({ success: false, message: err.message });
+      return sendError(res, 400, ErrorCodes.STRIPE_ERROR, err.message, true);
     }
     next(err);
   }
@@ -110,18 +114,20 @@ export const deletePaymentMethod = async (req: AuthRequest, res: Response, next:
   try {
     const User = (await import('../models/User.js')).default;
     const user = await User.findById(req.user!.id);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!user) {
+      return sendError(res, 404, ErrorCodes.USER_NOT_FOUND, 'User not found', false);
+    }
 
     const before = user.savedCards.length;
     user.savedCards = user.savedCards.filter(c => c._id?.toString() !== req.params.id);
     if (user.savedCards.length === before) {
-      return res.status(404).json({ success: false, message: 'Card not found' });
+      return sendError(res, 404, ErrorCodes.CARD_NOT_FOUND, 'Payment method not found', false);
     }
     if (user.savedCards.length > 0 && !user.savedCards.some(c => c.isDefault)) {
       user.savedCards[0].isDefault = true;
     }
     await user.save();
-    res.json({ success: true, paymentMethods: user.savedCards });
+    return sendSuccess(res, 200, { paymentMethods: user.savedCards });
   } catch (err) { next(err); }
 };
 
@@ -129,7 +135,9 @@ export const setDefaultPaymentMethod = async (req: AuthRequest, res: Response, n
   try {
     const User = (await import('../models/User.js')).default;
     const user = await User.findById(req.user!.id);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!user) {
+      return sendError(res, 404, ErrorCodes.USER_NOT_FOUND, 'User not found', false);
+    }
 
     // Match by _id, id, or stripePaymentMethodId
     const card = user.savedCards.find((c: any) =>
@@ -137,12 +145,14 @@ export const setDefaultPaymentMethod = async (req: AuthRequest, res: Response, n
       c.id?.toString() === req.params.id ||
       c.stripePaymentMethodId === req.params.id
     );
-    if (!card) return res.status(404).json({ success: false, message: 'Card not found' });
+    if (!card) {
+      return sendError(res, 404, ErrorCodes.CARD_NOT_FOUND, 'Payment method not found', false);
+    }
 
     user.savedCards.forEach((c: any) => { c.isDefault = false; });
     card.isDefault = true;
     await user.save();
-    res.json({ success: true, paymentMethods: user.savedCards });
+    return sendSuccess(res, 200, { paymentMethods: user.savedCards });
   } catch (err) { next(err); }
 };
 

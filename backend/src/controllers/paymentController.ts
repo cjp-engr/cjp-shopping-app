@@ -2,28 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import { constructWebhookEvent, StripeError } from '../services/stripeService.js';
 import paymentService, { PaymentError } from '../services/paymentService.js';
+import { sendSuccess, sendError, ErrorCodes, isRetryable } from '../utils/apiResponse.js';
 
 const LOG_PREFIX = '[PaymentController]';
-
-function handlePaymentError(err: unknown, res: Response): void {
-  if (err instanceof PaymentError) {
-    res.status(err.statusCode).json({ error: err.message });
-    return;
-  }
-
-  if (err instanceof StripeError) {
-    res.status(400).json({ error: err.message });
-    return;
-  }
-
-  throw err;
-}
 
 export const createIntent = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
-): Promise<void> => {
+): Promise<void | Response> => {
   try {
     const userId = req.user!.id;
     const { amountInCents, stripePaymentMethodId } = req.body;
@@ -39,9 +26,30 @@ export const createIntent = async (
     );
 
     console.log(`${LOG_PREFIX} Payment intent created: ${paymentIntentId}`);
-    res.status(200).json({ clientSecret, paymentIntentId });
+    return sendSuccess(res, 200, { clientSecret, paymentIntentId });
   } catch (err) {
-    handlePaymentError(err, res) ?? next(err);
+    if (err instanceof PaymentError) {
+      const retryable = isRetryable(err.statusCode);
+      return sendError(
+        res,
+        err.statusCode,
+        ErrorCodes.PAYMENT_FAILED,
+        err.message,
+        retryable,
+      );
+    }
+
+    if (err instanceof StripeError) {
+      return sendError(
+        res,
+        400,
+        ErrorCodes.STRIPE_ERROR,
+        'Payment processing failed. Please try again.',
+        true,
+      );
+    }
+
+    next(err);
   }
 };
 
@@ -49,24 +57,40 @@ export const saveCard = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
-): Promise<void> => {
+): Promise<void | Response> => {
   try {
     const { stripePaymentMethodId } = req.body;
-
-    if (!stripePaymentMethodId) {
-      res.status(400).json({ error: 'Payment method ID required' });
-      return;
-    }
-
     const userId = req.user!.id;
+
     console.log(`${LOG_PREFIX} Saving card for user: ${userId}`);
 
     await paymentService.attachPaymentMethod(userId, stripePaymentMethodId);
 
     console.log(`${LOG_PREFIX} Card saved successfully`);
-    res.status(200).json({ success: true, message: 'Card saved successfully' });
+    return sendSuccess(res, 200, { success: true, message: 'Card saved successfully' });
   } catch (err) {
-    handlePaymentError(err, res) ?? next(err);
+    if (err instanceof PaymentError) {
+      const retryable = isRetryable(err.statusCode);
+      return sendError(
+        res,
+        err.statusCode,
+        ErrorCodes.PAYMENT_FAILED,
+        err.message,
+        retryable,
+      );
+    }
+
+    if (err instanceof StripeError) {
+      return sendError(
+        res,
+        400,
+        ErrorCodes.STRIPE_ERROR,
+        'Failed to save card. Please try again.',
+        true,
+      );
+    }
+
+    next(err);
   }
 };
 
