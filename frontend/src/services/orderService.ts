@@ -14,7 +14,12 @@ class OrderService {
       const error = await response.json();
       throw new Error(error.message || 'Failed to initialise payment');
     }
-    return response.json();
+    const json = await response.json();
+    const data = json.data ?? json;
+    return {
+      clientSecret: data.clientSecret,
+      paymentIntentId: data.paymentIntentId,
+    };
   }
 
   async createOrder(checkoutData: CheckoutData, cart: Cart, _userId: string, couponCodes?: Record<string, string>, deliverySelections?: Record<string, string>): Promise<Order[]> {

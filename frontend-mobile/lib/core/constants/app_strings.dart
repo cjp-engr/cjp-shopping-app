@@ -352,11 +352,8 @@ class AppStrings {
 
   // ── Payment Methods ──────────────────────────────────────────────────────
   static const String paymentMethods = 'Payment Methods';
-  static const String savedPaymentMethods = 'Saved Payment Methods';
-  static const String noSavedCards = 'No saved cards';
   static const String noSavedCardsDescription =
       'Add a payment method to speed up checkout';
-  static const String deleteCard = 'Delete Card';
   static const String cardDeletedSuccess = 'Card deleted successfully';
   static const String failedToLoadPaymentMethods =
       'Failed to load payment methods';
