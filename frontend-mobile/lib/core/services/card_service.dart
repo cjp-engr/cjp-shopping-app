@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
 import '../network/api_client.dart';
 
+const String _logTag = '[CardService]';
+const String _endpoint = '/payments/save-card';
+
 /// Exception thrown when card saving fails.
 class CardSavingException implements Exception {
   final String message;
@@ -22,40 +25,51 @@ class CardService {
   /// The payment method must have already been created on the client side
   /// using Stripe's CardFormField or similar.
   ///
-  /// Args:
-  ///   stripePaymentMethodId: The Stripe PaymentMethod ID (pm_...)
-  ///
   /// Throws:
   ///   CardSavingException: If the save operation fails
   Future<void> saveCard(String stripePaymentMethodId) async {
+    if (stripePaymentMethodId.isEmpty) {
+      throw CardSavingException('Payment method ID cannot be empty');
+    }
+
     try {
+      print('$_logTag Saving card: $stripePaymentMethodId');
+
       final response = await _apiClient.dio.post(
-        '/payments/save-card',
-        data: {
-          'stripePaymentMethodId': stripePaymentMethodId,
-        },
+        _endpoint,
+        data: {'stripePaymentMethodId': stripePaymentMethodId},
       );
 
-      // Check if response indicates success
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        throw CardSavingException(
-          'Failed to save card (status: ${response.statusCode})',
-        );
-      }
-
-      // Optional: validate response structure
-      final data = response.data;
-      if (data is! Map || data['success'] != true) {
-        final message = data is Map ? data['message'] ?? 'Unknown error' : 'Unknown error';
-        throw CardSavingException(message.toString());
-      }
+      _validateResponse(response);
+      print('$_logTag Card saved successfully');
     } on CardSavingException {
       rethrow;
     } on DioException catch (e) {
       final message = mapDioError(e);
+      print('$_logTag DIO error: $message');
       throw CardSavingException(message);
     } catch (e) {
-      throw CardSavingException('Failed to save card: ${e.toString()}');
+      final errorMsg = 'Failed to save card: $e';
+      print('$_logTag Unexpected error: $errorMsg');
+      throw CardSavingException(errorMsg);
+    }
+  }
+
+  void _validateResponse(Response response) {
+    if (response.statusCode == null || response.statusCode! > 299) {
+      throw CardSavingException(
+        'Failed to save card (status: ${response.statusCode})',
+      );
+    }
+
+    final data = response.data;
+    if (data is! Map<String, dynamic>) {
+      throw CardSavingException('Invalid response format');
+    }
+
+    if (data['success'] != true) {
+      final message = data['message'] as String? ?? 'Unknown error';
+      throw CardSavingException(message);
     }
   }
 }

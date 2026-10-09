@@ -36,6 +36,8 @@ class StripeErrorMessages {
       'Order creation failed. Please contact support.';
   static const String savedCardsFetchFailed =
       'Failed to load saved cards. Please try again.';
+  static const String failedToSetDefaultPaymentMethod =
+      'Failed to set default payment method. Please try again.';
   static const String cardSaveFailed =
       'Card saved locally, but couldn\'t be saved to your account. You can add it manually later.';
 }

@@ -7,15 +7,15 @@ import 'package:toko_mart/core/services/stripe_service.dart';
 part 'payment_event.dart';
 part 'payment_state.dart';
 
-/// Note: the brief referenced an `ApiService` that does not exist in this
-/// codebase. The HTTP layer is a Dio instance from `ApiClient` (auth token is
-/// added by its interceptor), so a Dio is injected instead.
+const String _logTag = '[PaymentBloc]';
+const String _paymentMethodsEndpoint = '/auth/payment-methods';
+const String _createIntentEndpoint = '/payments/create-intent';
+
 class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   final Dio apiService;
 
   String? _currentPaymentMethodId;
   String? _currentPaymentIntentId;
-  // ignore: unused_field
   String? _currentClientSecret;
   bool _shouldSaveCard = false;
 
@@ -31,28 +31,32 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     on<ResetPaymentState>(_onResetPaymentState);
   }
 
+  SavedPaymentMethod _mapToPaymentMethod(Map<String, dynamic> data) {
+    return SavedPaymentMethod(
+      id: (data['_id'] ?? data['id'] ?? '').toString(),
+      brand: (data['brand'] ?? '').toString(),
+      last4: (data['last4'] ?? '').toString(),
+      expiryMonth: int.tryParse('${data['expiryMonth'] ?? ''}') ?? 0,
+      expiryYear: int.tryParse('${data['expiryYear'] ?? ''}') ?? 0,
+      isDefault: data['isDefault'] == true,
+      stripePaymentMethodId: data['stripePaymentMethodId']?.toString(),
+    );
+  }
+
   Future<void> _onLoadSavedPaymentMethods(
     LoadSavedPaymentMethods event,
     Emitter<PaymentState> emit,
   ) async {
     emit(const LoadingSavedPaymentMethods());
     try {
-      final response = await apiService.get('/auth/payment-methods');
+      print('$_logTag Loading saved payment methods');
+      final response = await apiService.get(_paymentMethodsEndpoint);
       final list = (response.data['paymentMethods'] as List?) ?? [];
-      final methods = list.map((pm) {
-        final m = pm as Map<String, dynamic>;
-        return SavedPaymentMethod(
-          id: (m['_id'] ?? m['id'] ?? '').toString(),
-          brand: (m['brand'] ?? '').toString(),
-          last4: (m['last4'] ?? '').toString(),
-          expiryMonth: int.tryParse('${m['expiryMonth'] ?? ''}') ?? 0,
-          expiryYear: int.tryParse('${m['expiryYear'] ?? ''}') ?? 0,
-          isDefault: m['isDefault'] == true,
-          stripePaymentMethodId: m['stripePaymentMethodId']?.toString(),
-        );
-      }).toList();
+      final methods = list.map((pm) => _mapToPaymentMethod(pm as Map<String, dynamic>)).toList();
+      print('$_logTag Loaded ${methods.length} payment methods');
       emit(PaymentMethodsLoaded(savedMethods: methods));
-    } catch (_) {
+    } catch (e) {
+      print('$_logTag Failed to load payment methods: $e');
       emit(const PaymentFailed(
         errorMessage: StripeErrorMessages.savedCardsFetchFailed,
       ));
@@ -65,25 +69,27 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   ) {
     _currentPaymentMethodId = event.paymentMethodId;
     _shouldSaveCard = false;
-    final current = state;
-    final existing = current is PaymentMethodsLoaded
-        ? current.savedMethods
+
+    final currentState = state;
+    final existingMethods = currentState is PaymentMethodsLoaded
+        ? currentState.savedMethods
         : <SavedPaymentMethod>[];
-    SavedPaymentMethod? selected;
-    for (final m in existing) {
-      if (m.id == event.paymentMethodId) selected = m;
-    }
-    selected ??= SavedPaymentMethod(
-      id: event.paymentMethodId,
-      brand: event.brand,
-      last4: event.last4,
-      expiryMonth: 0,
-      expiryYear: 0,
-      isDefault: false,
+
+    final selectedMethod = existingMethods.firstWhere(
+      (m) => m.id == event.paymentMethodId,
+      orElse: () => SavedPaymentMethod(
+        id: event.paymentMethodId,
+        brand: event.brand,
+        last4: event.last4,
+        expiryMonth: 0,
+        expiryYear: 0,
+        isDefault: false,
+      ),
     );
+
     emit(PaymentMethodsLoaded(
-      savedMethods: existing,
-      selectedMethod: selected,
+      savedMethods: existingMethods,
+      selectedMethod: selectedMethod,
     ));
   }
 
@@ -92,28 +98,27 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     Emitter<PaymentState> emit,
   ) async {
     try {
+      print('$_logTag Setting payment method ${event.paymentMethodId} as default');
+
       await apiService.patch(
-        '/auth/payment-methods/${event.paymentMethodId}/default',
+        '$_paymentMethodsEndpoint/${event.paymentMethodId}/default',
       );
-      // Reload saved payment methods to refresh the default status
-      final response = await apiService.get('/auth/payment-methods');
+
+      print('$_logTag Reloading payment methods after default update');
+      final response = await apiService.get(_paymentMethodsEndpoint);
       final list = (response.data['paymentMethods'] as List?) ?? [];
       final methods = list
           .whereType<Map<String, dynamic>>()
-          .map((m) => SavedPaymentMethod(
-                id: m['_id'] as String? ?? '',
-                brand: m['brand'] as String? ?? '',
-                last4: m['last4'] as String? ?? '',
-                expiryMonth: (m['expiryMonth'] as num?)?.toInt() ?? 0,
-                expiryYear: (m['expiryYear'] as num?)?.toInt() ?? 0,
-                isDefault: m['isDefault'] as bool? ?? false,
-                stripePaymentMethodId: m['stripePaymentMethodId'] as String?,
-              ))
+          .map(_mapToPaymentMethod)
           .toList();
+
+      print('$_logTag Default payment method updated successfully');
       emit(PaymentMethodsLoaded(savedMethods: methods));
     } catch (e) {
+      print('$_logTag Failed to set default payment method: $e');
       emit(const PaymentFailed(
-          errorMessage: 'Failed to set default payment method'));
+        errorMessage: StripeErrorMessages.failedToSetDefaultPaymentMethod,
+      ));
     }
   }
 
@@ -133,42 +138,44 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     Emitter<PaymentState> emit,
   ) async {
     if (_currentPaymentMethodId == null) {
+      print('$_logTag No payment method selected');
       emit(const PaymentFailed(
         errorMessage: StripeErrorMessages.paymentInitiationFailed,
         errorCode: 'no_payment_method',
       ));
       return;
     }
+
     emit(const CreatingPaymentIntent());
     try {
-      // ignore: avoid_print
-      print(
-          'CreatePaymentIntent request: amountInCents=${event.amountInCents}, paymentMethodId=$_currentPaymentMethodId');
-      final response = await apiService.post('/payments/create-intent', data: {
+      print('$_logTag Creating payment intent: amount=${event.amountInCents}¢');
+
+      final response = await apiService.post(_createIntentEndpoint, data: {
         'amountInCents': event.amountInCents,
         'stripePaymentMethodId': _currentPaymentMethodId,
       });
-      // ignore: avoid_print
-      print('CreatePaymentIntent response: ${response.data}');
+
       final intentId = (response.data['paymentIntentId'] ?? '').toString();
       final secret = (response.data['clientSecret'] ?? '').toString();
+
       if (intentId.isEmpty || secret.isEmpty) {
-        // ignore: avoid_print
-        print('ERROR: Missing paymentIntentId or clientSecret in response');
+        print('$_logTag Invalid response: missing intentId or secret');
         emit(const PaymentFailed(
           errorMessage: StripeErrorMessages.paymentInitiationFailed,
         ));
         return;
       }
+
       _currentPaymentIntentId = intentId;
       _currentClientSecret = secret;
+
+      print('$_logTag Payment intent created: $intentId');
       emit(PaymentIntentCreated(
         clientSecret: secret,
         paymentIntentId: intentId,
       ));
     } catch (e) {
-      // ignore: avoid_print
-      print('ERROR creating payment intent: $e');
+      print('$_logTag Error creating payment intent: $e');
       emit(const PaymentFailed(
         errorMessage: StripeErrorMessages.paymentInitiationFailed,
       ));
@@ -181,28 +188,26 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   ) async {
     emit(const ConfirmingPayment());
     try {
-      // ignore: avoid_print
-      print('Confirming payment with clientSecret: ${event.clientSecret}');
-      // StripeService.confirmPayment is static in this codebase.
+      print('$_logTag Confirming payment');
       final result = await StripeService.confirmPayment(event.clientSecret);
-      // ignore: avoid_print
-      print('ConfirmPayment result: $result');
+
       final error = result['error'];
       if (error != null) {
         final code = error.toString();
-        final message = result['message']?.toString() ?? '';
-        // ignore: avoid_print
-        print('ConfirmPayment error: code=$code, message=$message');
+        final message = result['message']?.toString() ?? 'Unknown error';
+        print('$_logTag Payment confirmation error: code=$code, message=$message');
         emit(PaymentFailed(
           errorMessage: StripeErrorMessages.getErrorMessage(code),
           errorCode: code,
         ));
-      } else {
-        emit(PaymentSucceeded(paymentIntentId: _currentPaymentIntentId ?? ''));
+        return;
       }
+
+      final paymentIntentId = _currentPaymentIntentId ?? '';
+      print('$_logTag Payment confirmed: $paymentIntentId');
+      emit(PaymentSucceeded(paymentIntentId: paymentIntentId));
     } catch (e) {
-      // ignore: avoid_print
-      print('ERROR confirming payment: $e');
+      print('$_logTag Error confirming payment: $e');
       emit(const PaymentFailed(
         errorMessage: StripeErrorMessages.paymentConfirmationFailed,
       ));
@@ -213,10 +218,16 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     SaveNewCard event,
     Emitter<PaymentState> emit,
   ) async {
-    if (!_shouldSaveCard) return;
+    if (!_shouldSaveCard) {
+      print('$_logTag Card save disabled by user');
+      return;
+    }
+
     emit(const SavingCard());
     try {
-      await apiService.post('/auth/payment-methods', data: {
+      print('$_logTag Saving new card: ${event.brand} ${event.last4}');
+
+      await apiService.post(_paymentMethodsEndpoint, data: {
         'type': 'credit-card',
         'brand': event.brand,
         'last4': event.last4,
@@ -225,7 +236,10 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         'stripePaymentMethodId': event.paymentMethodId,
         'setAsDefault': false,
       });
-    } catch (_) {
+
+      print('$_logTag Card saved successfully');
+    } catch (e) {
+      print('$_logTag Failed to save card: $e');
       emit(const CardSaveFailed(message: StripeErrorMessages.cardSaveFailed));
     }
   }
