@@ -47,7 +47,10 @@ export async function createPaymentIntent(
       metadata,
       payment_method_types: ['card'],
       ...(customerId && { customer: customerId }),
-      ...(paymentMethodId && { payment_method: paymentMethodId }),
+      ...(paymentMethodId && {
+        payment_method: paymentMethodId,
+        setup_future_usage: 'off_session', // Allow reuse without CVC
+      }),
     });
 
     console.log(`${LOG_PREFIX} PaymentIntent created: ${intent.id}`);

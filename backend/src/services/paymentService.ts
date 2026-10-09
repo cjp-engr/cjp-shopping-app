@@ -55,11 +55,17 @@ class PaymentService {
 
     const stripeCustomerId = await this.getOrCreateCustomerForUser(userId);
 
+    // Attempt to attach payment method if provided
+    // Note: If already attached to PaymentIntent, this will fail but we continue
+    // The PaymentIntent creation with setup_future_usage will handle attachment
     if (stripePaymentMethodId) {
       try {
         await stripeAttachPaymentMethod(stripePaymentMethodId, stripeCustomerId);
+        console.log(`[PaymentService] Payment method attached successfully`);
       } catch (err) {
-        console.log(`[PaymentService] Payment method attachment: ${err instanceof Error ? err.message : String(err)}`);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.log(`[PaymentService] Attachment not critical, PaymentIntent will handle it: ${errMsg}`);
+        // Continue - PaymentIntent creation with setup_future_usage will save the method
       }
     }
 
