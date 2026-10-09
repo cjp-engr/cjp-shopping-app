@@ -52,7 +52,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     try {
       developer.log('Loading saved payment methods', name: 'PaymentBloc');
       final response = await apiService.get(_paymentMethodsEndpoint);
-      final list = (response.data['paymentMethods'] as List?) ?? [];
+      final responseData = response.data['data'] ?? response.data;
+      final list = (responseData['paymentMethods'] as List?) ?? [];
       final methods = list.map((pm) => _mapToPaymentMethod(pm as Map<String, dynamic>)).toList();
       developer.log('Loaded ${methods.length} payment methods', name: 'PaymentBloc');
       emit(PaymentMethodsLoaded(savedMethods: methods));
@@ -107,7 +108,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
       developer.log('Reloading payment methods after default update', name: 'PaymentBloc');
       final response = await apiService.get(_paymentMethodsEndpoint);
-      final list = (response.data['paymentMethods'] as List?) ?? [];
+      final responseData = response.data['data'] ?? response.data;
+      final list = (responseData['paymentMethods'] as List?) ?? [];
       final methods = list
           .whereType<Map<String, dynamic>>()
           .map(_mapToPaymentMethod)
@@ -156,8 +158,9 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         'stripePaymentMethodId': _currentPaymentMethodId,
       });
 
-      final intentId = (response.data['paymentIntentId'] ?? '').toString();
-      final secret = (response.data['clientSecret'] ?? '').toString();
+      final responseData = response.data['data'] ?? response.data;
+      final intentId = (responseData['paymentIntentId'] ?? '').toString();
+      final secret = (responseData['clientSecret'] ?? '').toString();
 
       if (intentId.isEmpty || secret.isEmpty) {
         developer.log('Invalid response: missing intentId or secret', name: 'PaymentBloc', level: 1000);
