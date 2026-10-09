@@ -24,6 +24,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     on<LoadSavedPaymentMethods>(_onLoadSavedPaymentMethods);
     on<SelectSavedPaymentMethod>(_onSelectSavedPaymentMethod);
     on<SetDefaultPaymentMethod>(_onSetDefaultPaymentMethod);
+    on<DeletePaymentMethod>(_onDeletePaymentMethod);
     on<SelectNewCard>(_onSelectNewCard);
     on<SetSaveCardFlag>(_onSetSaveCardFlag);
     on<CreatePaymentIntent>(_onCreatePaymentIntent);
@@ -121,6 +122,34 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       developer.log('Failed to set default payment method: $e', name: 'PaymentBloc', level: 1000);
       emit(const PaymentFailed(
         errorMessage: StripeErrorMessages.failedToSetDefaultPaymentMethod,
+      ));
+    }
+  }
+
+  Future<void> _onDeletePaymentMethod(
+    DeletePaymentMethod event,
+    Emitter<PaymentState> emit,
+  ) async {
+    try {
+      developer.log('Deleting payment method ${event.paymentMethodId}', name: 'PaymentBloc');
+
+      await apiService.delete('$_paymentMethodsEndpoint/${event.paymentMethodId}');
+
+      developer.log('Reloading payment methods after deletion', name: 'PaymentBloc');
+      final response = await apiService.get(_paymentMethodsEndpoint);
+      final responseData = response.data['data'] ?? response.data;
+      final list = (responseData['paymentMethods'] as List?) ?? [];
+      final methods = list
+          .whereType<Map<String, dynamic>>()
+          .map(_mapToPaymentMethod)
+          .toList();
+
+      developer.log('Payment method deleted successfully', name: 'PaymentBloc');
+      emit(PaymentMethodsLoaded(savedMethods: methods));
+    } catch (e) {
+      developer.log('Failed to delete payment method: $e', name: 'PaymentBloc', level: 1000);
+      emit(const PaymentFailed(
+        errorMessage: 'Failed to delete payment method. Please try again.',
       ));
     }
   }
