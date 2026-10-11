@@ -14,6 +14,36 @@ const STEPS = [
   'Basic Info', 'Pricing', 'Description', 'Images', 'Shipping', 'Review',
 ];
 
+const StepBar = ({ step }: { step: number }) => (
+  <div className="flex items-center px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+    {STEPS.map((label, i) => {
+      const n = i + 1;
+      const done = n < step;
+      const active = n === step;
+      return (
+        <Fragment key={n}>
+          <div className="flex flex-col items-center gap-1 flex-shrink-0">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+              done ? 'bg-primary-600 text-white' :
+              active ? 'bg-primary-600 text-white ring-4 ring-primary-100 dark:ring-primary-900/40' :
+              'bg-gray-100 dark:bg-gray-700 text-gray-400'
+            }`}>
+              {done ? <Check className="w-3.5 h-3.5" /> : n}
+            </div>
+            <span className={`text-[10px] font-medium whitespace-nowrap ${
+              active ? 'text-primary-600 dark:text-primary-400' :
+              done ? 'text-gray-500' : 'text-gray-300 dark:text-gray-600'
+            }`}>{label}</span>
+          </div>
+          {i < STEPS.length - 1 && (
+            <div className={`flex-1 h-0.5 mx-2 mb-4 ${done ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+          )}
+        </Fragment>
+      );
+    })}
+  </div>
+);
+
 interface VariantAttribute {
   name: string;
   values: string[];
@@ -303,7 +333,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
         discount: data.discount ? Number(data.discount) : undefined,
         tags: data.tags.length > 0 ? data.tags : undefined,
         shippingOptions: data.shippingOptions,
-        shippingFee: data.shippingFee,
+        shippingFee: data.shippingFee || undefined,
         shippingFeeAmounts: data.shippingFee === 'buyer_pays'
           ? Object.fromEntries(
               Object.entries(data.shippingFeeAmounts)
@@ -328,37 +358,6 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
     }
   };
 
-  // ── Step indicator ──────────────────────────────────────────────────────────
-  const StepBar = () => (
-    <div className="flex items-center px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-      {STEPS.map((label, i) => {
-        const n = i + 1;
-        const done = n < step;
-        const active = n === step;
-        return (
-          <Fragment key={n}>
-
-            <div className="flex flex-col items-center gap-1 flex-shrink-0">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                done ? 'bg-primary-600 text-white' :
-                active ? 'bg-primary-600 text-white ring-4 ring-primary-100 dark:ring-primary-900/40' :
-                'bg-gray-100 dark:bg-gray-700 text-gray-400'
-              }`}>
-                {done ? <Check className="w-3.5 h-3.5" /> : n}
-              </div>
-              <span className={`text-[10px] font-medium whitespace-nowrap ${
-                active ? 'text-primary-600 dark:text-primary-400' :
-                done ? 'text-gray-500' : 'text-gray-300 dark:text-gray-600'
-              }`}>{label}</span>
-            </div>
-            {i < STEPS.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-2 mb-4 ${done ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-            )}
-          </Fragment>
-        );
-      })}
-    </div>
-  );
 
   // ── Step 1: Basic Info ──────────────────────────────────────────────────────
   const Step1 = () => (
@@ -1084,7 +1083,7 @@ export const ProductWizard: React.FC<ProductWizardProps> = ({ product, onClose, 
           </button>
         </div>
 
-        <StepBar />
+        <StepBar step={step} />
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-5 py-5">

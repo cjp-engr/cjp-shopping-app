@@ -19,6 +19,7 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components -- context hook is colocated with its provider
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
@@ -31,6 +32,7 @@ interface CartProviderProps {
   children: ReactNode;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- pure helper used alongside the cart provider
 export const buildCartKey = (productId: string, variantKey?: string): string =>
   variantKey ? `${productId}|${variantKey}` : productId;
 

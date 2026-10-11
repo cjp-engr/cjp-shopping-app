@@ -6,17 +6,35 @@ function parseTags(raw: unknown): string[] {
   if (Array.isArray(raw)) {
     // Legacy: array with a single JSON-stringified element e.g. ['["a","b"]']
     if (raw.length === 1 && typeof raw[0] === 'string' && raw[0].startsWith('[')) {
-      try { const p = JSON.parse(raw[0]); if (Array.isArray(p)) return p.map(String); } catch {}
+      try { const p = JSON.parse(raw[0]); if (Array.isArray(p)) return p.map(String); } catch { /* not JSON; fall back to raw values */ }
     }
     return raw.map(String);
   }
   if (typeof raw === 'string' && raw.startsWith('[')) {
-    try { const p = JSON.parse(raw); if (Array.isArray(p)) return p.map(String); } catch {}
+    try { const p = JSON.parse(raw); if (Array.isArray(p)) return p.map(String); } catch { /* not JSON; no tags */ }
   }
   return [];
 }
 
-const adaptProduct = (p: any): Product => ({
+interface RawVariant {
+  _id?: string;
+  attributes?: Map<string, string> | Record<string, string>;
+  price?: number;
+  stock?: number;
+  sku?: string;
+  images?: string[];
+  image?: string;
+  discount?: number;
+}
+
+interface RawProduct extends Omit<Product, 'id' | 'sellerId' | 'variants' | 'tags'> {
+  _id: string;
+  sellerId?: string | { _id?: string; firstName?: string; lastName?: string } | null;
+  variants?: RawVariant[];
+  tags?: unknown;
+}
+
+const adaptProduct = (p: RawProduct): Product => ({
   id: p._id,
   name: p.name,
   description: p.description,
@@ -30,8 +48,8 @@ const adaptProduct = (p: any): Product => ({
   tags: parseTags(p.tags),
   specifications: p.specifications,
   createdAt: p.createdAt,
-  sellerId: p.sellerId?._id ?? p.sellerId ?? undefined,
-  sellerName: p.sellerId?.firstName
+  sellerId: typeof p.sellerId === 'string' ? p.sellerId : p.sellerId?._id,
+  sellerName: typeof p.sellerId === 'object' && p.sellerId?.firstName
     ? `${p.sellerId.firstName} ${p.sellerId.lastName ?? ''}`.trim()
     : undefined,
   brand: p.brand,
@@ -43,7 +61,7 @@ const adaptProduct = (p: any): Product => ({
   shippingFeeAmounts: p.shippingFeeAmounts,
   variantAttributes: p.variantAttributes,
   variants: Array.isArray(p.variants)
-    ? p.variants.map((v: any) => ({
+    ? p.variants.map((v) => ({
         _id: v._id?.toString(),
         attributes: v.attributes instanceof Map
           ? Object.fromEntries(v.attributes)
@@ -108,10 +126,10 @@ class ProductService {
       throw new Error('Failed to fetch products');
     }
 
-    const data = await response.json();
+    const data: { products: RawProduct[]; pages?: number; total?: number } = await response.json();
 
     return {
-      products: data.products.map((p: any) => adaptProduct(p)),
+      products: data.products.map((p) => adaptProduct(p)),
       pages: data.pages ?? 1,
       total: data.total ?? 0,
     };
@@ -127,11 +145,10 @@ class ProductService {
         return null;
       }
 
-      const data = await response.json();
-      const p = data.product;
+      const data: { product: RawProduct } = await response.json();
 
-      return adaptProduct(p);
-    } catch (error) {
+      return adaptProduct(data.product);
+    } catch {
       return null;
     }
   }

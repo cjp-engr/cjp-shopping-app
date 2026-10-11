@@ -68,7 +68,7 @@ export const OrderHistory: React.FC = () => {
     (async () => {
       try {
         setLoading(true);
-        const userOrders = await orderService.getOrders(user.id);
+        const userOrders = await orderService.getOrders();
         if (cancelled) return;
         setOrders(userOrders);
 
@@ -101,8 +101,8 @@ export const OrderHistory: React.FC = () => {
     if (!user || !cancelDialog.orderId) return;
     setCancelDialog(d => ({ ...d, loading: true }));
     try {
-      await orderService.cancelOrder(cancelDialog.orderId, user.id, cancelDialog.reason || undefined);
-      const updatedOrders = await orderService.getOrders(user.id);
+      await orderService.cancelOrder(cancelDialog.orderId, cancelDialog.reason || undefined);
+      const updatedOrders = await orderService.getOrders();
       setOrders(updatedOrders);
       setCancelDialog({ open: false, orderId: null, reason: '', loading: false });
     } catch (error) {

@@ -1,7 +1,62 @@
 import type { Order, CheckoutData, OrderStatus } from '../types/order';
-import type { Cart } from '../types/cart';
+import type { Cart, CartItem, SelectedVariant } from '../types/cart';
+import type { Product } from '../types/product';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import { resolveSelectedDeliveryOption } from '../utils/orderUtils';
+
+interface RawSeller {
+  _id?: string;
+  id?: string;
+  fullName?: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+type RawSellerRef = string | RawSeller | null;
+
+interface RawItemProduct {
+  _id?: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  image?: string;
+  images?: string[];
+  stock?: number;
+  rating?: number;
+  reviews?: number;
+  tags?: string[];
+  specifications?: Record<string, string>;
+  createdAt?: string;
+  sellerId?: RawSellerRef;
+  seller?: RawSellerRef;
+  createdBy?: RawSellerRef;
+}
+
+interface RawItem {
+  product?: RawItemProduct | string;
+  productName?: string;
+  productImage?: string;
+  productPrice?: number;
+  variantId?: string;
+  variantSku?: string;
+  variantDiscount?: number;
+  discountPercent?: number;
+  selectedAttributes?: Record<string, unknown>;
+  quantity: number;
+}
+
+interface RawOrder extends Omit<Order, 'id' | 'items'> {
+  _id?: string;
+  id?: string;
+  items: RawItem[];
+  deliverySelections?: unknown;
+}
+
+interface PaymentMethodLike {
+  id: string;
+  card?: { brand?: string; last4?: string; exp_month?: number; exp_year?: number } | null;
+}
 
 class OrderService {
   async createPaymentIntent(amountInCents: number): Promise<{ clientSecret: string; paymentIntentId: string }> {
@@ -22,7 +77,7 @@ class OrderService {
     };
   }
 
-  async createOrder(checkoutData: CheckoutData, cart: Cart, _userId: string, couponCodes?: Record<string, string>, deliverySelections?: Record<string, string>): Promise<Order[]> {
+  async createOrder(checkoutData: CheckoutData, cart: Cart, couponCodes?: Record<string, string>, deliverySelections?: Record<string, string>): Promise<Order[]> {
     const items = cart.items.map(item => ({
       productId: item.product.id,
       variantId: item.selectedVariant?._id,
@@ -48,13 +103,13 @@ class OrderService {
       throw new Error(error.message || 'Failed to create order');
     }
 
-    const data = await response.json();
+    const data: { orders?: RawOrder[]; order?: RawOrder } = await response.json();
     // Backend now returns { orders: [...] } — one per seller
-    const raw: any[] = data.orders ?? (data.order ? [data.order] : []);
-    return raw.map((o: any) => this.adaptOrder(o));
+    const raw: RawOrder[] = data.orders ?? (data.order ? [data.order] : []);
+    return raw.map((o) => this.adaptOrder(o));
   }
 
-  async getOrders(_userId: string): Promise<Order[]> {
+  async getOrders(): Promise<Order[]> {
     const response = await fetch(API_ENDPOINTS.ORDERS, {
       headers: getAuthHeaders()
     });
@@ -63,11 +118,11 @@ class OrderService {
       throw new Error('Failed to fetch orders');
     }
 
-    const data = await response.json();
-    return data.orders.map((order: any) => this.adaptOrder(order));
+    const data: { orders: RawOrder[] } = await response.json();
+    return data.orders.map((order) => this.adaptOrder(order));
   }
 
-  async getOrderById(orderId: string, _userId: string): Promise<Order | null> {
+  async getOrderById(orderId: string): Promise<Order | null> {
     try {
       const response = await fetch(API_ENDPOINTS.ORDER(orderId), {
         headers: getAuthHeaders()
@@ -77,14 +132,14 @@ class OrderService {
         return null;
       }
 
-      const data = await response.json();
+      const data: { order: RawOrder } = await response.json();
       return this.adaptOrder(data.order);
-    } catch (error) {
+    } catch {
       return null;
     }
   }
 
-  async updateOrderStatus(orderId: string, _userId: string, status: OrderStatus, cancelReason?: string): Promise<Order> {
+  async updateOrderStatus(orderId: string, status: OrderStatus, cancelReason?: string): Promise<Order> {
     const response = await fetch(API_ENDPOINTS.ORDER_STATUS(orderId), {
       method: 'PUT',
       headers: getAuthHeaders(),
@@ -96,12 +151,12 @@ class OrderService {
       throw new Error(error.message || 'Failed to update order status');
     }
 
-    const data = await response.json();
+    const data: { order: RawOrder } = await response.json();
     return this.adaptOrder(data.order);
   }
 
-  async cancelOrder(orderId: string, userId: string, reason?: string): Promise<Order> {
-    return this.updateOrderStatus(orderId, userId, 'cancelled', reason);
+  async cancelOrder(orderId: string, reason?: string): Promise<Order> {
+    return this.updateOrderStatus(orderId, 'cancelled', reason);
   }
 
   async confirmReceived(orderId: string): Promise<Order> {
@@ -113,12 +168,12 @@ class OrderService {
       const error = await response.json();
       throw new Error(error.message || 'Failed to confirm receipt');
     }
-    const data = await response.json();
+    const data: { order: RawOrder } = await response.json();
     return this.adaptOrder(data.order);
   }
 
-  async getOrderSummaryAsync(userId: string): Promise<{ totalOrders: number; totalSpent: number }> {
-    const orders = await this.getOrders(userId);
+  async getOrderSummaryAsync(): Promise<{ totalOrders: number; totalSpent: number }> {
+    const orders = await this.getOrders();
     const completedOrders = orders.filter(o => o.status !== 'cancelled');
 
     return {
@@ -128,7 +183,7 @@ class OrderService {
   }
 
   async savePaymentMethod(
-    paymentMethod: any,
+    paymentMethod: PaymentMethodLike,
     user: { firstName?: string; lastName?: string } | null,
     isDefault: boolean,
   ): Promise<void> {
@@ -154,16 +209,17 @@ class OrderService {
   }
 
   // Helper method to adapt backend order format to frontend format
-  private adaptOrder(order: any): Order {
+  private adaptOrder(order: RawOrder): Order {
     return {
-      id: order._id || order.id,
+      id: order._id || order.id || '',
       userId: order.userId,
-      items: order.items.map((item: any) => {
-        const rawSeller = item.product?.sellerId ?? item.product?.seller ?? item.product?.createdBy;
+      items: order.items.map((item): CartItem => {
+        const itemProduct = typeof item.product === 'object' ? item.product : undefined;
+        const rawSeller = itemProduct?.sellerId ?? itemProduct?.seller ?? itemProduct?.createdBy;
         const seller = rawSeller && typeof rawSeller === 'object' ? rawSeller : null;
         const sellerId: string | undefined = seller
-          ? seller._id?.toString() ?? seller.id?.toString()
-          : rawSeller?.toString();
+          ? seller._id ?? seller.id
+          : typeof rawSeller === 'string' ? rawSeller : undefined;
         let sellerName: string | undefined;
         if (seller) {
           const full = seller.fullName?.trim();
@@ -175,17 +231,17 @@ class OrderService {
           }
         }
 
-        const variantId: string | undefined = item.variantId;
+        const variantId = item.variantId;
         const discountPercent: number =
           item.discountPercent ?? item.variantDiscount ?? 0;
         const rawAttrs = item.selectedAttributes;
-        let selectedVariant: import('../types/cart').SelectedVariant | undefined;
+        let selectedVariant: SelectedVariant | undefined;
         if (variantId && rawAttrs && typeof rawAttrs === 'object') {
           const attributes: Record<string, string> = {};
           for (const [k, v] of Object.entries(rawAttrs)) {
             attributes[k] = String(v);
           }
-          const variantPrice: number = item.productPrice ?? item.product?.price ?? 0;
+          const variantPrice: number = item.productPrice ?? itemProduct?.price ?? 0;
           selectedVariant = {
             _id: variantId,
             attributes,
@@ -197,40 +253,43 @@ class OrderService {
           };
         }
 
+        const product: Product = itemProduct?._id ? {
+          id: itemProduct._id,
+          name: item.productName || itemProduct.name || '',
+          description: itemProduct.description || '',
+          price: item.productPrice || itemProduct.price || 0,
+          category: itemProduct.category || '',
+          image: item.productImage || itemProduct.image || '',
+          images: itemProduct.images,
+          stock: itemProduct.stock || 0,
+          rating: itemProduct.rating || 0,
+          reviews: itemProduct.reviews || 0,
+          tags: itemProduct.tags,
+          discount: variantId ? undefined : discountPercent,
+          specifications: itemProduct.specifications ?? undefined,
+          createdAt: itemProduct.createdAt || new Date().toISOString(),
+          sellerId,
+        } : {
+          id: typeof item.product === 'string' ? item.product : '',
+          name: item.productName || '',
+          description: '',
+          price: item.productPrice || 0,
+          category: '',
+          image: item.productImage || '',
+          stock: 0,
+          rating: 0,
+          reviews: 0,
+          discount: variantId ? undefined : discountPercent,
+          createdAt: new Date().toISOString(),
+        };
+
         return {
-          product: item.product?._id ? {
-            id: item.product._id,
-            name: item.productName || item.product.name,
-            description: item.product.description || '',
-            price: item.productPrice || item.product.price,
-            category: item.product.category || '',
-            image: item.productImage || item.product.image,
-            images: item.product.images,
-            stock: item.product.stock || 0,
-            rating: item.product.rating || 0,
-            reviews: item.product.reviews || 0,
-            tags: item.product.tags,
-            discount: variantId ? undefined : discountPercent,
-            specifications: item.product.specifications ?? undefined,
-            createdAt: item.product.createdAt || new Date().toISOString(),
-            sellerId,
-          } : {
-            id: item.product?.toString() ?? '',
-            name: item.productName,
-            description: '',
-            price: item.productPrice,
-            category: '',
-            image: item.productImage,
-            stock: 0,
-            rating: 0,
-            reviews: 0,
-            discount: variantId ? undefined : discountPercent,
-            createdAt: new Date().toISOString(),
-          },
+          product,
           quantity: item.quantity,
           sellerId,
           sellerName,
           selectedVariant,
+          isSelected: false,
         };
       }),
       shippingAddress: order.shippingAddress,

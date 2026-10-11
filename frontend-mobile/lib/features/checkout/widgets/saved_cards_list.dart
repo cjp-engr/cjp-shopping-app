@@ -190,12 +190,15 @@ class SavedCardsListWidget extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Radio<String?>(
-                        value: method.id,
+                      RadioGroup<String?>(
                         groupValue: selectedMethod?.id,
-                        onChanged:
-                            isLoading ? null : (_) => onCardSelected(method),
-                        activeColor: const Color(0xFFD97706),
+                        onChanged: (_) {
+                          if (!isLoading) onCardSelected(method);
+                        },
+                        child: Radio<String?>(
+                          value: method.id,
+                          activeColor: const Color(0xFFD97706),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(

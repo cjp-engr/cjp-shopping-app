@@ -5,16 +5,6 @@ import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { LogIn, AlertCircle, ShieldCheck, Zap, BadgePercent } from 'lucide-react';
 
-const AppIcon = () => (
-  <svg width="36" height="36" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
-    <rect width="512" height="512" rx="104" fill="#fff" fillOpacity="0.15"/>
-    <path d="M199 195 A57 57 0 0 1 313 195" fill="none" stroke="#fff" strokeWidth="28" strokeLinecap="round"/>
-    <rect x="136" y="205" width="240" height="194" rx="28" fill="#fff"/>
-    <rect x="201" y="256" width="110" height="31" rx="15.5" fill="#FF7A00"/>
-    <rect x="237" y="275" width="38" height="105" rx="19" fill="#FF7A00"/>
-  </svg>
-);
-
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

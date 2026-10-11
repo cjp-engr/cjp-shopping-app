@@ -54,7 +54,7 @@ export const OrderDetail: React.FC = () => {
     (async () => {
       setLoading(true);
       try {
-        const o = await orderService.getOrderById(id, user.id);
+        const o = await orderService.getOrderById(id);
         if (cancelled) return;
         setOrder(o);
 

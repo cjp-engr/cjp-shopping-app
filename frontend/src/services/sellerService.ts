@@ -1,5 +1,6 @@
 import type { Product } from '../types/product';
 import type { Order } from '../types/order';
+import type { SelectedVariant } from '../types/cart';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import { resolveSelectedDeliveryOption } from '../utils/orderUtils';
 
@@ -7,12 +8,12 @@ function parseTags(raw: unknown): string[] {
   if (!raw) return [];
   if (Array.isArray(raw)) {
     if (raw.length === 1 && typeof raw[0] === 'string' && raw[0].startsWith('[')) {
-      try { const p = JSON.parse(raw[0]); if (Array.isArray(p)) return p.map(String); } catch {}
+      try { const p = JSON.parse(raw[0]); if (Array.isArray(p)) return p.map(String); } catch { /* not JSON; fall back to raw values */ }
     }
     return raw.map(String);
   }
   if (typeof raw === 'string' && raw.startsWith('[')) {
-    try { const p = JSON.parse(raw); if (Array.isArray(p)) return p.map(String); } catch {}
+    try { const p = JSON.parse(raw); if (Array.isArray(p)) return p.map(String); } catch { /* not JSON; no tags */ }
   }
   return [];
 }
@@ -43,7 +44,66 @@ export interface ProductFormData {
   }>;
 }
 
-const adaptProduct = (p: any): Product => ({
+interface RawVariant {
+  _id?: string;
+  attributes?: Map<string, string> | Record<string, string>;
+  price?: number;
+  stock?: number;
+  sku?: string;
+  images?: string[];
+  image?: string;
+  discount?: number;
+}
+
+interface RawProduct extends Omit<Product, 'id' | 'sellerId' | 'variants' | 'tags'> {
+  _id: string;
+  variants?: RawVariant[];
+  tags?: unknown;
+}
+
+interface RawUser {
+  _id?: string;
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+}
+
+interface RawItemProduct {
+  _id?: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  image?: string;
+  stock?: number;
+  rating?: number;
+  reviews?: number;
+  createdAt?: string;
+}
+
+interface RawItem {
+  product?: RawItemProduct | string;
+  productName?: string;
+  productImage?: string;
+  productPrice?: number;
+  variantId?: string;
+  variantSku?: string;
+  variantDiscount?: number;
+  discountPercent?: number;
+  selectedAttributes?: Record<string, unknown>;
+  quantity: number;
+}
+
+interface RawOrder extends Omit<Order, 'id' | 'userId' | 'items'> {
+  _id?: string;
+  id?: string;
+  userId?: string | RawUser;
+  items: RawItem[];
+  deliverySelections?: unknown;
+}
+
+const adaptProduct = (p: RawProduct): Product => ({
   id: p._id,
   name: p.name,
   description: p.description,
@@ -66,7 +126,7 @@ const adaptProduct = (p: any): Product => ({
   shippingFeeAmounts: p.shippingFeeAmounts,
   variantAttributes: p.variantAttributes,
   variants: Array.isArray(p.variants)
-    ? p.variants.map((v: any) => ({
+    ? p.variants.map((v) => ({
         _id: v._id?.toString(),
         attributes: v.attributes instanceof Map
           ? Object.fromEntries(v.attributes)
@@ -80,81 +140,87 @@ const adaptProduct = (p: any): Product => ({
     : undefined,
 });
 
-const adaptOrder = (order: any): Order & { buyer?: { id: string; firstName: string; lastName: string; email: string } } => ({
-  id: order._id || order.id,
-  userId: order.userId?._id || order.userId,
-  buyer: order.userId?.firstName ? {
-    id: order.userId._id || order.userId.id || '',
-    firstName: order.userId.firstName,
-    lastName: order.userId.lastName,
-    email: order.userId.email,
-  } : undefined,
-  items: order.items.map((item: any) => {
-    const variantId: string | undefined = item.variantId;
-    const discountPercent: number =
-      item.discountPercent ?? item.variantDiscount ?? 0;
-    const rawAttrs = item.selectedAttributes;
-    let selectedVariant: import('../types/cart').SelectedVariant | undefined;
-    if (variantId && rawAttrs && typeof rawAttrs === 'object') {
-      const attributes: Record<string, string> = {};
-      for (const [k, v] of Object.entries(rawAttrs)) {
-        attributes[k] = String(v);
-      }
-      const variantPrice: number = item.productPrice ?? item.product?.price ?? 0;
-      selectedVariant = {
-        _id: variantId,
-        attributes,
-        price: variantPrice,
-        stock: 0,
-        sku: item.variantSku,
-        discount: discountPercent,
-        key: Object.entries(attributes).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}:${v}`).join('|'),
-      };
-    }
+type AdaptedOrder = Order & { buyer?: { id: string; firstName: string; lastName: string; email: string } };
 
-    return {
-      product: item.product?._id ? {
-        id: item.product._id,
-        name: item.productName || item.product.name,
-        description: item.product.description || '',
-        price: item.productPrice || item.product.price,
-        category: item.product.category || '',
-        image: item.productImage || item.product.image,
-        stock: item.product.stock ?? 0,
-        rating: item.product.rating ?? 0,
-        reviews: item.product.reviews ?? 0,
-        discount: variantId ? undefined : discountPercent,
-        createdAt: item.product.createdAt || new Date().toISOString(),
-      } : {
-        id: item.product?.toString() || '',
-        name: item.productName,
-        description: '',
-        price: item.productPrice,
-        category: '',
-        image: item.productImage,
-        stock: 0,
-        rating: 0,
-        reviews: 0,
-        discount: variantId ? undefined : discountPercent,
-        createdAt: new Date().toISOString(),
-      },
-      quantity: item.quantity,
-      selectedVariant,
-    };
-  }),
-  shippingAddress: order.shippingAddress,
-  paymentMethod: order.paymentMethod,
-  subtotal: order.subtotal,
-  productDiscount: order.productDiscount ?? 0,
-  discount: order.discount ?? 0,
-  tax: order.tax,
-  shipping: order.shipping,
-  total: order.total,
-  status: order.status,
-  createdAt: order.createdAt,
-  estimatedDelivery: order.estimatedDelivery,
-  selectedDeliveryOption: resolveSelectedDeliveryOption(order),
-});
+const adaptOrder = (order: RawOrder): AdaptedOrder => {
+  const buyer = typeof order.userId === 'object' ? order.userId : undefined;
+  return {
+    id: order._id || order.id || '',
+    userId: buyer?._id || (typeof order.userId === 'string' ? order.userId : ''),
+    buyer: buyer?.firstName ? {
+      id: buyer._id || buyer.id || '',
+      firstName: buyer.firstName,
+      lastName: buyer.lastName ?? '',
+      email: buyer.email ?? '',
+    } : undefined,
+    items: order.items.map((item) => {
+      const variantId = item.variantId;
+      const discountPercent: number = item.discountPercent ?? item.variantDiscount ?? 0;
+      const rawAttrs = item.selectedAttributes;
+      const itemProduct = typeof item.product === 'object' ? item.product : undefined;
+      let selectedVariant: SelectedVariant | undefined;
+      if (variantId && rawAttrs && typeof rawAttrs === 'object') {
+        const attributes: Record<string, string> = {};
+        for (const [k, v] of Object.entries(rawAttrs)) {
+          attributes[k] = String(v);
+        }
+        const variantPrice: number = item.productPrice ?? itemProduct?.price ?? 0;
+        selectedVariant = {
+          _id: variantId,
+          attributes,
+          price: variantPrice,
+          stock: 0,
+          sku: item.variantSku,
+          discount: discountPercent,
+          key: Object.entries(attributes).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}:${v}`).join('|'),
+        };
+      }
+
+      return {
+        product: itemProduct?._id ? {
+          id: itemProduct._id,
+          name: item.productName || itemProduct.name || '',
+          description: itemProduct.description || '',
+          price: item.productPrice || itemProduct.price || 0,
+          category: itemProduct.category || '',
+          image: item.productImage || itemProduct.image || '',
+          stock: itemProduct.stock ?? 0,
+          rating: itemProduct.rating ?? 0,
+          reviews: itemProduct.reviews ?? 0,
+          discount: variantId ? undefined : discountPercent,
+          createdAt: itemProduct.createdAt || new Date().toISOString(),
+        } : {
+          id: typeof item.product === 'string' ? item.product : '',
+          name: item.productName || '',
+          description: '',
+          price: item.productPrice || 0,
+          category: '',
+          image: item.productImage || '',
+          stock: 0,
+          rating: 0,
+          reviews: 0,
+          discount: variantId ? undefined : discountPercent,
+          createdAt: new Date().toISOString(),
+        },
+        quantity: item.quantity,
+        selectedVariant,
+        isSelected: false,
+      };
+    }),
+    shippingAddress: order.shippingAddress,
+    paymentMethod: order.paymentMethod,
+    subtotal: order.subtotal,
+    productDiscount: order.productDiscount ?? 0,
+    discount: order.discount ?? 0,
+    tax: order.tax,
+    shipping: order.shipping,
+    total: order.total,
+    status: order.status,
+    createdAt: order.createdAt,
+    estimatedDelivery: order.estimatedDelivery,
+    selectedDeliveryOption: resolveSelectedDeliveryOption(order),
+  };
+};
 
 // Auth headers without Content-Type (browser sets it for multipart)
 const getAuthHeadersNoContentType = (): Record<string, string> => {
@@ -166,7 +232,7 @@ class SellerService {
   async getProducts(): Promise<Product[]> {
     const res = await fetch(API_ENDPOINTS.SELLER_PRODUCTS, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to fetch products');
-    const data = await res.json();
+    const data: { products: RawProduct[] } = await res.json();
     return data.products.map(adaptProduct);
   }
 
@@ -205,7 +271,7 @@ class SellerService {
       body,
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to create product'); }
-    const data = await res.json();
+    const data: { product: RawProduct } = await res.json();
     return adaptProduct(data.product);
   }
 
@@ -244,7 +310,7 @@ class SellerService {
       body,
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to update product'); }
-    const data = await res.json();
+    const data: { product: RawProduct } = await res.json();
     return adaptProduct(data.product);
   }
 
@@ -269,10 +335,10 @@ class SellerService {
     if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to delete product'); }
   }
 
-  async getOrders(): Promise<ReturnType<typeof adaptOrder>[]> {
+  async getOrders(): Promise<AdaptedOrder[]> {
     const res = await fetch(API_ENDPOINTS.SELLER_ORDERS, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to fetch orders');
-    const data = await res.json();
+    const data: { orders: RawOrder[] } = await res.json();
     return data.orders.map(adaptOrder);
   }
 

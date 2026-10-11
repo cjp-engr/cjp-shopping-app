@@ -57,7 +57,7 @@ export const Profile: React.FC = () => {
     const loadOrderSummary = async () => {
       if (user) {
         try {
-          const summary = await orderService.getOrderSummaryAsync(user.id);
+          const summary = await orderService.getOrderSummaryAsync();
           setOrderSummary(summary);
         } catch (error) {
           console.error('Failed to load order summary:', error);
@@ -155,8 +155,9 @@ export const Profile: React.FC = () => {
           city: formData.city,
           state: formData.state,
           zipCode: formData.zipCode,
+          country: '',
         },
-      } as any);
+      });
       setIsEditing(false);
       setSuccess(true);
       const timer = setTimeout(() => setSuccess(false), 3000);
@@ -330,7 +331,7 @@ export const Profile: React.FC = () => {
                   onClick={async () => {
                     try {
                       setLoading(true);
-                      await updateProfile({ role: 'seller' } as any);
+                      await updateProfile({ role: 'seller' as const });
                     } finally {
                       setLoading(false);
                     }

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
+process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
+
 vi.mock('stripe', () => {
   const mockCreate = vi.fn().mockResolvedValue({ id: 'pi_test', client_secret: 'secret_test' });
   const mockRetrieve = vi.fn().mockResolvedValue({ id: 'pi_test', status: 'succeeded' });

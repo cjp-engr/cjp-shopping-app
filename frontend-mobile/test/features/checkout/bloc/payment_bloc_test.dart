@@ -57,6 +57,7 @@ void main() {
           (_) async => _response({
             'paymentMethods': [
               {
+                '_id': 'pm_1',
                 'stripePaymentMethodId': 'pm_1',
                 'brand': 'visa',
                 'last4': '4242',
@@ -80,6 +81,7 @@ void main() {
             expiryMonth: 12,
             expiryYear: 2030,
             isDefault: true,
+            stripePaymentMethodId: 'pm_1',
           ),
         ]),
       ],

@@ -15,7 +15,7 @@ export const validatePassword = (password: string): {
 
 export const validatePhone = (phone: string): boolean => {
   // Accepts formats: (555) 123-4567, 555-123-4567, 5551234567
-  const phoneRegex = /^[\d\s\-\(\)]+$/;
+  const phoneRegex = /^[\d\s\-()]+$/;
   const digitCount = phone.replace(/\D/g, '').length;
   return phoneRegex.test(phone) && digitCount === 10;
 };
