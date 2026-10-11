@@ -13,6 +13,8 @@ import rateLimit from 'express-rate-limit';
 import { connectDB } from './config/database.js';
 import { startAutoCompleteJob } from './jobs/autoCompleteOrders.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger.js';
 
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -27,6 +29,12 @@ import paymentRoutes from './routes/paymentRoutes.js';
 const app = express();
 
 connectDB();
+
+// Mounted before helmet: helmet's default CSP blocks the Swagger UI's inline scripts.
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api-docs.json', (_req, res) => res.json(swaggerSpec));
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
