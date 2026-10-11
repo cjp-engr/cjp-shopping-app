@@ -122,7 +122,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
       } catch (e) {
         // ignore: avoid_print
         print('Error creating payment method: $e');
-        _showSnackBar('Failed to create payment method. Please try again.', Colors.red);
+        _showSnackBar(
+            'Failed to create payment method. Please try again.', Colors.red);
         return;
       }
     }
@@ -146,8 +147,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       bloc.add(SetSaveCardFlag(_shouldSaveCard));
     } else {
       final method = _selectedSavedMethod!;
-      if (method.stripePaymentMethodId == null || method.stripePaymentMethodId!.isEmpty) {
-        _showSnackBar('This card is no longer valid. Please add a new card.', Colors.red);
+      if (method.stripePaymentMethodId == null ||
+          method.stripePaymentMethodId!.isEmpty) {
+        _showSnackBar(
+            'This card is no longer valid. Please add a new card.', Colors.red);
         return;
       }
       bloc.add(SelectSavedPaymentMethod(
@@ -188,7 +191,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         } else if (selected == null && _selectedSavedMethod == null) {
           // On initial load, auto-select the default card if no selection exists
           try {
-            final defaultCard = state.savedMethods.firstWhere((m) => m.isDefault);
+            final defaultCard =
+                state.savedMethods.firstWhere((m) => m.isDefault);
             _selectedSavedMethod = defaultCard;
           } on StateError {
             // No default card found, user can select manually
@@ -260,7 +264,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
             return SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -291,10 +296,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
         Text(
           'Payment Method',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-            letterSpacing: -0.3,
-          ),
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                letterSpacing: -0.3,
+              ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -435,7 +440,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -449,10 +454,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
             Text(
               'Order Summary',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-                letterSpacing: -0.3,
-              ),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    letterSpacing: -0.3,
+                  ),
             ),
             const SizedBox(height: 16),
             Row(
@@ -462,17 +467,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 Text(
                   'Total Amount',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
                 Text(
                   '\$${total.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFFD97706),
-                    fontSize: 24,
-                  ),
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFD97706),
+                        fontSize: 24,
+                      ),
                 ),
               ],
             ),
@@ -485,9 +490,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
             Text(
               '${widget.cartItems.length} item${widget.cartItems.length != 1 ? 's' : ''}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ],
         ),

@@ -32,8 +32,9 @@ class ProductRemoteDataSource {
       };
       final response = await _dio.get('/products', queryParameters: params);
       final data = response.data;
-      final List list = data is List ? data : (data['products'] ?? data['data'] ?? []);
-      return compute(_parseProductList, list);
+      final List list =
+          data is List ? data : (data['products'] ?? data['data'] ?? []);
+      return await compute(_parseProductList, list);
     } on DioException catch (e) {
       throw mapDioError(e);
     }
@@ -43,9 +44,8 @@ class ProductRemoteDataSource {
     try {
       final response = await _dio.get('/products/$id');
       final data = response.data;
-      final productData = data is Map && data['product'] != null
-          ? data['product']
-          : data;
+      final productData =
+          data is Map && data['product'] != null ? data['product'] : data;
       return ProductModel.fromJson(productData as Map<String, dynamic>);
     } on DioException catch (e) {
       throw mapDioError(e);

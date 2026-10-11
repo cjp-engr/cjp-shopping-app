@@ -38,7 +38,8 @@ class SavedCardsListWidget extends StatelessWidget {
           ),
         ),
       );
-    } else if (brandLower.contains('mastercard') || brandLower.contains('master card')) {
+    } else if (brandLower.contains('mastercard') ||
+        brandLower.contains('master card')) {
       return SizedBox(
         width: 28,
         height: 20,
@@ -144,9 +145,9 @@ class SavedCardsListWidget extends StatelessWidget {
               Text(
                 'No saved cards',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
               ),
             ],
           ),
@@ -179,7 +180,7 @@ class SavedCardsListWidget extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(10),
                   color: isSelected
-                      ? const Color(0xFFD97706).withOpacity(0.04)
+                      ? const Color(0xFFD97706).withValues(alpha: 0.04)
                       : Colors.transparent,
                 ),
                 child: Padding(
@@ -192,7 +193,8 @@ class SavedCardsListWidget extends StatelessWidget {
                       Radio<String?>(
                         value: method.id,
                         groupValue: selectedMethod?.id,
-                        onChanged: isLoading ? null : (_) => onCardSelected(method),
+                        onChanged:
+                            isLoading ? null : (_) => onCardSelected(method),
                         activeColor: const Color(0xFFD97706),
                       ),
                       const SizedBox(width: 12),
@@ -225,7 +227,7 @@ class SavedCardsListWidget extends StatelessWidget {
                                     ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF15803D)
-                                          .withOpacity(0.1),
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(

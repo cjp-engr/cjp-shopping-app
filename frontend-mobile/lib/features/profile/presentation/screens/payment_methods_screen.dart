@@ -76,7 +76,10 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                     Icon(
                       Icons.credit_card_off,
                       size: 64,
-                      color: Theme.of(context).colorScheme.onSurface.withAlpha(130),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withAlpha(130),
                     ),
                     const SizedBox(height: AppSizes.md),
                     Text(
@@ -93,7 +96,10 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
-                        color: Theme.of(context).colorScheme.onSurface.withAlpha(130),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withAlpha(130),
                       ),
                     ),
                   ],
@@ -205,12 +211,18 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                         // ── Set as default button ──────────────────────
                         IconButton(
                           icon: Icon(
-                            method.isDefault ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                            method.isDefault
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_unchecked,
                             size: 20,
-                            color: method.isDefault ? AppColors.success : Colors.grey,
+                            color: method.isDefault
+                                ? AppColors.success
+                                : Colors.grey,
                           ),
                           tooltip: 'Set as default',
-                          onPressed: method.isDefault ? null : () => _setAsDefault(context, method),
+                          onPressed: method.isDefault
+                              ? null
+                              : () => _setAsDefault(context, method),
                           padding: const EdgeInsets.all(6),
                           constraints: const BoxConstraints(
                             minWidth: 44,
@@ -312,9 +324,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                 ),
               );
             },
-            child: Text(
+            child: const Text(
               AppStrings.delete,
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(color: Colors.red),
             ),
           ),
         ],
