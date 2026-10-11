@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { stripePromise } from '../lib/stripe';
@@ -62,8 +62,7 @@ const CheckoutInner: React.FC = () => {
   const [step, setStep] = useState<'shipping' | 'payment' | 'review'>('shipping');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // useRef preserves orderPlaced state across re-renders to prevent duplicate order creation
-  const orderPlaced = useRef(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
   const savedAddresses: SavedAddress[] = user?.savedAddresses ?? [];
   const defaultAddr = savedAddresses.find(a => a.isDefault) ?? savedAddresses[0];
@@ -247,6 +246,8 @@ const CheckoutInner: React.FC = () => {
 
   // Persist default delivery option in state (matches review UI default)
   useEffect(() => {
+    // Persists the default option; the updater returns `prev` when nothing changes, so this settles
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDeliverySelections(prev => {
       const next = { ...prev };
       let changed = false;
@@ -520,8 +521,8 @@ const CheckoutInner: React.FC = () => {
         if (v.code) couponCodes[sellerId] = v.code;
       }
       const checkoutCart = { ...cart, items: checkoutItems };
-      const orders = await orderService.createOrder(checkoutData, checkoutCart, user.id, couponCodes, resolvedDeliverySelections);
-      orderPlaced.current = true;
+      const orders = await orderService.createOrder(checkoutData, checkoutCart, couponCodes, resolvedDeliverySelections);
+      setOrderPlaced(true);
       // Remove only the checked-out items so deselected cart items are preserved
       if (checkoutItems.length === cart.items.length) {
         clearCart();
@@ -538,10 +539,11 @@ const CheckoutInner: React.FC = () => {
     }
   };
 
-  if (checkoutItems.length === 0 && !orderPlaced.current) {
-    navigate('/cart');
-    return null;
-  }
+  useEffect(() => {
+    if (checkoutItems.length === 0 && !orderPlaced) navigate('/cart');
+  }, [checkoutItems.length, orderPlaced, navigate]);
+
+  if (checkoutItems.length === 0 && !orderPlaced) return null;
 
   return (
     <div className="space-y-6" data-testid="checkout-page">

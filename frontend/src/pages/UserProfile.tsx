@@ -32,8 +32,8 @@ export default function UserProfile() {
       const data = await res.json();
       if (!data.success) throw new Error(data.message);
       setProfile(data.user);
-    } catch (e: any) {
-      setError(e.message ?? 'Failed to load profile');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load profile');
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,10 @@ export default function UserProfile() {
     }
   }, [id]);
 
+  // Data loads set their loading flags before awaiting the request
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchTab(activeTab); }, [fetchTab, activeTab]);
 
   const handleFollow = async () => {

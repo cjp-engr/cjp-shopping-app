@@ -7,10 +7,12 @@ vi.mock('../../services/stripeService.js', () => ({
   retrievePaymentIntent: vi.fn(),
 }));
 
-vi.mock('../../models/Order.js', () => ({
+vi.mock('../../services/paymentService.js', () => ({
   default: {
-    findOneAndUpdate: vi.fn().mockResolvedValue(null),
+    handlePaymentIntentSucceeded: vi.fn(),
+    handlePaymentIntentFailed: vi.fn(),
   },
+  PaymentError: class extends Error {},
 }));
 
 vi.mock('../../models/Cart.js', () => ({
@@ -20,7 +22,7 @@ vi.mock('../../models/Cart.js', () => ({
 }));
 
 import { constructWebhookEvent } from '../../services/stripeService.js';
-import Order from '../../models/Order.js';
+import paymentService from '../../services/paymentService.js';
 import { handleWebhook } from '../paymentController.js';
 
 function makeRes() {
@@ -50,10 +52,7 @@ describe('handleWebhook', () => {
     const req = { headers: { 'stripe-signature': 'sig' }, body: Buffer.from('{}') } as unknown as Request;
     const res = makeRes();
     await handleWebhook(req, res);
-    expect(Order.findOneAndUpdate).toHaveBeenCalledWith(
-      { paymentIntentId: 'pi_123' },
-      { status: 'processing' },
-    );
+    expect(paymentService.handlePaymentIntentSucceeded).toHaveBeenCalledWith('pi_123');
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
@@ -65,10 +64,7 @@ describe('handleWebhook', () => {
     const req = { headers: { 'stripe-signature': 'sig' }, body: Buffer.from('{}') } as unknown as Request;
     const res = makeRes();
     await handleWebhook(req, res);
-    expect(Order.findOneAndUpdate).toHaveBeenCalledWith(
-      { paymentIntentId: 'pi_456' },
-      { status: 'cancelled' },
-    );
+    expect(paymentService.handlePaymentIntentFailed).toHaveBeenCalledWith('pi_456');
     expect(res.status).toHaveBeenCalledWith(200);
   });
 });

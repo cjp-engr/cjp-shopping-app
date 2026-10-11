@@ -35,7 +35,12 @@ export const MyProducts: React.FC = () => {
   );
 
   // Reset page when category or column count changes
-  useEffect(() => { setPage(1); }, [selectedCategory, pageSize]);
+  const pageResetKey = `${selectedCategory}|${pageSize}`;
+  const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey);
+  if (pageResetKey !== prevPageResetKey) {
+    setPrevPageResetKey(pageResetKey);
+    setPage(1);
+  }
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated = useMemo(

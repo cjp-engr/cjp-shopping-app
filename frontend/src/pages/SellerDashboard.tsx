@@ -84,11 +84,7 @@ export const SellerDashboard: React.FC = () => {
   const [couponFormError, setCouponFormError] = useState<string | null>(null);
   const [couponFormLoading, setCouponFormLoading] = useState(false);
   const [deletingCouponId, setDeletingCouponId] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadProducts();
-    loadOrders();
-  }, []);
+  const [nowMs] = useState(() => Date.now());
 
   const loadProducts = async () => {
     try {
@@ -105,6 +101,13 @@ export const SellerDashboard: React.FC = () => {
     } catch { /* silent */ }
     finally { setLoadingOrders(false); }
   };
+
+  // Initial data load; the loaders set their loading flags before awaiting the request
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadProducts();
+    loadOrders();
+  }, []);
 
   // ── Product form ──────────────────────────────────────────
   const openCreate = () => { setEditingProduct(null); setShowForm(true); };
@@ -797,7 +800,7 @@ export const SellerDashboard: React.FC = () => {
             <div className="space-y-3">
               {coupons.map(c => {
                 const expiresIn = c.expiresAt
-                  ? Math.ceil((new Date(c.expiresAt).getTime() - Date.now()) / 86_400_000)
+                  ? Math.ceil((new Date(c.expiresAt).getTime() - nowMs) / 86_400_000)
                   : null;
                 const isExpired = expiresIn != null && expiresIn <= 0;
                 return (

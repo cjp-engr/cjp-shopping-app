@@ -41,18 +41,26 @@ export const SelectVoucherModal: React.FC<Props> = ({
   const [manualError, setManualError] = useState<string | null>(null);
   const [applyingManual, setApplyingManual] = useState(false);
   const [selected, setSelected] = useState<string | null>(selectedCode);
+  const [nowMs] = useState(() => Date.now());
+  const [wasOpen, setWasOpen] = useState(isOpen);
+
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    if (isOpen) {
+      setSelected(selectedCode);
+      setManualCode('');
+      setManualError(null);
+      setLoading(true);
+    }
+  }
 
   useEffect(() => {
     if (!isOpen) return;
-    setSelected(selectedCode);
-    setManualCode('');
-    setManualError(null);
-    setLoading(true);
     couponService.getAvailable(sellerId, orderAmount).then(data => {
       setCoupons(data);
       setLoading(false);
     });
-  }, [isOpen, sellerId, orderAmount, selectedCode]);
+  }, [isOpen, sellerId, orderAmount]);
 
   const handleApplyManual = async () => {
     const code = manualCode.trim().toUpperCase();
@@ -158,7 +166,7 @@ export const SelectVoucherModal: React.FC<Props> = ({
                   const isSelected = selected === coupon.code;
                   const recommended = isRecommended(coupon, orderAmount);
                   const expiresIn = coupon.expiresAt
-                    ? Math.ceil((new Date(coupon.expiresAt).getTime() - Date.now()) / 86_400_000)
+                    ? Math.ceil((new Date(coupon.expiresAt).getTime() - nowMs) / 86_400_000)
                     : null;
 
                   return (

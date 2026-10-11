@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
-import { UserPlus, AlertCircle, CheckCircle, ShoppingCart } from 'lucide-react';
+import { UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
 
 export const Signup: React.FC = () => {
   const navigate = useNavigate();

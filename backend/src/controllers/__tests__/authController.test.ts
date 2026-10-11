@@ -32,7 +32,7 @@ describe('setDefaultPaymentMethod', () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ success: true }),
     );
-    const updatedCards: any[] = res.json.mock.calls[0][0].paymentMethods;
+    const updatedCards: any[] = res.json.mock.calls[0][0].data.paymentMethods;
     expect(updatedCards.find((c: any) => c._id === 'card2').isDefault).toBe(true);
     expect(updatedCards.find((c: any) => c._id === 'card1').isDefault).toBe(false);
   });

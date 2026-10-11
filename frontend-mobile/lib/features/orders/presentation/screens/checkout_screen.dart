@@ -568,21 +568,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                           .textTheme
                                           .titleMedium),
                                   const SizedBox(height: 12),
-                                  RadioListTile<String>(
-                                    title: const Text('Credit/Debit Card'),
-                                    value: 'credit-card',
+                                  RadioGroup<String>(
                                     groupValue: _paymentType,
                                     onChanged: (v) =>
                                         setState(() => _paymentType = v!),
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                  RadioListTile<String>(
-                                    title: const Text('Cash on Delivery'),
-                                    value: 'cash-on-delivery',
-                                    groupValue: _paymentType,
-                                    onChanged: (v) =>
-                                        setState(() => _paymentType = v!),
-                                    contentPadding: EdgeInsets.zero,
+                                    child: const Column(
+                                      children: [
+                                        RadioListTile<String>(
+                                          title: Text('Credit/Debit Card'),
+                                          value: 'credit-card',
+                                          contentPadding: EdgeInsets.zero,
+                                        ),
+                                        RadioListTile<String>(
+                                          title: Text('Cash on Delivery'),
+                                          value: 'cash-on-delivery',
+                                          contentPadding: EdgeInsets.zero,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),

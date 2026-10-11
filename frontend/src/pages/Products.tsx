@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { ProductFilters, SortOption } from '../types/product';
 import { Card } from '../components/common/Card';
@@ -30,10 +30,12 @@ export const Products: React.FC = () => {
 
   const debouncedSearch = useDebounce(searchInput, 400);
 
-  useEffect(() => {
-    const categoryParam = searchParams.get('category');
+  const categoryParam = searchParams.get('category');
+  const [prevCategoryParam, setPrevCategoryParam] = useState(categoryParam);
+  if (categoryParam !== prevCategoryParam) {
+    setPrevCategoryParam(categoryParam);
     if (categoryParam) setSelectedCategory(categoryParam);
-  }, [searchParams]);
+  }
 
   const filters: ProductFilters = {
     searchQuery: debouncedSearch || undefined,
@@ -43,8 +45,12 @@ export const Products: React.FC = () => {
   };
 
   // Reset to page 1 whenever filters, sort, or column count changes
-  const filtersKey = JSON.stringify(filters) + sortBy;
-  useEffect(() => { setPage(1); }, [filtersKey, pageSize]);
+  const pageResetKey = `${JSON.stringify(filters)}${sortBy}|${pageSize}`;
+  const [prevPageResetKey, setPrevPageResetKey] = useState(pageResetKey);
+  if (pageResetKey !== prevPageResetKey) {
+    setPrevPageResetKey(pageResetKey);
+    setPage(1);
+  }
 
   const { products, loading, totalPages, total } = useProducts(filters, sortBy, page, pageSize);
 

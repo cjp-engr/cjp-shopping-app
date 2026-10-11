@@ -47,6 +47,7 @@ class MediaPermissionService {
     bool allowAfterRationaleWithoutGrant = false,
   }) async {
     var status = await permission.status;
+    if (!context.mounted) return false;
 
     if (_isEffectivelyGranted(status)) return true;
 
@@ -54,7 +55,6 @@ class MediaPermissionService {
       return _promptOpenSettings(context, title: title);
     }
 
-    if (!context.mounted) return false;
     final proceed = await _showRationale(
       context,
       icon: icon,
@@ -64,6 +64,7 @@ class MediaPermissionService {
     if (proceed != true) return false;
 
     status = await permission.request();
+    if (!context.mounted) return false;
     if (_isEffectivelyGranted(status)) return true;
 
     if (allowAfterRationaleWithoutGrant) return true;

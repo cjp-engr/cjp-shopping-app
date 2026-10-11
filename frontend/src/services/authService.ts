@@ -77,7 +77,7 @@ class AuthService {
       const data = await response.json();
       localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
       return data.user;
-    } catch (error) {
+    } catch {
       this.logout();
       return null;
     }

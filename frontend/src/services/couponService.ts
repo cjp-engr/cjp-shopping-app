@@ -21,10 +21,20 @@ export interface ValidateResult {
   discountAmount: number;
 }
 
-const adapt = (c: any): Coupon => ({
-  id: c._id ?? c.id,
+interface RawCoupon extends Omit<Coupon, 'id' | 'sellerId' | 'minOrderAmount' | 'usedCount' | 'isActive' | 'createdAt'> {
+  _id?: string;
+  id?: string;
+  sellerId?: string | { _id?: string } | null;
+  minOrderAmount?: number;
+  usedCount?: number;
+  isActive?: boolean;
+  createdAt?: string;
+}
+
+const adapt = (c: RawCoupon): Coupon => ({
+  id: c._id ?? c.id ?? '',
   code: c.code,
-  sellerId: c.sellerId?._id ?? c.sellerId ?? '',
+  sellerId: (typeof c.sellerId === 'object' ? c.sellerId?._id : c.sellerId) ?? '',
   discountType: c.discountType,
   discountValue: c.discountValue,
   maxDiscount: c.maxDiscount,
