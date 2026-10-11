@@ -918,6 +918,27 @@ class _SavedAddressListState extends State<_SavedAddressList> {
     super.dispose();
   }
 
+  Future<void> _confirmDeleteAddress(
+    BuildContext context,
+    SavedAddressEntity addr,
+    String displayAddr,
+  ) async {
+    final confirm = await AppDialog.show(
+      context,
+      icon: Icons.delete_outline,
+      iconColor: AppColors.danger,
+      iconBackground: AppColors.dangerSurface,
+      title: AppStrings.deleteAddress,
+      body: '${AppStrings.deleteAddressConfirmation}\n\n$displayAddr',
+      cancelLabel: AppStrings.cancel,
+      confirmLabel: AppStrings.delete,
+      confirmColor: AppColors.danger,
+    );
+    if (confirm == true && context.mounted) {
+      context.read<AuthBloc>().add(AuthAddressDeleteRequested(addr.id));
+    }
+  }
+
   void _showAddressSheet({SavedAddressEntity? existing}) {
     final isEdit = existing != null;
     _labelCtrl.text = existing?.label ?? 'Home';
@@ -1139,9 +1160,8 @@ class _SavedAddressListState extends State<_SavedAddressList> {
                         icon: Icon(Icons.delete_outline,
                             size: 20, color: Colors.red.withAlpha(200)),
                         tooltip: AppStrings.deleteAddress,
-                        onPressed: () => context
-                            .read<AuthBloc>()
-                            .add(AuthAddressDeleteRequested(addr.id)),
+                        onPressed: () =>
+                            _confirmDeleteAddress(context, addr, displayAddr),
                         padding: const EdgeInsets.all(6),
                         constraints:
                             const BoxConstraints(minWidth: 36, minHeight: 36),

@@ -360,6 +360,8 @@ class AppStrings {
   static const String cardExpiry = 'Expires';
   static const String deleteCardConfirmation =
       'Are you sure you want to delete this card?';
+  static const String deleteAddressConfirmation =
+      'Are you sure you want to delete this address?';
   static const String deleteFunctionalityUnavailable =
       'Delete functionality will be available soon';
 
