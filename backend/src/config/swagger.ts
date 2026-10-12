@@ -29,10 +29,17 @@ const queryParam = (name: string, description: string) => ({
 const errors = {
   '400': { $ref: '#/components/responses/BadRequest' },
   '401': { $ref: '#/components/responses/Unauthorized' },
+  '403': { $ref: '#/components/responses/Forbidden' },
   '404': { $ref: '#/components/responses/NotFound' },
 };
 
 const authOp = (op: object) => ({ security: bearer, responses: errors, ...op });
+
+const sellerOp = <T extends { responses: Record<string, object>; description?: string }>(op: T) => authOp({
+  ...op,
+  description: op.description ?? 'Requires an authenticated seller account.',
+  responses: { ...op.responses, '403': errors['403'] },
+});
 
 export const swaggerSpec = {
   openapi: '3.0.3',
@@ -100,11 +107,13 @@ export const swaggerSpec = {
     responses: {
       BadRequest: { description: 'Validation failed', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
       Unauthorized: { description: 'Missing or invalid token', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+      Forbidden: { description: 'Seller account required or access to this resource is denied', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
       NotFound: { description: 'Resource not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
     },
   },
   paths: {
     '/health': {
+      servers: [{ url: '/', description: 'Server root (health check is outside /api)' }],
       get: { tags: ['Auth'], summary: 'Health check', responses: { '200': json('Server is running') } },
     },
 
@@ -115,9 +124,10 @@ export const swaggerSpec = {
         summary: 'Create a new account',
         requestBody: body({
           type: 'object',
-          required: ['name', 'email', 'password'],
+          required: ['firstName', 'lastName', 'email', 'password'],
           properties: {
-            name: { type: 'string' },
+            firstName: { type: 'string', minLength: 1 },
+            lastName: { type: 'string', minLength: 1 },
             email: { type: 'string', format: 'email' },
             password: { type: 'string', minLength: 6 },
           },
@@ -170,8 +180,22 @@ export const swaggerSpec = {
       }),
       post: authOp({
         tags: ['Auth'],
-        summary: 'Save a card (by Stripe PaymentMethod ID)',
-        requestBody: body({ type: 'object', required: ['paymentMethodId'], properties: { paymentMethodId: { type: 'string' } } }),
+        summary: 'Save card details to the user profile',
+        description: 'Optionally attach the card to the Stripe customer by providing stripePaymentMethodId.',
+        requestBody: body({
+          type: 'object',
+          required: ['type', 'last4', 'expiryMonth', 'expiryYear'],
+          properties: {
+            type: { type: 'string', enum: ['credit-card', 'debit-card', 'paypal'] },
+            brand: { type: 'string', example: 'visa' },
+            last4: { type: 'string', example: '4242' },
+            cardHolder: { type: 'string', example: 'John Doe' },
+            expiryMonth: { type: 'string', example: '12' },
+            expiryYear: { type: 'string', example: '2030' },
+            setAsDefault: { type: 'boolean', example: false },
+            stripePaymentMethodId: { type: 'string', example: 'pm_...' },
+          },
+        }),
         responses: { '201': json('Card saved'), '400': errors['400'], '401': errors['401'] },
       }),
     },
@@ -237,7 +261,7 @@ export const swaggerSpec = {
         ],
         responses: { '200': json('Product list') },
       },
-      post: authOp({
+      post: sellerOp({
         tags: ['Products'],
         summary: 'Create a product (seller)',
         requestBody: body({ type: 'object', additionalProperties: true }),
@@ -262,14 +286,14 @@ export const swaggerSpec = {
         parameters: [pathParam('id', 'Product ID')],
         responses: { '200': json('Product'), '404': errors['404'] },
       },
-      put: authOp({
+      put: sellerOp({
         tags: ['Products'],
         summary: 'Update a product (seller)',
         parameters: [pathParam('id', 'Product ID')],
         requestBody: body({ type: 'object', additionalProperties: true }),
         responses: { '200': json('Product updated'), '400': errors['400'], '401': errors['401'], '404': errors['404'] },
       }),
-      delete: authOp({
+      delete: sellerOp({
         tags: ['Products'],
         summary: 'Delete a product (seller)',
         parameters: [pathParam('id', 'Product ID')],
@@ -277,7 +301,7 @@ export const swaggerSpec = {
       }),
     },
     '/products/{id}/image': {
-      post: authOp({
+      post: sellerOp({
         tags: ['Products'],
         summary: 'Upload a product image (seller)',
         parameters: [pathParam('id', 'Product ID')],
@@ -289,7 +313,7 @@ export const swaggerSpec = {
       }),
     },
     '/products/variant-image': {
-      post: authOp({
+      post: sellerOp({
         tags: ['Products'],
         summary: 'Upload a variant image (seller)',
         requestBody: {
@@ -338,8 +362,8 @@ export const swaggerSpec = {
 
     // ── Seller ─────────────────────────────────────────────────────────────
     '/seller/products': {
-      get: authOp({ tags: ['Seller'], summary: "List the seller's products", responses: { '200': json('Products'), '401': errors['401'] } }),
-      post: authOp({
+      get: sellerOp({ tags: ['Seller'], summary: "List the seller's products", responses: { '200': json('Products'), '401': errors['401'] } }),
+      post: sellerOp({
         tags: ['Seller'],
         summary: 'Create a product with images',
         requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', additionalProperties: true } } } },
@@ -347,14 +371,14 @@ export const swaggerSpec = {
       }),
     },
     '/seller/products/{id}': {
-      put: authOp({
+      put: sellerOp({
         tags: ['Seller'],
         summary: 'Update a product with images',
         parameters: [pathParam('id', 'Product ID')],
         requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', additionalProperties: true } } } },
         responses: { '200': json('Product updated'), '401': errors['401'], '404': errors['404'] },
       }),
-      delete: authOp({
+      delete: sellerOp({
         tags: ['Seller'],
         summary: 'Delete a product',
         parameters: [pathParam('id', 'Product ID')],
@@ -362,10 +386,10 @@ export const swaggerSpec = {
       }),
     },
     '/seller/orders': {
-      get: authOp({ tags: ['Seller'], summary: "List orders containing the seller's products", responses: { '200': json('Orders'), '401': errors['401'] } }),
+      get: sellerOp({ tags: ['Seller'], summary: "List orders containing the seller's products", responses: { '200': json('Orders'), '401': errors['401'] } }),
     },
     '/seller/orders/{id}/status': {
-      put: authOp({
+      put: sellerOp({
         tags: ['Seller'],
         summary: 'Update status of a seller order',
         parameters: [pathParam('id', 'Order ID')],
@@ -396,29 +420,29 @@ export const swaggerSpec = {
       },
     },
     '/reviews': {
-      post: {
+      post: authOp({
         tags: ['Reviews'],
         summary: 'Create a review',
         requestBody: body({ type: 'object', additionalProperties: true }),
-        responses: { '201': json('Review created'), '400': errors['400'] },
-      },
+        responses: { '201': json('Review created'), '400': errors['400'], '401': errors['401'] },
+      }),
     },
     '/reviews/{id}': {
-      put: {
+      put: authOp({
         tags: ['Reviews'],
         summary: 'Update a review',
         parameters: [pathParam('id', 'Review ID')],
         requestBody: body({ type: 'object', additionalProperties: true }),
-        responses: { '200': json('Review updated'), '400': errors['400'], '404': errors['404'] },
-      },
+        responses: { '200': json('Review updated'), '400': errors['400'], '401': errors['401'], '404': errors['404'] },
+      }),
     },
     '/reviews/check/{productId}': {
-      get: {
+      get: authOp({
         tags: ['Reviews'],
         summary: 'Check whether the current user already reviewed a product',
         parameters: [pathParam('productId', 'Product ID')],
-        responses: { '200': json('Review status') },
-      },
+        responses: { '200': json('Review status'), '401': errors['401'] },
+      }),
     },
 
     // ── Users ──────────────────────────────────────────────────────────────
@@ -471,19 +495,19 @@ export const swaggerSpec = {
 
     // ── Coupons ────────────────────────────────────────────────────────────
     '/coupons': {
-      get: { tags: ['Coupons'], summary: 'List available coupons', responses: { '200': json('Coupons') } },
+      get: authOp({ tags: ['Coupons'], summary: 'List available coupons', responses: { '200': json('Coupons'), '401': errors['401'] } }),
     },
     '/coupons/validate': {
-      post: {
+      post: authOp({
         tags: ['Coupons'],
         summary: 'Validate a promo code',
         requestBody: body({ type: 'object', required: ['code'], properties: { code: { type: 'string', example: 'SAVE10' } } }),
-        responses: { '200': json('Coupon is valid'), '400': errors['400'], '404': errors['404'] },
-      },
+        responses: { '200': json('Coupon is valid'), '400': errors['400'], '401': errors['401'], '404': errors['404'] },
+      }),
     },
     '/coupons/seller': {
-      get: authOp({ tags: ['Coupons'], summary: "List the seller's coupons", responses: { '200': json('Coupons'), '401': errors['401'] } }),
-      post: authOp({
+      get: sellerOp({ tags: ['Coupons'], summary: "List the seller's coupons", responses: { '200': json('Coupons'), '401': errors['401'] } }),
+      post: sellerOp({
         tags: ['Coupons'],
         summary: 'Create a coupon (seller)',
         requestBody: body({ type: 'object', additionalProperties: true }),
@@ -491,14 +515,14 @@ export const swaggerSpec = {
       }),
     },
     '/coupons/seller/{id}': {
-      put: authOp({
+      put: sellerOp({
         tags: ['Coupons'],
         summary: 'Update a coupon (seller)',
         parameters: [pathParam('id', 'Coupon ID')],
         requestBody: body({ type: 'object', additionalProperties: true }),
         responses: { '200': json('Coupon updated'), '400': errors['400'], '401': errors['401'], '404': errors['404'] },
       }),
-      delete: authOp({
+      delete: sellerOp({
         tags: ['Coupons'],
         summary: 'Delete a coupon (seller)',
         parameters: [pathParam('id', 'Coupon ID')],
@@ -511,7 +535,14 @@ export const swaggerSpec = {
       post: authOp({
         tags: ['Payments'],
         summary: 'Create a Stripe PaymentIntent for checkout',
-        requestBody: body({ type: 'object', required: ['amount'], properties: { amount: { type: 'number', example: 1500 } } }),
+        requestBody: body({
+          type: 'object',
+          required: ['amountInCents'],
+          properties: {
+            amountInCents: { type: 'integer', minimum: 1, description: 'Payment amount in USD cents', example: 1500 },
+            stripePaymentMethodId: { type: 'string', description: 'Optional Stripe PaymentMethod to use for payment', example: 'pm_...' },
+          },
+        }),
         responses: { '200': json('Client secret returned'), '400': errors['400'], '401': errors['401'] },
       }),
     },
@@ -519,8 +550,8 @@ export const swaggerSpec = {
       post: authOp({
         tags: ['Payments'],
         summary: 'Attach a Stripe PaymentMethod to the customer',
-        requestBody: body({ type: 'object', required: ['paymentMethodId'], properties: { paymentMethodId: { type: 'string' } } }),
-        responses: { '201': json('Card saved'), '400': errors['400'], '401': errors['401'] },
+        requestBody: body({ type: 'object', required: ['stripePaymentMethodId'], properties: { stripePaymentMethodId: { type: 'string', example: 'pm_...' } } }),
+        responses: { '200': json('Card saved'), '400': errors['400'], '401': errors['401'] },
       }),
     },
     '/payments/webhook': {
