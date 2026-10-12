@@ -417,7 +417,7 @@ export const OrderHistory: React.FC = () => {
                       <Eye className="w-4 h-4 mr-1.5" /> View Details
                     </Button>
                     <div className="flex-1" />
-                    {(order.status === 'pending' || order.status === 'preparing') && (
+                    {order.status === 'pending' && (
                       <Button variant="danger" size="sm" onClick={() => handleCancelOrder(order.id)}>
                         Cancel Order
                       </Button>
