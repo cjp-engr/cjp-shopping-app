@@ -274,8 +274,8 @@ export async function cancelOrderAsBuyer(orderId: string, userId: string, cancel
   const order = await Order.findById(orderId);
   if (!order) throw new AppError(404, 'Order not found');
   if (order.userId.toString() !== userId) throw new AppError(403, 'Not authorized');
-  if (!['pending', 'preparing'].includes(order.status)) {
-    throw new AppError(400, 'You can only cancel pending or preparing orders');
+  if (order.status !== 'pending') {
+    throw new AppError(400, 'You can only cancel pending orders');
   }
 
   await restoreStock(order.items);

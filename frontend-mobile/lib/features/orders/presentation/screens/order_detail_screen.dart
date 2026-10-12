@@ -681,7 +681,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
             ],
 
             // ── Cancel order ────────────────────────────────────────────
-            if (order.status == 'pending' || order.status == 'preparing') ...[
+            if (order.status == 'pending') ...[
               const SizedBox(height: AppSizes.md),
               SizedBox(
                 height: AppSizes.buttonHeight,
