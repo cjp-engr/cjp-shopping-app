@@ -8,6 +8,7 @@ import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { Spinner } from '../components/common/Spinner';
 import { ReviewModal } from '../components/common/ReviewModal';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { getStatusConfig, formatPaymentMethodType, formatDeliveryOption } from '../utils/orderUtils';
 import { fetchReviewStatuses, fetchSingleReview } from '../utils/reviewUtils';
@@ -44,6 +45,7 @@ export const OrderDetail: React.FC = () => {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmingReceipt, setConfirmingReceipt] = useState(false);
+  const [showReceiveDialog, setShowReceiveDialog] = useState(false);
   const [reviewMap, setReviewMap] = useState<Map<string, ReviewData>>(new Map());
   const [reviewModal, setReviewModal] = useState<ReviewModalState | null>(null);
 
@@ -373,7 +375,7 @@ export const OrderDetail: React.FC = () => {
             size="sm"
             variant="success"
             loading={confirmingReceipt}
-            onClick={handleConfirmReceived}
+            onClick={() => setShowReceiveDialog(true)}
             data-testid="confirm-received-btn"
           >
             <CheckCircle className="w-4 h-4 mr-1.5" />
@@ -413,6 +415,20 @@ export const OrderDetail: React.FC = () => {
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={showReceiveDialog}
+        title="Confirm Receipt"
+        message="Confirm that you have received this order? This cannot be undone."
+        confirmLabel="Yes, I received it"
+        cancelLabel="Not yet"
+        variant="warning"
+        onConfirm={() => {
+          setShowReceiveDialog(false);
+          handleConfirmReceived();
+        }}
+        onCancel={() => setShowReceiveDialog(false)}
+      />
     </div>
   );
 };

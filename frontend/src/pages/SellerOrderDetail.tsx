@@ -4,6 +4,7 @@ import type { Order } from '../types/order';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { getStatusConfig, formatPaymentMethodType, formatDeliveryOption } from '../utils/orderUtils';
 import sellerService from '../services/sellerService';
@@ -45,6 +46,7 @@ export const SellerOrderDetail: React.FC = () => {
   const [order, setOrder] = useState<SellerOrder | null>(initialOrder);
   const [loadingOrder, setLoadingOrder] = useState(!initialOrder);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [showShipDialog, setShowShipDialog] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; reason: string; loading: boolean }>({
     open: false, reason: '', loading: false,
@@ -100,7 +102,7 @@ export const SellerOrderDetail: React.FC = () => {
   const canAccept    = currentStatus === 'pending';
   const canToShip    = currentStatus === 'preparing';
   const canToReceive = currentStatus === 'processing';
-  const canCancel    = ['pending', 'preparing', 'processing', 'shipped'].includes(currentStatus);
+  const canCancel    = ['pending', 'preparing', 'processing'].includes(currentStatus);
 
   const handleStatusUpdate = async (status: 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled', cancelReason?: string) => {
     setStatusError(null);
@@ -373,7 +375,7 @@ export const SellerOrderDetail: React.FC = () => {
             </Button>
           )}
           {canToReceive && (
-            <Button loading={statusLoading} onClick={() => handleStatusUpdate('shipped')} data-testid="seller-order-action-btn" aria-label="Mark order shipped">
+            <Button loading={statusLoading} onClick={() => setShowShipDialog(true)} data-testid="seller-order-action-btn" aria-label="Mark order shipped">
               <Truck className="w-4 h-4 mr-1.5" /> Mark Shipped
             </Button>
           )}
@@ -422,6 +424,20 @@ export const SellerOrderDetail: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={showShipDialog}
+        title="Mark as Shipped"
+        message="Confirm that this order has been shipped to the buyer?"
+        confirmLabel="Mark Shipped"
+        cancelLabel="Not yet"
+        variant="warning"
+        onConfirm={() => {
+          setShowShipDialog(false);
+          handleStatusUpdate('shipped');
+        }}
+        onCancel={() => setShowShipDialog(false)}
+      />
     </div>
   );
 };
