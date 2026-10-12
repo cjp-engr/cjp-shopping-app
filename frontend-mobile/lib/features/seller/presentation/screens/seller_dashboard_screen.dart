@@ -933,9 +933,7 @@ class _OrderCard extends StatelessWidget {
                                 label: AppStrings.markShipped,
                                 icon: Icons.local_shipping_outlined,
                                 color: AppColors.primary,
-                                onTap: () => context.read<SellerBloc>().add(
-                                    SellerOrderStatusUpdateRequested(
-                                        order.id, 'shipped')),
+                                onTap: () => _confirmMarkShipped(context, order.id),
                               ),
                             ),
                           if ((order.canMarkPreparing ||
@@ -964,6 +962,22 @@ class _OrderCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmMarkShipped(BuildContext context, String orderId) async {
+    final confirm = await AppDialog.show(
+      context,
+      icon: Icons.local_shipping_outlined,
+      iconColor: AppColors.primary,
+      iconBackground: AppColors.primaryLight,
+      title: AppStrings.markShipped,
+      body: 'Confirm that this order has been shipped to the buyer?',
+      cancelLabel: AppStrings.notYet,
+      confirmLabel: AppStrings.markShipped,
+    );
+    if (confirm == true && context.mounted) {
+      context.read<SellerBloc>().add(SellerOrderStatusUpdateRequested(orderId, 'shipped'));
+    }
   }
 
   void _showSellerCancelDialog(BuildContext context, String orderId) {

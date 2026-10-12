@@ -7,6 +7,7 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { Spinner } from '../components/common/Spinner';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { getStatusConfig } from '../utils/orderUtils';
 import { fetchReviewStatuses, fetchSingleReview } from '../utils/reviewUtils';
@@ -58,6 +59,7 @@ export const OrderHistory: React.FC = () => {
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; orderId: string | null; reason: string; loading: boolean }>({
     open: false, orderId: null, reason: '', loading: false,
   });
+  const [receiveDialogOrderId, setReceiveDialogOrderId] = useState<string | null>(null);
   const [reviewModal, setReviewModal] = useState<ReviewModalState | null>(null);
   const [reviewMap, setReviewMap] = useState<Map<string, ReviewData>>(new Map());
 
@@ -427,7 +429,7 @@ export const OrderHistory: React.FC = () => {
                         variant="success"
                         size="sm"
                         loading={confirmingIds.has(order.id)}
-                        onClick={() => handleConfirmReceived(order.id)}
+                        onClick={() => setReceiveDialogOrderId(order.id)}
                       >
                         <CheckCircle className="w-4 h-4 mr-1.5" />
                         Order Received
@@ -452,6 +454,21 @@ export const OrderHistory: React.FC = () => {
           </Button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={receiveDialogOrderId !== null}
+        title="Confirm Receipt"
+        message="Confirm that you have received this order? This cannot be undone."
+        confirmLabel="Yes, I received it"
+        cancelLabel="Not yet"
+        variant="warning"
+        onConfirm={() => {
+          const orderId = receiveDialogOrderId;
+          setReceiveDialogOrderId(null);
+          if (orderId) handleConfirmReceived(orderId);
+        }}
+        onCancel={() => setReceiveDialogOrderId(null)}
+      />
 
       {cancelDialog.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">

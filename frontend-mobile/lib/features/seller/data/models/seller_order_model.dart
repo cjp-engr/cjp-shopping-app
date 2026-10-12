@@ -211,8 +211,7 @@ class SellerOrderData {
   bool get canCancel =>
       status == 'pending' ||
       status == 'preparing' ||
-      status == 'processing' ||
-      status == 'shipped';
+      status == 'processing';
 
   SellerOrderData copyWith({String? status, String? cancelReason}) =>
       SellerOrderData(

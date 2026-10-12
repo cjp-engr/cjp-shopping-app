@@ -73,6 +73,7 @@ export const SellerDashboard: React.FC = () => {
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; productId: string | null; loading: boolean }>({ open: false, productId: null, loading: false });
+  const [shipDialogOrderId, setShipDialogOrderId] = useState<string | null>(null);
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; orderId: string | null; reason: string; loading: boolean }>({ open: false, orderId: null, reason: '', loading: false });
 
   // Vouchers state
@@ -500,7 +501,7 @@ export const SellerDashboard: React.FC = () => {
               const canAccept    = order.status === 'pending';
               const canToShip    = order.status === 'preparing';
               const canToReceive = order.status === 'processing';
-              const canCancel    = ['pending', 'preparing', 'processing', 'shipped'].includes(order.status);
+              const canCancel    = ['pending', 'preparing', 'processing'].includes(order.status);
               const isCancelled  = order.status === 'cancelled';
               const stepIndex    = ORDER_STATUS_STEPS.indexOf(order.status as typeof ORDER_STATUS_STEPS[number]);
               const borderClass  = STATUS_BORDER_CLASS[order.status] ?? 'border-l-gray-300';
@@ -657,7 +658,7 @@ export const SellerDashboard: React.FC = () => {
                       </Button>
                     )}
                     {canToReceive && (
-                      <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'shipped')} data-testid={`order-action-${order.id}`} aria-label="Mark order shipped">
+                      <Button size="sm" onClick={() => setShipDialogOrderId(order.id)} data-testid={`order-action-${order.id}`} aria-label="Mark order shipped">
                         <Truck className="w-4 h-4 mr-1.5" /> Mark Shipped
                       </Button>
                     )}
@@ -864,6 +865,21 @@ export const SellerDashboard: React.FC = () => {
         loading={deleteDialog.loading}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteDialog({ open: false, productId: null, loading: false })}
+      />
+
+      <ConfirmDialog
+        open={shipDialogOrderId !== null}
+        title="Mark as Shipped"
+        message="Confirm that this order has been shipped to the buyer?"
+        confirmLabel="Mark Shipped"
+        cancelLabel="Not yet"
+        variant="warning"
+        onConfirm={() => {
+          const orderId = shipDialogOrderId;
+          setShipDialogOrderId(null);
+          if (orderId) handleStatusUpdate(orderId, 'shipped');
+        }}
+        onCancel={() => setShipDialogOrderId(null)}
       />
 
       {/* Cancel Order Dialog */}
