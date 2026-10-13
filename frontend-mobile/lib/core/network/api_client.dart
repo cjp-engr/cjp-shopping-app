@@ -1,11 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import '../config/api_config.dart';
 import '../../shared/services/storage_service.dart';
-
-// Android emulator: 10.0.2.2 → host localhost
-// iOS simulator: 127.0.0.1
-// Real device: your machine's LAN IP
-const String _baseUrl = 'http://10.0.2.2:5000/api';
 
 class ApiClient {
   static ApiClient? _instance;
@@ -13,7 +9,7 @@ class ApiClient {
 
   ApiClient._internal(StorageService storage) {
     dio = Dio(BaseOptions(
-      baseUrl: _baseUrl,
+      baseUrl: ApiConfig.baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 30),
       headers: {

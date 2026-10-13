@@ -38,8 +38,18 @@ flutter run
 ```
 
 **Android emulator**: API base URL is `http://10.0.2.2:5000/api`  
-**iOS simulator**: Change to `http://127.0.0.1:5000/api` in `lib/core/network/api_client.dart`  
-**Real device**: Use your machine's LAN IP (e.g. `http://192.168.1.x:5000/api`)
+**iOS simulator**: Run with `--dart-define=API_BASE_URL=http://127.0.0.1:5000/api`.
+**Real device**: Supply your machine's LAN IP with `--dart-define=API_BASE_URL=http://192.168.1.x:5000/api`.
+
+Release builds require an explicit hosted HTTPS API URL ending in `/api`:
+
+```bash
+flutter build apk --release --dart-define=API_BASE_URL=https://api.example.com/api
+```
+
+Configuration is validated at startup. Missing URLs, HTTP URLs, and emulator/loopback hosts
+are rejected in release mode. `.env` is bundled into the app and must contain only public
+configuration such as the Stripe publishable key. See [the staging guide](../docs/deployment.md).
 
 ## State Management
 
