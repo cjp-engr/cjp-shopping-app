@@ -235,8 +235,8 @@ npm install
 
 Create `frontend/.env`:
 ```env
-VITE_API_BASE_URL=http://localhost:5000
-VITE_STRIPE_PUBLIC_KEY=pk_test_...
+VITE_API_BASE_URL=http://localhost:5000/api
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
 ```
 
 Start dev server:
@@ -472,6 +472,8 @@ Stock auto-restores on cancellation.
 ---
 
 ## 📚 Documentation
+
+- **[Deployment guide](docs/deployment.md)** — Staging settings, proxy trust, background jobs, and mobile release configuration
 
 - **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** — All fixes & refactoring completed
 - **[FEATURE_ROADMAP.md](FEATURE_ROADMAP.md)** — Planned features (Chat, Auto-reply)

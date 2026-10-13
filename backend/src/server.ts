@@ -14,6 +14,7 @@ import { connectDB } from './config/database.js';
 import { startAutoCompleteJob } from './jobs/autoCompleteOrders.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { mountApiDocs } from './config/swaggerUi.js';
+import { configureTrustProxy } from './config/deployment.js';
 
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -26,8 +27,9 @@ import couponRoutes from './routes/couponRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 
 const app = express();
+configureTrustProxy(app);
 
-connectDB();
+await connectDB();
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 mountApiDocs(app);
