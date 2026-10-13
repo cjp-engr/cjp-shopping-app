@@ -133,6 +133,27 @@ describe('OpenAPI contract', () => {
     for (const name of Object.keys(spec.components.schemas)) expect(() => ajv.compile({ $ref: `#/components/schemas/${name}`, components: spec.components }), name).not.toThrow();
   });
 
+  it('provides unique stable operation IDs for generated clients and deep links', () => {
+    const operations = Object.values(spec.paths).flatMap((item: any) => methods.filter(method => item[method]).map(method => item[method]));
+    const ids = operations.map(op => op.operationId);
+    for (const id of ids) expect(id).toMatch(/^[a-zA-Z][a-zA-Z0-9]*$/);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(spec.paths['/auth/me'].get.operationId).toBe('getAuthMe');
+    expect(spec.paths['/payments/webhook'].post.operationId).toBe('postPaymentsWebhook');
+  });
+
+  it('validates every published request example against its endpoint schema', () => {
+    let examples = 0;
+    for (const [path, item] of Object.entries(spec.paths) as [string, any][]) for (const method of methods) {
+      for (const media of Object.values(item[method]?.requestBody?.content ?? {}) as any[]) {
+        if (media.example === undefined) continue;
+        examples++;
+        expect(accepts(media.schema, media.example), `${method} ${path}`).toMatchObject({ valid: true });
+      }
+    }
+    expect(examples).toBeGreaterThan(0);
+  });
+
   it('resolves the health URL at the server root', () => {
     const path = spec.paths['/health'];
     const base = (path.get.servers ?? path.servers ?? spec.servers)[0].url;
