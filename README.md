@@ -97,7 +97,7 @@ A full-featured multi-seller e-commerce application with a React web frontend, F
 ### Backend (`backend/`)
 | Layer | Technology |
 |---|---|
-| Runtime | Node.js 18+ + TypeScript 5 |
+| Runtime | Node.js 20.19+ + TypeScript 5 |
 | Framework | Express.js 4 |
 | Database | MongoDB + Mongoose |
 | Authentication | JWT + bcryptjs |
@@ -187,7 +187,7 @@ shopping-app-automation/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js** v18+ and npm/yarn
+- **Node.js** v20.19+ and npm/yarn
 - **MongoDB** (local or [MongoDB Atlas](https://www.mongodb.com/atlas))
 - **Flutter** v3.x (mobile app only)
 - **Stripe Account** (for payment processing)
@@ -299,66 +299,24 @@ Or register new accounts via **Sign Up**. Toggle seller role in Profile.
 
 ## 📝 API Reference
 
-All protected endpoints require: `Authorization: Bearer <token>`
+With the backend running locally, use [Swagger UI](http://localhost:5000/api-docs/) to browse and try all endpoints, or download [OpenAPI JSON](http://localhost:5000/api-docs.json). Adjust port 5000 to your configured `PORT`. Documentation is disabled when `NODE_ENV=production`.
 
-### Auth
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/auth/signup` | Register new user |
-| POST | `/api/auth/login` | Login with email/password |
-| GET | `/api/auth/me` | Get current user |
-| PUT | `/api/auth/profile` | Update user profile |
-| POST | `/api/auth/avatar` | Upload avatar |
-| GET | `/api/auth/payment-methods` | List saved cards |
-| POST | `/api/auth/payment-methods` | Save new card |
-| PATCH | `/api/auth/payment-methods/:id/default` | Set default card |
-| DELETE | `/api/auth/payment-methods/:id` | Delete card |
+The [backend API guide](backend/README.md#api-documentation) explains signup, login, authorization, checkout, response formats, uploads, and contract maintenance. Login returns a top-level `token`. Paste that token alone into Swagger's **Authorize** dialog; Swagger adds the Bearer prefix.
 
-### Products
-| Method | Endpoint | Description |
+| Group | Base path | Access / behavior |
 |---|---|---|
-| GET | `/api/products` | List with filters (search, category, sortBy, page) |
-| GET | `/api/products/:id` | Get single product |
-| GET | `/api/products/categories/all` | All categories |
+| Auth | `/api/auth` | Signup/login public; profile, saved cards and saved addresses require JWT |
+| Products | `/api/products` | Public catalog; writes require seller role. Filters include search, category, sort and pagination |
+| Cart | `/api/cart` | JWT; sync replaces the whole cart |
+| Orders | `/api/orders` | JWT; buyer status endpoint only cancels an owned pending order |
+| Seller | `/api/seller` | Seller JWT; product management and order fulfillment |
+| Reviews | `/api/reviews` | Product review listing public; create/update/check require JWT |
+| Users | `/api/users` | JWT; public profiles, search and follows |
+| Coupons | `/api/coupons` | JWT; management under `/seller` also requires seller role |
+| Payments | `/api/payments` | JWT for `create-intent` and `save-card`; signed raw-body webhook |
+| Health | `/health` | Public; outside the `/api` prefix |
 
-### Cart (Protected)
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/cart` | Get current user's cart |
-| PUT | `/api/cart` | Sync cart items |
-| DELETE | `/api/cart` | Clear cart |
-
-### Orders (Protected)
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/orders` | Place order |
-| GET | `/api/orders` | Order history |
-| GET | `/api/orders/:id` | Order detail |
-| PUT | `/api/orders/:id/status` | Update status |
-| PUT | `/api/orders/:id/confirm-received` | Confirm delivery |
-
-### Payments (Protected)
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/payments/create-intent` | Create Stripe PaymentIntent |
-| POST | `/api/payments/confirm` | Confirm payment |
-
-### Seller (Protected — seller role)
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/seller/products` | List seller's products |
-| POST | `/api/seller/products` | Create product (multipart/form-data) |
-| PUT | `/api/seller/products/:id` | Update product |
-| DELETE | `/api/seller/products/:id` | Delete product |
-| GET | `/api/seller/orders` | List seller's orders |
-| PUT | `/api/seller/orders/:id/status` | Update order status |
-
-### Reviews (Protected)
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/reviews` | Submit review |
-| GET | `/api/reviews/product/:id` | Get product reviews |
-| GET | `/api/reviews/check/:id` | Check if user reviewed |
+Confirm Stripe payments through the client SDK, then pass the succeeded intent to checkout. Full schemas, request examples, status codes, and stable operation IDs live in the OpenAPI specification.
 
 ---
 

@@ -18,7 +18,7 @@ Backend REST API for the TokoMart multi-seller e-commerce application built with
 
 ## 🛠️ Tech Stack
 
-- **Runtime**: Node.js v18+
+- **Runtime**: Node.js v20.19+
 - **Framework**: Express.js 4
 - **Language**: TypeScript 5
 - **Database**: MongoDB with Mongoose ODM
@@ -31,7 +31,7 @@ Backend REST API for the TokoMart multi-seller e-commerce application built with
 
 ## 📋 Prerequisites
 
-- **Node.js** v18 or higher
+- **Node.js** v20.19 or higher
 - **MongoDB** (local installation or [MongoDB Atlas](https://www.mongodb.com/atlas) cloud)
 - **npm** or **yarn**
 - **Stripe Account** (for payment processing) — [Sign up](https://stripe.com)
@@ -74,7 +74,14 @@ STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PUBLISHABLE_KEY=pk_test_...
 
 # File Upload
-MAX_FILE_SIZE=5242880  # 5MB in bytes
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Cloudinary (required for uploads)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-cloudinary-api-key
+CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+
+# Upload sizes are configured in src/middleware/upload.ts (5 MiB product, 2 MiB avatar)
 ```
 
 ## 🚄 Running the Application
@@ -105,577 +112,163 @@ Creates:
 
 ## 📁 Project Structure
 
-```
+```text
 backend/
 ├── src/
-│   ├── config/
-│   │   └── database.ts              # MongoDB connection setup
-│   ├── controllers/
-│   │   ├── authController.ts        # Signup, login, profile, payment methods
-│   │   ├── productController.ts     # Product listing, detail, categories
-│   │   ├── orderController.ts       # Order creation, history, status updates
-│   │   ├── cartController.ts        # Cart sync and management
-│   │   ├── reviewController.ts      # Product reviews
-│   │   ├── paymentController.ts     # Stripe payment intent creation & confirmation
-│   │   └── sellerController.ts      # Seller dashboard, products, orders
-│   ├── middleware/
-│   │   ├── auth.ts                  # JWT verification & auth guard
-│   │   ├── errorHandler.ts          # Centralized error handling
-│   │   ├── multer.ts                # Image upload configuration
-│   │   └── validation.ts            # Request validation middleware
-│   ├── models/
-│   │   ├── User.ts                  # User schema with auth & payment methods
-│   │   ├── Product.ts               # Product schema with variants & images
-│   │   ├── Order.ts                 # Order schema with multi-seller support
-│   │   ├── Cart.ts                  # Shopping cart schema
-│   │   ├── Review.ts                # Product review schema
-│   │   ├── PaymentMethod.ts         # Saved payment method schema
-│   │   └── Coupon.ts                # Coupon/voucher schema
-│   ├── routes/
-│   │   ├── authRoutes.ts            # Auth & payment method endpoints
-│   │   ├── productRoutes.ts         # Product endpoints
-│   │   ├── orderRoutes.ts           # Order endpoints
-│   │   ├── cartRoutes.ts            # Cart endpoints
-│   │   ├── reviewRoutes.ts          # Review endpoints
-│   │   ├── paymentRoutes.ts         # Stripe payment endpoints
-│   │   └── sellerRoutes.ts          # Seller-specific endpoints
-│   ├── services/
-│   │   ├── stripeService.ts         # Stripe API wrapper
-│   │   ├── paymentService.ts        # Payment business logic
-│   │   ├── emailService.ts          # Email notifications (optional)
-│   │   └── seedService.ts           # Database seeding
-│   ├── utils/
-│   │   ├── jwt.ts                   # JWT token generation/verification
-│   │   ├── apiResponse.ts           # Response formatting utilities
-│   │   ├── validators.ts            # Validation helper functions
-│   │   └── errorCodes.ts            # Structured error code definitions
-│   └── server.ts                    # Express app setup & middleware
-├── .env.example                     # Environment variables template
-├── .gitignore
+│   ├── config/            # Database, Cloudinary and Swagger configuration
+│   ├── controllers/       # Endpoint handlers and controller tests
+│   ├── middleware/        # Auth, seller guard, uploads and error handling
+│   ├── models/            # User, Product, Order, Cart, Review and Coupon
+│   ├── routes/            # Express route registrations
+│   ├── services/          # Auth, users, orders, seller and Stripe/payment logic
+│   ├── validators/        # Auth/order validation rules and middleware
+│   ├── jobs/              # Automatic order completion
+│   ├── utils/             # JWT, response utilities, validation helpers and seed
+│   └── server.ts          # Middleware, route mounting and startup
+├── .env.example
 ├── package.json
 ├── tsconfig.json
 └── README.md
 ```
 
-## 🔑 API Endpoints
+## API documentation
 
-All protected endpoints require: `Authorization: Bearer <token>`
+Start the backend with `npm run dev`, then open:
 
-### Authentication
+- [Swagger UI](http://localhost:5000/api-docs/) — browse schemas and run requests.
+- [OpenAPI JSON](http://localhost:5000/api-docs.json) — import into Postman or use for client generation.
+- [Health check](http://localhost:5000/health) — served at the server root.
 
-#### Sign Up
-```http
-POST /api/auth/signup
-Content-Type: application/json
+Replace port 5000 if you configured `PORT`. UI and JSON documentation are available whenever `NODE_ENV` is not `production`, including when it is unset. Both return 404 in production. The production build alone does not set `NODE_ENV`; set it explicitly when deploying.
 
+### Log in and authorize Swagger
+
+1. Expand **Auth → POST /auth/signup** and create your own account, or use an existing account.
+2. Expand **POST /auth/login**, click **Try it out**, enter the same email/password, and click **Execute**.
+3. Copy the **top-level `token`** from the response.
+4. Click **Authorize**, paste the token alone (without `Bearer `), and authorize. Swagger adds the Bearer prefix.
+5. Try **GET /auth/me**. Use **Logout** in the authorization dialog when finished. Authorization is not persisted across reloads.
+
+Signup request:
+
+```json
 {
-  "email": "user@example.com",
-  "password": "securePassword123",
-  "firstName": "John",
-  "lastName": "Doe"
-}
-```
-
-#### Login
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "securePassword123"
-}
-
-Response:
-{
-  "success": true,
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIs...",
-    "user": { ... }
-  }
-}
-```
-
-#### Get Current User
-```http
-GET /api/auth/me
-Authorization: Bearer <token>
-```
-
-#### Update Profile
-```http
-PUT /api/auth/profile
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "firstName": "John",
+  "firstName": "Jane",
   "lastName": "Doe",
-  "phone": "+1234567890"
+  "email": "jane@example.com",
+  "password": "ExamplePassword123!"
 }
 ```
 
-#### Upload Avatar
-```http
-POST /api/auth/avatar
-Authorization: Bearer <token>
-Content-Type: multipart/form-data
+Login request:
 
-FormData:
-- avatar: <image file>
-```
-
-### Payment Methods
-
-#### List Saved Cards
-```http
-GET /api/auth/payment-methods
-Authorization: Bearer <token>
-
-Response:
+```json
 {
-  "success": true,
-  "data": {
-    "paymentMethods": [
-      {
-        "_id": "...",
-        "brand": "visa",
-        "last4": "4242",
-        "expiryMonth": 12,
-        "expiryYear": 2025,
-        "isDefault": true,
-        "stripePaymentMethodId": "pm_..."
-      }
-    ]
-  }
+  "email": "jane@example.com",
+  "password": "ExamplePassword123!"
 }
 ```
 
-#### Save New Card
-```http
-POST /api/auth/payment-methods
-Authorization: Bearer <token>
-Content-Type: application/json
+Login returns HTTP 200 with `success`, `token`, and `user` at the top level. To use a seller-only operation, update your profile with `{"role":"seller"}`; promotion is one-way.
 
-{
-  "type": "credit-card",
-  "brand": "visa",
-  "last4": "4242",
-  "cardHolder": "John Doe",
-  "expiryMonth": "12",
-  "expiryYear": "2025",
-  "stripePaymentMethodId": "pm_...",
-  "setAsDefault": false
-}
+PowerShell example using an account you created:
+
+```powershell
+$loginBody = @{
+  email = 'jane@example.com'
+  password = 'ExamplePassword123!'
+} | ConvertTo-Json
+$login = Invoke-RestMethod -Method Post -Uri 'http://localhost:5000/api/auth/login' -ContentType 'application/json' -Body $loginBody
+$apiHeaders = @{ Authorization = "Bearer $($login.token)" }
+Invoke-RestMethod -Uri 'http://localhost:5000/api/auth/me' -Headers $apiHeaders
 ```
 
-#### Set Default Card
-```http
-PATCH /api/auth/payment-methods/:id/default
-Authorization: Bearer <token>
-```
+### Cart and checkout
 
-#### Delete Card
-```http
-DELETE /api/auth/payment-methods/:id
-Authorization: Bearer <token>
-```
+Resource IDs in examples are illustrative. Replace them with existing product/seller IDs from **GET /products**. Variant IDs must belong to the chosen product; reviews require an owned, delivered order.
 
-### Products
+**PUT /api/cart** replaces the entire cart:
 
-#### List Products (with filters)
-```http
-GET /api/products?search=laptop&category=Electronics&minPrice=100&maxPrice=1000&rating=4&sort=newest&page=1&limit=20
-```
-
-Query Parameters:
-- `search` — Search in name/description
-- `category` — Filter by category
-- `minPrice` — Minimum price
-- `maxPrice` — Maximum price
-- `rating` — Minimum rating (1-5)
-- `sort` — `newest`, `price-asc`, `price-desc`, `rating`
-- `page` — Page number (default: 1)
-- `limit` — Items per page (default: 20)
-
-#### Get Single Product
-```http
-GET /api/products/:id
-```
-
-#### Get All Categories
-```http
-GET /api/products/categories/all
-```
-
-### Cart (Protected)
-
-#### Get Cart
-```http
-GET /api/cart
-Authorization: Bearer <token>
-```
-
-#### Sync Cart
-```http
-PUT /api/cart
-Authorization: Bearer <token>
-Content-Type: application/json
-
+```json
 {
   "items": [
-    {
-      "productId": "product_id",
-      "quantity": 2,
-      "variantId": "variant_id" (optional)
-    }
+    { "productId": "507f1f77bcf86cd799439011", "quantity": 1, "isSelected": true }
   ]
 }
 ```
 
-#### Clear Cart
-```http
-DELETE /api/cart
-Authorization: Bearer <token>
-```
+**POST /api/orders** creates one order per seller. This example uses cash on delivery:
 
-### Orders (Protected)
-
-#### Create Order
-```http
-POST /api/orders
-Authorization: Bearer <token>
-Content-Type: application/json
-
+```json
 {
   "items": [
-    {
-      "productId": "product_id",
-      "quantity": 2,
-      "variantId": "variant_id" (optional),
-      "selectedAttributes": { "size": "M", "color": "blue" } (optional)
-    }
+    { "productId": "507f1f77bcf86cd799439011", "quantity": 1 }
   ],
   "shippingAddress": {
-    "street": "123 Main St",
-    "city": "New York",
-    "state": "NY",
-    "zipCode": "10001",
-    "country": "USA"
+    "street": "1 Main St",
+    "city": "Taipei",
+    "state": "Taipei",
+    "zipCode": "100",
+    "country": "TW"
   },
-  "paymentMethod": {
-    "type": "credit-card" | "cash-on-delivery",
-    "last4": "4242",
-    "cardHolder": "John Doe"
-  },
-  "paymentIntentId": "pi_..." (for card payments),
-  "deliverySelections": {
-    "seller_id": "standard" | "express" | "pickup"
-  },
-  "couponCodes": {
-    "seller_id": "PROMO10"
-  }
-}
-
-Response:
-{
-  "success": true,
-  "data": {
-    "orders": [
-      {
-        "_id": "order_id",
-        "userId": "user_id",
-        "items": [...],
-        "total": 99.99,
-        "status": "pending",
-        "paymentIntentId": "pi_..."
-      }
-    ]
-  }
+  "paymentMethod": { "type": "cash-on-delivery" }
 }
 ```
 
-#### Get Order History
-```http
-GET /api/orders
-Authorization: Bearer <token>
+Optional `couponCodes`, `sellerMessages`, and `deliverySelections` are maps keyed by seller ID. Buyer **PUT /orders/{id}/status** only cancels an owned pending order; its body may contain `cancelReason`. Sellers use **PUT /seller/orders/{id}/status** for fulfillment transitions. Buyer receipt confirmation requires a shipped order.
+
+### Response formats
+
+Use the schema shown on each operation; there is no single response envelope.
+
+| Operation | Success response fields |
+|---|---|
+| Signup/login | `success`, `token`, `user` |
+| Current user/profile/avatar | `success`, `user` |
+| Saved cards | `success`, `data.paymentMethods` |
+| Saved addresses | `success`, `savedAddresses` |
+| Product list | `success`, `products`, `count`, `total`, `page`, `pages` |
+| Product detail/create/update | `success`, `product` |
+| Checkout | `success`, `orders` |
+| Buyer order list | `success`, `count`, `orders` |
+| Order detail/status/receipt | `success`, `order` |
+| Cart fetch/sync | `success`, `sellers` |
+| Review create/update | `success`, `data` |
+| Product reviews | `success`, `data`, `total`, `page`, `pages` |
+| Coupons | `success`, `coupons` or `coupon`, depending on operation |
+| Payment intent | `success`, `data.clientSecret`, `data.paymentIntentId` |
+| Signed webhook | `received` |
+
+Most errors use `success: false` and `message`; validation middleware also returns `errors`. Payment handlers can return `error.code`, `error.message`, and `error.retryable`. Authentication failures on payment routes still use `success/message`. Webhook signature failures return `{"error":"Invalid signature"}`.
+
+### Payments and uploads
+
+Create a payment intent with **POST /api/payments/create-intent** using `{"amountInCents":1500}`. A server cart must exist. Confirm the intent through the Stripe client SDK using `data.clientSecret`, then supply the succeeded `paymentIntentId` during card checkout. There is no backend payment-confirm endpoint. The existing saved/mock-card checkout path permits an omitted intent.
+
+**POST /api/payments/save-card** attaches `stripePaymentMethodId` to the customer and returns HTTP 200. **POST /api/auth/payment-methods** saves profile card details and returns HTTP 201; its expiry month/year are strings. Never submit raw card numbers through these endpoints.
+
+Use **POST /api/seller/products** for product creation with stored images. It accepts up to 10 optional image files at 5 MiB each, or JSON-encoded `imageUrls`. JSON-encode `shippingOptions`, `shippingFeeAmounts`, `variantAttributes`, and `variants` in multipart requests; repeat `tags` for multiple tags. Avatar uploads allow one file at 2 MiB. Supported storage formats are JPG/JPEG, PNG and WebP. The JSON **POST /api/products** route currently validates an image URL without persisting it.
+
+Stripe webhooks require the original raw JSON bytes and the `stripe-signature` header. Configure `STRIPE_WEBHOOK_SECRET`; unsigned requests made from Swagger return 400. Use Stripe's webhook tooling to exercise signature verification.
+
+### Maintain the specification
+
+- [swagger.ts](src/config/swagger.ts): paths, explicit operation IDs, parameters and response bindings.
+- [swaggerSchemas.ts](src/config/swaggerSchemas.ts): reusable wire/request schemas.
+- [swaggerExamples.ts](src/config/swaggerExamples.ts): editable request examples.
+- [swaggerUi.ts](src/config/swaggerUi.ts): environment gating and UI security/configuration.
+
+Keep operation IDs stable when summaries or tags change. Update schemas and examples alongside controller/validator changes. Mongoose model definitions under `src/models/` describe persistence; the OpenAPI schemas describe serialized API payloads.
+
+Run from `backend/`:
+
+```bash
+npm run test:contracts
+npm test
+npm run build
 ```
 
-#### Get Order Detail
-```http
-GET /api/orders/:id
-Authorization: Bearer <token>
-```
-
-#### Update Order Status
-```http
-PUT /api/orders/:id/status
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "status": "pending" | "preparing" | "processing" | "shipped" | "delivered" | "cancelled",
-  "cancelReason": "optional reason for cancellation"
-}
-
-Valid Transitions:
-pending → preparing → processing → shipped → delivered
-Any status can be cancelled (until delivered)
-```
-
-#### Confirm Order Received
-```http
-PUT /api/orders/:id/confirm-received
-Authorization: Bearer <token>
-```
-
-### Payments (Protected)
-
-#### Create Payment Intent
-```http
-POST /api/payments/create-intent
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "amountInCents": 9999
-}
-
-Response:
-{
-  "success": true,
-  "data": {
-    "clientSecret": "pi_..._secret_...",
-    "paymentIntentId": "pi_..."
-  }
-}
-```
-
-#### Confirm Payment
-```http
-POST /api/payments/confirm
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "paymentIntentId": "pi_...",
-  "clientSecret": "pi_..._secret_..."
-}
-```
-
-### Reviews (Protected)
-
-#### Submit Review
-```http
-POST /api/reviews
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "orderId": "order_id",
-  "productId": "product_id",
-  "rating": 5,
-  "comment": "Great product!"
-}
-```
-
-#### Get Product Reviews
-```http
-GET /api/reviews/product/:productId
-```
-
-#### Check if User Reviewed Product
-```http
-GET /api/reviews/check/:productId
-Authorization: Bearer <token>
-```
-
-### Seller Endpoints (Protected — seller role only)
-
-#### Get Seller's Products
-```http
-GET /api/seller/products
-Authorization: Bearer <token>
-```
-
-#### Create Product
-```http
-POST /api/seller/products
-Authorization: Bearer <token>
-Content-Type: multipart/form-data
-
-FormData:
-- name: "Product Name"
-- description: "Description"
-- price: 99.99
-- category: "Electronics"
-- brand: "Brand" (optional)
-- condition: "new" | "used" (optional)
-- sku: "SKU" (optional)
-- stock: 50
-- discount: 10 (optional, 0-100)
-- tags: '["tag1", "tag2"]' (JSON string)
-- shippingOptions: '["standard", "express"]' (JSON string array, required)
-- shippingFee: "free" | "buyer_pays" (required)
-- shippingFeeAmounts: '{"standard": 10, "express": 15}' (JSON string, if buyer_pays)
-- images: <file1>, <file2>, ... (multipart files, at least 1 required)
-```
-
-#### Update Product
-```http
-PUT /api/seller/products/:id
-Authorization: Bearer <token>
-Content-Type: multipart/form-data
-
-(same fields as create, can omit unchanged fields)
-```
-
-#### Delete Product
-```http
-DELETE /api/seller/products/:id
-Authorization: Bearer <token>
-```
-
-#### Get Seller's Orders
-```http
-GET /api/seller/orders
-Authorization: Bearer <token>
-```
-
-#### Update Order Status (seller)
-```http
-PUT /api/seller/orders/:id/status
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "status": "preparing" | "processing" | "shipped" | "delivered" | "cancelled",
-  "cancelReason": "optional"
-}
-```
-
-## 📊 Database Models
-
-### User
-```typescript
-{
-  _id: ObjectId
-  email: string (unique)
-  password: string (hashed)
-  firstName: string
-  lastName: string
-  avatar: string (URL, optional)
-  phone: string (optional)
-  isSeller: boolean
-  savedAddresses: [{
-    _id: ObjectId
-    label: string
-    street: string
-    city: string
-    state: string
-    zipCode: string
-    country: string
-    isDefault: boolean
-  }]
-  savedCards: [{
-    _id: ObjectId
-    brand: string
-    last4: string
-    expiryMonth: number
-    expiryYear: number
-    cardHolder: string
-    stripePaymentMethodId: string
-    isDefault: boolean
-  }]
-  createdAt: Date
-  updatedAt: Date
-}
-```
-
-### Product
-```typescript
-{
-  _id: ObjectId
-  sellerId: ObjectId (reference to User)
-  name: string
-  description: string (max 200 chars)
-  price: number
-  discount: number (0-100, optional)
-  category: string (enum)
-  brand: string (optional)
-  condition: "new" | "used" (optional)
-  sku: string (optional)
-  stock: number
-  images: string[] (URLs)
-  tags: string[] (optional)
-  shippingOptions: ["standard", "express", "pickup"]
-  shippingFee: "free" | "buyer_pays"
-  shippingFeeAmounts: { standard: number, express: number, pickup: number }
-  rating: number (0-5, calculated)
-  reviewCount: number
-  createdAt: Date
-  updatedAt: Date
-}
-```
-
-### Order
-```typescript
-{
-  _id: ObjectId
-  userId: ObjectId (reference to User)
-  items: [{
-    productId: ObjectId
-    variantId: ObjectId (optional)
-    productName: string
-    variantSku: string (optional)
-    selectedAttributes: { [key]: value } (optional)
-    quantity: number
-    price: number
-    discount: number
-  }]
-  sellerId: ObjectId (for multi-seller orders)
-  shippingAddress: {
-    street: string
-    city: string
-    state: string
-    zipCode: string
-    country: string
-  }
-  paymentMethod: {
-    type: "credit-card" | "cash-on-delivery"
-    last4: string (optional)
-    cardHolder: string (optional)
-  }
-  paymentIntentId: string (Stripe, for card payments)
-  deliveryOption: "standard" | "express" | "pickup"
-  subtotal: number
-  shippingCost: number
-  tax: number
-  total: number
-  status: "pending" | "preparing" | "processing" | "shipped" | "delivered" | "cancelled"
-  estimatedDelivery: Date
-  cancelledAt: Date (optional)
-  cancelReason: string (optional)
-  createdAt: Date
-  updatedAt: Date
-}
-```
-
-### PaymentMethod
-```typescript
-{
-  _id: ObjectId
-  userId: ObjectId
-  brand: string
-  last4: string
-  expiryMonth: number
-  expiryYear: number
-  cardHolder: string
-  stripePaymentMethodId: string
-  isDefault: boolean
-  createdAt: Date
-}
-```
+Contract tests validate OpenAPI references, registered API route coverage, authentication/rate-limit declarations, examples, and representative real controller/model payloads. HTTP tests check docs headers, UI assets, and production availability. Database and Stripe boundaries are mocked; these tests run through the existing CI backend test step.
 
 ## 🔐 Security Features
 
@@ -684,45 +277,28 @@ Content-Type: application/json
 - **Helmet**: Security headers (X-Frame-Options, X-Content-Type-Options, CSP, etc.)
 - **CORS**: Configurable cross-origin resource sharing
 - **Input Validation**: Mongoose schema validation + express-validator
-- **Error Handling**: Centralized error middleware (no sensitive data leak)
+- **Error Handling**: Endpoint-specific errors; development mode may include stack traces
 - **Auth Guard**: JWT verification on protected endpoints
-- **Rate Limiting**: Optional rate limiting for abuse prevention
-- **Stripe Verification**: Server-side PaymentIntent verification before order creation
+- **Rate Limiting**: Auth defaults to 10 requests/minute; other limited API groups default to 100/minute. Payment routes are not behind these limiters.
+- **Stripe Verification**: A supplied card PaymentIntent is checked before order creation; saved/mock-card checkout permits omission.
 
 ## 🌍 Environment Variables
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PORT` | Server port | 5000 | No |
-| `NODE_ENV` | Environment mode | development | No |
-| `MONGODB_URI` | MongoDB connection string | mongodb://localhost:27017/tokomart | No |
+| `NODE_ENV` | Mode; production disables docs | Unset; example file sets development | No |
+| `MONGODB_URI` | MongoDB connection string | mongodb://localhost:27017/shopping-app | No |
 | `JWT_SECRET` | Secret key for JWT signing | - | **Yes** |
 | `JWT_EXPIRES_IN` | Token expiration time | 7d | No |
-| `CORS_ORIGIN` | Allowed CORS origin | http://localhost:5173 | No |
-| `STRIPE_SECRET_KEY` | Stripe API secret key | - | **Yes** |
-| `STRIPE_PUBLISHABLE_KEY` | Stripe public key | - | **Yes** |
-| `MAX_FILE_SIZE` | Max upload file size in bytes | 5242880 (5MB) | No |
-
-## 🧪 Testing the API
-
-Use any of these tools to test endpoints:
-
-- **Postman** — Desktop app for API testing
-- **Insomnia** — REST/GraphQL client
-- **Thunder Client** — VS Code extension
-- **cURL** — Command line tool
-
-Example with cURL:
-```bash
-# Login
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"b@test.com","password":"Test750!!"}'
-
-# Get token from response, then use it
-curl -X GET http://localhost:5000/api/auth/me \
-  -H "Authorization: Bearer <token_from_login>"
-```
+| `CORS_ORIGIN` | Allowed origin outside development | No runtime default; example file sets http://localhost:5173 | Outside development |
+| `STRIPE_SECRET_KEY` | Stripe API secret key | - | For Stripe operations |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name | - | For uploads |
+| `CLOUDINARY_API_KEY` | Cloudinary API key | - | For uploads |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret | - | For uploads |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | - | For webhooks |
+| `RATE_LIMIT_AUTH_MAX` | Auth requests per minute; 0 disables | 10 | No |
+| `RATE_LIMIT_API_MAX` | Other limited API requests per minute; 0 disables | 100 | No |
 
 ## 🚀 Production Deployment
 
@@ -756,9 +332,9 @@ curl -X GET http://localhost:5000/api/auth/me \
 
 ## 📝 Recent Fixes & Improvements
 
-- ✅ **Nested API Response Handling** — Backend returns `{ success, data }` format, frontends properly extract nested data
-- ✅ **Stripe Payment Verification** — Server-side verification before order creation
-- ✅ **Payment Method Validation** — Ensures `stripePaymentMethodId` is valid (starts with `pm_`)
+- ✅ **API Response Contracts** — OpenAPI documents each endpoint’s actual response envelope
+- ✅ **Stripe Payment Verification** — Supplied card PaymentIntents are checked before order creation
+- ✅ **Payment Method Attachment** — Stripe validates IDs when payment methods are attached
 - ✅ **Mobile-Friendly Error Codes** — Structured error responses with retry hints
 - ✅ **Cart Persistence** — Synced to MongoDB with debouncing and per-user isolation
 

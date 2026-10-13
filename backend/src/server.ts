@@ -13,8 +13,7 @@ import rateLimit from 'express-rate-limit';
 import { connectDB } from './config/database.js';
 import { startAutoCompleteJob } from './jobs/autoCompleteOrders.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
-import swaggerUi from 'swagger-ui-express';
-import { swaggerSpec } from './config/swagger.js';
+import { mountApiDocs } from './config/swaggerUi.js';
 
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -30,15 +29,10 @@ const app = express();
 
 connectDB();
 
-// Mounted before helmet: helmet's default CSP blocks the Swagger UI's inline scripts.
-if (process.env.NODE_ENV !== 'production') {
-  app.get('/api-docs.json', (_req, res) => res.json(swaggerSpec));
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-}
-
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+mountApiDocs(app);
 
-// 0 = unlimited. Defaults: auth 10/15 min, api 100/min.
+// 0 = unlimited. Defaults: auth 10/min, api 100/min.
 // Override via env vars to use small values in rate-limit tests.
 const authMax = parseInt(process.env.RATE_LIMIT_AUTH_MAX ?? '10') || Infinity;
 const apiMax  = parseInt(process.env.RATE_LIMIT_API_MAX  ?? '100') || Infinity;
