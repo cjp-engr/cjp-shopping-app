@@ -181,9 +181,10 @@ export async function updateSellerOrderStatus(
     throw new AppError(400, `Cannot transition order from '${order.status}' to '${status}'`);
   }
 
-  // Cancelling would restore stock but leave the card authorization open; the release path lands in phase 4.
-  if (status === 'cancelled' && order.paymentFlowVersion === 'manual_capture') {
-    throw new AppError(409, 'Manual-capture orders cannot be cancelled yet', 'cancellation_unavailable');
+  // Seller refunds/releases are a later feature. Never cancel a paid card without returning money.
+  if (status === 'cancelled' && (order.paymentFlowVersion === 'manual_capture'
+      || ['credit-card', 'debit-card'].includes(order.paymentMethod.type))) {
+    throw new AppError(409, 'Seller cancellation for card payments is not available yet', 'cancellation_unavailable');
   }
 
   if (status === 'cancelled') {

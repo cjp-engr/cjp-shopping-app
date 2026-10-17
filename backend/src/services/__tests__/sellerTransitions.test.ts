@@ -20,6 +20,7 @@ function makeOrder(overrides: Record<string, unknown> = {}) {
     _id: '507f1f77bcf86cd799439011',
     status: 'pending',
     paymentFlowVersion: 'legacy',
+    paymentMethod: { type: 'cash-on-delivery' },
     items: [{ product: productId, quantity: 1 }],
     save: vi.fn().mockResolvedValue(undefined),
     ...overrides,
@@ -168,7 +169,7 @@ describe('seller order transitions', () => {
       expect(order.save).not.toHaveBeenCalled();
     });
 
-    it('restores stock when cancelling a legacy order', async () => {
+    it('restores stock when cancelling a legacy COD order', async () => {
       const order = makeOrder();
       stubOrder(order);
 

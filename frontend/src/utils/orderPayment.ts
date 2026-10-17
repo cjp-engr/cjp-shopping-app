@@ -15,9 +15,12 @@ export function isManualCaptureOrder(order: Pick<Order, 'paymentFlowVersion'>): 
   return order.paymentFlowVersion === 'manual_capture';
 }
 
-/** Buyer-facing payment status for manual-capture orders. Legacy orders keep their existing display. */
+/** Legacy refunds share the status display; legacy captures keep their original display. */
 export function paymentStatusNotice(order: Order): PaymentStatusNotice | null {
-  if (!isManualCaptureOrder(order)) return null;
+  if (order.paymentErrorCode === 'refund_review' || order.paymentErrorCode === 'legacy_payment_review') {
+    return { tone: 'warning', title: 'Payment needs review', body: 'Please contact support to check this payment or refund. Do not pay again.' };
+  }
+  if (!isManualCaptureOrder(order) && !['refund_pending', 'refunded'].includes(order.paymentStatus ?? '')) return null;
   switch (order.paymentStatus) {
     case 'authorized':
       return {
@@ -62,6 +65,12 @@ export function hasShortAcceptanceWindow(order: Order): boolean {
 
 /** Acceptance claims the payment before capture; cancellation is no longer available then. */
 export function canBuyerCancel(order: Order): boolean {
-  return order.status === 'pending' && (!isManualCaptureOrder(order)
+  return order.status === 'pending' && !['refund_pending', 'refunded', 'failed'].includes(order.paymentStatus ?? '') && (!isManualCaptureOrder(order)
     || order.paymentStatus === 'authorized' || order.paymentStatus === 'not_required');
+}
+
+/** Seller card cancellations stay disabled until their refund/release flow exists. */
+export function canSellerCancel(order: Pick<Order, 'paymentFlowVersion' | 'paymentMethod'> & { status: string }): boolean {
+  return ['pending', 'preparing', 'processing'].includes(order.status)
+    && !isManualCaptureOrder(order) && !['credit-card', 'debit-card'].includes(order.paymentMethod.type);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { acceptanceDeadline, canBuyerCancel, hasShortAcceptanceWindow, paymentStatusNotice } from './orderPayment';
+import { acceptanceDeadline, canBuyerCancel, canSellerCancel, hasShortAcceptanceWindow, paymentStatusNotice } from './orderPayment';
 import type { Order } from '../types/order';
 
 function order(overrides: Partial<Order> = {}): Order {
@@ -19,9 +19,20 @@ function order(overrides: Partial<Order> = {}): Order {
 }
 
 const DAY = 24 * 60 * 60 * 1000;
+it('hides seller card cancellation until the refund flow exists, retaining legacy COD', () => {
+  expect(canSellerCancel(order({ paymentFlowVersion: 'legacy' }))).toBe(false);
+  expect(canSellerCancel(order({ paymentFlowVersion: 'legacy', paymentMethod: { type: 'cash-on-delivery' } }))).toBe(true);
+  expect(canSellerCancel(order({ paymentFlowVersion: 'manual_capture', paymentMethod: { type: 'cash-on-delivery' } }))).toBe(false);
+  expect(canBuyerCancel(order({ paymentFlowVersion: 'legacy', paymentStatus: 'refunded' }))).toBe(false);
+});
 const placedAt = '2026-10-14T00:05:00.000Z';
 
 describe('paymentStatusNotice', () => {
+  it('shows legacy refunds and review without claiming preparation charged the buyer', () => {
+    expect(paymentStatusNotice(order({ paymentFlowVersion: 'legacy', paymentStatus: 'refund_pending' }))?.title).toBe('Refund in progress');
+    expect(paymentStatusNotice(order({ paymentFlowVersion: 'legacy', paymentStatus: 'refunded' }))?.title).toBe('Refunded');
+    expect(paymentStatusNotice(order({ paymentFlowVersion: 'legacy', paymentStatus: 'refund_pending', paymentErrorCode: 'refund_review' }))?.title).toBe('Payment needs review');
+  });
   it('shows nothing for legacy orders', () => {
     expect(paymentStatusNotice(order({ paymentFlowVersion: 'legacy', paymentStatus: 'captured' }))).toBeNull();
     expect(paymentStatusNotice(order({ paymentFlowVersion: undefined, paymentStatus: undefined }))).toBeNull();

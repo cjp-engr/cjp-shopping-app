@@ -221,9 +221,9 @@ class SellerOrderData {
   bool get canMarkToShip => status == 'preparing';
   bool get canMarkShipped => status == 'processing';
   bool get canCancel =>
-      status == 'pending' ||
-      status == 'preparing' ||
-      status == 'processing';
+      ['pending', 'preparing', 'processing'].contains(status) &&
+      paymentFlowVersion != 'manual_capture' &&
+      !['credit-card', 'debit-card'].contains(paymentMethod?.type);
 
   SellerOrderData copyWith({String? status, String? cancelReason}) =>
       SellerOrderData(

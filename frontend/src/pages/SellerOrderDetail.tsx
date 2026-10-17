@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import type { Order } from '../types/order';
+import { canSellerCancel } from '../utils/orderPayment';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
@@ -150,7 +151,7 @@ export const SellerOrderDetail: React.FC = () => {
   const deadlineText = currentStatus === 'pending' ? acceptanceDeadlineText(order, now) : null;
   const canToShip    = currentStatus === 'preparing';
   const canToReceive = currentStatus === 'processing';
-  const canCancel    = ['pending', 'preparing', 'processing'].includes(currentStatus);
+  const canCancel    = canSellerCancel({ ...order, status: currentStatus });
 
   const handleStatusUpdate = async (status: 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled', cancelReason?: string) => {
     setStatusError(null);

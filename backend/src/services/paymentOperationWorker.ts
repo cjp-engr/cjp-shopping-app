@@ -8,6 +8,7 @@ import { resumeCapture } from './orderCapture.js';
 import { claimNextOperation, failOperation } from './paymentOperationService.js';
 import { LEASE_MS, orderOperationKey } from './paymentOperationPolicy.js';
 import { releaseIntentOperation } from './paymentRelease.js';
+import { resumeLegacyRefund } from './legacyRefund.js';
 
 const LOG_PREFIX = '[PaymentWorker]';
 const MAX_OPERATIONS_PER_RUN = 50;
@@ -58,6 +59,8 @@ async function runOperation(operation: IPaymentOperation, owner: string, now: Da
     await resumeCapture(operation, owner, now);
   } else if (operation.action === 'release') {
     await resumeRelease(operation, owner);
+  } else if (operation.action === 'refund') {
+    await resumeLegacyRefund(operation, owner, now);
   }
 }
 
@@ -169,8 +172,8 @@ export type Clock = Date | (() => Date);
 
 /**
  * Finishes capture and release operations whose request died or deferred: `pending` with a retry
- * time that has passed, or `in_progress` with an expired lease. Includes checkout hold releases;
- * intent creation and refunds are never claimed by this worker.
+ * time that has passed, or `in_progress` with an expired lease. Includes checkout hold releases
+ * and legacy order refunds; intent creation belongs to the checkout recovery path.
  *
  * Unless a fixed instant is injected, the time is read again for every claim and handler, so a
  * long run never sets a lease that is already expired or judges the 23-hour retry window by a
@@ -180,7 +183,7 @@ export async function processDueOperations(owner: string, clock: Clock = () => n
   const now = typeof clock === 'function' ? clock : () => clock;
   let handled = 0;
   while (handled < MAX_OPERATIONS_PER_RUN) {
-    const operation = await claimNextOperation(owner, now(), { actions: ['capture', 'release'] });
+    const operation = await claimNextOperation(owner, now(), { actions: ['capture', 'release', 'refund'] });
     if (!operation) break;
     handled += 1;
     try {

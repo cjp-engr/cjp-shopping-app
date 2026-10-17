@@ -4,6 +4,7 @@ import Product from '../models/Product.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { isSellerVisibleOrder } from './orderVisibility.js';
 import { runCapture } from './orderCapture.js';
+import { verifyLegacyCapturedPayment } from './legacyPayments.js';
 
 export type AcceptanceOutcome =
   | { kind: 'completed'; order: IOrder }
@@ -76,6 +77,8 @@ export async function acceptOrder(params: {
   }
 
   const kind = orderKind(order);
+  const legacyCard = kind === 'legacy' && ['credit-card', 'debit-card'].includes(order.paymentMethod.type);
+  if (legacyCard && order.status === 'pending') await verifyLegacyCapturedPayment(order);
   if (kind === 'card') {
     const claimed = await Order.findOneAndUpdate(
       {
@@ -92,7 +95,7 @@ export async function acceptOrder(params: {
   } else {
     const filter = kind === 'cod'
       ? { _id: order._id, status: 'pending', paymentStatus: 'not_required', acceptBy: { $gt: now } }
-      : { _id: order._id, status: 'pending' };
+      : { _id: order._id, status: 'pending', ...(legacyCard ? { paymentStatus: 'captured', paymentIntentId: order.paymentIntentId, total: order.total } : {}) };
     const accepted = await Order.findOneAndUpdate(filter, { $set: { status: 'preparing' } }, { new: true });
     if (accepted) return { kind: 'completed', order: accepted };
   }

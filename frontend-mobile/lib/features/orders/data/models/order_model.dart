@@ -145,6 +145,7 @@ class OrderModel extends OrderEntity {
     super.selectedDeliveryOption,
     super.paymentFlowVersion,
     super.paymentStatus,
+    super.paymentErrorCode,
     super.placedAt,
     super.acceptBy,
     super.authorizationExpiresAt,
@@ -200,6 +201,9 @@ class OrderModel extends OrderEntity {
           ? json['paymentStatus'] as String
           : null,
       placedAt: parseOptionalDate(json['placedAt']),
+      paymentErrorCode: json['paymentError'] is Map
+          ? (json['paymentError']['code'] is String ? json['paymentError']['code'] as String : null)
+          : null,
       acceptBy: parseOptionalDate(json['acceptBy']),
       authorizationExpiresAt: parseOptionalDate(json['authorizationExpiresAt']),
     );

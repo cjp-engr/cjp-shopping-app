@@ -29,6 +29,7 @@ export interface Order {
   /** Manual-capture orders are paid by a hold that is captured when the seller starts preparing. */
   paymentFlowVersion?: 'legacy' | 'manual_capture';
   paymentStatus?: string | null;
+  paymentErrorCode?: string;
   placedAt?: string;
   /** Seller acceptance deadline; the order is cancelled and the hold released if not accepted by then. */
   acceptBy?: string;

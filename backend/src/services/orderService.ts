@@ -3,6 +3,7 @@ import Product from '../models/Product.js';
 import Coupon from '../models/Coupon.js';
 import Cart from '../models/Cart.js';
 import mongoose from 'mongoose';
+import { cancelLegacyPaidOrder } from './legacyRefund.js';
 import { checkoutFlow } from '../config/checkout.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { computeSellerTotals, priceLine, type ProductLike } from './checkoutPricing.js';
@@ -275,6 +276,9 @@ export async function cancelOrderAsBuyer(orderId: string, userId: string, cancel
   const order = await Order.findById(orderId);
   if (!order || !isBuyerVisibleOrder(order)) throw new AppError(404, 'Order not found');
   if (order.userId.toString() !== userId) throw new AppError(403, 'Not authorized');
+  if (order.paymentFlowVersion !== 'manual_capture' && ['credit-card', 'debit-card'].includes(order.paymentMethod.type)) {
+    return cancelLegacyPaidOrder(order, userId, cancelReason);
+  }
   if (order.paymentFlowVersion === 'manual_capture') {
     if (order.status === 'cancelled') return order;
     const cancelled = await cancelPendingOrder(orderId, 'buyer_cancelled', new Date(), { buyerId: userId, cancelReason });

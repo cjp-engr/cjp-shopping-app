@@ -71,6 +71,7 @@ class OrderEntity extends Equatable {
   final String? selectedDeliveryOption;
   final String paymentFlowVersion;
   final String? paymentStatus;
+  final String? paymentErrorCode;
   final DateTime? placedAt;
   final DateTime? acceptBy;
   final DateTime? authorizationExpiresAt;
@@ -95,6 +96,7 @@ class OrderEntity extends Equatable {
     this.selectedDeliveryOption,
     this.paymentFlowVersion = 'legacy',
     this.paymentStatus,
+    this.paymentErrorCode,
     this.placedAt,
     this.acceptBy,
     this.authorizationExpiresAt,
@@ -111,6 +113,7 @@ class OrderEntity extends Equatable {
         cancelReason,
         paymentFlowVersion,
         paymentStatus,
+        paymentErrorCode,
         acceptBy,
       ];
 }

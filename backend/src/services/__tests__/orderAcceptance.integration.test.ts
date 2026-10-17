@@ -17,6 +17,7 @@ vi.mock('../stripeService.js', async () => {
     retrieveIntentWithCharge: vi.fn(),
     retrievePaymentIntent: vi.fn(),
     cancelPaymentIntent: vi.fn(),
+    listIntentRefunds: vi.fn().mockResolvedValue([]),
   };
 });
 vi.mock('../orderCapture.js', () => ({ runCapture: vi.fn() }));
@@ -76,6 +77,10 @@ describe('acceptOrder (replica set, Stripe and capture mocked)', () => {
     vi.clearAllMocks();
     process.env.SELLER_SEES_MANUAL_CAPTURE = 'true';
     vi.mocked(runCapture).mockImplementation(async (order) => ({ kind: 'completed', order }));
+    vi.mocked(retrieveIntentWithCharge).mockImplementation(async id => ({
+      id, status: 'succeeded', amount: 4000, amount_received: 4000, currency: 'usd', metadata: { userId: buyer.toString() },
+      latest_charge: { id: 'ch_legacy', paid: true, amount: 4000, amount_refunded: 0, created: 1700000000 },
+    }) as any);
   });
 
   afterEach(async () => {
@@ -264,7 +269,7 @@ describe('acceptOrder (replica set, Stripe and capture mocked)', () => {
   });
 
   describe('legacy orders', () => {
-    it('moves a legacy card order to preparing with zero Stripe calls', async () => {
+    it('moves a verified legacy card order to preparing without another charge', async () => {
       const order = await makeOrder({ ...legacyOverrides, paymentIntentId: 'pi_legacy' });
       const outcome = await acceptOrder({ orderId: order.id, sellerId: seller.toString(), now });
 
@@ -272,7 +277,7 @@ describe('acceptOrder (replica set, Stripe and capture mocked)', () => {
       expect(outcome.order.status).toBe('preparing');
       expect((await Order.findById(order._id))!.status).toBe('preparing');
       expect(capturePaymentIntent).not.toHaveBeenCalled();
-      expect(retrieveIntentWithCharge).not.toHaveBeenCalled();
+      expect(retrieveIntentWithCharge).toHaveBeenCalledWith(order.paymentIntentId);
       expect(runCapture).not.toHaveBeenCalled();
     });
 

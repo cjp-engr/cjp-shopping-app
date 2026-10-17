@@ -12,7 +12,8 @@
     "test:contracts": "vitest run src/config/__tests__/swagger.test.ts src/config/__tests__/swaggerUi.test.ts",
     "start": "node dist/server.js",
     "seed": "tsx src/utils/seed.ts",
-    "migrate:check-intents": "tsx src/utils/migrations/checkDuplicatePaymentIntents.ts"
+    "migrate:check-intents": "tsx src/utils/migrations/checkDuplicatePaymentIntents.ts",
+    "migrate:legacy-payments": "tsx src/utils/migrations/reconcileLegacyPayments.ts"
   },
   "keywords": [
     "ecommerce",

@@ -232,3 +232,18 @@ export async function retrievePaymentIntent(id: string): Promise<Stripe.PaymentI
 export async function retrieveStripeEvent(id: string): Promise<Stripe.Event> {
   return getStripe().events.retrieve(id);
 }
+
+/** Auto-pagination is essential: a refund outside the first page still reduces the balance. */
+export async function listIntentRefunds(paymentIntentId: string): Promise<Stripe.Refund[]> {
+  const refunds: Stripe.Refund[] = [];
+  for await (const refund of getStripe().refunds.list({ payment_intent: paymentIntentId, limit: 100 })) refunds.push(refund);
+  return refunds;
+}
+
+export async function createOrderRefund(paymentIntentId: string, amount: number, idempotencyKey: string, orderId: string): Promise<Stripe.Refund> {
+  return getStripe().refunds.create({ payment_intent: paymentIntentId, amount, reason: 'requested_by_customer', metadata: { orderId, operationKey: idempotencyKey } }, { idempotencyKey });
+}
+
+export async function retrieveRefund(id: string): Promise<Stripe.Refund> {
+  return getStripe().refunds.retrieve(id);
+}

@@ -20,6 +20,7 @@ import {
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { getStatusConfig } from '../utils/orderUtils';
 import { acceptanceDeadlineText, acceptanceErrorMessage, canAcceptOrder, CAPTURE_POLL_INTERVAL_MS, hasCapturePending, isCapturePending } from '../utils/sellerAcceptance';
+import { canSellerCancel } from '../utils/orderPayment';
 import { ProductWizard } from '../components/seller/ProductWizard';
 
 const ImgWithFallback: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className }) => {
@@ -575,7 +576,7 @@ export const SellerDashboard: React.FC = () => {
               const deadlineText = acceptanceDeadlineText(order, now);
               const canToShip    = order.status === 'preparing';
               const canToReceive = order.status === 'processing';
-              const canCancel    = ['pending', 'preparing', 'processing'].includes(order.status);
+              const canCancel    = canSellerCancel(order);
               const isCancelled  = order.status === 'cancelled';
               const stepIndex    = ORDER_STATUS_STEPS.indexOf(order.status as typeof ORDER_STATUS_STEPS[number]);
               const borderClass  = STATUS_BORDER_CLASS[order.status] ?? 'border-l-gray-300';

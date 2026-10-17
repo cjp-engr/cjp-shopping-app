@@ -23,7 +23,7 @@ async function makeOrder(
     userId: buyer,
     items: [{ product: productId, productName: 'Book', productPrice: 10, productImage: 'b.png', quantity: 1 }],
     shippingAddress: address,
-    paymentMethod: { type: 'credit-card' },
+    paymentMethod: { type: 'cash-on-delivery' },
     subtotal: 10,
     tax: 0.8,
     shipping: 0,

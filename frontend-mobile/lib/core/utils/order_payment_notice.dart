@@ -23,14 +23,17 @@ bool _isManualCapture(OrderEntity order) =>
 
 bool canBuyerCancel(OrderEntity order) =>
     order.status == 'pending' &&
+    !['refund_pending', 'refunded', 'failed'].contains(order.paymentStatus) &&
     (!_isManualCapture(order) ||
         order.paymentStatus == 'authorized' ||
         order.paymentStatus == 'not_required');
 
-/// Buyer-facing payment status for manual-capture orders. Same copy as the web
-/// `paymentStatusNotice`. Legacy orders and unknown statuses return null.
+/// Same payment and refund copy as the web, including refunds of legacy charges.
 OrderPaymentNotice? orderPaymentNotice(OrderEntity order) {
-  if (!_isManualCapture(order)) return null;
+  if (order.paymentErrorCode == 'refund_review' || order.paymentErrorCode == 'legacy_payment_review') {
+    return const OrderPaymentNotice(tone: OrderPaymentTone.warning, title: 'Payment needs review', body: 'Please contact support to check this payment or refund. Do not pay again.');
+  }
+  if (!_isManualCapture(order) && !['refund_pending', 'refunded'].contains(order.paymentStatus)) return null;
   switch (order.paymentStatus) {
     case 'authorized':
       return const OrderPaymentNotice(

@@ -6,6 +6,7 @@ import {
 import User from '../models/User.js';
 import Cart from '../models/Cart.js';
 import Order from '../models/Order.js';
+import { verifyLegacyCapturedPayment } from './legacyPayments.js';
 
 const PAYMENT_CURRENCY = 'usd';
 
@@ -93,27 +94,18 @@ class PaymentService {
   }
 
   async handlePaymentIntentSucceeded(paymentIntentId: string): Promise<void> {
-    const order = await Order.findOneAndUpdate(
+    const order = await Order.findOne(
       { paymentIntentId, paymentFlowVersion: { $ne: 'manual_capture' }, status: 'pending' },
-      { status: 'processing' },
-      { new: true },
     );
-
-    if (!order) {
-      console.warn(`Order not found for PaymentIntent ${paymentIntentId}`);
-    }
+    if (order) await verifyLegacyCapturedPayment(order);
   }
 
   async handlePaymentIntentFailed(paymentIntentId: string): Promise<void> {
-    const order = await Order.findOneAndUpdate(
+    const order = await Order.findOne(
       { paymentIntentId, paymentFlowVersion: { $ne: 'manual_capture' }, status: 'pending' },
-      { status: 'cancelled' },
-      { new: true },
     );
-
-    if (!order) {
-      console.warn(`Order not found for PaymentIntent ${paymentIntentId}`);
-    }
+    // A delayed failure must never cancel an order whose current Stripe state is paid.
+    if (order) await verifyLegacyCapturedPayment(order);
   }
 }
 

@@ -19,6 +19,15 @@ Map<String, dynamic> _paymentJson() => {
     };
 
 void main() {
+  test('buyer parses the refund review code without exposing internal error details', () {
+    final order = OrderModel.fromJson({..._baseJson(), 'paymentError': {'code': 'refund_review', 'message': 'internal details'}});
+    expect(order.paymentErrorCode, 'refund_review');
+  });
+  test('seller card cancellation stays unavailable while legacy COD is allowed', () {
+    expect(SellerOrderData.fromJson({..._baseJson(), 'paymentMethod': {'type': 'credit-card'}}).canCancel, isFalse);
+    expect(SellerOrderData.fromJson({..._baseJson(), 'paymentMethod': {'type': 'cash-on-delivery'}}).canCancel, isTrue);
+    expect(SellerOrderData.fromJson({..._baseJson(), ..._paymentJson(), 'paymentMethod': {'type': 'cash-on-delivery'}}).canCancel, isFalse);
+  });
   group('OrderModel payment fields', () {
     test('parses all payment fields', () {
       final order = OrderModel.fromJson({..._baseJson(), ..._paymentJson()});

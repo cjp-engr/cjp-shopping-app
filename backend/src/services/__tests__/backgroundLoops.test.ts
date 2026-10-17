@@ -72,7 +72,7 @@ describe('background loops', () => {
     release();
     await vi.advanceTimersByTimeAsync(500);
     expect(claimNextOperation).toHaveBeenCalledTimes(2);
-    expect(claimNextOperation).toHaveBeenCalledWith(expect.any(String), expect.any(Date), { actions: ['capture', 'release'] });
+    expect(claimNextOperation).toHaveBeenCalledWith(expect.any(String), expect.any(Date), { actions: ['capture', 'release', 'refund'] });
 
     stop();
     await vi.advanceTimersByTimeAsync(5000);

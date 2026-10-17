@@ -9,6 +9,7 @@ OrderEntity _order({
   String flow = 'manual_capture',
   String? paymentStatus = 'authorized',
   String status = 'pending',
+  String? paymentErrorCode,
   DateTime? placedAt,
   DateTime? acceptBy,
 }) {
@@ -34,12 +35,18 @@ OrderEntity _order({
     createdAt: '2026-10-17T00:00:00.000Z',
     paymentFlowVersion: flow,
     paymentStatus: paymentStatus,
+    paymentErrorCode: paymentErrorCode,
     placedAt: placedAt,
     acceptBy: acceptBy,
   );
 }
 
 void main() {
+  test('legacy refunds and payment reviews are visible', () {
+    expect(orderPaymentNotice(_order(flow: 'legacy', paymentStatus: 'refund_pending'))?.title, 'Refund in progress');
+    expect(orderPaymentNotice(_order(flow: 'legacy', paymentStatus: 'refunded'))?.title, 'Refunded');
+    expect(orderPaymentNotice(_order(flow: 'legacy', paymentStatus: 'refund_pending', paymentErrorCode: 'refund_review'))?.title, 'Payment needs review');
+  });
   test('buyer cancellation is available only before acceptance claims the order', () {
     expect(canBuyerCancel(_order()), isTrue);
     expect(canBuyerCancel(_order(paymentStatus: 'not_required')), isTrue);

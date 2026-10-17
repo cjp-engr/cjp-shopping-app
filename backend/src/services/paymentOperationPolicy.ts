@@ -26,7 +26,7 @@ export function statusAfterFailedAttempt(
 
 export function orderOperationKey(
   orderId: string,
-  action: 'capture' | 'release',
+  action: 'capture' | 'release' | 'refund',
   generation: number,
 ): string {
   return `order:${orderId}:${action}:${generation}`;

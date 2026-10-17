@@ -49,6 +49,7 @@ interface RawItem {
 }
 
 interface RawOrder extends Omit<Order, 'id' | 'items'> {
+  paymentError?: { code?: string };
   _id?: string;
   id?: string;
   items: RawItem[];
@@ -368,6 +369,7 @@ class OrderService {
       selectedDeliveryOption: resolveSelectedDeliveryOption(order),
       paymentFlowVersion: order.paymentFlowVersion,
       paymentStatus: order.paymentStatus,
+      paymentErrorCode: order.paymentError?.code,
       placedAt: order.placedAt,
       acceptBy: order.acceptBy,
       authorizationExpiresAt: order.authorizationExpiresAt,
