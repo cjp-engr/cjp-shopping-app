@@ -11,6 +11,12 @@ import { ReviewModal } from '../components/common/ReviewModal';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { getStatusConfig, formatPaymentMethodType, formatDeliveryOption } from '../utils/orderUtils';
+import {
+  acceptanceDeadline,
+  hasShortAcceptanceWindow,
+  paymentStatusNotice,
+  type PaymentNoticeTone,
+} from '../utils/orderPayment';
 import { fetchReviewStatuses, fetchSingleReview } from '../utils/reviewUtils';
 import type { ReviewData } from '../utils/reviewUtils';
 import {
@@ -26,6 +32,13 @@ import {
   Pencil,
   Zap,
 } from 'lucide-react';
+
+const NOTICE_CLASSES: Record<PaymentNoticeTone, string> = {
+  info: 'bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+  success: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+  neutral: 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700',
+  warning: 'bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+};
 
 type ReviewModalState = {
   productId: string;
@@ -112,6 +125,9 @@ export const OrderDetail: React.FC = () => {
   const StatusIcon = statusConfig.icon;
   const isDelivered = order.status === 'delivered';
   const isCancelled = order.status === 'cancelled';
+  const paymentNotice = paymentStatusNotice(order);
+  const deadline = acceptanceDeadline(order);
+  const shortWindow = hasShortAcceptanceWindow(order);
 
   const groups = new Map<string, typeof order.items>();
   order.items.forEach(item => {
@@ -349,6 +365,25 @@ export const OrderDetail: React.FC = () => {
           {formatPaymentMethodType(order.paymentMethod.type)}
           {order.paymentMethod.last4 ? ` ending in ${order.paymentMethod.last4}` : ''}
         </p>
+        {paymentNotice && (
+          <div
+            className={`mt-3 rounded-lg border px-3 py-2 ${NOTICE_CLASSES[paymentNotice.tone]}`}
+            data-testid="payment-status-notice"
+          >
+            <p className="text-sm font-semibold">{paymentNotice.title}</p>
+            <p className="text-xs mt-0.5">{paymentNotice.body}</p>
+          </div>
+        )}
+        {deadline && (
+          <p className="mt-3 text-sm text-gray-600 dark:text-gray-400" data-testid="acceptance-deadline">
+            The seller must accept by {formatDate(deadline)}. If not, the order is cancelled and the reservation is released.
+          </p>
+        )}
+        {deadline && shortWindow && (
+          <p className="mt-1 text-xs text-amber-700 dark:text-amber-400" data-testid="short-authorization-note">
+            Your card authorization ends sooner than usual, so the seller has less time to accept this order.
+          </p>
+        )}
       </Card>
 
       {/* Delivery banner */}

@@ -11,6 +11,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/theme_colors.dart';
+import '../../../../core/utils/order_payment_notice.dart';
 import '../../../../core/utils/order_utils.dart';
 import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/image_placeholder.dart';
@@ -18,6 +19,7 @@ import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/review_bottom_sheet.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import 'order_payment_notice_card.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final String orderId;
@@ -26,7 +28,14 @@ class OrderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OrderBloc, OrderState>(
+    return BlocConsumer<OrderBloc, OrderState>(
+      listener: (context, state) {
+        if (state.status == OrderStatus.failure && state.errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.errorMessage!)),
+          );
+        }
+      },
       builder: (context, state) {
         if (state.status == OrderStatus.loading && state.orders.isEmpty) {
           return const Scaffold(body: LoadingWidget());
@@ -180,6 +189,8 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
         ? order.status[0].toUpperCase() + order.status.substring(1)
         : '';
     final addr = order.shippingAddress;
+    final paymentNotice = orderPaymentNotice(order);
+    final deadlineText = orderAcceptanceDeadlineText(order, DateTime.now());
 
     final filteredItems = sellerKey != null
         ? order.items
@@ -438,6 +449,19 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
 
             const SizedBox(height: AppSizes.sm),
 
+            // ── Payment notice (manual-capture orders) ──────────────────
+            if (paymentNotice != null) ...[
+              OrderPaymentNoticeCard(
+                notice: paymentNotice,
+                deadlineText: deadlineText,
+                shortWindowNote: deadlineText != null &&
+                        hasShortAcceptanceWindow(order)
+                    ? 'Your card authorization ends sooner than usual, so the seller has less time to accept this order.'
+                    : null,
+              ),
+              const SizedBox(height: AppSizes.sm),
+            ],
+
             // ── Order items grouped by seller ───────────────────────────
             _SectionCard(
               child: Column(
@@ -681,7 +705,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
             ],
 
             // ── Cancel order ────────────────────────────────────────────
-            if (order.status == 'pending') ...[
+            if (canBuyerCancel(order)) ...[
               const SizedBox(height: AppSizes.md),
               SizedBox(
                 height: AppSizes.buttonHeight,

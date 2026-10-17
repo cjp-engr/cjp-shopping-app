@@ -2,8 +2,9 @@
 //              TC-023 — Checkout with saved credit card
 //              TC-024 — Checkout with new card entry
 
-import { clearBuyerCart, getBuyerToken } from '../../../helpers/auth-state';
+import { clearBuyerCart } from '../../../helpers/auth-state';
 import { API_URL, DEFAULT_SHIPPING_ADDRESS } from '../../../helpers/test-data';
+import { STRIPE_TEST_CARDS, ensureSavedStripeCard } from '../../../helpers/checkout-flow';
 import { test, expect } from '../../../fixtures/base-fixture';
 
 // All tests mutate the same buyer's server-side cart — run sequentially to avoid races
@@ -63,19 +64,8 @@ test.describe('TC-023: Checkout with saved credit card', () => {
       cartPage,
       checkoutPage,
     }) => {
-      await test.step('Ensure buyer has a saved credit card', async () => {
-        const token = getBuyerToken();
-        await request.post(`${API_URL}/api/auth/payment-methods`, {
-          headers: { Authorization: `Bearer ${token}` },
-          data: {
-            type: 'credit-card',
-            last4: '4242',
-            cardHolder: 'Test Buyer',
-            expiryMonth: '12',
-            expiryYear: '2028',
-            setAsDefault: true,
-          },
-        });
+      await test.step('Ensure buyer has a saved card backed by a Stripe PaymentMethod', async () => {
+        await ensureSavedStripeCard(request);
       });
 
       await test.step('Browse products and add first to cart', async () => {
@@ -132,14 +122,7 @@ test.describe('TC-024: Checkout with new card entry', () => {
       await test.step('Fill shipping address, enter new card details, and place order', async () => {
         await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
         await checkoutPage.continueToPayment();
-        await checkoutPage.fillNewCardForm({
-          type: 'credit-card',
-          cardNumber: '4111111111111111',
-          cardHolder: 'Test Buyer',
-          expiryMonth: '12',
-          expiryYear: String(new Date().getFullYear() + 2),
-          cvv: '123',
-        });
+        await checkoutPage.fillStripeCard(STRIPE_TEST_CARDS.success);
         await checkoutPage.continueToReview();
         await checkoutPage.placeOrder();
       });

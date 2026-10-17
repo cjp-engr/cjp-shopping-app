@@ -13,6 +13,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/theme_colors.dart';
+import '../../../../core/utils/order_payment_notice.dart';
 import '../../../../core/utils/order_utils.dart';
 import '../../../../shared/widgets/app_dialog.dart';
 import '../../../../shared/widgets/image_placeholder.dart';
@@ -20,6 +21,7 @@ import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/review_bottom_sheet.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import 'order_payment_notice_card.dart';
 
 class _TabDef {
   final String label;
@@ -372,6 +374,7 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
     // which includes discounts, vouchers, shipping, and tax.
     final groupTotal = order.total;
     final itemCount = items.fold<int>(0, (s, i) => s + i.quantity);
+    final paymentNotice = orderPaymentNotice(order);
 
     return InkWell(
       onTap: () => context
@@ -539,6 +542,13 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                 ],
               ),
             ),
+
+            if (paymentNotice != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+                child: OrderPaymentNoticeLabel(notice: paymentNotice),
+              ),
 
             // ── Delivery banner / cancelled notice ──────────────────────
             if (isCancelled)

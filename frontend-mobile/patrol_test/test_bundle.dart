@@ -2,23 +2,17 @@
 // ignore_for_file: type=lint, invalid_use_of_internal_member
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
+import 'package:patrol/src/constants.dart' as constants;
+import 'package:patrol/src/manifest_writer.dart';
 import 'package:patrol/src/platform/contracts/contracts.dart';
+import 'package:patrol/src/platform/mobile/patrol_runtime_ports.dart';
 import 'package:test_api/src/backend/invoker.dart';
 
 // START: GENERATED TEST IMPORTS
-import '0_auth/login_test.dart' as _0_auth__login_test;
-import '0_auth/signup_test.dart' as _0_auth__signup_test;
-import '1_seller/add_product_simple_test.dart' as _1_seller__add_product_simple_test;
-import '1_seller/add_product_variant_test.dart' as _1_seller__add_product_variant_test;
-import '1_seller/delete_product_simple_test.dart' as _1_seller__delete_product_simple_test;
-import '1_seller/delete_product_variant_test.dart' as _1_seller__delete_product_variant_test;
-import '1_seller/edit_product_simple_test.dart' as _1_seller__edit_product_simple_test;
-import '1_seller/edit_product_variant_test.dart' as _1_seller__edit_product_variant_test;
-import '1_seller/read_product_simple_test.dart' as _1_seller__read_product_simple_test;
-import '1_seller/read_product_variant_test.dart' as _1_seller__read_product_variant_test;
 import '2_buyer/simple_cod_checkout_test.dart' as _2_buyer__simple_cod_checkout_test;
 import '2_buyer/simple_new_credit_checkout_test.dart' as _2_buyer__simple_new_credit_checkout_test;
 import '2_buyer/simple_saved_credit_checkout_test.dart' as _2_buyer__simple_saved_credit_checkout_test;
@@ -60,12 +54,21 @@ Future<void> main() async {
   // Dart test (out of which they had been created) and wait for it to complete.
   // The result of running the Dart test is the result of the native test case.
 
-  final platformAutomator = PlatformAutomator(
-    config: PlatformAutomatorConfig.defaultConfig(),
-  );
-  await platformAutomator.initialize();
-  final binding = PatrolBinding.ensureInitialized(platformAutomator);
   final testExplorationCompleter = Completer<DartGroupEntry>();
+
+  // In build-time discovery mode the bundle is driven by a host `flutter test`
+  // run: we only register tests to build the group tree, then serialize it to a
+  // manifest. PatrolBinding (a Live binding) must NOT be initialized here - it's
+  // incompatible with the automated binding `flutter test` installs on the host.
+  late final PlatformAutomator platformAutomator;
+  late final PatrolBinding binding;
+  if (!constants.testDiscoveryEnabled) {
+    platformAutomator = PlatformAutomator(
+      config: PlatformAutomatorConfig.defaultConfig(),
+    );
+    await platformAutomator.initialize();
+    binding = PatrolBinding.ensureInitialized(platformAutomator);
+  }
 
   // A special test to explore the hierarchy of groups and tests. This is a hack
   // around https://github.com/dart-lang/test/issues/1998.
@@ -81,22 +84,32 @@ Future<void> main() async {
       tags: null,
       excludeTags: null,
     );
+    if (constants.testDiscoveryEnabled) {
+      // Build-time discovery: serialize the WHOLE tree (same shape as
+      // ListDartTestsResponse.group) so the native side can flatten it with its
+      // existing listTestsFlat logic - selectors come out byte-identical to
+      // runtime discovery.
+      //
+      // The manifest is written from inside this test (not from main()) on
+      // purpose: under the host automated binding the framework runs tests only
+      // *after* main() finishes declaring, so awaiting the tree in main() would
+      // deadlock.
+      const manifestOutput = String.fromEnvironment('PATROL_MANIFEST_OUTPUT');
+      if (manifestOutput.isNotEmpty) {
+        writeTestManifest(
+          manifestOutput,
+          jsonEncode(ListDartTestsResponse(group: dartTestGroup).toJson()),
+        );
+      }
+      return;
+    }
+
     testExplorationCompleter.complete(dartTestGroup);
     print('patrol_test_explorer: obtained Dart-side test hierarchy:');
     reportGroupStructure(dartTestGroup);
   });
 
 // START: GENERATED TEST GROUPS
-  group('_0_auth.login_test', _0_auth__login_test.main);
-  group('_0_auth.signup_test', _0_auth__signup_test.main);
-  group('_1_seller.add_product_simple_test', _1_seller__add_product_simple_test.main);
-  group('_1_seller.add_product_variant_test', _1_seller__add_product_variant_test.main);
-  group('_1_seller.delete_product_simple_test', _1_seller__delete_product_simple_test.main);
-  group('_1_seller.delete_product_variant_test', _1_seller__delete_product_variant_test.main);
-  group('_1_seller.edit_product_simple_test', _1_seller__edit_product_simple_test.main);
-  group('_1_seller.edit_product_variant_test', _1_seller__edit_product_variant_test.main);
-  group('_1_seller.read_product_simple_test', _1_seller__read_product_simple_test.main);
-  group('_1_seller.read_product_variant_test', _1_seller__read_product_variant_test.main);
   group('_2_buyer.simple_cod_checkout_test', _2_buyer__simple_cod_checkout_test.main);
   group('_2_buyer.simple_new_credit_checkout_test', _2_buyer__simple_new_credit_checkout_test.main);
   group('_2_buyer.simple_saved_credit_checkout_test', _2_buyer__simple_saved_credit_checkout_test.main);
@@ -105,9 +118,16 @@ Future<void> main() async {
   group('_2_buyer.variant_saved_credit_checkout_test', _2_buyer__variant_saved_credit_checkout_test.main);
 // END: GENERATED TEST GROUPS
 
+  if (constants.testDiscoveryEnabled) {
+    // Returning finishes declaration; `flutter test` then runs the explorer
+    // test (which writes the manifest) plus the registered no-op bodies.
+    return;
+  }
+
   final dartTestGroup = await testExplorationCompleter.future;
   final appService = PatrolAppService(topLevelDartTestGroup: dartTestGroup);
   binding.patrolAppService = appService;
+  await PatrolRuntimePorts.ensureLoaded();
   await runAppService(appService);
 
   // Until now, the native test runner was waiting for us, the Dart side, to

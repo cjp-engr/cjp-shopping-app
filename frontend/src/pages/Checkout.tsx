@@ -13,6 +13,21 @@ import { formatNetworkError } from '../utils/network';
 import type { CheckoutData, PaymentMethod } from '../types/order';
 import type { SavedCard, SavedAddress } from '../types/user';
 import orderService from '../services/orderService';
+import { CheckoutApiError } from '../services/checkoutApiError';
+import {
+  authorizeSellers,
+  confirmPlacedOrders,
+  type SellerPaymentClient,
+} from '../services/cardCheckoutFlow';
+import { CARD_CHECKOUT_FLOW } from '../config/checkout';
+import type { CheckoutSession } from '../types/checkout';
+import { buildCheckoutSessionPayload } from '../utils/checkoutSession';
+import {
+  clearCheckoutAttempt,
+  getOrCreateCheckoutAttempt,
+  loadCheckoutAttempt,
+  saveCheckoutAttempt,
+} from '../utils/checkoutAttempt';
 import { CardBrandIcon } from '../components/common/CardBrandIcon';
 import {
   CreditCard,
@@ -107,7 +122,15 @@ const CheckoutInner: React.FC = () => {
   const stripe = useStripe();
   const elements = useElements();
   const [pendingPaymentMethodId, setPendingPaymentMethodId] = useState<string | null>(null);
+  // Session checkout with a new card: one PaymentMethod per seller, keyed by seller ID
+  const [pendingSellerPaymentMethods, setPendingSellerPaymentMethods] = useState<Record<string, string>>({});
   const [stripeError, setStripeError] = useState<string | null>(null);
+
+  // Manual-capture checkout: the open session, sellers whose payment is held, and the message for the buyer
+  const [cardSession, setCardSession] = useState<CheckoutSession | null>(null);
+  const [cardAuthorizedIds, setCardAuthorizedIds] = useState<string[]>([]);
+  const [cardStopMessage, setCardStopMessage] = useState<string | null>(null);
+  const userId = user?.id;
 
   // Helper: Check if payment mode is card-based
   const isCardPayment = (mode: PaymentMode, type: string): boolean => {
@@ -388,6 +411,21 @@ const CheckoutInner: React.FC = () => {
 
       setPendingPaymentMethodId(paymentMethod!.id);
 
+      if (CARD_CHECKOUT_FLOW === 'manual_capture') {
+        // A card that is not saved to the customer can back only one intent, so each seller gets its own
+        // PaymentMethod. Created now, while the card element is still mounted.
+        const perSeller: Record<string, string> = {};
+        for (const group of sellerGroups) {
+          const extra = await stripe.createPaymentMethod({ type: 'card', card: cardElement });
+          if (extra.error || !extra.paymentMethod) {
+            setStripeError(extra.error?.message ?? STRIPE_ERROR_MESSAGES.CARD_ERROR);
+            return;
+          }
+          perSeller[group.sellerId] = extra.paymentMethod.id;
+        }
+        setPendingSellerPaymentMethods(perSeller);
+      }
+
       if (saveCard) {
         try {
           await orderService.savePaymentMethod(paymentMethod!, user, savedCards.length === 0);
@@ -423,10 +461,147 @@ const CheckoutInner: React.FC = () => {
     }
   };
 
+  // Manual-capture checkout: open (or resume) one session, hold each seller's payment, then place the orders.
+  // No amount is sent from here; the server prices the cart and creates each seller's PaymentIntent.
+  const placeCardCheckout = async (buyerId: string) => {
+    if (!stripe || !pendingPaymentMethodId) {
+      handlePaymentError(STRIPE_ERROR_MESSAGES.PAYMENT_NOT_READY);
+      return;
+    }
+    const paymentMethodId = pendingPaymentMethodId;
+    const usingSavedCard = paymentMode === 'saved';
+    const stripeClient: SellerPaymentClient = {
+      confirmPayment: (clientSecret, methodId) => stripe.confirmCardPayment(clientSecret, { payment_method: methodId }),
+      retrievePayment: clientSecret => stripe.retrievePaymentIntent(clientSecret),
+    };
+    setCardStopMessage(null);
+    try {
+      // Always opened with the current input: the server replays the stored key, or rejects a changed body.
+      setCardAuthorizedIds([]);
+      const attempt = getOrCreateCheckoutAttempt(buyerId);
+      const selectedCard = paymentMode === 'saved' ? savedCards.find(c => c._id === selectedCardId) : undefined;
+      const resolvedDeliverySelections = { ...deliverySelections };
+      for (const group of sellerGroups) {
+        if (!resolvedDeliverySelections[group.sellerId] && group.shippingOptions[0]) {
+          resolvedDeliverySelections[group.sellerId] = group.shippingOptions[0];
+        }
+      }
+      const couponCodes: Record<string, string> = {};
+      for (const [sellerId, v] of Object.entries(voucherSelections)) {
+        if (v.code) couponCodes[sellerId] = v.code;
+      }
+      const payload = buildCheckoutSessionPayload({
+        cart: { ...cart, items: checkoutItems },
+        shippingAddress: {
+          street: shippingData.street,
+          city: shippingData.city,
+          state: shippingData.state,
+          zipCode: shippingData.zipCode,
+          country: shippingData.country || 'PH',
+        },
+        paymentMethod: selectedCard
+          ? { type: selectedCard.type === 'debit-card' ? 'debit-card' : 'credit-card', last4: selectedCard.last4, cardHolder: selectedCard.cardHolder }
+          : { type: paymentData.type === 'debit-card' ? 'debit-card' : 'credit-card', last4: paymentData.cardNumber.slice(-4), cardHolder: paymentData.cardHolder },
+        couponCodes,
+        deliverySelections: resolvedDeliverySelections,
+        savedPaymentMethodId: selectedCard?.stripePaymentMethodId,
+      });
+      const { session } = await orderService.createCheckoutSession(payload, attempt.idempotencyKey);
+      saveCheckoutAttempt(buyerId, { ...attempt, sessionId: session.id });
+      setCardSession(session);
+
+      const authorization = await authorizeSellers({
+        api: orderService,
+        client: stripeClient,
+        session,
+        // A saved card is attached to the customer and can back every seller. A new card uses the
+        // PaymentMethod created for that seller.
+        paymentMethodIdFor: sellerId => (usingSavedCard ? paymentMethodId : pendingSellerPaymentMethods[sellerId]),
+        onAuthorized: sellerId => setCardAuthorizedIds(prev => [...prev, sellerId]),
+      });
+      if (authorization.status !== 'authorized') {
+        if (authorization.status === 'closed') {
+          clearCheckoutAttempt(buyerId);
+          setCardSession(null);
+        }
+        setCardStopMessage(authorization.message);
+        return;
+      }
+
+      const confirmed = await confirmPlacedOrders(orderService, session.id);
+      if (confirmed.status === 'placed') {
+        clearCheckoutAttempt(buyerId);
+        setOrderPlaced(true);
+        // Save the new address after the order is placed (best effort, as in the legacy flow)
+        if (selectedAddressId === 'new' && saveAddress) {
+          try {
+            await addAddress({
+              label: 'Home',
+              street: shippingData.street,
+              city: shippingData.city,
+              state: shippingData.state,
+              zipCode: shippingData.zipCode,
+              country: shippingData.country || 'PH',
+            });
+          } catch {
+            // non-blocking
+          }
+        }
+        // Remove only the checked-out items so deselected cart items are preserved
+        if (checkoutItems.length === cart.items.length) {
+          clearCart();
+        } else {
+          for (const item of checkoutItems) {
+            removeFromCart(item.product.id, item.selectedVariant?.key);
+          }
+        }
+        navigate(`/orders?success=${confirmed.orders[0]?.id ?? ''}`);
+        return;
+      }
+      if (confirmed.status === 'failed' || confirmed.status === 'closed') {
+        clearCheckoutAttempt(buyerId);
+        setCardSession(null);
+      }
+      setCardStopMessage(confirmed.message);
+    } catch (err) {
+      if (err instanceof CheckoutApiError && err.code === 'idempotency_conflict') {
+        // The cart or delivery details changed since this attempt started; start a new one.
+        clearCheckoutAttempt(buyerId);
+        setCardSession(null);
+        setError('Your cart or delivery details changed since you started checkout. Review your order and place it again.');
+      } else {
+        setError(err instanceof CheckoutApiError ? err.message : formatNetworkError(err));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reopen an unfinished card checkout after a reload (manual-capture flow only)
+  useEffect(() => {
+    if (CARD_CHECKOUT_FLOW !== 'manual_capture' || !userId) return;
+    const attempt = loadCheckoutAttempt(userId);
+    if (!attempt?.sessionId) return;
+    orderService.getCheckoutSession(attempt.sessionId)
+      .then(session => {
+        if (session.status === 'open') setCardSession(session);
+        else clearCheckoutAttempt(userId);
+      })
+      .catch(err => {
+        // A missing session can never resume; other failures keep the attempt for a later try.
+        if (err instanceof CheckoutApiError && err.status === 404) clearCheckoutAttempt(userId);
+      });
+  }, [userId]);
+
   const handlePlaceOrder = async () => {
     if (!user) return;
     setLoading(true);
     setError(null);
+
+    if (CARD_CHECKOUT_FLOW === 'manual_capture' && isCardPayment(paymentMode, paymentData.type)) {
+      await placeCardCheckout(user.id);
+      return;
+    }
 
     // Charge Stripe at order placement time
     const isCard = isCardPayment(paymentMode, paymentData.type);
@@ -1242,6 +1417,48 @@ const CheckoutInner: React.FC = () => {
                   </Button>
                 </div>
               </Card>
+
+              {CARD_CHECKOUT_FLOW === 'manual_capture' && isCardPayment(paymentMode, paymentData.type) && (
+                <Card padding="lg" data-testid="card-authorization-panel">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
+                    <Lock className="w-5 h-5" />
+                    Payment authorization
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Your money is reserved now and charged when each seller starts preparing your order.
+                    Orders a seller does not accept within 24 hours are cancelled and their reservation is released.
+                    Multi-seller purchases may need a separate confirmation for each seller.
+                    Your bank may show pending charges until the reservation is released or captured.
+                  </p>
+                  <ul className="space-y-2">
+                    {sellerGroups.map(group => {
+                      const draft = cardSession?.sellers.find(s => s.sellerId === group.sellerId);
+                      const authorized = !!draft && (cardAuthorizedIds.includes(group.sellerId) || !draft.clientSecret);
+                      return (
+                        <li key={group.sellerId} className="flex justify-between text-sm">
+                          <span className="text-gray-700 dark:text-gray-300">{group.sellerName}</span>
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {formatCurrency(draft ? draft.amountMinor / 100 : group.storeTotal)}
+                            {draft && (
+                              <span className="ml-2 text-xs font-normal text-gray-500 dark:text-gray-400">
+                                {authorized ? 'Reserved' : 'Awaiting payment'}
+                              </span>
+                            )}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {!cardSession && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                      Amounts are estimates. The server confirms the final amount for each seller when you place the order.
+                    </p>
+                  )}
+                  {cardStopMessage && (
+                    <p role="alert" className="mt-4 text-sm text-red-700 dark:text-red-400">{cardStopMessage}</p>
+                  )}
+                </Card>
+              )}
 
               <div className="flex justify-between">
                 <Button variant="outline" onClick={() => setStep('payment')}>

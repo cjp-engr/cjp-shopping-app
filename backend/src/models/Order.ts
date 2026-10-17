@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { IAddress } from './User.js';
 
-export type OrderStatus = 'pending' | 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'awaiting_payment' | 'pending' | 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface ICartItem {
   product: mongoose.Types.ObjectId;
@@ -45,9 +45,29 @@ export interface IOrder extends Document {
   sellerMessages?: Record<string, string>;
   deliverySelections?: Record<string, string>;
   selectedDeliveryOption?: string;
+  sellerId?: mongoose.Types.ObjectId;
+  checkoutSessionId?: string;
+  paymentFlowVersion: 'legacy' | 'manual_capture';
+  paymentStatus?: PaymentStatus;
+  amountMinor?: number;
+  currency?: string;
+  authorizedAt?: Date;
+  placedAt?: Date;
+  authorizationExpiresAt?: Date;
+  acceptBy?: Date;
+  capturedAt?: Date;
+  stockRestoredAt?: Date;
+  refundId?: string;
+  paymentError?: { code: string; message: string; at: Date };
   createdAt: Date;
   updatedAt: Date;
 }
+
+export const PAYMENT_STATUSES = [
+  'awaiting_authorization', 'authorized', 'capture_pending', 'captured',
+  'release_pending', 'released', 'refund_pending', 'refunded', 'failed', 'not_required',
+] as const;
+export type PaymentStatus = typeof PAYMENT_STATUSES[number];
 
 const CartItemSchema = new Schema<ICartItem>({
   product: {
@@ -129,6 +149,28 @@ const OrderSchema = new Schema<IOrder>({
     default: {}
   },
   selectedDeliveryOption: { type: String },
+  sellerId: { type: Schema.Types.ObjectId, ref: 'User' },
+  checkoutSessionId: { type: String },
+  paymentFlowVersion: {
+    type: String,
+    enum: ['legacy', 'manual_capture'],
+    default: 'legacy',
+  },
+  paymentStatus: { type: String, enum: PAYMENT_STATUSES },
+  amountMinor: { type: Number, min: 0 },
+  currency: { type: String, uppercase: true },
+  authorizedAt: Date,
+  placedAt: Date,
+  authorizationExpiresAt: Date,
+  acceptBy: Date,
+  capturedAt: Date,
+  stockRestoredAt: Date,
+  refundId: { type: String },
+  paymentError: {
+    code: String,
+    message: String,
+    at: Date,
+  },
   paymentMethod: {
     type: PaymentMethodSchema,
     required: true
@@ -169,7 +211,7 @@ const OrderSchema = new Schema<IOrder>({
   },
   status: {
     type: String,
-    enum: ['pending', 'preparing', 'processing', 'shipped', 'delivered', 'cancelled'],
+    enum: ['awaiting_payment', 'pending', 'preparing', 'processing', 'shipped', 'delivered', 'cancelled'],
     default: 'pending'
   },
   estimatedDelivery: Date,
@@ -182,5 +224,8 @@ const OrderSchema = new Schema<IOrder>({
 
 // Index for user order history
 OrderSchema.index({ userId: 1, createdAt: -1 });
+
+// Index for the acceptance-deadline scan
+OrderSchema.index({ status: 1, acceptBy: 1 });
 
 export default mongoose.model<IOrder>('Order', OrderSchema);

@@ -4,6 +4,7 @@ export class AppError extends Error {
   constructor(
     public readonly statusCode: number,
     message: string,
+    public readonly code?: string,
   ) {
     super(message);
     this.name = 'AppError';
@@ -50,9 +51,12 @@ export const errorHandler = (
     console.error(`[${statusCode}] ${req.method} ${req.originalUrl}`, err.message);
   }
 
+  const code = err instanceof AppError ? err.code : undefined;
+
   res.status(statusCode).json({
     success: false,
     message,
+    ...(code ? { code } : {}),
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };

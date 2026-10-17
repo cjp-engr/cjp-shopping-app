@@ -9,6 +9,7 @@ import {
   DEFAULT_SHIPPING_ADDRESS,
   TC064_SIZE_VARIANTS,
 } from '../../../helpers/test-data';
+import { STRIPE_TEST_CARDS } from '../../../helpers/checkout-flow';
 import {
   createVariantProductForCheckout,
   fetchProduct,
@@ -167,14 +168,7 @@ test.describe('TC-105: Checkout New card with variant product',
           await checkoutPage.root.waitFor();
           await checkoutPage.fillNewShippingAddress(DEFAULT_SHIPPING_ADDRESS);
           await checkoutPage.continueToPayment();
-          await checkoutPage.fillNewCardForm({
-            type: 'credit-card',
-            cardNumber: '4111111111111111',
-            cardHolder: 'Test Buyer',
-            expiryMonth: '12',
-            expiryYear: String(new Date().getFullYear() + 2),
-            cvv: '123',
-          });
+          await checkoutPage.fillStripeCard(STRIPE_TEST_CARDS.success);
           await checkoutPage.continueToReview();
           await checkoutPage.placeOrder();
         });

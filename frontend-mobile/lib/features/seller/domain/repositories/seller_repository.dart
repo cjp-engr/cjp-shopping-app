@@ -1,5 +1,6 @@
 ﻿import '../../../products/domain/entities/product_entity.dart';
 import '../../data/models/seller_order_model.dart';
+import '../seller_status_result.dart';
 
 abstract class SellerRepository {
   Future<List<ProductEntity>> getMyProducts();
@@ -9,7 +10,7 @@ abstract class SellerRepository {
       {List<String> imagePaths = const []});
   Future<void> deleteProduct(String id);
   Future<List<SellerOrderData>> getSellerOrders();
-  Future<void> updateOrderStatus(String orderId, String status,
+  Future<SellerStatusResult> updateOrderStatus(String orderId, String status,
       {String? cancelReason});
   Future<String> uploadVariantImage(String filePath);
 }

@@ -23,6 +23,8 @@ export class CheckoutPage {
   readonly shippingSection: Locator;
   readonly paymentSection: Locator;
   readonly placeOrderButton: Locator;
+  /** Manual-capture review panel: disclosure, per-seller amounts and status. */
+  readonly authorizationPanel: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -30,6 +32,7 @@ export class CheckoutPage {
     this.shippingSection = page.getByTestId('shipping-section');
     this.paymentSection = page.getByTestId('payment-section');
     this.placeOrderButton = page.getByTestId('place-order-btn');
+    this.authorizationPanel = page.getByTestId('card-authorization-panel');
   }
 
   async fillNewShippingAddress(address: ShippingAddress): Promise<void> {
@@ -79,6 +82,21 @@ export class CheckoutPage {
     await this.page.locator('select[name="expiryMonth"]').selectOption(data.expiryMonth);
     await this.page.locator('select[name="expiryYear"]').selectOption(data.expiryYear);
     await this.page.getByLabel(/cvv/i).fill(data.cvv);
+  }
+
+  /**
+   * Enters a card in the Stripe Element used by the new-card form. Selects the New Card option first when
+   * the buyer has saved cards.
+   */
+  async fillStripeCard(cardNumber: string): Promise<void> {
+    const newCardBtn = this.page.getByRole('button', { name: /new card/i });
+    if (await newCardBtn.isVisible()) {
+      await newCardBtn.click();
+    }
+    const cardFrame = this.page.frameLocator('iframe[name*="__privateStripeFrame"]').first();
+    await cardFrame.locator('[placeholder="Card number"]').fill(cardNumber);
+    await cardFrame.locator('[placeholder="MM / YY"]').fill('12 / 30');
+    await cardFrame.locator('[placeholder="CVC"]').fill('123');
   }
 
   async continueToReview(): Promise<void> {

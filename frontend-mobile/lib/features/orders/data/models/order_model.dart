@@ -1,3 +1,4 @@
+import '../../../../core/utils/json_date.dart';
 import '../../domain/entities/order_entity.dart';
 
 class OrderAddressModel extends OrderAddressEntity {
@@ -142,6 +143,11 @@ class OrderModel extends OrderEntity {
     super.estimatedDelivery,
     super.sellerMessages = const {},
     super.selectedDeliveryOption,
+    super.paymentFlowVersion,
+    super.paymentStatus,
+    super.placedAt,
+    super.acceptBy,
+    super.authorizationExpiresAt,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -189,6 +195,13 @@ class OrderModel extends OrderEntity {
         if (direct != null) return direct;
         return null;
       }(),
+      paymentFlowVersion: parsePaymentFlowVersion(json['paymentFlowVersion']),
+      paymentStatus: json['paymentStatus'] is String
+          ? json['paymentStatus'] as String
+          : null,
+      placedAt: parseOptionalDate(json['placedAt']),
+      acceptBy: parseOptionalDate(json['acceptBy']),
+      authorizationExpiresAt: parseOptionalDate(json['authorizationExpiresAt']),
     );
   }
 }

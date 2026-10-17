@@ -2,7 +2,13 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Coupon from '../models/Coupon.js';
 import Cart from '../models/Cart.js';
+import mongoose from 'mongoose';
+import { checkoutFlow } from '../config/checkout.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { computeSellerTotals, priceLine, type ProductLike } from './checkoutPricing.js';
+import { buyerVisibleOrderFilter, isBuyerVisibleOrder } from './orderVisibility.js';
+import { cancelPendingOrder } from './orderCancellation.js';
+import { SELLER_ACCEPT_WINDOW_MS } from './paymentOperationPolicy.js';
 
 interface OrderItem {
   productId: string;
@@ -131,6 +137,15 @@ export async function createOrders(params: CreateOrderParams) {
   const estimatedDelivery = new Date();
   estimatedDelivery.setDate(estimatedDelivery.getDate() + 7);
 
+  // Under the manual-capture rollout a cash-on-delivery order must be accepted by the seller before
+  // a deadline, like a card order, but there is nothing to authorize or capture. It keeps the legacy
+  // flow version so sellers still see it while manual-capture orders are hidden from them.
+  const placedAt = new Date();
+  const acceptance =
+    checkoutFlow() === 'manual_capture' && (paymentMethod as any).type === 'cash-on-delivery'
+      ? { placedAt, acceptBy: new Date(placedAt.getTime() + SELLER_ACCEPT_WINDOW_MS) }
+      : undefined;
+
   const createdOrders = [];
 
   for (const [sellerKey, groupItems] of sellerGroups) {
@@ -138,28 +153,20 @@ export async function createOrders(params: CreateOrderParams) {
     let productDiscount = 0;
 
     const orderItems = groupItems.map(({ productDoc, variantId, selectedAttributes, quantity }) => {
-      const variant = variantId
-        ? ((productDoc as any).variants?.id
-          ? (productDoc as any).variants.id(variantId)
-          : (productDoc as any).variants?.find((v: any) => v._id?.toString() === variantId))
-        : undefined;
-      const unitPrice = variant?.price ?? productDoc.price;
-      const gross = unitPrice * quantity;
-      const discPct = variant ? (variant.discount ?? 0) : (productDoc.discount ?? 0);
-      const itemDiscount = gross * (discPct / 100);
-      subtotal += gross;
-      productDiscount += itemDiscount;
+      const line = priceLine(productDoc as unknown as ProductLike, variantId, quantity);
+      subtotal += line.gross;
+      productDiscount += line.itemDiscount;
       return {
-        product: productDoc._id,
+        product: line.product,
         variantId,
         selectedAttributes,
-        productName: productDoc.name,
-        productPrice: unitPrice,
-        productImage: (variant?.images?.length ? variant.images[0] : variant?.image) || productDoc.image,
-        variantImages: variant?.images?.length ? variant.images : undefined,
-        variantSku: variant?.sku,
-        discountPercent: discPct,
-        variantDiscount: variant ? variant.discount : undefined,
+        productName: line.productName,
+        productPrice: line.productPrice,
+        productImage: line.productImage,
+        variantImages: line.variantImages,
+        variantSku: line.variantSku,
+        discountPercent: line.discountPercent,
+        variantDiscount: line.variantDiscount,
         quantity,
       };
     });
@@ -185,31 +192,14 @@ export async function createOrders(params: CreateOrderParams) {
       ? await applyCoupon(couponCodes[sellerKey], sellerKey, effectiveSubtotal)
       : { discount: 0, couponCode: undefined };
 
-    const afterAllDiscounts = effectiveSubtotal - discount;
-    const tax = afterAllDiscounts * 0.08;
-
-    // Use seller's configured fee per selected delivery option
-    const firstProduct = groupItems[0].productDoc as any;
-    const shippingFee: string | undefined = firstProduct.shippingFee;
-    const shippingFeeAmounts: Record<string, number> = firstProduct.shippingFeeAmounts?.toJSON?.() ?? firstProduct.shippingFeeAmounts ?? {};
-    const shippingOptions: string[] = Array.isArray(firstProduct.shippingOptions) ? firstProduct.shippingOptions : [];
-    const clientDelivery = deliverySelections[sellerKey]
-      ?? Object.values(deliverySelections).find(v => typeof v === 'string' && v.length > 0);
-    const selectedDeliveryOption = clientDelivery
-      ?? shippingOptions[0]
-      ?? Object.keys(shippingFeeAmounts)[0];
-    let shipping: number;
-    if (shippingFee === 'free') {
-      shipping = 0;
-    } else if (shippingFee === 'buyer_pays') {
-      shipping = (selectedDeliveryOption
-        ? shippingFeeAmounts[selectedDeliveryOption]
-        : undefined) ?? Object.values(shippingFeeAmounts)[0] ?? 0;
-    } else {
-      shipping = afterAllDiscounts >= 50 ? 0 : 9.99;
-    }
-
-    const total = afterAllDiscounts + tax + shipping;
+    const { tax, shipping, total, selectedDeliveryOption } = computeSellerTotals({
+      sellerKey,
+      subtotal,
+      productDiscount,
+      couponDiscount: discount,
+      firstProduct: groupItems[0].productDoc as unknown as ProductLike,
+      deliverySelections,
+    });
 
     const order = await Order.create({
       userId,
@@ -228,6 +218,12 @@ export async function createOrders(params: CreateOrderParams) {
       deliverySelections: selectedDeliveryOption ? { [sellerKey]: selectedDeliveryOption } : {},
       selectedDeliveryOption,
       paymentIntentId: isCardPayment ? paymentIntentId : undefined,
+      ...(acceptance && {
+        paymentStatus: 'not_required' as const,
+        placedAt: acceptance.placedAt,
+        acceptBy: acceptance.acceptBy,
+        ...(mongoose.isValidObjectId(sellerKey) && { sellerId: sellerKey }),
+      }),
     });
 
     createdOrders.push(order);
@@ -253,7 +249,7 @@ export async function createOrders(params: CreateOrderParams) {
 }
 
 export async function getUserOrders(userId: string) {
-  return Order.find({ userId })
+  return Order.find({ userId, ...buyerVisibleOrderFilter() })
     .sort({ createdAt: -1 })
     .populate({ path: 'items.product', populate: { path: 'sellerId', select: 'firstName lastName avatar' } });
 }
@@ -266,18 +262,30 @@ export async function getOrderById(orderId: string, userId: string) {
 
   if (!order) throw new AppError(404, 'Order not found');
   if (order.userId.toString() !== userId) throw new AppError(403, 'Not authorized to access this order');
+  // Drafts are resumed through checkout sessions, not order detail.
+  if (!isBuyerVisibleOrder(order)) throw new AppError(404, 'Order not found');
 
   return order;
 }
 
 export async function cancelOrderAsBuyer(orderId: string, userId: string, cancelReason?: string) {
+  if (cancelReason !== undefined && (typeof cancelReason !== 'string' || cancelReason.length > 500)) {
+    throw new AppError(400, 'Cancellation reason must be text of at most 500 characters', 'invalid_cancel_reason');
+  }
   const order = await Order.findById(orderId);
-  if (!order) throw new AppError(404, 'Order not found');
+  if (!order || !isBuyerVisibleOrder(order)) throw new AppError(404, 'Order not found');
   if (order.userId.toString() !== userId) throw new AppError(403, 'Not authorized');
+  if (order.paymentFlowVersion === 'manual_capture') {
+    if (order.status === 'cancelled') return order;
+    const cancelled = await cancelPendingOrder(orderId, 'buyer_cancelled', new Date(), { buyerId: userId, cancelReason });
+    const current = await Order.findById(orderId);
+    if (current?.status === 'cancelled') return current;
+    if (!cancelled) throw new AppError(409, 'The seller has already accepted this order or its payment is being captured', 'cancellation_conflict');
+    throw new AppError(409, 'Order changed while cancellation was being processed', 'cancellation_conflict');
+  }
   if (order.status !== 'pending') {
     throw new AppError(400, 'You can only cancel pending orders');
   }
-
   await restoreStock(order.items);
 
   order.status = 'cancelled';

@@ -212,6 +212,8 @@ class AppStrings {
   static const String noOrdersForProducts = 'No orders yet for your products.';
   static const String noOrdersWithStatus = 'No orders with this status.';
   static const String prepare = 'Prepare';
+  static const String acceptAndStartPreparing = 'Accept & start preparing';
+  static const String chargingPayment = 'Charging payment…';
   static const String markToShip = 'Mark to Ship';
   static const String markShipped = 'Mark Shipped';
   static const String deleteProduct = 'Delete Product';

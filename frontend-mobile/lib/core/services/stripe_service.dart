@@ -1,5 +1,7 @@
 import 'package:flutter_stripe/flutter_stripe.dart';
 
+import 'seller_payment_result.dart';
+
 class StripeService {
   /// Create a Stripe PaymentMethod from card details collected by CardFormField.
   /// Called on client side before sending to backend.
@@ -15,56 +17,45 @@ class StripeService {
     return paymentMethod.id;
   }
 
-  /// Confirm a PaymentIntent using client secret.
-  /// Handles 3D Secure authentication if required.
+  /// Confirm a PaymentIntent using its client secret, handling 3D Secure when required.
   ///
-  /// Args:
-  ///   clientSecret: From backend /api/payment-intents response
+  /// [paymentMethodId] names the card to use. The session checkout creates intents without a card,
+  /// so it must pass one. The legacy flow leaves it null: the backend attached the card when it
+  /// created the intent.
   ///
-  /// Returns: { 'status': 'succeeded' | 'processing' | 'requires_action', 'error': null | String }
-  /// If 3D Secure is required, opens modal for user authentication.
-  static Future<Map<String, dynamic>> confirmPayment(
-      String clientSecret) async {
+  /// The client secret is never logged or returned. The result carries only the outcome and
+  /// Stripe's codes and messages (see [SellerPaymentResult]).
+  static Future<SellerPaymentResult> confirmPayment(
+    String clientSecret, {
+    String? paymentMethodId,
+  }) async {
     try {
-      // ignore: avoid_print
-      print('Starting confirmPayment with clientSecret: $clientSecret');
-      final result = await Stripe.instance.confirmPayment(
+      final intent = await Stripe.instance.confirmPayment(
         paymentIntentClientSecret: clientSecret,
+        data: paymentMethodId == null
+            ? null
+            : PaymentMethodParams.cardFromMethodId(
+                paymentMethodData: PaymentMethodDataCardFromMethod(
+                  paymentMethodId: paymentMethodId,
+                ),
+              ),
       );
-      // ignore: avoid_print
-      print('Stripe confirmPayment returned status: ${result.status}');
-      // ignore: avoid_print
-      print(
-          'Full result object: paymentIntentId=${result.id}, clientSecret=${result.clientSecret}');
-      return {
-        'status': result.status.toString(),
-        'error': null,
-      };
+      return classifyConfirmedIntent(intent.status);
     } on StripeException catch (e) {
-      // ignore: dead_null_aware_expression
-      final errorCode = e.error.code ?? 'unknown_error';
-      // Log full error details for debugging
-      // ignore: avoid_print
-      print('StripeException caught:');
-      // ignore: avoid_print
-      print('  code: $errorCode');
-      // ignore: avoid_print
-      print('  message: ${e.error.message}');
-      return {
-        'status': 'failed',
-        'error': errorCode,
-        'message': e.error.message,
-      };
+      return classifyStripeFailure(code: e.error.code, message: e.error.message);
     } catch (e) {
-      // ignore: avoid_print
-      print('Non-Stripe error in confirmPayment: $e');
-      // ignore: avoid_print
-      print('Error type: ${e.runtimeType}');
-      return {
-        'status': 'failed',
-        'error': 'network_error',
-        'message': e.toString(),
-      };
+      return unexpectedPaymentFailure(e);
+    }
+  }
+
+  /// Reads the intent's current state without confirming it. Used before confirming, and to settle an
+  /// unknown outcome. Never changes the payment.
+  static Future<SellerPaymentResult> readSellerPayment(String clientSecret) async {
+    try {
+      final intent = await Stripe.instance.retrievePaymentIntent(clientSecret);
+      return classifyConfirmedIntent(intent.status);
+    } catch (e) {
+      return unexpectedPaymentFailure(e);
     }
   }
 

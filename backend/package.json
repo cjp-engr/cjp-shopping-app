@@ -8,9 +8,11 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:contracts": "vitest run src/config/__tests__/swagger.test.ts src/config/__tests__/swaggerUi.test.ts",
     "start": "node dist/server.js",
-    "seed": "tsx src/utils/seed.ts"
+    "seed": "tsx src/utils/seed.ts",
+    "migrate:check-intents": "tsx src/utils/migrations/checkDuplicatePaymentIntents.ts"
   },
   "keywords": [
     "ecommerce",

@@ -10,6 +10,7 @@ import { Spinner } from '../components/common/Spinner';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { getStatusConfig } from '../utils/orderUtils';
+import { canBuyerCancel } from '../utils/orderPayment';
 import { fetchReviewStatuses, fetchSingleReview } from '../utils/reviewUtils';
 import type { ReviewData } from '../utils/reviewUtils';
 import {
@@ -60,6 +61,7 @@ export const OrderHistory: React.FC = () => {
     open: false, orderId: null, reason: '', loading: false,
   });
   const [receiveDialogOrderId, setReceiveDialogOrderId] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const [reviewModal, setReviewModal] = useState<ReviewModalState | null>(null);
   const [reviewMap, setReviewMap] = useState<Map<string, ReviewData>>(new Map());
 
@@ -101,6 +103,7 @@ export const OrderHistory: React.FC = () => {
 
   const confirmCancelOrder = async () => {
     if (!user || !cancelDialog.orderId) return;
+    setCancelError(null);
     setCancelDialog(d => ({ ...d, loading: true }));
     try {
       await orderService.cancelOrder(cancelDialog.orderId, cancelDialog.reason || undefined);
@@ -109,6 +112,9 @@ export const OrderHistory: React.FC = () => {
       setCancelDialog({ open: false, orderId: null, reason: '', loading: false });
     } catch (error) {
       console.error('Failed to cancel order:', error);
+      setCancelError(error instanceof Error ? error.message : 'Cancellation could not be completed. Please refresh and try again.');
+      // Acceptance may have won the race; refresh the visible order state.
+      void orderService.getOrders().then(setOrders).catch(() => {});
       setCancelDialog(d => ({ ...d, loading: false }));
     }
   };
@@ -419,7 +425,7 @@ export const OrderHistory: React.FC = () => {
                       <Eye className="w-4 h-4 mr-1.5" /> View Details
                     </Button>
                     <div className="flex-1" />
-                    {order.status === 'pending' && (
+                    {canBuyerCancel(order) && (
                       <Button variant="danger" size="sm" onClick={() => handleCancelOrder(order.id)}>
                         Cancel Order
                       </Button>
@@ -477,6 +483,7 @@ export const OrderHistory: React.FC = () => {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Are you sure you want to cancel this order? This action cannot be undone.
             </p>
+            {cancelError && <p role="alert" className="text-sm text-red-600">{cancelError}</p>}
             <textarea
               value={cancelDialog.reason}
               onChange={e => setCancelDialog(d => ({ ...d, reason: e.target.value }))}

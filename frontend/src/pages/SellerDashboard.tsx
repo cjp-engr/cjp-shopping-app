@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import type { Product } from '../types/product';
 import type { Order } from '../types/order';
-import sellerService from '../services/sellerService';
+import sellerService, { SellerOrderError } from '../services/sellerService';
 import couponService, { type Coupon } from '../services/couponService';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -15,10 +15,11 @@ import {
   Package, Plus, Edit, Trash2, Truck, CheckCircle,
   XCircle, Clock, AlertCircle, ShoppingBag, Store,
   ImageOff, DollarSign, Tag, ChevronRight, ClipboardList,
-  Eye,
+  Eye, Info,
 } from 'lucide-react';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { getStatusConfig } from '../utils/orderUtils';
+import { acceptanceDeadlineText, acceptanceErrorMessage, canAcceptOrder, CAPTURE_POLL_INTERVAL_MS, hasCapturePending, isCapturePending } from '../utils/sellerAcceptance';
 import { ProductWizard } from '../components/seller/ProductWizard';
 
 const ImgWithFallback: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className }) => {
@@ -70,6 +71,9 @@ export const SellerDashboard: React.FC = () => {
   const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [statusNotice, setStatusNotice] = useState<string | null>(null);
+  const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
+  const acceptInFlight = useRef(new Set<string>());
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; productId: string | null; loading: boolean }>({ open: false, productId: null, loading: false });
@@ -86,6 +90,7 @@ export const SellerDashboard: React.FC = () => {
   const [couponFormLoading, setCouponFormLoading] = useState(false);
   const [deletingCouponId, setDeletingCouponId] = useState<string | null>(null);
   const [nowMs] = useState(() => Date.now());
+  const [now, setNow] = useState(() => new Date());
 
   const loadProducts = async () => {
     try {
@@ -95,19 +100,51 @@ export const SellerDashboard: React.FC = () => {
     finally { setLoadingProducts(false); }
   };
 
-  const loadOrders = async () => {
+  // Returns the fetched orders, or null when the request failed. `silent` skips the list spinner (background refresh).
+  const loadOrders = async (silent = false): Promise<SellerOrder[] | null> => {
     try {
-      setLoadingOrders(true);
-      setOrders(await sellerService.getOrders() as SellerOrder[]);
-    } catch { /* silent */ }
-    finally { setLoadingOrders(false); }
+      if (!silent) setLoadingOrders(true);
+      const fetched = await sellerService.getOrders() as SellerOrder[];
+      setOrders(fetched);
+      setNow(new Date());
+      return fetched;
+    } catch { return null; }
+    finally { if (!silent) setLoadingOrders(false); }
   };
+
+  // Drop the "being charged" notice once no order is waiting on its capture any more
+  const clearChargingNotice = (fetched: SellerOrder[] | null) => {
+    if (fetched && !hasCapturePending(fetched)) setStatusNotice(null);
+  };
+
+  // While a capture is resolving, refresh silently until none is pending (a failed tick is ignored)
+  const capturePollingNeeded = hasCapturePending(orders);
+  const pollInFlight = useRef(false);
+  useEffect(() => {
+    if (!capturePollingNeeded) return;
+    const timer = setInterval(async () => {
+      if (pollInFlight.current) return;
+      pollInFlight.current = true;
+      try {
+        clearChargingNotice(await loadOrders(true));
+      } finally {
+        pollInFlight.current = false;
+      }
+    }, CAPTURE_POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [capturePollingNeeded]);
 
   // Initial data load; the loaders set their loading flags before awaiting the request
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadProducts();
     loadOrders();
+  }, []);
+
+  // Keep acceptance deadlines current so an expired order stops offering the accept button
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(timer);
   }, []);
 
   // ── Product form ──────────────────────────────────────────
@@ -193,11 +230,38 @@ export const SellerDashboard: React.FC = () => {
   // ── Order status ──────────────────────────────────────────
   const handleStatusUpdate = async (orderId: string, status: 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled', cancelReason?: string) => {
     setStatusError(null);
+    setStatusNotice(null);
     try {
       await sellerService.updateOrderStatus(orderId, status, cancelReason);
       await loadOrders();
     } catch (err) {
       setStatusError(err instanceof Error ? err.message : 'Failed to update status');
+    }
+  };
+
+  // Accepting a card order charges the buyer, so it must not run twice and may finish asynchronously
+  const handleAccept = async (orderId: string) => {
+    if (acceptInFlight.current.has(orderId)) return;
+    acceptInFlight.current.add(orderId);
+    setAcceptingOrderId(orderId);
+    setStatusError(null);
+    setStatusNotice(null);
+    try {
+      const { outcome } = await sellerService.updateOrderStatus(orderId, 'preparing');
+      if (outcome === 'resolving') {
+        setStatusNotice('Payment is being charged. This order will move to preparing when it finishes.');
+      }
+      clearChargingNotice(await loadOrders());
+    } catch (err) {
+      if (err instanceof SellerOrderError) {
+        setStatusError(acceptanceErrorMessage(err.code));
+        await loadOrders();
+      } else {
+        setStatusError(err instanceof Error ? err.message : 'Failed to update status');
+      }
+    } finally {
+      acceptInFlight.current.delete(orderId);
+      setAcceptingOrderId(null);
     }
   };
 
@@ -441,6 +505,13 @@ export const SellerDashboard: React.FC = () => {
             </div>
           )}
 
+          {statusNotice && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center gap-2" data-testid="seller-status-notice">
+              <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <p className="text-sm text-blue-700 dark:text-blue-300">{statusNotice}</p>
+            </div>
+          )}
+
           {/* Status filter tabs */}
           {!loadingOrders && orders.length > 0 && (() => {
             const statusTabs = [
@@ -498,7 +569,10 @@ export const SellerDashboard: React.FC = () => {
             return filtered.map(order => {
               const cfg = getStatusConfig(order.status);
               const StatusIcon = cfg.icon;
-              const canAccept    = order.status === 'pending';
+              const capturePending = isCapturePending(order);
+              const canAccept    = order.status === 'pending' && (canAcceptOrder(order, now) || capturePending);
+              const accepting    = acceptingOrderId === order.id || capturePending;
+              const deadlineText = acceptanceDeadlineText(order, now);
               const canToShip    = order.status === 'preparing';
               const canToReceive = order.status === 'processing';
               const canCancel    = ['pending', 'preparing', 'processing'].includes(order.status);
@@ -647,9 +721,15 @@ export const SellerDashboard: React.FC = () => {
                       <Eye className="w-4 h-4 mr-1.5" /> View Details
                     </Button>
                     <div className="flex-1" />
+                    {deadlineText && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400" data-testid={`order-accept-deadline-${order.id}`}>{deadlineText}</span>
+                    )}
+                    {capturePending && (
+                      <span className="text-xs text-blue-600 dark:text-blue-400" data-testid={`order-charging-${order.id}`}>Charging payment…</span>
+                    )}
                     {canAccept && (
-                      <Button size="sm" onClick={() => handleStatusUpdate(order.id, 'preparing')} data-testid={`order-action-${order.id}`} aria-label="Prepare order">
-                        <ClipboardList className="w-4 h-4 mr-1.5" /> Prepare
+                      <Button size="sm" loading={accepting} onClick={() => handleAccept(order.id)} data-testid={`order-action-${order.id}`} aria-label="Prepare order">
+                        <ClipboardList className="w-4 h-4 mr-1.5" /> Accept &amp; start preparing
                       </Button>
                     )}
                     {canToShip && (

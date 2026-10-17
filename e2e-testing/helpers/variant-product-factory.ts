@@ -28,7 +28,7 @@ export async function createVariantProductForCheckout(
   sellerToken: string,
   name = `E2E Variant Checkout ${Date.now()}`,
 ): Promise<VariantProductSeed> {
-  const response = await request.post(`${apiUrl}/api/products`, {
+  const response = await request.post(`${apiUrl}/api/seller/products`, {
     headers: {
       ...authHeaders(sellerToken),
       'Content-Type': 'application/json',
@@ -40,6 +40,7 @@ export async function createVariantProductForCheckout(
       category: 'Clothing',
       stock: 0,
       image: BASE_IMAGE,
+      imageUrls: [BASE_IMAGE],
       variantAttributes: [{ name: 'Size', values: ['S', 'M', 'L'] }],
       variants: [
         {

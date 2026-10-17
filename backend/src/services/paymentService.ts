@@ -20,7 +20,7 @@ export class PaymentError extends Error {
 }
 
 class PaymentService {
-  private async getOrCreateCustomerForUser(userId: string): Promise<string> {
+  async getOrCreateCustomerForUser(userId: string): Promise<string> {
     const user = await User.findById(userId).select('stripeCustomerId email');
     if (!user) {
       throw new PaymentError(404, 'User not found');
@@ -94,7 +94,7 @@ class PaymentService {
 
   async handlePaymentIntentSucceeded(paymentIntentId: string): Promise<void> {
     const order = await Order.findOneAndUpdate(
-      { paymentIntentId },
+      { paymentIntentId, paymentFlowVersion: { $ne: 'manual_capture' }, status: 'pending' },
       { status: 'processing' },
       { new: true },
     );
@@ -106,7 +106,7 @@ class PaymentService {
 
   async handlePaymentIntentFailed(paymentIntentId: string): Promise<void> {
     const order = await Order.findOneAndUpdate(
-      { paymentIntentId },
+      { paymentIntentId, paymentFlowVersion: { $ne: 'manual_capture' }, status: 'pending' },
       { status: 'cancelled' },
       { new: true },
     );

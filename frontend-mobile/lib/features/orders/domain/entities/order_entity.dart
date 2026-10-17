@@ -69,6 +69,11 @@ class OrderEntity extends Equatable {
   final String? estimatedDelivery;
   final Map<String, String> sellerMessages;
   final String? selectedDeliveryOption;
+  final String paymentFlowVersion;
+  final String? paymentStatus;
+  final DateTime? placedAt;
+  final DateTime? acceptBy;
+  final DateTime? authorizationExpiresAt;
 
   const OrderEntity({
     required this.id,
@@ -88,11 +93,24 @@ class OrderEntity extends Equatable {
     this.estimatedDelivery,
     this.sellerMessages = const {},
     this.selectedDeliveryOption,
+    this.paymentFlowVersion = 'legacy',
+    this.paymentStatus,
+    this.placedAt,
+    this.acceptBy,
+    this.authorizationExpiresAt,
   });
 
   String get shortId =>
       id.length >= 8 ? id.substring(0, 8).toUpperCase() : id.toUpperCase();
 
   @override
-  List<Object?> get props => [id, status, total, cancelReason];
+  List<Object?> get props => [
+        id,
+        status,
+        total,
+        cancelReason,
+        paymentFlowVersion,
+        paymentStatus,
+        acceptBy,
+      ];
 }

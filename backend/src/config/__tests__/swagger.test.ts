@@ -15,6 +15,7 @@ vi.mock('../../services/orderService.js', () => ({ createOrders: vi.fn() }));
 vi.mock('../../services/paymentService.js', () => ({ default: { createPaymentIntent: vi.fn() }, PaymentError: class extends Error { constructor(public statusCode: number, message: string) { super(message); } } }));
 vi.mock('../../services/stripeService.js', () => ({ constructWebhookEvent: vi.fn(), StripeError: class extends Error {} }));
 vi.mock('../../models/Cart.js', () => ({ default: { findOne: vi.fn() } }));
+vi.mock('../../models/StripeEventInbox.js', () => ({ default: { findOneAndUpdate: vi.fn().mockResolvedValue({ _id: 'inbox-1', status: 'received' }), updateOne: vi.fn().mockResolvedValue({}) } }));
 
 import * as authService from '../../services/authService.js';
 import * as orderService from '../../services/orderService.js';
@@ -22,7 +23,7 @@ import paymentService, { PaymentError } from '../../services/paymentService.js';
 import { constructWebhookEvent } from '../../services/stripeService.js';
 import Cart from '../../models/Cart.js';
 import Product from '../../models/Product.js';
-import Order from '../../models/Order.js';
+import Order, { PAYMENT_STATUSES } from '../../models/Order.js';
 import Review from '../../models/Review.js';
 import Coupon from '../../models/Coupon.js';
 import User from '../../models/User.js';
@@ -304,5 +305,63 @@ describe('OpenAPI contract', () => {
     expect(accepts(responseSchema('/payments/create-intent', 'post', 400), response.result().payload).valid).toBe(true);
     expect(accepts(responseSchema('/payments/create-intent', 'post', 400), { success: false, error: { code: 'PAYMENT_FAILED', message: 'Invalid amount' } }).valid).toBe(false);
     expect(accepts(responseSchema('/orders', 'post', 400), { success: false, message: 'Invalid quantity', errors: [{ unexpected: true }] }).valid).toBe(false);
+  });
+});
+
+describe('seller status contract', () => {
+  const STATUS = ['/seller/orders/{id}/status', 'put'] as const;
+  const operation = () => spec.paths[STATUS[0]][STATUS[1]];
+  const documentedPairs = () => Object.entries(operation()['x-error-codes'] as Record<string, string[]>)
+    .flatMap(([code, names]) => names.map(name => `${code} ${name}`)).sort();
+
+  // Scans every literal `new AppError(status, message, 'code')` on the acceptance and status paths.
+  function emittedSellerCodes(): string[] {
+    const pairs = new Set<string>();
+    for (const file of ['../../services/sellerService.ts', '../../services/orderAcceptance.ts', '../../services/orderCapture.ts']) {
+      const visit = (node: ts.Node) => {
+        if (ts.isNewExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'AppError' && node.arguments) {
+          const [status, , code] = node.arguments;
+          if (status && code && ts.isNumericLiteral(status) && ts.isStringLiteral(code)) pairs.add(`${status.text} ${code.text}`);
+        }
+        ts.forEachChild(node, visit);
+      };
+      visit(source(file));
+    }
+    return [...pairs].sort();
+  }
+
+  it('documents the 202 resolving response with the order and operation status', () => {
+    expect(operation().responses['202']).toBeDefined();
+    const schema = responseSchema(STATUS[0], STATUS[1], 202);
+    const order = { _id: id, userId: id, items: [], shippingAddress: { street: '1 Main St', city: 'Taipei', state: 'Taipei', zipCode: '100' }, paymentMethod: { type: 'credit-card' }, subtotal: 10, productDiscount: 0, discount: 0, tax: 0.8, shipping: 0, total: 10.8, status: 'pending', paymentFlowVersion: 'manual_capture', paymentStatus: 'capture_pending' };
+    expect(accepts(schema, { success: true, order, operation: { status: 'resolving' } }).valid).toBe(true);
+    expect(accepts(schema, { success: true, order }).valid).toBe(false);
+    expect(accepts(schema, { success: true, order, operation: { status: 'done' } }).valid).toBe(false);
+  });
+
+  it('documents each acceptance error code under its status', () => {
+    expect(operation()['x-error-codes']).toMatchObject({
+      '403': ['not_order_seller'],
+      '404': ['order_not_found'],
+      '409': expect.arrayContaining(['acceptance_deadline_passed', 'order_not_pending', 'payment_reference_missing', 'capture_failed', 'authorization_expired', 'cancellation_unavailable']),
+    });
+    expect(Object.keys(operation().responses)).toEqual(expect.arrayContaining(['200', '202', '403', '404', '409']));
+  });
+
+  it('lists exactly the machine-readable codes the seller status path can emit', () => {
+    expect(documentedPairs()).toEqual(emittedSellerCodes());
+  });
+
+  it('keeps the seller error envelope with an optional code', () => {
+    const schema = responseSchema(STATUS[0], STATUS[1], 409);
+    expect(accepts(schema, { success: false, message: 'Late', code: 'acceptance_deadline_passed' }).valid).toBe(true);
+    expect(accepts(schema, { success: false, error: { code: 'acceptance_deadline_passed', message: 'Late', retryable: false } }).valid).toBe(false);
+  });
+
+  it('describes the payment fields on the Order schema', () => {
+    const order = spec.components.schemas.Order.properties;
+    expect(Object.keys(order)).toEqual(expect.arrayContaining(['paymentFlowVersion', 'paymentStatus', 'acceptBy', 'authorizationExpiresAt', 'capturedAt']));
+    expect(order.paymentFlowVersion.enum).toEqual(['legacy', 'manual_capture']);
+    expect(order.paymentStatus.enum).toEqual([...PAYMENT_STATUSES]);
   });
 });

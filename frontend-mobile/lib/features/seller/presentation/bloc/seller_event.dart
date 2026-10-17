@@ -37,7 +37,12 @@ class SellerProductDeleteRequested extends SellerEvent {
 }
 
 class SellerOrdersLoadRequested extends SellerEvent {
-  const SellerOrdersLoadRequested();
+  /// A silent reload refreshes the list in the background: it never shows the
+  /// loading state and ignores a failed request.
+  final bool silent;
+  const SellerOrdersLoadRequested({this.silent = false});
+  @override
+  List<Object?> get props => [silent];
 }
 
 class SellerOrderStatusUpdateRequested extends SellerEvent {

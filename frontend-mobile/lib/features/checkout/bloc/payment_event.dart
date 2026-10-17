@@ -98,3 +98,41 @@ class SaveNewCard extends PaymentEvent {
 class ResetPaymentState extends PaymentEvent {
   const ResetPaymentState();
 }
+
+/// Starts a card checkout session, or reuses the stored attempt's idempotency key.
+class CreateCheckoutSession extends PaymentEvent {
+  final String buyerId;
+  final Map<String, dynamic> payload;
+
+  const CreateCheckoutSession({required this.buyerId, required this.payload});
+
+  @override
+  List<Object?> get props => [buyerId, payload];
+}
+
+/// Holds one seller's payment, using the card the buyer chose ([paymentMethodId]: a new card's
+/// PaymentMethod ID or a saved card's). Sellers are authorized one at a time, in the order the session lists them.
+class ConfirmSellerAuthorization extends PaymentEvent {
+  final String sellerId;
+  final String? paymentMethodId;
+
+  const ConfirmSellerAuthorization(this.sellerId, {this.paymentMethodId});
+
+  @override
+  List<Object?> get props => [sellerId, paymentMethodId];
+}
+
+/// Places the orders once every seller's payment is held.
+class FinalizeCheckoutSession extends PaymentEvent {
+  const FinalizeCheckoutSession();
+}
+
+/// Reopens the stored attempt after a restart or a reconnect. Never assumes no order exists.
+class ResumeCheckoutSession extends PaymentEvent {
+  final String buyerId;
+
+  const ResumeCheckoutSession({required this.buyerId});
+
+  @override
+  List<Object?> get props => [buyerId];
+}
