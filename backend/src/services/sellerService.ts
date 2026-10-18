@@ -3,6 +3,7 @@ import Order, { OrderStatus, type IOrder } from '../models/Order.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { isSellerVisibleOrder, sellerVisibleOrderFilter } from './orderVisibility.js';
 import { acceptOrder } from './orderAcceptance.js';
+import { canSellerCancelPending, cancelOrderAsSeller, type SellerPaymentOperation } from './sellerCancellation.js';
 
 export const VALID_TRANSITIONS: Record<string, string[]> = {
   pending:    ['preparing', 'cancelled'],
@@ -106,7 +107,12 @@ export async function deleteSellerProduct(productId: string, sellerId: string) {
 export async function getSellerOrders(sellerId: string) {
   const sellerProductIds = await Product.find({ sellerId }).distinct('_id');
 
-  const orders = await Order.find({ 'items.product': { $in: sellerProductIds }, ...sellerVisibleOrderFilter() })
+  // The persisted sellerId is the authority, so deleting a product never hides the seller's own order.
+  // Orders without one keep the product match until no such orders exist.
+  const orders = await Order.find({
+    $or: [{ sellerId }, { sellerId: { $exists: false }, 'items.product': { $in: sellerProductIds } }],
+    ...sellerVisibleOrderFilter(),
+  })
     .populate('items.product')
     .populate('userId', 'firstName lastName email')
     .sort({ createdAt: -1 });
@@ -115,7 +121,9 @@ export async function getSellerOrders(sellerId: string) {
   // After populate, item.product is a Document — extract _id to compare.
   const sellerIdSet = new Set(sellerProductIds.map(id => id.toString()));
   return orders.map(order => {
-    const filteredItems = order.items.filter(item => {
+    // An order is one seller's: with a persisted sellerId every item is theirs, even if its product was deleted.
+    const ownsOrder = order.sellerId?.toString() === sellerId;
+    const filteredItems = ownsOrder ? [...order.items] : order.items.filter(item => {
       const productId =
         item.product != null && typeof item.product === 'object' && '_id' in (item.product as object)
           ? (item.product as any)._id?.toString()
@@ -142,7 +150,7 @@ export async function getSellerOrders(sellerId: string) {
       },
       firstProduct ? { shippingFee: firstProduct.shippingFee, shippingFeeAmounts: feeAmounts } : undefined,
     );
-    return { ...doc, items: filteredItems };
+    return { ...doc, items: filteredItems, canSellerCancelPending: canSellerCancelPending(order, sellerId) };
   });
 }
 
@@ -154,12 +162,24 @@ export async function updateSellerOrderStatus(
   sellerId: string,
   status: OrderStatus,
   cancelReason?: string,
-): Promise<{ order: IOrder; outcome: SellerStatusOutcome }> {
+): Promise<{ order: IOrder; outcome: SellerStatusOutcome; paymentOperation?: SellerPaymentOperation }> {
   const order = await Order.findById(orderId);
   if (!order || !isSellerVisibleOrder(order)) throw new AppError(404, 'Order not found', 'order_not_found');
 
-  // Acceptance owns the seller-ownership check, the deadline and any card capture.
-  if (status === 'preparing' && order.status === 'pending') {
+  // Cancelling a pending order, or retrying one that is already cancelled, belongs to the cancellation
+  // service: it owns the ownership check, the reason, the shared claim and the hold release.
+  if (status === 'cancelled' && (order.status === 'pending' || order.status === 'cancelled')) {
+    const cancelled = await cancelOrderAsSeller(orderId, sellerId, cancelReason);
+    return {
+      order: cancelled.order,
+      outcome: 'completed',
+      ...(cancelled.paymentOperation ? { paymentOperation: cancelled.paymentOperation } : {}),
+    };
+  }
+
+  // Acceptance owns the seller-ownership check, the deadline and any card capture. It also answers a
+  // repeat or late request (the order is no longer pending) with 409 order_not_pending.
+  if (status === 'preparing') {
     const accepted = await acceptOrder({ orderId, sellerId });
     return { order: accepted.order, outcome: accepted.kind };
   }

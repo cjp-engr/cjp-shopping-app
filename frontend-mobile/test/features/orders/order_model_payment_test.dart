@@ -23,10 +23,17 @@ void main() {
     final order = OrderModel.fromJson({..._baseJson(), 'paymentError': const {'code': 'refund_review', 'message': 'internal details'}});
     expect(order.paymentErrorCode, 'refund_review');
   });
-  test('seller card cancellation stays unavailable while legacy COD is allowed', () {
+  test('a pending order is cancellable only when the server says so', () {
     expect(SellerOrderData.fromJson({..._baseJson(), 'paymentMethod': {'type': 'credit-card'}}).canCancel, isFalse);
-    expect(SellerOrderData.fromJson({..._baseJson(), 'paymentMethod': {'type': 'cash-on-delivery'}}).canCancel, isTrue);
-    expect(SellerOrderData.fromJson({..._baseJson(), ..._paymentJson(), 'paymentMethod': {'type': 'cash-on-delivery'}}).canCancel, isFalse);
+    expect(SellerOrderData.fromJson({..._baseJson(), 'paymentMethod': {'type': 'cash-on-delivery'}}).canCancel, isFalse);
+    expect(SellerOrderData.fromJson({..._baseJson(), 'paymentMethod': {'type': 'cash-on-delivery'}, 'canSellerCancelPending': true}).canCancel, isTrue);
+    expect(SellerOrderData.fromJson({..._baseJson(), ..._paymentJson(), 'paymentMethod': {'type': 'credit-card'}, 'canSellerCancelPending': true}).canCancel, isTrue);
+  });
+  test('after pending only cash on delivery stays cancellable', () {
+    final cod = {..._baseJson(), 'status': 'preparing', 'paymentMethod': {'type': 'cash-on-delivery'}};
+    expect(SellerOrderData.fromJson(cod).canCancel, isTrue);
+    expect(SellerOrderData.fromJson({...cod, 'paymentMethod': {'type': 'credit-card'}}).canCancel, isFalse);
+    expect(SellerOrderData.fromJson({...cod, ..._paymentJson()}).canCancel, isFalse);
   });
   group('OrderModel payment fields', () {
     test('parses all payment fields', () {

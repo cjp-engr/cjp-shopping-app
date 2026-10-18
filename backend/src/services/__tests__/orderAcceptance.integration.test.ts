@@ -268,6 +268,24 @@ describe('acceptOrder (replica set, Stripe and capture mocked)', () => {
     });
   });
 
+  describe('COD placed under the default (legacy) flow version', () => {
+    // createOrders gives every COD order not_required + acceptBy but leaves paymentFlowVersion at its default.
+    const realCod = { paymentMethod: { type: 'cash-on-delivery' }, paymentFlowVersion: 'legacy', paymentStatus: 'not_required', paymentIntentId: undefined, amountMinor: undefined };
+
+    it('enforces the deadline even when the scanner has not cancelled it yet', async () => {
+      const order = await makeOrder({ ...realCod, acceptBy: now });
+      const error = await rejection(acceptOrder({ orderId: order.id, sellerId: seller.toString(), now }));
+      expect([error.statusCode, error.code]).toEqual([409, 'acceptance_deadline_passed']);
+      expect((await Order.findById(order._id))!.status).toBe('pending');
+    });
+
+    it('accepts before the deadline', async () => {
+      const order = await makeOrder(realCod);
+      const outcome = await acceptOrder({ orderId: order.id, sellerId: seller.toString(), now });
+      expect(outcome.order.status).toBe('preparing');
+    });
+  });
+
   describe('legacy orders', () => {
     it('moves a verified legacy card order to preparing without another charge', async () => {
       const order = await makeOrder({ ...legacyOverrides, paymentIntentId: 'pi_legacy' });

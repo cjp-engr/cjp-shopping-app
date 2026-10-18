@@ -317,7 +317,7 @@ describe('seller status contract', () => {
   // Scans every literal `new AppError(status, message, 'code')` on the acceptance and status paths.
   function emittedSellerCodes(): string[] {
     const pairs = new Set<string>();
-    for (const file of ['../../services/sellerService.ts', '../../services/orderAcceptance.ts', '../../services/orderCapture.ts']) {
+    for (const file of ['../../services/sellerService.ts', '../../services/orderAcceptance.ts', '../../services/orderCapture.ts', '../../services/sellerCancellation.ts']) {
       const visit = (node: ts.Node) => {
         if (ts.isNewExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'AppError' && node.arguments) {
           const [status, , code] = node.arguments;
@@ -339,13 +339,39 @@ describe('seller status contract', () => {
     expect(accepts(schema, { success: true, order, operation: { status: 'done' } }).valid).toBe(false);
   });
 
-  it('documents each acceptance error code under its status', () => {
+  it('documents each acceptance and cancellation error code under its status', () => {
     expect(operation()['x-error-codes']).toMatchObject({
+      '400': ['invalid_cancel_reason'],
       '403': ['not_order_seller'],
       '404': ['order_not_found'],
-      '409': expect.arrayContaining(['acceptance_deadline_passed', 'order_not_pending', 'payment_reference_missing', 'capture_failed', 'authorization_expired', 'cancellation_unavailable']),
+      '409': expect.arrayContaining(['acceptance_deadline_passed', 'order_not_pending', 'payment_reference_missing', 'capture_failed', 'authorization_expired', 'cancellation_unavailable', 'cancellation_conflict']),
     });
-    expect(Object.keys(operation().responses)).toEqual(expect.arrayContaining(['200', '202', '403', '404', '409']));
+    expect(Object.keys(operation().responses)).toEqual(expect.arrayContaining(['200', '202', '400', '403', '404', '409']));
+  });
+
+  it('documents the 200 response with an optional payment outcome for cancellations', () => {
+    const schema = responseSchema(STATUS[0], STATUS[1], 200);
+    const order = { _id: id, userId: id, items: [], shippingAddress: { street: '1 Main St', city: 'Taipei', state: 'Taipei', zipCode: '100' }, paymentMethod: { type: 'credit-card' }, subtotal: 10, productDiscount: 0, discount: 0, tax: 0.8, shipping: 0, total: 10.8, status: 'cancelled', paymentFlowVersion: 'manual_capture', paymentStatus: 'release_pending', cancelledByRole: 'seller', cancelledById: id, cancelledAt: '2026-10-18T10:00:00.000Z', cancelReason: 'Out of stock' };
+    expect(accepts(schema, { success: true, order }).valid).toBe(true);
+    for (const state of ['pending', 'completed', 'needs_review']) {
+      expect(accepts(schema, { success: true, order, paymentOperation: { status: state } }).valid).toBe(true);
+    }
+    expect(accepts(schema, { success: true, order, paymentOperation: { status: 'resolving' } }).valid).toBe(false);
+    expect(accepts(schema, { success: true, order, paymentOperation: {} }).valid).toBe(false);
+  });
+
+  it('describes the cancellation audit fields on the Order schema', () => {
+    const order = spec.components.schemas.Order.properties;
+    expect(Object.keys(order)).toEqual(expect.arrayContaining(['cancelledByRole', 'cancelledById', 'cancelledAt']));
+    expect(order.cancelledByRole.enum).toEqual(['buyer', 'seller', 'system']);
+  });
+
+  it('marks seller order list entries with the server-derived cancel capability', () => {
+    const schema = responseSchema('/seller/orders', 'get', 200);
+    const order = { _id: id, userId: id, items: [], shippingAddress: { street: '1 Main St', city: 'Taipei', state: 'Taipei', zipCode: '100' }, paymentMethod: { type: 'cash-on-delivery' }, subtotal: 10, productDiscount: 0, discount: 0, tax: 0.8, shipping: 0, total: 10.8, status: 'pending' };
+    expect(accepts(schema, { success: true, orders: [{ ...order, canSellerCancelPending: true }] }).valid).toBe(true);
+    expect(accepts(schema, { success: true, orders: [order] }).valid).toBe(false);
+    expect(accepts(schema, { success: true, orders: [{ ...order, canSellerCancelPending: 'yes' }] }).valid).toBe(false);
   });
 
   it('lists exactly the machine-readable codes the seller status path can emit', () => {

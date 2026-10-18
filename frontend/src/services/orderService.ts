@@ -373,6 +373,8 @@ class OrderService {
       placedAt: order.placedAt,
       acceptBy: order.acceptBy,
       authorizationExpiresAt: order.authorizationExpiresAt,
+      cancelledByRole: order.cancelledByRole,
+      cancelledAt: order.cancelledAt,
     };
   }
 }

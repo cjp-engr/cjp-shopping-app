@@ -408,7 +408,7 @@ export const OrderHistory: React.FC = () => {
                       <XCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                       <div>
                         <span className="text-xs font-medium text-red-600 dark:text-red-400 block">
-                          This order has been cancelled
+                          {order.cancelledByRole === 'seller' ? 'Cancelled by the seller' : 'This order has been cancelled'}
                         </span>
                         {order.cancelReason && (
                           <span className="text-xs text-red-500 dark:text-red-400">

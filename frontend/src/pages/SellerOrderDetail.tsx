@@ -9,7 +9,10 @@ import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { getStatusConfig, formatPaymentMethodType, formatDeliveryOption } from '../utils/orderUtils';
 import sellerService, { SellerOrderError } from '../services/sellerService';
-import { acceptanceDeadlineText, acceptanceErrorMessage, canAcceptOrder, CAPTURE_POLL_INTERVAL_MS, isCapturePending } from '../utils/sellerAcceptance';
+import {
+  acceptanceDeadlineText, acceptanceErrorMessage, canAcceptOrder, cancelReasonError, cancellationErrorMessage,
+  cancellationOutcomeMessage, CAPTURE_POLL_INTERVAL_MS, isCapturePending, isStaleCancellation, MAX_CANCEL_REASON_LENGTH,
+} from '../utils/sellerAcceptance';
 import {
   ArrowLeft,
   Package,
@@ -40,6 +43,9 @@ const ImgWithFallback: React.FC<{ src: string; alt: string; className?: string }
   return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />;
 };
 
+interface CancelDialogState { open: boolean; reason: string; loading: boolean; error: string | null }
+const CLOSED_CANCEL_DIALOG: CancelDialogState = { open: false, reason: '', loading: false, error: null };
+
 export const SellerOrderDetail: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,9 +60,7 @@ export const SellerOrderDetail: React.FC = () => {
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const acceptInFlight = useRef(false);
   const [now, setNow] = useState(() => new Date());
-  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; reason: string; loading: boolean }>({
-    open: false, reason: '', loading: false,
-  });
+  const [cancelDialog, setCancelDialog] = useState<CancelDialogState>(CLOSED_CANCEL_DIALOG);
   const [currentStatus, setCurrentStatus] = useState(initialOrder?.status ?? '');
 
   useEffect(() => {
@@ -195,13 +199,36 @@ export const SellerOrderDetail: React.FC = () => {
     }
   };
 
+  // The server decides: the reason is required and the order may have been accepted or be capturing meanwhile
   const confirmCancel = async () => {
-    setCancelDialog(d => ({ ...d, loading: true }));
+    if (cancelDialog.loading || statusLoading) return;
+    const reasonError = cancelReasonError(cancelDialog.reason);
+    if (reasonError) {
+      setCancelDialog(d => ({ ...d, error: reasonError }));
+      return;
+    }
+    setCancelDialog(d => ({ ...d, loading: true, error: null }));
+    setStatusError(null);
+    setStatusNotice(null);
     try {
-      await handleStatusUpdate('cancelled', cancelDialog.reason || undefined);
-      setCancelDialog({ open: false, reason: '', loading: false });
-    } catch {
-      setCancelDialog(d => ({ ...d, loading: false }));
+      const { paymentOperation } = await sellerService.updateOrderStatus(order.id, 'cancelled', cancelDialog.reason);
+      setCancelDialog(CLOSED_CANCEL_DIALOG);
+      setCurrentStatus('cancelled');
+      await reloadOrder();
+      setStatusNotice(cancellationOutcomeMessage(paymentOperation));
+    } catch (err) {
+      const code = err instanceof SellerOrderError ? err.code : undefined;
+      const message = err instanceof SellerOrderError
+        ? cancellationErrorMessage(code)
+        : (err instanceof Error ? err.message : 'Could not cancel the order. Please try again.');
+      if (isStaleCancellation(code)) {
+        // The order moved on (accepted, being charged, or not this seller's): show its real state.
+        setCancelDialog(CLOSED_CANCEL_DIALOG);
+        setStatusError(message);
+        await reloadOrder();
+      } else {
+        setCancelDialog(d => ({ ...d, loading: false, error: message }));
+      }
     }
   };
 
@@ -473,7 +500,7 @@ export const SellerOrderDetail: React.FC = () => {
           {canCancel && (
             <Button
               variant="outline"
-              onClick={() => setCancelDialog({ open: true, reason: '', loading: false })}
+              onClick={() => setCancelDialog({ ...CLOSED_CANCEL_DIALOG, open: true })}
               className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
               data-testid="seller-cancel-order-btn"
               aria-label="Cancel order"
@@ -489,26 +516,34 @@ export const SellerOrderDetail: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black px-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Cancel Order</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Provide a reason for cancellation (optional).
-            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">The buyer will see this reason. A reason is required.</p>
+            <label htmlFor="seller-cancel-reason" className="sr-only">Cancellation reason (required)</label>
             <textarea
+              id="seller-cancel-reason"
+              data-testid="seller-cancel-reason"
               value={cancelDialog.reason}
-              onChange={e => setCancelDialog(d => ({ ...d, reason: e.target.value }))}
+              onChange={e => setCancelDialog(d => ({ ...d, reason: e.target.value, error: null }))}
               placeholder="e.g. Out of stock, unable to fulfil..."
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-4"
+              maxLength={MAX_CANCEL_REASON_LENGTH}
+              aria-required="true"
+              aria-invalid={cancelDialog.error ? true : undefined}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
             />
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-right mb-3">{cancelDialog.reason.length}/{MAX_CANCEL_REASON_LENGTH}</p>
+            {cancelDialog.error && (
+              <p role="alert" data-testid="seller-cancel-error" className="text-sm text-red-600 dark:text-red-400 mb-3">{cancelDialog.error}</p>
+            )}
             <div className="flex gap-3 justify-end">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCancelDialog({ open: false, reason: '', loading: false })}
+                onClick={() => setCancelDialog(CLOSED_CANCEL_DIALOG)}
                 disabled={cancelDialog.loading}
               >
                 Keep Order
               </Button>
-              <Button variant="danger" size="sm" loading={cancelDialog.loading} onClick={confirmCancel}>
+              <Button variant="danger" size="sm" loading={cancelDialog.loading} disabled={cancelDialog.loading || cancelReasonError(cancelDialog.reason) !== null} onClick={confirmCancel} data-testid="seller-cancel-confirm">
                 <XCircle className="w-4 h-4 mr-1" /> Confirm Cancel
               </Button>
             </div>

@@ -1,5 +1,5 @@
 import type { Product } from '../types/product';
-import type { Order } from '../types/order';
+import type { Order, SellerPaymentOperation } from '../types/order';
 import type { SelectedVariant } from '../types/cart';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import { resolveSelectedDeliveryOption } from '../utils/orderUtils';
@@ -96,6 +96,7 @@ interface RawItem {
 }
 
 interface RawOrder extends Omit<Order, 'id' | 'userId' | 'items'> {
+  paymentError?: { code?: string };
   _id?: string;
   id?: string;
   userId?: string | RawUser;
@@ -216,9 +217,19 @@ const adaptOrder = (order: RawOrder): AdaptedOrder => {
     shipping: order.shipping,
     total: order.total,
     status: order.status,
+    cancelReason: order.cancelReason,
     createdAt: order.createdAt,
     estimatedDelivery: order.estimatedDelivery,
     selectedDeliveryOption: resolveSelectedDeliveryOption(order),
+    paymentFlowVersion: order.paymentFlowVersion,
+    paymentStatus: order.paymentStatus,
+    paymentErrorCode: order.paymentError?.code,
+    placedAt: order.placedAt,
+    acceptBy: order.acceptBy,
+    authorizationExpiresAt: order.authorizationExpiresAt,
+    cancelledByRole: order.cancelledByRole,
+    cancelledAt: order.cancelledAt,
+    canSellerCancelPending: order.canSellerCancelPending,
   };
 };
 
@@ -354,17 +365,21 @@ class SellerService {
   }
 
   /** HTTP 202 means the payment capture is still resolving; the order is not preparing yet. */
-  async updateOrderStatus(orderId: string, status: 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled', cancelReason?: string): Promise<{ outcome: 'completed' | 'resolving' }> {
+  async updateOrderStatus(orderId: string, status: 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled', cancelReason?: string): Promise<{ outcome: 'completed' | 'resolving'; paymentOperation?: SellerPaymentOperation }> {
+    const reason = cancelReason?.trim();
     const res = await fetch(API_ENDPOINTS.SELLER_ORDER_STATUS(orderId), {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ status, ...(cancelReason ? { cancelReason } : {}) }),
+      body: JSON.stringify({ status, ...(reason ? { cancelReason: reason } : {}) }),
     });
     if (!res.ok) {
       const e: { message?: string; code?: string } = await res.json().catch(() => ({}));
       throw new SellerOrderError(e.message || 'Failed to update status', e.code);
     }
-    return { outcome: res.status === 202 ? 'resolving' : 'completed' };
+    if (res.status === 202) return { outcome: 'resolving' };
+    // A cancelled card order says where the hold release stands; other responses carry no payment outcome.
+    const body: { paymentOperation?: SellerPaymentOperation } = await res.json().catch(() => ({}));
+    return { outcome: 'completed', ...(body.paymentOperation ? { paymentOperation: body.paymentOperation } : {}) };
   }
 }
 

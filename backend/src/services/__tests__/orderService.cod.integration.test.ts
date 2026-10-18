@@ -106,35 +106,39 @@ describe('createOrders cash-on-delivery acceptance deadline (replica set, Stripe
     expect(new Set(stored.map(o => o.sellerId!.toString()))).toEqual(new Set([seller.toString(), otherSeller.toString()]));
   });
 
-  it('under the default legacy flow sets none of the acceptance fields', async () => {
-    delete process.env.CHECKOUT_FLOW;
+  it.each([
+    ['the default flow', undefined],
+    ['an explicit legacy flow', 'legacy'],
+  ])('under %s a COD order still gets the current shape', async (_label, flow) => {
+    if (flow === undefined) delete process.env.CHECKOUT_FLOW;
+    else process.env.CHECKOUT_FLOW = flow;
     const product = await makeProduct();
 
     const [order] = await place(product);
 
     const stored = await Order.findById(order._id).lean();
-    expect(stored!.paymentStatus).toBeUndefined();
-    expect(stored!.placedAt).toBeUndefined();
-    expect(stored!.acceptBy).toBeUndefined();
-    expect(stored!.sellerId).toBeUndefined();
+    expect(stored!.paymentStatus).toBe('not_required');
+    expect(stored!.placedAt).toBeInstanceOf(Date);
+    expect(stored!.acceptBy!.getTime() - stored!.placedAt!.getTime()).toBe(SELLER_ACCEPT_WINDOW_MS);
+    expect(stored!.sellerId!.toString()).toBe(seller.toString());
     expect(stored!.paymentFlowVersion).toBe('legacy');
   });
 
-  it('under an explicit legacy flow sets none of the acceptance fields', async () => {
-    process.env.CHECKOUT_FLOW = 'legacy';
+  it('does not depend on CHECKOUT_FLOW being valid', async () => {
+    process.env.CHECKOUT_FLOW = 'not-a-flow';
     const product = await makeProduct();
 
     const [order] = await place(product);
 
-    const stored = await Order.findById(order._id).lean();
-    expect(stored!.paymentStatus).toBeUndefined();
-    expect(stored!.placedAt).toBeUndefined();
-    expect(stored!.acceptBy).toBeUndefined();
-    expect(stored!.sellerId).toBeUndefined();
+    expect((await Order.findById(order._id).lean())!.paymentStatus).toBe('not_required');
   });
 
-  it('leaves a card order untouched even under manual_capture', async () => {
-    process.env.CHECKOUT_FLOW = 'manual_capture';
+  it.each([
+    ['the default flow', undefined],
+    ['manual_capture', 'manual_capture'],
+  ])('leaves a card order untouched under %s', async (_label, flow) => {
+    if (flow === undefined) delete process.env.CHECKOUT_FLOW;
+    else process.env.CHECKOUT_FLOW = flow;
     const product = await makeProduct();
 
     // Saved/mock card path: no PaymentIntent is verified.

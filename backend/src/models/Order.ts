@@ -3,6 +3,9 @@ import { IAddress } from './User.js';
 
 export type OrderStatus = 'awaiting_payment' | 'pending' | 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
+export const CANCELLED_BY_ROLES = ['buyer', 'seller', 'system'] as const;
+export type CancelledByRole = typeof CANCELLED_BY_ROLES[number];
+
 export interface ICartItem {
   product: mongoose.Types.ObjectId;
   variantId?: string;
@@ -42,6 +45,10 @@ export interface IOrder extends Document {
   shippedAt?: Date;
   refundRequestedAt?: Date;
   cancelReason?: string;
+  /** Who cancelled the order and when; written once by the cancellation claim. Older orders have none. */
+  cancelledByRole?: CancelledByRole;
+  cancelledById?: mongoose.Types.ObjectId;
+  cancelledAt?: Date;
   sellerMessages?: Record<string, string>;
   deliverySelections?: Record<string, string>;
   selectedDeliveryOption?: string;
@@ -217,7 +224,10 @@ const OrderSchema = new Schema<IOrder>({
   estimatedDelivery: Date,
   shippedAt: Date,
   refundRequestedAt: Date,
-  cancelReason: { type: String }
+  cancelReason: { type: String },
+  cancelledByRole: { type: String, enum: CANCELLED_BY_ROLES },
+  cancelledById: { type: Schema.Types.ObjectId, ref: 'User' },
+  cancelledAt: Date
 }, {
   timestamps: true
 });

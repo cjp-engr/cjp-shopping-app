@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { acceptanceDeadlineText, acceptanceErrorMessage, canAcceptOrder, hasCapturePending, isCapturePending } from './sellerAcceptance';
+import {
+  acceptanceDeadlineText, acceptanceErrorMessage, canAcceptOrder, cancelReasonError, cancellationErrorMessage,
+  cancellationOutcomeMessage, hasCapturePending, isCapturePending, isStaleCancellation, MAX_CANCEL_REASON_LENGTH,
+} from './sellerAcceptance';
 import type { Order } from '../types/order';
 
 function order(overrides: Partial<Order> = {}): Order {
@@ -120,5 +123,59 @@ describe('hasCapturePending', () => {
   it('is false when no order is capture_pending, so polling stops', () => {
     expect(hasCapturePending([order(), order({ status: 'preparing', paymentStatus: 'captured' })])).toBe(false);
     expect(hasCapturePending([])).toBe(false);
+  });
+});
+
+describe('cancelReasonError', () => {
+  it('accepts a reason of 1 to 1000 characters after trimming', () => {
+    expect(cancelReasonError('Out of stock')).toBeNull();
+    expect(cancelReasonError('  x  ')).toBeNull();
+    expect(cancelReasonError('y'.repeat(MAX_CANCEL_REASON_LENGTH))).toBeNull();
+  });
+
+  it('rejects an empty, blank or over-long reason with a message', () => {
+    expect(cancelReasonError('')).toMatch(/reason/i);
+    expect(cancelReasonError('   \n ')).toMatch(/reason/i);
+    expect(cancelReasonError('y'.repeat(MAX_CANCEL_REASON_LENGTH + 1))).toMatch(/1000/);
+  });
+});
+
+describe('cancellationErrorMessage', () => {
+  it.each([
+    ['invalid_cancel_reason', /reason/i],
+    ['cancellation_conflict', /refresh/i],
+    ['cancellation_unavailable', /cannot be cancelled/i],
+    ['not_order_seller', /not available/i],
+    ['order_not_found', /not available/i],
+    [undefined, /try again/i],
+    ['something_new', /try again/i],
+  ])('maps %s to plain language', (code, expected) => {
+    expect(cancellationErrorMessage(code)).toMatch(expected);
+  });
+});
+
+describe('isStaleCancellation', () => {
+  it('is true when the order moved on, so the screen should refresh', () => {
+    for (const code of ['cancellation_conflict', 'cancellation_unavailable', 'not_order_seller', 'order_not_found']) {
+      expect(isStaleCancellation(code)).toBe(true);
+    }
+  });
+
+  it('is false for a reason the seller can fix and for unknown failures', () => {
+    expect(isStaleCancellation('invalid_cancel_reason')).toBe(false);
+    expect(isStaleCancellation(undefined)).toBe(false);
+  });
+});
+
+describe('cancellationOutcomeMessage', () => {
+  it('never says money was returned until the release is complete', () => {
+    expect(cancellationOutcomeMessage({ status: 'pending' })).toMatch(/being released/i);
+    expect(cancellationOutcomeMessage({ status: 'pending' })).not.toMatch(/was released/i);
+    expect(cancellationOutcomeMessage({ status: 'completed' })).toMatch(/was released/i);
+    expect(cancellationOutcomeMessage({ status: 'needs_review' })).toMatch(/support/i);
+  });
+
+  it('is a plain confirmation when there was no card hold', () => {
+    expect(cancellationOutcomeMessage(undefined)).toBe('Order cancelled.');
   });
 });

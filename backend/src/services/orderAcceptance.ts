@@ -12,10 +12,14 @@ export type AcceptanceOutcome =
 
 type OrderKind = 'card' | 'cod' | 'legacy';
 
-/** Cards and COD placed under the manual-capture flow carry a deadline; everything else is legacy. */
+/**
+ * COD orders always carry `not_required` and an acceptance deadline, whatever the checkout flow
+ * version, so they are recognised by their payment status. Cards need the manual-capture flow;
+ * everything else is legacy.
+ */
 function orderKind(order: Pick<IOrder, 'paymentFlowVersion' | 'paymentStatus'>): OrderKind {
-  if (order.paymentFlowVersion !== 'manual_capture') return 'legacy';
-  return order.paymentStatus === 'not_required' ? 'cod' : 'card';
+  if (order.paymentStatus === 'not_required') return 'cod';
+  return order.paymentFlowVersion === 'manual_capture' ? 'card' : 'legacy';
 }
 
 /**

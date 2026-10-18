@@ -1,0 +1,44 @@
+# TokoMart: instructions for AI coding agents
+
+These rules apply to every agent working in this repo (Claude Code, Codex, ChatGPT agents). The owner's explicit instructions in a session override this file.
+
+## Project map
+
+- `backend/`: Express + TypeScript + MongoDB (Mongoose, replica-set transactions), Stripe.
+- `frontend/`: React + Vite web app.
+- `frontend-mobile/`: Flutter app (BLoC).
+- `e2e-testing/` (Playwright) and `frontend-mobile/patrol_test/` (Patrol): automation, see the first hard rule.
+- `docs/superpowers/specs/` and `docs/superpowers/plans/`: designs and implementation plans (plans are local, gitignored). Open follow-ups for the authorize-capture payment feature: `docs/authorize-capture-open-items.md`.
+
+## Hard rules
+
+1. **Do not touch Playwright or Patrol.** Do not create, edit, run, or fix anything under `e2e-testing/` or `frontend-mobile/patrol_test/` (including `test_bundle.dart` and Patrol env/config). The owner writes and runs all automation after the app work is done. Skip every Playwright or Patrol step in a plan and say so in your final message. If you notice those folders were changed by someone else, report it; do not fix it.
+2. **No commits, pushes, merges, branch changes, or deployments unless the owner asks in that session.** Leave work in the working tree. Do not run `git add`, `commit`, `stash`, `reset`, `checkout`, `clean`, or `rebase` on your own. Read-only git commands are fine. Earlier unfinished work is uncommitted in this tree: never revert or "clean up" changes you did not make.
+3. **Never touch the owner's standalone MongoDB on port 27017** (it holds their dev data and is used from Compass). Backend integration tests run only against a database whose name ends in `_test` on a replica set, normally port 27018 (`tokomart-rs-test` container). Never run a destructive command (seed, delete, drop) against 27017.
+4. **Never print, log, paste, or commit secrets**: `.env` values, API keys, tokens, passwords, client secrets. Read a variable's name or whether it is set, not its value.
+5. **Stripe is test mode only.** No live keys, no real money. Tests must mock Stripe; manual checks use Stripe's published test cards only.
+6. **Do not start, stop, or restart processes on ports 5000 and 5173** (the owner's dev backend and web app). Use other ports for your own servers and stop them when done.
+7. **No destructive actions without confirmation**: deleting databases, containers, volumes, branches, or files you did not create.
+8. **Change only the codebase, never the system.** Edit files inside this repo only. Do not change anything on the machine outside it: no OS or network settings, firewall or loopback rules, registry, environment variables, PATH or shell profiles, global or user-level installs (`npm -g`, `flutter pub global`, `dart pub global`, package managers), global git or tool config, Docker containers, images, volumes or networks you did not create, or other users' or the owner's files. Installing the project's own declared dependencies inside the repo (`npm install`, `flutter pub get`) and temporary files in a scratch or temp directory are fine. Set environment variables only for a single command, never persistently. If a task seems to need a system change (for example a Gradle or network fix, a new container, a global tool), do not do it yourself, even if it looks safe. Stop, explain what is needed and why, give the owner the exact steps, and let a human perform it. Continue only with the parts of the work that stay inside the codebase.
+
+## How to work
+
+- Read the relevant spec and plan before changing code. Do exactly what the task asks; do not add unrelated refactors, dependencies, or features.
+- Match the surrounding code: naming, comment density, idiom. Backend uses ESM imports with `.js` extensions.
+- Test first for logic and bug fixes. Finish a task only after the relevant tests, type-check, and lint pass; report real command output, not remembered results.
+- Payment and order-state code must be safe under races and crashes: use the atomic claim pattern already in `backend/src/services/` (`orderAcceptance.ts`, `orderCancellation.ts`, `orderCapture.ts`), durable `PaymentOperation` records with stable idempotency keys, and never call Stripe inside a database transaction.
+- When a plan or request leaves a choice open, pick the safest reasonable option and list your choices in the final message.
+
+## Commands (run from the repo root)
+
+- Backend unit tests and type-check: `cd backend && npx vitest run && npx tsc --noEmit`
+- Backend contract tests: `cd backend && npm run test:contracts`
+- Backend integration tests (replica set only):
+  `cd backend && TEST_MONGODB_URI='mongodb://localhost:27018/tokomart_integration_test?replicaSet=rs0&directConnection=true' npx vitest run --config vitest.integration.config.ts`
+- Web: `cd frontend && npx tsc -b && npx eslint . && npx vitest run`
+- Mobile (Flutter SDK at `D:\donotdelete\flutter\bin`, add it to `PATH`): `cd frontend-mobile && flutter analyze && flutter test`
+
+## Local servers for manual testing
+
+- The owner's dev stack: backend on 5000 and web on 5173, on the standalone MongoDB (27017), legacy checkout flow only.
+- Manual-capture checkout needs a replica set. A separate stack uses backend 5055, web 5174, and database `tokomart_manual` on 27018 (seed it first with `MONGODB_URI` pointing there). Details are in `docs/authorize-capture-open-items.md`.

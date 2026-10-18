@@ -34,6 +34,16 @@ export interface Order {
   /** Seller acceptance deadline; the order is cancelled and the hold released if not accepted by then. */
   acceptBy?: string;
   authorizationExpiresAt?: string;
+  /** Who cancelled the order; absent on older cancellations. `system` means the deadline or an expired hold. */
+  cancelledByRole?: 'buyer' | 'seller' | 'system';
+  cancelledAt?: string;
+  /** Seller list only: the server says this seller can cancel this pending order right now. */
+  canSellerCancelPending?: boolean;
+}
+
+/** Where the card hold release stands after a seller cancellation; absent for cash on delivery. */
+export interface SellerPaymentOperation {
+  status: 'pending' | 'completed' | 'needs_review';
 }
 
 export interface CheckoutData {

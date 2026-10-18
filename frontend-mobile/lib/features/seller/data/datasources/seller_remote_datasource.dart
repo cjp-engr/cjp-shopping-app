@@ -2,6 +2,7 @@
 import 'package:dio/dio.dart';
 import '../../../products/data/models/product_model.dart';
 import '../../../../core/network/api_client.dart';
+import '../../domain/seller_cancellation.dart';
 import '../../domain/seller_status_result.dart';
 import '../models/seller_order_model.dart';
 
@@ -90,14 +91,34 @@ class SellerRemoteDataSource {
           ? SellerStatusResult.resolving
           : SellerStatusResult.completed;
     } on DioException catch (e) {
-      final data = e.response?.data;
-      if (e.type == DioExceptionType.badResponse && data is Map) {
-        final code = data['code'];
-        throw SellerOrderException(mapDioError(e),
-            code: code is String ? code : null);
-      }
-      throw mapDioError(e);
+      throw _sellerOrderError(e);
     }
+  }
+
+  /// Cancels a pending order. The reason is required (the server enforces 1 to 1000
+  /// characters after trimming); a card cancellation reports where the hold release stands.
+  Future<SellerCancelOutcome> cancelOrder(String orderId, String reason) async {
+    try {
+      final response = await _dio.put('/seller/orders/$orderId/status',
+          data: {'status': 'cancelled', 'cancelReason': reason.trim()});
+      final data = response.data;
+      return SellerCancelOutcome(
+          paymentOperation:
+              data is Map ? parsePaymentOperation(data['paymentOperation']) : null);
+    } on DioException catch (e) {
+      throw _sellerOrderError(e);
+    }
+  }
+
+  /// A server rejection keeps its machine-readable `code`; anything else stays a plain message.
+  Object _sellerOrderError(DioException e) {
+    final data = e.response?.data;
+    if (e.type == DioExceptionType.badResponse && data is Map) {
+      final code = data['code'];
+      return SellerOrderException(mapDioError(e),
+          code: code is String ? code : null);
+    }
+    return mapDioError(e);
   }
 
   Future<String> uploadVariantImage(String filePath) async {

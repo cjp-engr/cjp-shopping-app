@@ -313,6 +313,18 @@ describe('order capture (replica set, Stripe mocked)', () => {
     expect(capturePaymentIntent).toHaveBeenCalledTimes(1);
   });
 
+  it.each([409, 429])('treats a Stripe %i on capture as ambiguous: stays capture_pending and never rejects', async (status) => {
+    const { order } = await makeOrder();
+    vi.mocked(capturePaymentIntent).mockRejectedValueOnce(stripeFault(status));
+
+    const outcome = await accept(order.id);
+
+    expect(outcome.kind).toBe('resolving');
+    const stored = await Order.findById(order._id).lean();
+    expect(stored!.paymentStatus).toBe('capture_pending');
+    expect((await PaymentOperation.findOne({ orderId: order._id }).lean())!.status).toBe('pending');
+  });
+
   it('finalizes when the capture response was lost but retrieval shows it succeeded', async () => {
     const { order } = await makeOrder();
     vi.mocked(capturePaymentIntent).mockRejectedValueOnce(stripeFault());

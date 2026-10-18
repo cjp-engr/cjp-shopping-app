@@ -4,7 +4,6 @@ import Coupon from '../models/Coupon.js';
 import Cart from '../models/Cart.js';
 import mongoose from 'mongoose';
 import { cancelLegacyPaidOrder } from './legacyRefund.js';
-import { checkoutFlow } from '../config/checkout.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { computeSellerTotals, priceLine, type ProductLike } from './checkoutPricing.js';
 import { buyerVisibleOrderFilter, isBuyerVisibleOrder } from './orderVisibility.js';
@@ -138,12 +137,12 @@ export async function createOrders(params: CreateOrderParams) {
   const estimatedDelivery = new Date();
   estimatedDelivery.setDate(estimatedDelivery.getDate() + 7);
 
-  // Under the manual-capture rollout a cash-on-delivery order must be accepted by the seller before
-  // a deadline, like a card order, but there is nothing to authorize or capture. It keeps the legacy
-  // flow version so sellers still see it while manual-capture orders are hidden from them.
+  // A cash-on-delivery order must be accepted by the seller before a deadline, like a card order, but
+  // there is nothing to authorize or capture. It keeps the legacy flow version so sellers still see it
+  // while manual-capture orders are hidden from them.
   const placedAt = new Date();
   const acceptance =
-    checkoutFlow() === 'manual_capture' && (paymentMethod as any).type === 'cash-on-delivery'
+    (paymentMethod as any).type === 'cash-on-delivery'
       ? { placedAt, acceptBy: new Date(placedAt.getTime() + SELLER_ACCEPT_WINDOW_MS) }
       : undefined;
 
@@ -279,9 +278,14 @@ export async function cancelOrderAsBuyer(orderId: string, userId: string, cancel
   if (order.paymentFlowVersion !== 'manual_capture' && ['credit-card', 'debit-card'].includes(order.paymentMethod.type)) {
     return cancelLegacyPaidOrder(order, userId, cancelReason);
   }
-  if (order.paymentFlowVersion === 'manual_capture') {
+  // Manual-capture card orders and COD orders of the current shape (`not_required`) share one atomic
+  // claim with seller acceptance, seller cancellation and the deadline scanner: exactly one wins.
+  if (order.paymentFlowVersion === 'manual_capture' || order.paymentStatus === 'not_required') {
     if (order.status === 'cancelled') return order;
-    const cancelled = await cancelPendingOrder(orderId, 'buyer_cancelled', new Date(), { buyerId: userId, cancelReason });
+    const cancelled = await cancelPendingOrder(orderId, 'buyer_cancelled', new Date(), {
+      actor: { role: 'buyer', id: userId },
+      cancelReason,
+    });
     const current = await Order.findById(orderId);
     if (current?.status === 'cancelled') return current;
     if (!cancelled) throw new AppError(409, 'The seller has already accepted this order or its payment is being captured', 'cancellation_conflict');

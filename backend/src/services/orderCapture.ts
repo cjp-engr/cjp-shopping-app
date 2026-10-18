@@ -5,7 +5,7 @@ import Order, { type IOrder } from '../models/Order.js';
 import PaymentOperation, { type IPaymentOperation } from '../models/PaymentOperation.js';
 import { AppError } from '../middleware/errorHandler.js';
 import type { AcceptanceOutcome } from './orderAcceptance.js';
-import { restoreOrderReservations } from './orderCancellation.js';
+import { cancellationAudit, restoreOrderReservations } from './orderCancellation.js';
 import { IDEMPOTENCY_SAFE_RETRY_MS, orderOperationKey } from './paymentOperationPolicy.js';
 import {
   claimOperationById,
@@ -155,6 +155,7 @@ async function expireOrder(ctx: CaptureContext): Promise<Settlement> {
           $set: {
             status: 'cancelled',
             cancelReason: 'authorization_expired',
+            ...cancellationAudit({ role: 'system' }, ctx.now),
             paymentStatus: 'released',
             stockRestoredAt: ctx.now,
           },

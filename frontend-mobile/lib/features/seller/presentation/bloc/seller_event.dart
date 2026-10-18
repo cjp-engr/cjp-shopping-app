@@ -45,6 +45,16 @@ class SellerOrdersLoadRequested extends SellerEvent {
   List<Object?> get props => [silent];
 }
 
+/// A seller cancels a pending order. The reason is required; the server decides
+/// whether the order can still be cancelled and reports the payment outcome.
+class SellerOrderCancelRequested extends SellerEvent {
+  final String orderId;
+  final String reason;
+  const SellerOrderCancelRequested(this.orderId, this.reason);
+  @override
+  List<Object?> get props => [orderId, reason];
+}
+
 class SellerOrderStatusUpdateRequested extends SellerEvent {
   final String orderId;
   final String status;

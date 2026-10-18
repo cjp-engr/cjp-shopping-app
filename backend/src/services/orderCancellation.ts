@@ -5,10 +5,35 @@ import Order, { type IOrder } from '../models/Order.js';
 import { orderOperationKey } from './paymentOperationPolicy.js';
 import { releaseIntentOperation } from './paymentRelease.js';
 
-export type OrderCancelReason = 'seller_acceptance_timeout' | 'authorization_expired' | 'buyer_cancelled';
+export type OrderCancelReason =
+  | 'seller_acceptance_timeout'
+  | 'authorization_expired'
+  | 'buyer_cancelled'
+  | 'seller_cancelled';
+
+/** Who performs a cancellation. The system (deadline scanner, expired hold) has no user id. */
+export type CancellationActor =
+  | { role: 'buyer' | 'seller'; id: string }
+  | { role: 'system' };
 
 export interface OrderCancellationResult {
   releaseStatus: 'not_required' | 'released' | 'pending';
+}
+
+/** Ownership match for the claim: a buyer owns `userId`; a seller owns the persisted `sellerId`. */
+function ownerFilter(actor: CancellationActor): Record<string, unknown> {
+  if (actor.role === 'buyer') return { userId: actor.id };
+  if (actor.role === 'seller') return { sellerId: actor.id };
+  return {};
+}
+
+/** Audit fields written once, in the claim that cancels the order. */
+export function cancellationAudit(actor: CancellationActor, now: Date) {
+  return {
+    cancelledByRole: actor.role,
+    ...(actor.role === 'system' ? {} : { cancelledById: actor.id }),
+    cancelledAt: now,
+  };
 }
 
 /**
@@ -51,14 +76,16 @@ export async function cancelPendingOrder(
   orderId: string | mongoose.Types.ObjectId,
   reason: OrderCancelReason,
   now: Date = new Date(),
-  options: { buyerId?: string; cancelReason?: string } = {},
+  options: { actor?: CancellationActor; cancelReason?: string } = {},
 ): Promise<OrderCancellationResult | null> {
+  const actor: CancellationActor = options.actor ?? { role: 'system' };
+  const owner = ownerFilter(actor);
   const current = await Order.findOne({
     _id: orderId,
     status: 'pending',
     paymentStatus: { $in: ['authorized', 'not_required'] },
     stockRestoredAt: { $exists: false },
-    ...(options.buyerId ? { userId: options.buyerId } : {}),
+    ...owner,
   }).lean();
   if (!current) return null;
 
@@ -74,12 +101,13 @@ export async function cancelPendingOrder(
           status: 'pending',
           paymentStatus: current.paymentStatus,
           stockRestoredAt: { $exists: false },
-          ...(options.buyerId ? { userId: options.buyerId } : {}),
+          ...owner,
         },
         {
           $set: {
             status: 'cancelled',
             cancelReason: options.cancelReason || reason,
+            ...cancellationAudit(actor, now),
             stockRestoredAt: now,
             ...(isCard ? { paymentStatus: 'release_pending' } : {}),
           },

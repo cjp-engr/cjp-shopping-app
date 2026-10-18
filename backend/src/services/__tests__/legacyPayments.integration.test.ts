@@ -40,7 +40,7 @@ afterAll(async () => { await mongoose.disconnect(); });
 
 it('blocks seller cancellation of legacy cards until the seller refund path is implemented', async () => {
   const { order, product } = await fixture();
-  await expect(updateSellerOrderStatus(order.id, seller.toString(), 'cancelled')).rejects.toMatchObject({ code: 'cancellation_unavailable' });
+  await expect(updateSellerOrderStatus(order.id, seller.toString(), 'cancelled', 'Out of stock')).rejects.toMatchObject({ code: 'cancellation_unavailable' });
   expect((await Order.findById(order.id))!.status).toBe('pending');
   expect((await Product.findById(product.id))!.stock).toBe(8);
 });

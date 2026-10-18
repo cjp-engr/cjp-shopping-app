@@ -82,7 +82,7 @@ export const getSellerOrders = async (req: AuthRequest, res: Response, next: Nex
 export const updateSellerOrderStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { status, cancelReason } = req.body;
-    const { order, outcome } = await sellerService.updateSellerOrderStatus(
+    const { order, outcome, paymentOperation } = await sellerService.updateSellerOrderStatus(
       req.params.id,
       req.user!.id,
       status,
@@ -92,6 +92,7 @@ export const updateSellerOrderStatus = async (req: AuthRequest, res: Response, n
       // The capture is still settling; clients poll the order until it reaches `preparing`.
       return res.status(202).json({ success: true, order, operation: { status: 'resolving' } });
     }
-    res.status(200).json({ success: true, order });
+    // A cancelled card order reports where the hold release stands, separately from the capture operation above.
+    res.status(200).json({ success: true, order, ...(paymentOperation ? { paymentOperation } : {}) });
   } catch (err) { next(err); }
 };
