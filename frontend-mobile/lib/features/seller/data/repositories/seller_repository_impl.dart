@@ -1,6 +1,7 @@
 ﻿import '../../../products/domain/entities/product_entity.dart';
 import '../datasources/seller_remote_datasource.dart';
 import '../../domain/repositories/seller_repository.dart';
+import '../../domain/seller_cancellation.dart';
 import '../../domain/seller_status_result.dart';
 import '../models/seller_order_model.dart';
 
@@ -32,6 +33,10 @@ class SellerRepositoryImpl implements SellerRepository {
   Future<SellerStatusResult> updateOrderStatus(String orderId, String status,
           {String? cancelReason}) =>
       _dataSource.updateOrderStatus(orderId, status, cancelReason: cancelReason);
+
+  @override
+  Future<SellerCancelOutcome> cancelOrder(String orderId, String reason) =>
+      _dataSource.cancelOrder(orderId, reason);
 
   @override
   Future<String> uploadVariantImage(String filePath) =>

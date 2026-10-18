@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/repositories/seller_repository.dart';
 import '../../domain/seller_acceptance.dart';
+import '../../domain/seller_cancellation.dart';
 import '../../domain/seller_status_result.dart';
 import 'seller_event.dart';
 import 'seller_state.dart';
@@ -17,6 +18,7 @@ class SellerBloc extends Bloc<SellerEvent, SellerState> {
     on<SellerProductDeleteRequested>(_onDelete);
     on<SellerOrdersLoadRequested>(_onLoadOrders);
     on<SellerOrderStatusUpdateRequested>(_onUpdateOrderStatus);
+    on<SellerOrderCancelRequested>(_onCancelOrder);
   }
 
   Future<void> _onLoad(
@@ -112,6 +114,42 @@ class SellerBloc extends Bloc<SellerEvent, SellerState> {
       emit(state.copyWith(
           ordersStatus: SellerOrdersStatus.success, orders: orders));
     } catch (_) {}
+  }
+
+  Future<void> _onCancelOrder(
+      SellerOrderCancelRequested event, Emitter<SellerState> emit) async {
+    // One order never runs twice: a second tap while the first is in flight is ignored.
+    if (state.updatingOrderIds.contains(event.orderId)) return;
+    final reasonError = cancelReasonError(event.reason);
+    if (reasonError != null) {
+      emit(state.copyWith(
+          statusMessage: reasonError, statusMessageIsInfo: false));
+      return;
+    }
+    emit(state.copyWith(
+      updatingOrderIds: {...state.updatingOrderIds, event.orderId},
+      clearStatusMessage: true,
+    ));
+    try {
+      final outcome = await _repository.cancelOrder(event.orderId, event.reason);
+      // The server's order is the truth (who cancelled, release state), so reload it.
+      emit(state.copyWith(
+        statusMessage: cancellationOutcomeMessage(outcome.paymentOperation),
+        statusMessageIsInfo: true,
+      ));
+      await _refreshOrdersSilently(emit);
+      _release(event.orderId, emit);
+    } catch (e) {
+      final code = e is SellerOrderException ? e.code : null;
+      emit(state.copyWith(
+        statusMessage:
+            e is SellerOrderException ? cancellationErrorMessage(code) : e.toString(),
+        statusMessageIsInfo: false,
+      ));
+      // The order moved on (accepted, being charged, not this seller's): show its real state.
+      if (isStaleCancellation(code)) await _refreshOrdersSilently(emit);
+      _release(event.orderId, emit);
+    }
   }
 
   void _release(String orderId, Emitter<SellerState> emit) {

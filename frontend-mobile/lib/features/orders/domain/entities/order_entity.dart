@@ -76,6 +76,10 @@ class OrderEntity extends Equatable {
   final DateTime? acceptBy;
   final DateTime? authorizationExpiresAt;
 
+  /// Who cancelled the order (`buyer`, `seller`, `system`); absent on older cancellations.
+  final String? cancelledByRole;
+  final DateTime? cancelledAt;
+
   const OrderEntity({
     required this.id,
     required this.userId,
@@ -100,6 +104,8 @@ class OrderEntity extends Equatable {
     this.placedAt,
     this.acceptBy,
     this.authorizationExpiresAt,
+    this.cancelledByRole,
+    this.cancelledAt,
   });
 
   String get shortId =>
@@ -115,5 +121,6 @@ class OrderEntity extends Equatable {
         paymentStatus,
         paymentErrorCode,
         acceptBy,
+        cancelledByRole,
       ];
 }

@@ -14,6 +14,7 @@ import { getStatusConfig, formatPaymentMethodType, formatDeliveryOption } from '
 import {
   acceptanceDeadline,
   hasShortAcceptanceWindow,
+  cancelledBySellerNotice,
   paymentStatusNotice,
   type PaymentNoticeTone,
 } from '../utils/orderPayment';
@@ -126,6 +127,7 @@ export const OrderDetail: React.FC = () => {
   const isDelivered = order.status === 'delivered';
   const isCancelled = order.status === 'cancelled';
   const paymentNotice = paymentStatusNotice(order);
+  const sellerCancelNotice = cancelledBySellerNotice(order);
   const deadline = acceptanceDeadline(order);
   const shortWindow = hasShortAcceptanceWindow(order);
 
@@ -422,7 +424,14 @@ export const OrderDetail: React.FC = () => {
       {isCancelled && (
         <div className="flex items-center gap-2 px-5 py-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-800">
           <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-          <span className="text-sm font-medium text-red-600 dark:text-red-400">This order has been cancelled</span>
+          <div>
+            <span className="text-sm font-medium text-red-600 dark:text-red-400 block">
+              {sellerCancelNotice ? sellerCancelNotice.title : 'This order has been cancelled'}
+            </span>
+            {sellerCancelNotice && (
+              <span className="text-xs text-red-500 dark:text-red-400" data-testid="order-cancelled-by-seller">{sellerCancelNotice.body}</span>
+            )}
+          </div>
         </div>
       )}
 

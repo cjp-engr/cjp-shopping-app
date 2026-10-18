@@ -5,10 +5,12 @@ vi.mock('../../models/Product.js', () => ({
   default: { find: vi.fn(), findByIdAndUpdate: vi.fn() },
 }));
 vi.mock('../orderAcceptance.js', () => ({ acceptOrder: vi.fn() }));
+vi.mock('../sellerCancellation.js', () => ({ cancelOrderAsSeller: vi.fn(), canSellerCancelPending: vi.fn() }));
 
 import Order from '../../models/Order.js';
 import Product from '../../models/Product.js';
 import { acceptOrder } from '../orderAcceptance.js';
+import { cancelOrderAsSeller } from '../sellerCancellation.js';
 import { AppError } from '../../middleware/errorHandler.js';
 import { VALID_TRANSITIONS, updateSellerOrderStatus } from '../sellerService.js';
 
@@ -67,6 +69,17 @@ describe('seller order transitions', () => {
 
       expect(acceptOrder).toHaveBeenCalledWith({ orderId: order._id, sellerId });
       expect(result).toEqual({ order: accepted, outcome: 'completed' });
+    });
+
+    it.each(['preparing', 'processing', 'cancelled'])('sends a repeat accept of a %s order to acceptOrder, which answers 409 order_not_pending', async (current) => {
+      const order = makeOrder({ status: current });
+      stubOrder(order);
+      vi.mocked(acceptOrder).mockRejectedValue(new AppError(409, `Order is ${current}, not pending`, 'order_not_pending'));
+
+      await expect(updateSellerOrderStatus(order._id, sellerId, 'preparing'))
+        .rejects.toMatchObject({ statusCode: 409, code: 'order_not_pending' });
+      expect(acceptOrder).toHaveBeenCalledWith({ orderId: order._id, sellerId });
+      expect(order.save).not.toHaveBeenCalled();
     });
 
     it('reports a resolving acceptance without mutating the order itself', async () => {
@@ -160,17 +173,18 @@ describe('seller order transitions', () => {
         .rejects.toMatchObject({ statusCode: 403, code: 'not_order_seller' });
     });
 
-    it('keeps cancelling a manual-capture order unavailable', async () => {
-      const order = makeOrder({ paymentFlowVersion: 'manual_capture' });
+    it('keeps cancelling a preparing manual-capture order unavailable', async () => {
+      const order = makeOrder({ status: 'preparing', paymentFlowVersion: 'manual_capture' });
       stubOrder(order);
 
       await expect(updateSellerOrderStatus(order._id, sellerId, 'cancelled'))
         .rejects.toMatchObject({ statusCode: 409, code: 'cancellation_unavailable' });
       expect(order.save).not.toHaveBeenCalled();
+      expect(cancelOrderAsSeller).not.toHaveBeenCalled();
     });
 
-    it('restores stock when cancelling a legacy COD order', async () => {
-      const order = makeOrder();
+    it('restores stock when cancelling a preparing COD order, as before', async () => {
+      const order = makeOrder({ status: 'preparing' });
       stubOrder(order);
 
       await updateSellerOrderStatus(order._id, sellerId, 'cancelled', 'out of stock');
@@ -178,6 +192,61 @@ describe('seller order transitions', () => {
       expect(Product.findByIdAndUpdate).toHaveBeenCalledWith(productId, { $inc: { stock: 1 } });
       expect(order.status).toBe('cancelled');
       expect(order.cancelReason).toBe('out of stock');
+      expect(cancelOrderAsSeller).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('pending -> cancelled', () => {
+    it('goes through cancelOrderAsSeller and returns its payment outcome', async () => {
+      const order = makeOrder();
+      const cancelled = makeOrder({ status: 'cancelled' });
+      stubOrder(order);
+      vi.mocked(cancelOrderAsSeller).mockResolvedValue({ order: cancelled, paymentOperation: { status: 'pending' } });
+
+      const result = await updateSellerOrderStatus(order._id, sellerId, 'cancelled', 'Out of stock');
+
+      expect(cancelOrderAsSeller).toHaveBeenCalledWith(order._id, sellerId, 'Out of stock');
+      expect(result).toEqual({ order: cancelled, outcome: 'completed', paymentOperation: { status: 'pending' } });
+    });
+
+    it('never uses the product pre-check or the read-then-save path', async () => {
+      const order = makeOrder({ paymentFlowVersion: 'manual_capture', paymentStatus: 'authorized' });
+      stubOrder(order);
+      vi.mocked(cancelOrderAsSeller).mockResolvedValue({ order: makeOrder({ status: 'cancelled' }) });
+
+      await updateSellerOrderStatus(order._id, sellerId, 'cancelled', 'Out of stock');
+
+      expect(Product.find).not.toHaveBeenCalled();
+      expect(Product.findByIdAndUpdate).not.toHaveBeenCalled();
+      expect(order.save).not.toHaveBeenCalled();
+    });
+
+    it('routes a retry for an already cancelled order through cancelOrderAsSeller as well', async () => {
+      const order = makeOrder({ status: 'cancelled' });
+      stubOrder(order);
+      vi.mocked(cancelOrderAsSeller).mockResolvedValue({ order });
+
+      await updateSellerOrderStatus(order._id, sellerId, 'cancelled', 'Out of stock');
+
+      expect(cancelOrderAsSeller).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes a missing reason on so the orchestrator can reject it', async () => {
+      const order = makeOrder();
+      stubOrder(order);
+      vi.mocked(cancelOrderAsSeller).mockRejectedValue(new AppError(400, 'reason', 'invalid_cancel_reason'));
+
+      await expect(updateSellerOrderStatus(order._id, sellerId, 'cancelled'))
+        .rejects.toMatchObject({ statusCode: 400, code: 'invalid_cancel_reason' });
+      expect(cancelOrderAsSeller).toHaveBeenCalledWith(order._id, sellerId, undefined);
+    });
+
+    it('still answers 404 for a missing order without calling the orchestrator', async () => {
+      stubOrder(null);
+
+      await expect(updateSellerOrderStatus('507f1f77bcf86cd799439099', sellerId, 'cancelled', 'x'))
+        .rejects.toMatchObject({ statusCode: 404, code: 'order_not_found' });
+      expect(cancelOrderAsSeller).not.toHaveBeenCalled();
     });
   });
 });

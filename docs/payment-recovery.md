@@ -1,4 +1,4 @@
-# Payment recovery and buyer cancellation
+# Payment recovery and cancellation
 
 ## Buyer cancellation
 
@@ -18,6 +18,38 @@ temporarily unavailable. `release_pending` means the hold is still being release
 can take additional time to reflect release. This does not issue refunds for already
 captured payments. Legacy paid-order cancellation uses the separate refund path documented in
 [Existing paid orders](legacy-payment-reconciliation.md).
+
+## Seller cancellation of pending orders
+
+A seller can cancel their own order while it is pending, with a required reason (trimmed,
+1 to 1000 characters). It uses the same atomic claim as acceptance, buyer cancellation and
+the deadline scanner, so exactly one of them wins and reservations are restored once.
+
+Supported orders: a pending manual-capture card order whose payment is `authorized` (the
+hold is released), and a pending cash-on-delivery order with `paymentStatus: not_required`
+(no Stripe request). Everything else is refused with `409 cancellation_unavailable` and
+left unchanged: legacy-shaped card orders, orders without a persisted `sellerId`, and any
+other payment state. An order whose capture is in progress (`capture_pending`) or that is
+no longer pending is refused with `409 cancellation_conflict`; the seller refreshes.
+Ownership is the persisted `sellerId` only, so deleting a product never revokes it.
+
+The order records who cancelled it (`cancelledByRole`: `buyer`, `seller` or `system`;
+`cancelledById`; `cancelledAt`) once, in the claim. A repeated request from the same seller
+returns the stored order unchanged and never changes the first actor. The deadline scanner
+and expired holds are recorded as `system`.
+
+Cancelling the order can succeed while the hold release is still settling. The response
+carries `paymentOperation` for card orders: `pending` while the release is in progress,
+`completed` once Stripe confirms the PaymentIntent is canceled, `needs_review` when the
+release operation (`order:<orderId>:release:1`) is in `needs_support`. COD orders carry no
+`paymentOperation`. Clients must not describe a pending release as money returned.
+
+Monitoring: cancelled orders with `cancelledByRole: 'seller'` and `paymentStatus:
+release_pending` are releases still in flight; a `needs_support` release operation needs a
+person to compare the order with the Stripe PaymentIntent. The payment-operation worker
+finishes interrupted releases with the original key, and also repairs a cancelled order left
+`release_pending` when its release operation is missing or already succeeded. There is no
+feature flag for this action; blocking it would need a code change.
 
 ## Recovery loops
 
@@ -52,7 +84,10 @@ hold has already disappeared from the buyer's bank.
 
 ## Verification
 
-Tests cover buyer ownership, duplicate cancellation, acceptance/cancellation races,
+Tests cover seller cancellation (ownership by persisted `sellerId`, reason validation,
+unsupported shapes, repeat requests keeping the first actor, release timeout finished by the
+worker, seller races against acceptance, the buyer and the deadline scanner), buyer ownership,
+duplicate cancellation, acceptance/cancellation races,
 stock and coupon restoration, uncertain hold releases, checkout retry after restoration,
 cleanup pagination, slow-release leases, failed webhook replay, duplicate event claims,
 and recovery after processing is interrupted. Database integration tests use a separate

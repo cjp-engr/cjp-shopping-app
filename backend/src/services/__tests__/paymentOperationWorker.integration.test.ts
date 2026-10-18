@@ -5,6 +5,7 @@ import Order from '../../models/Order.js';
 import PaymentOperation from '../../models/PaymentOperation.js';
 import { acceptOrder } from '../orderAcceptance.js';
 import { processDueOperations } from '../paymentOperationWorker.js';
+import { claimOperationById } from '../paymentOperationService.js';
 import { LEASE_MS, MAX_ATTEMPTS } from '../paymentOperationPolicy.js';
 import { releaseIntentOperation } from '../paymentRelease.js';
 import {
@@ -476,6 +477,40 @@ describe('payment operation worker (replica set, Stripe mocked)', () => {
       expect(stored!.paymentStatus).toBe('authorized');
       expect(retrieveIntentWithCharge).not.toHaveBeenCalled();
       expect(capturePaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('closes the window for a stalled accept: the revert leaves a failed next-generation capture marker', async () => {
+      const order = await makeOrder();
+      await touch(order._id, staleAt);
+
+      await processDueOperations('worker-1', now);
+
+      const marker = await PaymentOperation.findOne({ idempotencyKey: `order:${order.id}:capture:1` }).lean();
+      expect(marker).toMatchObject({ action: 'capture', status: 'failed', generation: 1 });
+      expect(marker!.lastError!.code).toBe('orphan_reverted');
+      // A stalled request would now upsert the same key, find a failed operation and never capture.
+      expect(await claimOperationById(marker!._id.toString(), 'late-request', now)).toBeNull();
+    });
+
+    it('does not revert when the stalled request created its operation just before the repair', async () => {
+      const order = await makeOrder();
+      await touch(order._id, staleAt);
+      const find = PaymentOperation.distinct.bind(PaymentOperation);
+      // The distinct() check sees no operation; the request then creates generation 1 before the marker write.
+      const distinctSpy = vi.spyOn(PaymentOperation, 'distinct').mockImplementationOnce((async (...args: any[]) => {
+        const result = await (find as any)(...args);
+        await makeOperation(order, 'capture', { status: 'in_progress', attempts: 1, leaseOwner: 'live-request', leaseExpiresAt: new Date(now.getTime() + LEASE_MS) });
+        return result;
+      }) as any);
+
+      try {
+        expect(await processDueOperations('worker-1', now)).toBe(0);
+      } finally {
+        distinctSpy.mockRestore();
+      }
+
+      expect((await Order.findById(order._id).lean())!.paymentStatus).toBe('capture_pending');
+      expect(await PaymentOperation.countDocuments({ orderId: order._id, action: 'capture' })).toBe(1);
     });
 
     it.each(['pending', 'in_progress', 'needs_support', 'succeeded'] as const)(

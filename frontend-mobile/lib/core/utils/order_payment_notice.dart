@@ -28,6 +28,22 @@ bool canBuyerCancel(OrderEntity order) =>
         order.paymentStatus == 'authorized' ||
         order.paymentStatus == 'not_required');
 
+/// What the buyer sees when the seller cancelled their order, with the reason the
+/// seller gave. Same copy as the web `cancelledBySellerNotice`.
+OrderPaymentNotice? cancelledBySellerNotice(OrderEntity order) {
+  if (order.status != 'cancelled' || order.cancelledByRole != 'seller') {
+    return null;
+  }
+  final reason = order.cancelReason;
+  return OrderPaymentNotice(
+    tone: OrderPaymentTone.neutral,
+    title: 'Cancelled by the seller',
+    body: reason != null && reason.isNotEmpty
+        ? 'The seller cancelled this order. Reason: $reason'
+        : 'The seller cancelled this order.',
+  );
+}
+
 /// Same payment and refund copy as the web, including refunds of legacy charges.
 OrderPaymentNotice? orderPaymentNotice(OrderEntity order) {
   if (order.paymentErrorCode == 'refund_review' || order.paymentErrorCode == 'legacy_payment_review') {

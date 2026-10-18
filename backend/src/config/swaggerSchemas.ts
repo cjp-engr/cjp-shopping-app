@@ -73,6 +73,9 @@ const orderPaymentFields = {
   acceptBy: { ...date, description: 'Deadline for the seller to accept; unaccepted orders cancel after it.' },
   authorizationExpiresAt: { ...date, description: 'When the card authorization lapses at the payment provider.' },
   capturedAt: { ...date, description: 'When the full amount was captured.' },
+  cancelledByRole: { type: 'string', enum: ['buyer', 'seller', 'system'], description: 'Who cancelled the order. system means the acceptance deadline or an expired card hold. Absent on older cancellations.' },
+  cancelledById: { ...id, description: 'User who cancelled the order; absent when cancelledByRole is system.' },
+  cancelledAt: { ...date, description: 'When the order was cancelled.' },
 };
 const pagination = { total: { type: 'integer', minimum: 0 }, page: { type: 'integer' }, pages: { type: 'integer', minimum: 0 } };
 
@@ -164,6 +167,12 @@ export const schemas: Record<string, Schema> = {
   OrderResponse: response({ order: ref('Order') }),
   OrdersResponse: response({ orders: arr(ref('Order')) }),
   SellerOrderAcceptingResponse: response({ order: ref('Order'), operation: obj({ status: { type: 'string', enum: ['resolving'] } }, ['status']) }),
+  SellerOrder: { allOf: [ref('Order'), obj({ canSellerCancelPending: { ...bool, description: 'Server-derived: true only for a pending order this seller owns whose payment is an authorized hold or cash on delivery. The server still checks on submit.' } }, ['canSellerCancelPending'])] },
+  SellerOrdersResponse: response({ orders: arr(ref('SellerOrder')) }),
+  SellerOrderStatusResponse: response({
+    order: ref('Order'),
+    paymentOperation: obj({ status: { type: 'string', enum: ['pending', 'completed', 'needs_review'], description: 'Where the card hold release stands after a cancellation: pending while releasing, completed once released, needs_review when it is in support review.' } }, ['status']),
+  }, ['order']),
   CheckoutSessionCreateInput: obj({
     items: { type: 'array', minItems: 1, items: ref('OrderItemInput') }, shippingAddress: ref('ShippingAddressInput'),
     paymentMethod: { type: 'object', required: ['type'], properties: { type: { type: 'string', enum: ['credit-card', 'debit-card'] }, last4: { type: 'string' }, cardHolder: { type: 'string' } } },

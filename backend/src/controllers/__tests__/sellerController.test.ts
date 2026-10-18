@@ -32,6 +32,38 @@ describe('updateSellerOrderStatus controller', () => {
     expect(res.json).toHaveBeenCalledWith({ success: true, order });
   });
 
+  it('forwards the cancellation reason and responds 200 with the payment outcome', async () => {
+    const order = { _id: 'order-1', status: 'cancelled', paymentStatus: 'release_pending' };
+    vi.mocked(sellerService.updateSellerOrderStatus).mockResolvedValue({
+      order,
+      outcome: 'completed',
+      paymentOperation: { status: 'pending' },
+    } as any);
+    const res = makeRes();
+    const req = makeReq();
+    req.body = { status: 'cancelled', cancelReason: 'Out of stock' };
+
+    await updateSellerOrderStatus(req, res, vi.fn());
+
+    expect(sellerService.updateSellerOrderStatus).toHaveBeenCalledWith('order-1', 'seller-1', 'cancelled', 'Out of stock');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ success: true, order, paymentOperation: { status: 'pending' } });
+  });
+
+  it('keeps the capture operation shape out of cancellation responses', async () => {
+    vi.mocked(sellerService.updateSellerOrderStatus).mockResolvedValue({
+      order: { _id: 'order-1' },
+      outcome: 'completed',
+      paymentOperation: { status: 'completed' },
+    } as any);
+    const res = makeRes();
+
+    await updateSellerOrderStatus(makeReq(), res, vi.fn());
+
+    const body = vi.mocked(res.json).mock.calls[0][0] as Record<string, unknown>;
+    expect(body).not.toHaveProperty('operation');
+  });
+
   it('responds 202 with a resolving operation while the capture is in flight', async () => {
     const order = { _id: 'order-1', status: 'pending', paymentStatus: 'capture_pending' };
     vi.mocked(sellerService.updateSellerOrderStatus).mockResolvedValue({ order, outcome: 'resolving' } as any);

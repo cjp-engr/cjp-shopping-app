@@ -202,11 +202,14 @@ export async function capturePaymentIntent(
   }
 }
 
-/** A failure is ambiguous when Stripe may have acted: no HTTP status, or a server-side error. */
+/**
+ * A failure is ambiguous when Stripe may have acted: no HTTP status, a server-side error, or an
+ * idempotency conflict (409) / rate limit (429), where another request with the same key may still land.
+ */
 export function isAmbiguousStripeError(err: unknown): boolean {
   if (!(err instanceof StripeError)) return true;
   const status = (err.originalError as { statusCode?: number } | undefined)?.statusCode;
-  return status === undefined || status >= 500;
+  return status === undefined || status >= 500 || status === 409 || status === 429;
 }
 
 export async function retrieveIntentWithCharge(id: string): Promise<Stripe.PaymentIntent> {

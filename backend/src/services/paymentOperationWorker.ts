@@ -153,6 +153,26 @@ async function repairOrphanedCaptures(now: Date): Promise<number> {
     );
     for (const id of ids) {
       if (withOperation.has(id.toString())) continue;
+      // Close the window against a request that is stalled between claiming the order and creating
+      // its operation: take the next generation's key as a failed marker. The unique key lets only one
+      // side win. If a request already created that operation, leave the order alone; if the marker is
+      // ours, a late runCapture finds a failed operation, cannot claim it and never captures.
+      const failedGenerations = await PaymentOperation.countDocuments({ orderId: id, action: 'capture', status: 'failed' });
+      const marker = await PaymentOperation.updateOne(
+        { idempotencyKey: orderOperationKey(id.toString(), 'capture', failedGenerations + 1) },
+        {
+          $setOnInsert: {
+            action: 'capture',
+            generation: failedGenerations + 1,
+            status: 'failed',
+            orderId: id,
+            attempts: 0,
+            lastError: { code: 'orphan_reverted', message: 'The acceptance request died before creating a capture operation', at: now },
+          },
+        },
+        { upsert: true },
+      );
+      if (marker.upsertedCount === 0) continue;
       // Filtered again so a concurrent accept, cancel or capture is never overwritten.
       const result = await Order.updateOne(
         { _id: id, status: 'pending', paymentStatus: 'capture_pending', updatedAt: { $lt: cutoff } },

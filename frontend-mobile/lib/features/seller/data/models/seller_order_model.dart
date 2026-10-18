@@ -189,6 +189,13 @@ class SellerOrderData {
   final DateTime? acceptBy;
   final DateTime? authorizationExpiresAt;
 
+  /// Server-derived: this seller can cancel this pending order right now.
+  final bool canSellerCancelPending;
+
+  /// Who cancelled the order (`buyer`, `seller`, `system`); absent on older cancellations.
+  final String? cancelledByRole;
+  final DateTime? cancelledAt;
+
   const SellerOrderData({
     required this.id,
     required this.status,
@@ -210,6 +217,9 @@ class SellerOrderData {
     this.placedAt,
     this.acceptBy,
     this.authorizationExpiresAt,
+    this.canSellerCancelPending = false,
+    this.cancelledByRole,
+    this.cancelledAt,
   });
 
   String get shortId =>
@@ -220,10 +230,14 @@ class SellerOrderData {
   bool get canMarkPreparing => status == 'pending';
   bool get canMarkToShip => status == 'preparing';
   bool get canMarkShipped => status == 'processing';
-  bool get canCancel =>
-      ['pending', 'preparing', 'processing'].contains(status) &&
-      paymentFlowVersion != 'manual_capture' &&
-      !['credit-card', 'debit-card'].contains(paymentMethod?.type);
+  /// A pending order is cancellable only when the server says so. After pending the
+  /// existing rule stays: cash on delivery only, never a card order.
+  bool get canCancel {
+    if (status == 'pending') return canSellerCancelPending;
+    return ['preparing', 'processing'].contains(status) &&
+        paymentFlowVersion != 'manual_capture' &&
+        !['credit-card', 'debit-card'].contains(paymentMethod?.type);
+  }
 
   SellerOrderData copyWith({String? status, String? cancelReason}) =>
       SellerOrderData(
@@ -247,6 +261,9 @@ class SellerOrderData {
         placedAt: placedAt,
         acceptBy: acceptBy,
         authorizationExpiresAt: authorizationExpiresAt,
+        canSellerCancelPending: canSellerCancelPending,
+        cancelledByRole: cancelledByRole,
+        cancelledAt: cancelledAt,
       );
 
   factory SellerOrderData.fromJson(Map<String, dynamic> json) {
@@ -315,6 +332,11 @@ class SellerOrderData {
       placedAt: parseOptionalDate(json['placedAt']),
       acceptBy: parseOptionalDate(json['acceptBy']),
       authorizationExpiresAt: parseOptionalDate(json['authorizationExpiresAt']),
+      canSellerCancelPending: json['canSellerCancelPending'] == true,
+      cancelledByRole: json['cancelledByRole'] is String
+          ? json['cancelledByRole'] as String
+          : null,
+      cancelledAt: parseOptionalDate(json['cancelledAt']),
     );
   }
 }

@@ -69,8 +69,24 @@ export function canBuyerCancel(order: Order): boolean {
     || order.paymentStatus === 'authorized' || order.paymentStatus === 'not_required');
 }
 
-/** Seller card cancellations stay disabled until their refund/release flow exists. */
-export function canSellerCancel(order: Pick<Order, 'paymentFlowVersion' | 'paymentMethod'> & { status: string }): boolean {
-  return ['pending', 'preparing', 'processing'].includes(order.status)
+/**
+ * A pending order is cancellable only when the server says so (`canSellerCancelPending`): the client does not
+ * infer it from the payment shape. After pending the existing rule stays: cash on delivery only, never a card order.
+ */
+export function canSellerCancel(
+  order: Pick<Order, 'paymentFlowVersion' | 'paymentMethod' | 'canSellerCancelPending'> & { status: string },
+): boolean {
+  if (order.status === 'pending') return order.canSellerCancelPending === true;
+  return ['preparing', 'processing'].includes(order.status)
     && !isManualCaptureOrder(order) && !['credit-card', 'debit-card'].includes(order.paymentMethod.type);
+}
+
+/** What the buyer sees when the seller cancelled their order, with the reason the seller gave. */
+export function cancelledBySellerNotice(order: Order): PaymentStatusNotice | null {
+  if (order.status !== 'cancelled' || order.cancelledByRole !== 'seller') return null;
+  return {
+    tone: 'neutral',
+    title: 'Cancelled by the seller',
+    body: order.cancelReason ? `The seller cancelled this order. Reason: ${order.cancelReason}` : 'The seller cancelled this order.',
+  };
 }

@@ -224,6 +224,9 @@ class AppStrings {
   static const String cancelReasonHint =
       'e.g. Out of stock, unable to fulfill…';
   static const String cancelReasonHelper = 'Optional — shown to the buyer';
+  static const String sellerCancelReasonSubtitle =
+      'The buyer will see this reason. A reason is required.';
+  static const String sellerCancelReasonHelper = 'Required — shown to the buyer';
   static const String noVouchersYet = 'No vouchers yet';
   static const String tapToCreateVoucher = 'Tap + to create your first voucher';
   static const String expired = 'Expired';

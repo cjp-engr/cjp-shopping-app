@@ -12,6 +12,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../products/domain/entities/product_entity.dart';
 import '../../data/models/seller_order_model.dart';
 import '../../domain/seller_acceptance.dart';
+import '../../domain/seller_cancellation.dart';
 import '../bloc/seller_bloc.dart';
 import '../bloc/seller_event.dart';
 import '../bloc/seller_state.dart';
@@ -1038,13 +1039,14 @@ class _OrderCard extends StatelessWidget {
                             Expanded(
                               flex: order.canMarkPreparing ? 2 : 1,
                               child: _OrderActionBtn(
+                                key: keys.seller.cancelOrderButton(order.id),
                                 label: 'Cancel',
                                 icon: Icons.cancel_outlined,
                                 color: AppColors.danger,
                                 onTap: busy
                                     ? null
                                     : () => _showSellerCancelDialog(
-                                        context, order.id),
+                                        context, order),
                               ),
                             ),
                         ],
@@ -1076,10 +1078,14 @@ class _OrderCard extends StatelessWidget {
     }
   }
 
-  void _showSellerCancelDialog(BuildContext context, String orderId) {
+  /// A pending order needs a reason (the server enforces it and decides whether the order can
+  /// still be cancelled); later cancellations keep the existing optional reason.
+  void _showSellerCancelDialog(BuildContext context, SellerOrderData order) {
+    final reasonRequired = order.status == 'pending';
     String? reason;
     bool confirmed = false;
     final reasonValue = ValueNotifier<String>('');
+    final reasonError = ValueNotifier<String?>(null);
     showDialog<void>(
       context: context,
       barrierColor: Colors.black54,
@@ -1088,14 +1094,28 @@ class _OrderCard extends StatelessWidget {
         iconColor: AppColors.danger,
         iconBackground: AppColors.dangerSurface,
         title: AppStrings.cancelOrder,
-        subtitle: AppStrings.cancelReasonSubtitle,
-        formContent: _SellerCancelReasonField(value: reasonValue),
+        subtitle: reasonRequired
+            ? AppStrings.sellerCancelReasonSubtitle
+            : AppStrings.cancelReasonSubtitle,
+        formContent: _SellerCancelReasonField(
+          value: reasonValue,
+          errorText: reasonError,
+          reasonRequired: reasonRequired,
+        ),
         cancelLabel: AppStrings.keepOrder,
         confirmLabel: AppStrings.yesCancel,
         confirmColor: AppColors.danger,
         onCancel: () => Navigator.of(dialogCtx).pop(),
         onConfirm: () {
           final text = reasonValue.value.trim();
+          if (reasonRequired) {
+            final error = cancelReasonError(text);
+            if (error != null) {
+              // Keep the dialog open so the seller can fix the reason.
+              reasonError.value = error;
+              return;
+            }
+          }
           reason = text.isEmpty ? null : text;
           confirmed = true;
           Navigator.of(dialogCtx).pop();
@@ -1103,10 +1123,15 @@ class _OrderCard extends StatelessWidget {
       ),
     ).then((_) {
       reasonValue.dispose();
+      reasonError.dispose();
       if (confirmed && context.mounted) {
-        context.read<SellerBloc>().add(SellerOrderStatusUpdateRequested(
-            orderId, 'cancelled',
-            cancelReason: reason));
+        final bloc = context.read<SellerBloc>();
+        if (reasonRequired) {
+          bloc.add(SellerOrderCancelRequested(order.id, reason!));
+        } else {
+          bloc.add(SellerOrderStatusUpdateRequested(order.id, 'cancelled',
+              cancelReason: reason));
+        }
       }
     });
   }
@@ -2750,8 +2775,14 @@ class _CouponFormSheetState extends State<_CouponFormSheet> {
 }
 
 class _SellerCancelReasonField extends StatefulWidget {
-  const _SellerCancelReasonField({required this.value});
+  const _SellerCancelReasonField({
+    required this.value,
+    required this.errorText,
+    required this.reasonRequired,
+  });
   final ValueNotifier<String> value;
+  final ValueNotifier<String?> errorText;
+  final bool reasonRequired;
 
   @override
   State<_SellerCancelReasonField> createState() =>
@@ -2765,11 +2796,20 @@ class _SellerCancelReasonFieldState extends State<_SellerCancelReasonField> {
   void initState() {
     super.initState();
     _ctrl = TextEditingController();
-    _ctrl.addListener(() => widget.value.value = _ctrl.text);
+    _ctrl.addListener(() {
+      widget.value.value = _ctrl.text;
+      widget.errorText.value = null;
+    });
+    widget.errorText.addListener(_onErrorChanged);
+  }
+
+  void _onErrorChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    widget.errorText.removeListener(_onErrorChanged);
     _ctrl.dispose();
     super.dispose();
   }
@@ -2778,8 +2818,10 @@ class _SellerCancelReasonFieldState extends State<_SellerCancelReasonField> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextField(
+      key: keys.seller.cancelReasonField,
       controller: _ctrl,
       maxLines: 3,
+      maxLength: maxCancelReasonLength,
       style: TextStyle(
         fontSize: 14,
         color: isDark ? Colors.white : AppColors.textPrimary,
@@ -2790,7 +2832,10 @@ class _SellerCancelReasonFieldState extends State<_SellerCancelReasonField> {
           fontSize: 13,
           color: isDark ? const Color(0xFF64748B) : AppColors.textMuted,
         ),
-        helperText: AppStrings.cancelReasonHelper,
+        helperText: widget.reasonRequired
+            ? AppStrings.sellerCancelReasonHelper
+            : AppStrings.cancelReasonHelper,
+        errorText: widget.errorText.value,
         helperStyle: TextStyle(
             fontSize: 12,
             color: isDark ? const Color(0xFF475569) : AppColors.textMuted),

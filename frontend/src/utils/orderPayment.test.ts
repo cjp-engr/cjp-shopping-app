@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { acceptanceDeadline, canBuyerCancel, canSellerCancel, hasShortAcceptanceWindow, paymentStatusNotice } from './orderPayment';
+import { acceptanceDeadline, canBuyerCancel, canSellerCancel, cancelledBySellerNotice, hasShortAcceptanceWindow, paymentStatusNotice } from './orderPayment';
 import type { Order } from '../types/order';
 
 function order(overrides: Partial<Order> = {}): Order {
@@ -19,11 +19,52 @@ function order(overrides: Partial<Order> = {}): Order {
 }
 
 const DAY = 24 * 60 * 60 * 1000;
-it('hides seller card cancellation until the refund flow exists, retaining legacy COD', () => {
-  expect(canSellerCancel(order({ paymentFlowVersion: 'legacy' }))).toBe(false);
-  expect(canSellerCancel(order({ paymentFlowVersion: 'legacy', paymentMethod: { type: 'cash-on-delivery' } }))).toBe(true);
-  expect(canSellerCancel(order({ paymentFlowVersion: 'manual_capture', paymentMethod: { type: 'cash-on-delivery' } }))).toBe(false);
+it('does not offer the buyer cancellation once a legacy payment is refunded', () => {
   expect(canBuyerCancel(order({ paymentFlowVersion: 'legacy', paymentStatus: 'refunded' }))).toBe(false);
+});
+
+describe('canSellerCancel', () => {
+  it('follows the server capability for a pending order', () => {
+    expect(canSellerCancel(order({ canSellerCancelPending: true }))).toBe(true);
+    expect(canSellerCancel(order({ canSellerCancelPending: false }))).toBe(false);
+    expect(canSellerCancel(order({ canSellerCancelPending: undefined }))).toBe(false);
+  });
+
+  it('never infers pending eligibility from the payment shape', () => {
+    const cod = { paymentFlowVersion: 'legacy' as const, paymentMethod: { type: 'cash-on-delivery' as const }, paymentStatus: 'not_required' };
+    expect(canSellerCancel(order(cod))).toBe(false);
+    expect(canSellerCancel(order({ ...cod, canSellerCancelPending: true }))).toBe(true);
+  });
+
+  it.each(['preparing', 'processing'] as const)('keeps the cash-on-delivery-only rule once an order is %s', status => {
+    expect(canSellerCancel(order({ status, paymentFlowVersion: 'legacy', paymentMethod: { type: 'cash-on-delivery' } }))).toBe(true);
+    expect(canSellerCancel(order({ status, paymentFlowVersion: 'manual_capture', paymentMethod: { type: 'cash-on-delivery' } }))).toBe(false);
+    expect(canSellerCancel(order({ status, paymentFlowVersion: 'manual_capture' }))).toBe(false);
+    expect(canSellerCancel(order({ status, paymentFlowVersion: 'legacy' }))).toBe(false);
+  });
+
+  it.each(['shipped', 'delivered', 'cancelled'] as const)('is false for a %s order', status => {
+    expect(canSellerCancel(order({ status, paymentFlowVersion: 'legacy', paymentMethod: { type: 'cash-on-delivery' }, canSellerCancelPending: true }))).toBe(false);
+  });
+});
+
+describe('cancelledBySellerNotice', () => {
+  it('tells the buyer the seller cancelled, with the reason', () => {
+    const notice = cancelledBySellerNotice(order({ status: 'cancelled', cancelledByRole: 'seller', cancelReason: 'Out of stock' }));
+    expect(notice?.title).toBe('Cancelled by the seller');
+    expect(notice?.body).toContain('Out of stock');
+  });
+
+  it('still says the seller cancelled when no reason was kept', () => {
+    expect(cancelledBySellerNotice(order({ status: 'cancelled', cancelledByRole: 'seller' }))?.body).toBe('The seller cancelled this order.');
+  });
+
+  it('shows nothing for other actors, older cancellations or orders that are not cancelled', () => {
+    expect(cancelledBySellerNotice(order({ status: 'cancelled', cancelledByRole: 'buyer', cancelReason: 'x' }))).toBeNull();
+    expect(cancelledBySellerNotice(order({ status: 'cancelled', cancelledByRole: 'system' }))).toBeNull();
+    expect(cancelledBySellerNotice(order({ status: 'cancelled' }))).toBeNull();
+    expect(cancelledBySellerNotice(order({ status: 'pending', cancelledByRole: 'seller' }))).toBeNull();
+  });
 });
 const placedAt = '2026-10-14T00:05:00.000Z';
 

@@ -5,6 +5,11 @@ SellerOrderData sellerOrder({
   String status = 'pending',
   String? paymentStatus,
   DateTime? acceptBy,
+  bool canSellerCancelPending = false,
+  String paymentFlowVersion = 'legacy',
+  String? paymentType,
+  String? cancelReason,
+  String? cancelledByRole,
 }) =>
     SellerOrderData(
       id: id,
@@ -19,4 +24,10 @@ SellerOrderData sellerOrder({
       items: const [],
       paymentStatus: paymentStatus,
       acceptBy: acceptBy,
+      canSellerCancelPending: canSellerCancelPending,
+      paymentFlowVersion: paymentFlowVersion,
+      paymentMethod:
+          paymentType == null ? null : SellerOrderPayment(type: paymentType),
+      cancelReason: cancelReason,
+      cancelledByRole: cancelledByRole,
     );

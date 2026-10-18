@@ -91,6 +91,11 @@ class SellerKeys {
   // Order acceptance (parameterized by order id)
   // ignore: library_private_types_in_public_api
   _SellerKey acceptOrderButton(String id) => _SellerKey('acceptOrderButton_$id');
+  // Order cancellation
+  // ignore: library_private_types_in_public_api
+  _SellerKey cancelOrderButton(String id) => _SellerKey('cancelOrderButton_$id');
+  final cancelReasonField = const _SellerKey('cancelReasonField');
+
   // ignore: library_private_types_in_public_api
   _SellerKey acceptDeadlineText(String id) =>
       _SellerKey('acceptDeadlineText_$id');

@@ -134,9 +134,9 @@ describe('order visibility (replica set)', () => {
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
-    it('returns 409 cancellation_unavailable when cancelling a manual-capture order with the flag on', async () => {
+    it('returns 409 cancellation_unavailable when cancelling a manual-capture order without an authorized payment, with the flag on', async () => {
       process.env.SELLER_SEES_MANUAL_CAPTURE = 'true';
-      const error = await updateSellerOrderStatus(manual._id.toString(), seller.toString(), 'cancelled').catch(e => e);
+      const error = await updateSellerOrderStatus(manual._id.toString(), seller.toString(), 'cancelled', 'Out of stock').catch(e => e);
       expect(error).toMatchObject({ statusCode: 409, code: 'cancellation_unavailable' });
 
       const stored = await Order.findById(manual._id);

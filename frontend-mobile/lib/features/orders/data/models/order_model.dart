@@ -149,6 +149,8 @@ class OrderModel extends OrderEntity {
     super.placedAt,
     super.acceptBy,
     super.authorizationExpiresAt,
+    super.cancelledByRole,
+    super.cancelledAt,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -206,6 +208,10 @@ class OrderModel extends OrderEntity {
           : null,
       acceptBy: parseOptionalDate(json['acceptBy']),
       authorizationExpiresAt: parseOptionalDate(json['authorizationExpiresAt']),
+      cancelledByRole: json['cancelledByRole'] is String
+          ? json['cancelledByRole'] as String
+          : null,
+      cancelledAt: parseOptionalDate(json['cancelledAt']),
     );
   }
 }

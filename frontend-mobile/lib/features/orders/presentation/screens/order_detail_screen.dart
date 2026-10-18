@@ -322,9 +322,10 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  AppStrings.orderCancelledNotice,
-                                  style: TextStyle(
+                                Text(
+                                  cancelledBySellerNotice(order)?.title ??
+                                      AppStrings.orderCancelledNotice,
+                                  style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.danger,
