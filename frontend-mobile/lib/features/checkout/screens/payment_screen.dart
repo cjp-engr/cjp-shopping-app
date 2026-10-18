@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:toko_mart/keys.dart';
 // Only PaymentMethod is needed; flutter_stripe also exports a `Card` that
 // would clash with Material's Card.
 import 'package:flutter_stripe/flutter_stripe.dart' show PaymentMethod;
 import 'package:toko_mart/core/constants/stripe_error_messages.dart';
 import 'package:toko_mart/features/checkout/bloc/payment_bloc.dart';
+import 'package:toko_mart/features/checkout/models/checkout_session_view.dart';
+import 'package:toko_mart/features/checkout/widgets/authorization_disclosure.dart';
 import 'package:toko_mart/features/checkout/widgets/card_form.dart';
 import 'package:toko_mart/features/checkout/widgets/saved_cards_list.dart';
 
@@ -29,12 +32,21 @@ class PaymentScreen extends StatefulWidget {
       onPaymentSuccess;
   final VoidCallback onBack;
 
+  /// Session flow (CHECKOUT_FLOW=manual_capture). The checkout payload for the session; null for the
+  /// legacy one-step charge. When set, [buyerId] and [onCheckoutPlaced] must be set too.
+  final Map<String, dynamic>? checkoutPayload;
+  final String? buyerId;
+  final void Function(List<String> orderIds)? onCheckoutPlaced;
+
   const PaymentScreen({
     super.key,
     required this.amountInCents,
     required this.cartItems,
     required this.onPaymentSuccess,
     required this.onBack,
+    this.checkoutPayload,
+    this.buyerId,
+    this.onCheckoutPlaced,
   });
 
   @override
@@ -61,10 +73,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
   // Guards against double navigation if PaymentSucceeded is re-delivered.
   bool _completed = false;
 
+  // Session flow: true from "Place Order" until the session is placed or ends. While false, a resumed
+  // session is only shown; nothing is held until the buyer confirms.
+  bool _placing = false;
+  // The Stripe PaymentMethod ID of the card chosen for the session.
+  String? _sessionMethodId;
+
+  bool get _sessionMode => widget.checkoutPayload != null;
+
   @override
   void initState() {
     super.initState();
-    context.read<PaymentBloc>().add(const LoadSavedPaymentMethods());
+    final bloc = context.read<PaymentBloc>();
+    bloc.add(const LoadSavedPaymentMethods());
+    if (_sessionMode) {
+      // Reopening after a restart or a dropped connection resumes the stored session. Never assume
+      // no order exists.
+      bloc.add(ResumeCheckoutSession(buyerId: widget.buyerId!));
+    }
   }
 
   bool get _isNewCardTab => _currentTabIndex == _newCardTab;
@@ -109,19 +135,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
       // but we know it's _CardFormWidgetState which has createPaymentMethod
       try {
         // Access the method dynamically
-        final method = cardFormState.runtimeType.toString();
-        // ignore: avoid_print
-        print('Card form state type: $method');
-
         // Call createPaymentMethod via dynamic dispatch
         final result = await (cardFormState as dynamic).createPaymentMethod();
         if (!result || _newCardMethodId == null) {
           // Error already shown in snackbar by CardFormWidget
           return;
         }
-      } catch (e) {
-        // ignore: avoid_print
-        print('Error creating payment method: $e');
+      } catch (_) {
         _showSnackBar(
             'Failed to create payment method. Please try again.', Colors.red);
         return;
@@ -159,7 +179,74 @@ class _PaymentScreenState extends State<PaymentScreen> {
         last4: method.last4,
       ));
     }
+    if (_sessionMode) {
+      // The Stripe PaymentMethod ID: a new card's, or the saved card's (not the internal card ID).
+      final stripeMethodId = _isNewCardTab
+          ? _newCardMethodId
+          : _selectedSavedMethod?.stripePaymentMethodId;
+      if (stripeMethodId == null || stripeMethodId.isEmpty) {
+        _showSnackBar('Please select a payment method.', Colors.red);
+        return;
+      }
+      _startCheckoutSession(bloc, stripeMethodId);
+      return;
+    }
+
     bloc.add(CreatePaymentIntent(widget.amountInCents));
+  }
+
+  void _startCheckoutSession(PaymentBloc bloc, String stripeMethodId) {
+    final payload = Map<String, dynamic>.from(widget.checkoutPayload!);
+    // A saved card is attached by the server when the session is created. A new card is only held
+    // when each seller is confirmed, below.
+    if (!_isNewCardTab) {
+      payload['savedPaymentMethodId'] = stripeMethodId;
+    }
+    _sessionMethodId = stripeMethodId;
+    _placing = true;
+    bloc.add(CreateCheckoutSession(buyerId: widget.buyerId!, payload: payload));
+  }
+
+  /// Confirms sellers one at a time, then places the orders. Only acts after the buyer pressed Place Order.
+  void _onCheckoutProgress(PaymentBloc bloc, CheckoutSessionInProgress state) {
+    if (!_placing) return;
+    if (state.isFinalizing || state.authorizingSellerId != null) return;
+
+    final stop = state.stopMessage;
+    if (stop != null) {
+      // Stop here. The buyer presses Place Order again to continue; holds already made are kept.
+      _placing = false;
+      _showSnackBar(stop, Colors.red);
+      return;
+    }
+
+    final pending = state.session.sellers.where((s) => !s.authorized).firstOrNull;
+    if (pending != null) {
+      bloc.add(ConfirmSellerAuthorization(
+        pending.sellerId,
+        paymentMethodId: _sessionMethodId,
+      ));
+      return;
+    }
+    bloc.add(const FinalizeCheckoutSession());
+  }
+
+  void _onCheckoutPlaced(CheckoutSessionPlaced state) {
+    if (_completed) return;
+    _completed = true;
+    _placing = false;
+    final bloc = context.read<PaymentBloc>();
+    final card = _newCardMethod?.card;
+    if (_isNewCardTab && _shouldSaveCard && _newCardMethodId != null) {
+      bloc.add(SaveNewCard(
+        paymentMethodId: _newCardMethodId!,
+        brand: card?.brand ?? 'unknown',
+        last4: card?.last4 ?? '',
+        expiryMonth: card?.expMonth ?? 0,
+        expiryYear: card?.expYear ?? 0,
+      ));
+    }
+    widget.onCheckoutPlaced?.call(state.orderIds);
   }
 
   void _showSnackBar(String message, Color color) {
@@ -220,7 +307,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
         state.paymentIntentId,
         _isNewCardTab && !_shouldSaveCard ? _newCardMethodId : null,
       );
+    } else if (state is CheckoutSessionInProgress) {
+      if (_sessionMode) _onCheckoutProgress(context.read<PaymentBloc>(), state);
+    } else if (state is CheckoutSessionPlaced) {
+      if (_sessionMode) _onCheckoutPlaced(state);
+    } else if (state is CheckoutSessionEnded) {
+      _placing = false;
+      _showSnackBar(state.message, Colors.red);
     } else if (state is PaymentFailed) {
+      _placing = false;
       if (state.errorMessage == StripeErrorMessages.savedCardsFetchFailed) {
         setState(() => _savedMethodsFailed = true);
       }
@@ -260,7 +355,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
           builder: (context, state) {
             final isLoading = state is CreatingPaymentIntent ||
                 state is ConfirmingPayment ||
-                state is SavingCard;
+                state is SavingCard ||
+                state is CheckoutSessionStarting ||
+                (state is CheckoutSessionInProgress &&
+                    (state.authorizingSellerId != null || state.isFinalizing));
 
             return SingleChildScrollView(
               child: Padding(
@@ -269,7 +367,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildOrderSummary(context),
+                    _buildOrderSummary(context, state),
+                    if (_sessionMode) ...[
+                      const SizedBox(height: 16),
+                      const AuthorizationDisclosureCard(),
+                    ],
                     const SizedBox(height: 48),
                     _buildPaymentMethodSection(context, state, isLoading),
                     const SizedBox(height: 48),
@@ -353,6 +455,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        key: label == 'New Card' ? keys.orders.paymentNewCardTab : keys.orders.paymentSavedCardsTab,
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Padding(
@@ -389,6 +492,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       width: double.infinity,
       height: 56,
       child: FilledButton(
+        key: keys.orders.paymentSubmitButton,
         onPressed: (_canPlaceOrder && !isLoading) ? _handlePlaceOrder : null,
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFFD97706),
@@ -432,7 +536,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  Widget _buildOrderSummary(BuildContext context) {
+  Widget _buildOrderSummary(BuildContext context, PaymentState state) {
     final total = widget.amountInCents / 100;
     return Container(
       decoration: BoxDecoration(
@@ -460,6 +564,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ),
             ),
             const SizedBox(height: 16),
+            if (state is CheckoutSessionInProgress) ...[
+              // Amounts are the server's, one per seller, held separately.
+              for (final seller in state.session.sellers) _sellerAmountRow(context, seller),
+              const SizedBox(height: 4),
+              Container(height: 1, color: Colors.grey[200]),
+              const SizedBox(height: 12),
+            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -496,6 +607,37 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _sellerAmountRow(BuildContext context, CheckoutSellerView seller) {
+    final reserved = seller.authorized;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              seller.sellerName ?? 'Seller',
+              style: Theme.of(context).textTheme.bodyMedium,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Text(
+            '\$${(seller.amountMinor / 100).toStringAsFixed(2)}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            reserved ? 'Reserved' : 'Awaiting payment',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: reserved ? Colors.green[700] : Colors.grey[600],
+            ),
+          ),
+        ],
       ),
     );
   }

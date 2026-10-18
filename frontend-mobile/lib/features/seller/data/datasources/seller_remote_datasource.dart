@@ -2,6 +2,7 @@
 import 'package:dio/dio.dart';
 import '../../../products/data/models/product_model.dart';
 import '../../../../core/network/api_client.dart';
+import '../../domain/seller_status_result.dart';
 import '../models/seller_order_model.dart';
 
 class SellerRemoteDataSource {
@@ -74,15 +75,27 @@ class SellerRemoteDataSource {
     }
   }
 
-  Future<void> updateOrderStatus(String orderId, String status,
+  /// HTTP 202 means the payment capture is still resolving (`resolving`);
+  /// Dio does not throw on 2xx, so the status code is read from the response.
+  Future<SellerStatusResult> updateOrderStatus(String orderId, String status,
       {String? cancelReason}) async {
     try {
       final body = <String, dynamic>{'status': status};
       if (cancelReason != null && cancelReason.isNotEmpty) {
         body['cancelReason'] = cancelReason;
       }
-      await _dio.put('/seller/orders/$orderId/status', data: body);
+      final response =
+          await _dio.put('/seller/orders/$orderId/status', data: body);
+      return response.statusCode == 202
+          ? SellerStatusResult.resolving
+          : SellerStatusResult.completed;
     } on DioException catch (e) {
+      final data = e.response?.data;
+      if (e.type == DioExceptionType.badResponse && data is Map) {
+        final code = data['code'];
+        throw SellerOrderException(mapDioError(e),
+            code: code is String ? code : null);
+      }
       throw mapDioError(e);
     }
   }

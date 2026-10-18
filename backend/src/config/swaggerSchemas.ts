@@ -20,6 +20,8 @@ const related = (name: string): Schema => nullable({ anyOf: [id, ref(name)] });
 const success = { type: 'boolean', enum: [true] };
 const failure = { type: 'boolean', enum: [false] };
 const response = (properties: Record<string, Schema>, required = Object.keys(properties)): Schema => obj({ success, ...properties }, ['success', ...required]);
+// Checkout handlers use sendSuccess, which nests the payload under `data`.
+const dataResponse = (properties: Record<string, Schema>, required = Object.keys(properties)): Schema => obj({ success, data: obj(properties, required) }, ['success', 'data']);
 const timestamps = { createdAt: date, updatedAt: date };
 const category = { type: 'string', enum: ['Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports & Outdoors'] };
 const status = { type: 'string', enum: ['pending', 'preparing', 'processing', 'shipped', 'delivered', 'cancelled'] };
@@ -65,10 +67,17 @@ const couponFields = {
 const orderItemInput = {
   productId: id, quantity: { type: 'integer', minimum: 1 }, variantId: id, selectedAttributes: stringMap,
 };
+const orderPaymentFields = {
+  paymentFlowVersion: { type: 'string', enum: ['legacy', 'manual_capture'], description: 'manual_capture orders authorize the card at checkout and are charged when the seller accepts; legacy orders are unchanged.' },
+  paymentStatus: { type: 'string', enum: ['awaiting_authorization', 'authorized', 'capture_pending', 'captured', 'release_pending', 'released', 'refund_pending', 'refunded', 'failed', 'not_required'], description: 'Card payment progress for manual_capture orders.' },
+  acceptBy: { ...date, description: 'Deadline for the seller to accept; unaccepted orders cancel after it.' },
+  authorizationExpiresAt: { ...date, description: 'When the card authorization lapses at the payment provider.' },
+  capturedAt: { ...date, description: 'When the full amount was captured.' },
+};
 const pagination = { total: { type: 'integer', minimum: 0 }, page: { type: 'integer' }, pages: { type: 'integer', minimum: 0 } };
 
 export const schemas: Record<string, Schema> = {
-  Error: obj({ success: failure, message: str, errors: arr(ref('ValidationIssue')), stack: { type: 'string', description: 'Development mode only.' } }, ['success', 'message']),
+  Error: obj({ success: failure, message: str, code: { type: 'string', description: 'Machine-readable error code, present on errors that carry one (for example seller order acceptance).' }, errors: arr(ref('ValidationIssue')), stack: { type: 'string', description: 'Development mode only.' } }, ['success', 'message']),
   ValidationIssue: obj({
     type: { type: 'string', enum: ['field', 'alternative', 'alternative_grouped', 'unknown_fields'] },
     msg: str, path: str, location: str,
@@ -122,7 +131,7 @@ export const schemas: Record<string, Schema> = {
   BuyerCancelInput: { ...obj({ cancelReason: str, status: { type: 'string', enum: ['cancelled'], description: 'Optional; the controller always performs cancellation regardless of this field.' } }), description: 'Only cancellation of the current buyer’s pending order is supported.' },
   SellerOrderStatusInput: obj({ status: { type: 'string', enum: ['preparing', 'processing', 'shipped', 'delivered', 'cancelled'] }, cancelReason: str }, ['status']),
   OrderItem: obj({ _id: id, product: related('Product'), variantId: str, selectedAttributes: stringMap, productName: str, productPrice: num, productImage: str, variantImages: strings, variantSku: str, discountPercent: discount, variantDiscount: num, quantity: { type: 'number', minimum: 1 } }, ['product', 'productName', 'productPrice', 'productImage', 'quantity']),
-  Order: obj({ _id: id, userId: related('UserSummary'), items: arr(ref('OrderItem')), shippingAddress: ref('ShippingAddressInput'), paymentMethod: ref('PaymentMethodInput'), subtotal: money, productDiscount: money, discount: money, tax: money, shipping: money, total: money, couponCode: str, paymentIntentId: str, status, estimatedDelivery: date, shippedAt: date, refundRequestedAt: date, cancelReason: str, sellerMessages: stringMap, deliverySelections: stringMap, selectedDeliveryOption: str, ...timestamps }, ['_id', 'userId', 'items', 'shippingAddress', 'paymentMethod', 'subtotal', 'productDiscount', 'discount', 'tax', 'shipping', 'total', 'status']),
+  Order: obj({ _id: id, userId: related('UserSummary'), items: arr(ref('OrderItem')), shippingAddress: ref('ShippingAddressInput'), paymentMethod: ref('PaymentMethodInput'), subtotal: money, productDiscount: money, discount: money, tax: money, shipping: money, total: money, couponCode: str, paymentIntentId: str, status, estimatedDelivery: date, shippedAt: date, refundRequestedAt: date, cancelReason: str, sellerMessages: stringMap, deliverySelections: stringMap, selectedDeliveryOption: str, ...orderPaymentFields, ...timestamps }, ['_id', 'userId', 'items', 'shippingAddress', 'paymentMethod', 'subtotal', 'productDiscount', 'discount', 'tax', 'shipping', 'total', 'status']),
   CartItemInput: obj({ ...orderItemInput, quantity: { type: 'number', description: 'Non-positive quantities are filtered out during sync.' }, price: num, stock: num, image: str, sku: str, discount: num, isSelected: bool }, ['productId', 'quantity']),
   CartSyncInput: { ...obj({ items: arr(ref('CartItemInput')) }), description: 'Replaces the entire cart. Missing items clears it; non-positive quantities are filtered out. Unknown products may be retained with a null populated product.' },
   CartItem: obj({ product: nullable(ref('Product')), variantId: str, selectedAttributes: stringMap, price: num, stock: num, image: str, sku: str, discount: num, quantity: num, isSelected: bool }, ['product', 'price', 'quantity', 'isSelected']),
@@ -154,6 +163,35 @@ export const schemas: Record<string, Schema> = {
   ImageResponse: response({ url: str }),
   OrderResponse: response({ order: ref('Order') }),
   OrdersResponse: response({ orders: arr(ref('Order')) }),
+  SellerOrderAcceptingResponse: response({ order: ref('Order'), operation: obj({ status: { type: 'string', enum: ['resolving'] } }, ['status']) }),
+  CheckoutSessionCreateInput: obj({
+    items: { type: 'array', minItems: 1, items: ref('OrderItemInput') }, shippingAddress: ref('ShippingAddressInput'),
+    paymentMethod: { type: 'object', required: ['type'], properties: { type: { type: 'string', enum: ['credit-card', 'debit-card'] }, last4: { type: 'string' }, cardHolder: { type: 'string' } } },
+    sellerMessages: { ...stringMap, description: 'Message keyed by seller ID.' }, couponCodes: { ...stringMap, description: 'Coupon code keyed by seller ID.' },
+    deliverySelections: { ...stringMap, description: 'Delivery option keyed by seller ID.' },
+    savedPaymentMethodId: { type: 'string', pattern: '^pm_[A-Za-z0-9_]+$', description: 'Stripe PaymentMethod ID of a card saved to the authenticated buyer. Omit to enter a new card on the client.', example: 'pm_1Example' },
+  }, ['items', 'shippingAddress', 'paymentMethod']),
+  CheckoutSellerDraft: obj({
+    sellerId: str, sellerName: { type: 'string', nullable: true, description: 'Seller display name; null if the seller account is missing.' }, draftOrderId: str, amountMinor: { type: 'integer', minimum: 1, description: 'Authorization amount in minor units of the currency.' },
+    currency: { type: 'string', example: 'usd' }, status: { type: 'string', enum: ['awaiting_authorization', 'authorized', 'released', 'failed'] },
+    clientSecret: { type: 'string', description: 'Owner-only PaymentIntent client secret for this seller. Confirm it with the Stripe SDK; the payment is held, not captured.' },
+  }, ['sellerId', 'draftOrderId', 'amountMinor', 'currency', 'status']),
+  CheckoutOrder: obj({
+    id: str, sellerId: { ...str, nullable: true }, status: { type: 'string', enum: ['pending', 'awaiting_payment'] },
+    paymentStatus: { type: 'string', nullable: true, example: 'authorized' }, total: { type: 'number' },
+    placedAt: { type: 'string', format: 'date-time', nullable: true }, acceptBy: { type: 'string', format: 'date-time', nullable: true },
+    authorizationExpiresAt: { type: 'string', format: 'date-time', nullable: true },
+    shortAuthorization: { type: 'boolean', description: 'True when the seller acceptance window is shorter than 24 hours because the card authorization ends sooner. Show this to the buyer.' },
+  }, ['id', 'status', 'total', 'shortAuthorization']),
+  CheckoutConfirmResponse: dataResponse({
+    id: str, status: { type: 'string', enum: ['open', 'finalizing', 'placed', 'expired', 'failed'] },
+    expiresAt: { type: 'string', format: 'date-time' }, placedAt: { type: 'string', format: 'date-time' },
+    sellers: arr(ref('CheckoutSellerDraft')), orders: arr(ref('CheckoutOrder')),
+  }),
+  CheckoutSessionResponse: dataResponse({
+    id: str, status: { type: 'string', enum: ['open', 'finalizing', 'placed', 'expired', 'failed'] },
+    expiresAt: { type: 'string', format: 'date-time' }, sellers: arr(ref('CheckoutSellerDraft')),
+  }),
   OrderListResponse: response({ count: { type: 'integer', minimum: 0 }, orders: arr(ref('Order')) }),
   CartResponse: response({ sellers: arr(ref('CartSeller')) }),
   SuccessResponse: response({}),

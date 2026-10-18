@@ -1,8 +1,10 @@
 import type { Order, CheckoutData, OrderStatus } from '../types/order';
 import type { Cart, CartItem, SelectedVariant } from '../types/cart';
 import type { Product } from '../types/product';
+import type { CheckoutSession, CheckoutSessionCreateInput } from '../types/checkout';
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
 import { resolveSelectedDeliveryOption } from '../utils/orderUtils';
+import { CheckoutApiError } from './checkoutApiError';
 
 interface RawSeller {
   _id?: string;
@@ -47,6 +49,7 @@ interface RawItem {
 }
 
 interface RawOrder extends Omit<Order, 'id' | 'items'> {
+  paymentError?: { code?: string };
   _id?: string;
   id?: string;
   items: RawItem[];
@@ -58,7 +61,33 @@ interface PaymentMethodLike {
   card?: { brand?: string; last4?: string; exp_month?: number; exp_year?: number } | null;
 }
 
+interface CheckoutEnvelope<T> {
+  success?: boolean;
+  data?: T;
+  message?: string;
+  error?: { code?: string; message?: string; retryable?: boolean; details?: unknown };
+}
+
+/** Checkout endpoints answer with `{ data }` on success and `{ error: { code } }` on failure. */
+async function readCheckoutResponse<T>(response: Response): Promise<T> {
+  const body: CheckoutEnvelope<T> | null = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new CheckoutApiError(
+      response.status,
+      body?.error?.code ?? 'unknown_error',
+      body?.error?.message ?? body?.message ?? 'Checkout request failed',
+      body?.error?.retryable ?? false,
+      body?.error?.details,
+    );
+  }
+  if (!body?.data) {
+    throw new CheckoutApiError(response.status, 'invalid_response', 'Unexpected checkout response', false);
+  }
+  return body.data;
+}
+
 class OrderService {
+  /** Legacy card flow only (CHECKOUT_FLOW=legacy). Manual-capture checkout uses createCheckoutSession. */
   async createPaymentIntent(amountInCents: number): Promise<{ clientSecret: string; paymentIntentId: string }> {
     const response = await fetch(API_ENDPOINTS.PAYMENT_INTENT, {
       method: 'POST',
@@ -75,6 +104,39 @@ class OrderService {
       clientSecret: data.clientSecret,
       paymentIntentId: data.paymentIntentId,
     };
+  }
+
+  /**
+   * Creates the checkout session, or resumes it when the same Idempotency-Key and body
+   * were already used (the server then answers 200 and `replayed` is true).
+   */
+  async createCheckoutSession(
+    payload: CheckoutSessionCreateInput,
+    idempotencyKey: string,
+  ): Promise<{ session: CheckoutSession; replayed: boolean }> {
+    const response = await fetch(API_ENDPOINTS.CHECKOUT_SESSIONS, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Idempotency-Key': idempotencyKey },
+      body: JSON.stringify(payload),
+    });
+    const session = await readCheckoutResponse<CheckoutSession>(response);
+    return { session, replayed: response.status === 200 };
+  }
+
+  async getCheckoutSession(sessionId: string): Promise<CheckoutSession> {
+    const response = await fetch(API_ENDPOINTS.CHECKOUT_SESSION(sessionId), {
+      headers: getAuthHeaders(),
+    });
+    return readCheckoutResponse<CheckoutSession>(response);
+  }
+
+  /** Verifies every seller's payment hold and places the orders. Returns the session with its orders. */
+  async confirmCheckoutSession(sessionId: string): Promise<CheckoutSession> {
+    const response = await fetch(API_ENDPOINTS.CHECKOUT_SESSION_CONFIRM(sessionId), {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return readCheckoutResponse<CheckoutSession>(response);
   }
 
   async createOrder(checkoutData: CheckoutData, cart: Cart, couponCodes?: Record<string, string>, deliverySelections?: Record<string, string>): Promise<Order[]> {
@@ -305,6 +367,12 @@ class OrderService {
       createdAt: order.createdAt,
       estimatedDelivery: order.estimatedDelivery,
       selectedDeliveryOption: resolveSelectedDeliveryOption(order),
+      paymentFlowVersion: order.paymentFlowVersion,
+      paymentStatus: order.paymentStatus,
+      paymentErrorCode: order.paymentError?.code,
+      placedAt: order.placedAt,
+      acceptBy: order.acceptBy,
+      authorizationExpiresAt: order.authorizationExpiresAt,
     };
   }
 }

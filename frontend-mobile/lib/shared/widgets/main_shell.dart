@@ -197,6 +197,7 @@ class _MainShellState extends State<MainShell> {
                                 onTap: () => context.go('/'),
                               ),
                               _NavItem(
+                                key: keys.orders.ordersNavTab,
                                 icon: Icons.grid_view_outlined,
                                 activeIcon: Icons.grid_view_rounded,
                                 isActive: index == 1,

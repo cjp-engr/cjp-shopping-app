@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import type { Order } from '../types/order';
+import { canSellerCancel } from '../utils/orderPayment';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { getStatusConfig, formatPaymentMethodType, formatDeliveryOption } from '../utils/orderUtils';
-import sellerService from '../services/sellerService';
+import sellerService, { SellerOrderError } from '../services/sellerService';
+import { acceptanceDeadlineText, acceptanceErrorMessage, canAcceptOrder, CAPTURE_POLL_INTERVAL_MS, isCapturePending } from '../utils/sellerAcceptance';
 import {
   ArrowLeft,
   Package,
@@ -19,6 +21,7 @@ import {
   XCircle,
   ImageOff,
   DollarSign,
+  Info,
 } from 'lucide-react';
 
 type SellerOrder = Order & {
@@ -48,6 +51,9 @@ export const SellerOrderDetail: React.FC = () => {
   const [statusLoading, setStatusLoading] = useState(false);
   const [showShipDialog, setShowShipDialog] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [statusNotice, setStatusNotice] = useState<string | null>(null);
+  const acceptInFlight = useRef(false);
+  const [now, setNow] = useState(() => new Date());
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; reason: string; loading: boolean }>({
     open: false, reason: '', loading: false,
   });
@@ -74,6 +80,47 @@ export const SellerOrderDetail: React.FC = () => {
     return () => { cancelled = true; };
   }, [orderIdParam]);
 
+  // Keep the acceptance deadline current so an expired order stops offering the accept button
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Background refresh (no spinner); a failed fetch keeps the order currently shown.
+  // Drops the "being charged" notice once the order is no longer waiting on its capture.
+  const reloadOrder = async () => {
+    try {
+      const orders = await sellerService.getOrders() as SellerOrder[];
+      const match = orders.find(o => o.id === orderIdParam);
+      if (match) {
+        setOrder(match);
+        setCurrentStatus(match.status);
+        setNow(new Date());
+        if (!isCapturePending(match)) setStatusNotice(null);
+      }
+    } catch {
+      // keep the order currently shown
+    }
+  };
+
+  // While the capture is resolving, refresh every few seconds until it is no longer pending
+  const capturePollingNeeded = order ? isCapturePending(order) : false;
+  const pollInFlight = useRef(false);
+  useEffect(() => {
+    if (!capturePollingNeeded) return;
+    const timer = setInterval(async () => {
+      if (pollInFlight.current) return;
+      pollInFlight.current = true;
+      try {
+        await reloadOrder();
+      } finally {
+        pollInFlight.current = false;
+      }
+    }, CAPTURE_POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [capturePollingNeeded]);
+
   if (loadingOrder && !order) {
     return (
       <div className="text-center py-24">
@@ -99,13 +146,16 @@ export const SellerOrderDetail: React.FC = () => {
   const StatusIcon = statusConfig.icon;
   const isCancelled = currentStatus === 'cancelled';
 
-  const canAccept    = currentStatus === 'pending';
+  const capturePending = isCapturePending(order);
+  const canAccept    = currentStatus === 'pending' && (canAcceptOrder(order, now) || capturePending);
+  const deadlineText = currentStatus === 'pending' ? acceptanceDeadlineText(order, now) : null;
   const canToShip    = currentStatus === 'preparing';
   const canToReceive = currentStatus === 'processing';
-  const canCancel    = ['pending', 'preparing', 'processing'].includes(currentStatus);
+  const canCancel    = canSellerCancel({ ...order, status: currentStatus });
 
   const handleStatusUpdate = async (status: 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled', cancelReason?: string) => {
     setStatusError(null);
+    setStatusNotice(null);
     setStatusLoading(true);
     try {
       await sellerService.updateOrderStatus(order.id, status, cancelReason);
@@ -113,6 +163,34 @@ export const SellerOrderDetail: React.FC = () => {
     } catch (err) {
       setStatusError(err instanceof Error ? err.message : 'Failed to update status');
     } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  // Accepting a card order charges the buyer, so it must not run twice and may finish asynchronously
+  const handleAccept = async () => {
+    if (acceptInFlight.current) return;
+    acceptInFlight.current = true;
+    setStatusError(null);
+    setStatusNotice(null);
+    setStatusLoading(true);
+    try {
+      const { outcome } = await sellerService.updateOrderStatus(order.id, 'preparing');
+      if (outcome === 'completed') {
+        setCurrentStatus('preparing');
+      } else {
+        setStatusNotice('Payment is being charged. This order will move to preparing when it finishes.');
+        await reloadOrder();
+      }
+    } catch (err) {
+      if (err instanceof SellerOrderError) {
+        setStatusError(acceptanceErrorMessage(err.code));
+        await reloadOrder();
+      } else {
+        setStatusError(err instanceof Error ? err.message : 'Failed to update status');
+      }
+    } finally {
+      acceptInFlight.current = false;
       setStatusLoading(false);
     }
   };
@@ -162,6 +240,13 @@ export const SellerOrderDetail: React.FC = () => {
         <div className="flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-400">
           <XCircle className="w-4 h-4 flex-shrink-0" />
           {statusError}
+        </div>
+      )}
+
+      {statusNotice && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-sm text-blue-700 dark:text-blue-300" data-testid="seller-status-notice">
+          <Info className="w-4 h-4 flex-shrink-0" />
+          {statusNotice}
         </div>
       )}
 
@@ -362,12 +447,18 @@ export const SellerOrderDetail: React.FC = () => {
       )}
 
       {/* Actions */}
+      {deadlineText && (
+        <p className="text-sm text-gray-500 dark:text-gray-400" data-testid="seller-order-accept-deadline">{deadlineText}</p>
+      )}
       {(canAccept || canToShip || canToReceive || canCancel) && (
-        <div className="flex flex-wrap gap-3 pb-8">
+        <div className="flex flex-wrap items-center gap-3 pb-8">
           {canAccept && (
-            <Button loading={statusLoading} onClick={() => handleStatusUpdate('preparing')} data-testid="seller-order-action-btn" aria-label="Prepare order">
-              <ClipboardList className="w-4 h-4 mr-1.5" /> Prepare
+            <Button loading={statusLoading || capturePending} onClick={handleAccept} data-testid="seller-order-action-btn" aria-label="Prepare order">
+              <ClipboardList className="w-4 h-4 mr-1.5" /> Accept &amp; start preparing
             </Button>
+          )}
+          {capturePending && (
+            <span className="text-sm text-blue-600 dark:text-blue-400" data-testid="seller-order-charging">Charging payment…</span>
           )}
           {canToShip && (
             <Button loading={statusLoading} onClick={() => handleStatusUpdate('processing')} data-testid="seller-order-action-btn" aria-label="Mark order to ship">

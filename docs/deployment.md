@@ -4,6 +4,11 @@ Use separate staging and production databases and Stripe credentials. For the fi
 deployment, run one always-on backend instance with MongoDB Atlas and the existing
 Cloudinary upload integration. Deploy web and backend before distributing mobile builds.
 
+For authorization at checkout and capture on seller preparation, follow the
+[payment rollout runbook](payment-rollout.md) for flags, always-on recovery loops,
+enablement gates, monitoring, and rollback. Local verification has passed; hosted
+enablement requires the runbook's remaining deployment checks.
+
 ## Backend
 
 Use `backend` as the hosting root directory. Install with `npm ci --legacy-peer-deps`
@@ -35,7 +40,8 @@ Allow the backend's outbound addresses in Atlas network access. The host supplie
 `PORT`; do not hardcode it. Swagger documentation is disabled in production mode.
 
 Register `https://your-api-host/api/payments/webhook` with Stripe for
-`payment_intent.succeeded` and `payment_intent.payment_failed`. A local Stripe CLI
+`payment_intent.succeeded`, `payment_intent.payment_failed`,
+`payment_intent.amount_capturable_updated`, and `payment_intent.canceled`. A local Stripe CLI
 signing secret is different from the hosted endpoint's secret.
 
 ### Proxy and rate limiting

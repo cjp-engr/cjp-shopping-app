@@ -228,6 +228,17 @@ const getAuthHeadersNoContentType = (): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+/** A failed seller order request. `code` is the backend's machine-readable reason (for example `capture_failed`). */
+export class SellerOrderError extends Error {
+  readonly code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = 'SellerOrderError';
+    this.code = code;
+  }
+}
+
 class SellerService {
   async getProducts(): Promise<Product[]> {
     const res = await fetch(API_ENDPOINTS.SELLER_PRODUCTS, { headers: getAuthHeaders() });
@@ -342,13 +353,18 @@ class SellerService {
     return data.orders.map(adaptOrder);
   }
 
-  async updateOrderStatus(orderId: string, status: 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled', cancelReason?: string): Promise<void> {
+  /** HTTP 202 means the payment capture is still resolving; the order is not preparing yet. */
+  async updateOrderStatus(orderId: string, status: 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled', cancelReason?: string): Promise<{ outcome: 'completed' | 'resolving' }> {
     const res = await fetch(API_ENDPOINTS.SELLER_ORDER_STATUS(orderId), {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify({ status, ...(cancelReason ? { cancelReason } : {}) }),
     });
-    if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Failed to update status'); }
+    if (!res.ok) {
+      const e: { message?: string; code?: string } = await res.json().catch(() => ({}));
+      throw new SellerOrderError(e.message || 'Failed to update status', e.code);
+    }
+    return { outcome: res.status === 202 ? 'resolving' : 'completed' };
   }
 }
 

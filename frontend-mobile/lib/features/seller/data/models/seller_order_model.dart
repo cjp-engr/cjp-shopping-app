@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_date.dart';
+
 class SellerOrderAddress {
   final String street;
   final String city;
@@ -181,6 +183,11 @@ class SellerOrderData {
   final SellerOrderAddress? shippingAddress;
   final SellerOrderPayment? paymentMethod;
   final List<SellerOrderItemData> items;
+  final String paymentFlowVersion;
+  final String? paymentStatus;
+  final DateTime? placedAt;
+  final DateTime? acceptBy;
+  final DateTime? authorizationExpiresAt;
 
   const SellerOrderData({
     required this.id,
@@ -198,6 +205,11 @@ class SellerOrderData {
     this.buyer,
     this.shippingAddress,
     this.paymentMethod,
+    this.paymentFlowVersion = 'legacy',
+    this.paymentStatus,
+    this.placedAt,
+    this.acceptBy,
+    this.authorizationExpiresAt,
   });
 
   String get shortId =>
@@ -209,9 +221,9 @@ class SellerOrderData {
   bool get canMarkToShip => status == 'preparing';
   bool get canMarkShipped => status == 'processing';
   bool get canCancel =>
-      status == 'pending' ||
-      status == 'preparing' ||
-      status == 'processing';
+      ['pending', 'preparing', 'processing'].contains(status) &&
+      paymentFlowVersion != 'manual_capture' &&
+      !['credit-card', 'debit-card'].contains(paymentMethod?.type);
 
   SellerOrderData copyWith({String? status, String? cancelReason}) =>
       SellerOrderData(
@@ -230,6 +242,11 @@ class SellerOrderData {
         shippingAddress: shippingAddress,
         paymentMethod: paymentMethod,
         items: items,
+        paymentFlowVersion: paymentFlowVersion,
+        paymentStatus: paymentStatus,
+        placedAt: placedAt,
+        acceptBy: acceptBy,
+        authorizationExpiresAt: authorizationExpiresAt,
       );
 
   factory SellerOrderData.fromJson(Map<String, dynamic> json) {
@@ -291,6 +308,13 @@ class SellerOrderData {
       shippingAddress: shippingAddress,
       paymentMethod: paymentMethod,
       items: itemList,
+      paymentFlowVersion: parsePaymentFlowVersion(json['paymentFlowVersion']),
+      paymentStatus: json['paymentStatus'] is String
+          ? json['paymentStatus'] as String
+          : null,
+      placedAt: parseOptionalDate(json['placedAt']),
+      acceptBy: parseOptionalDate(json['acceptBy']),
+      authorizationExpiresAt: parseOptionalDate(json['authorizationExpiresAt']),
     );
   }
 }

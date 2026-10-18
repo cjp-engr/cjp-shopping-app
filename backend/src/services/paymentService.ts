@@ -6,6 +6,7 @@ import {
 import User from '../models/User.js';
 import Cart from '../models/Cart.js';
 import Order from '../models/Order.js';
+import { verifyLegacyCapturedPayment } from './legacyPayments.js';
 
 const PAYMENT_CURRENCY = 'usd';
 
@@ -20,7 +21,7 @@ export class PaymentError extends Error {
 }
 
 class PaymentService {
-  private async getOrCreateCustomerForUser(userId: string): Promise<string> {
+  async getOrCreateCustomerForUser(userId: string): Promise<string> {
     const user = await User.findById(userId).select('stripeCustomerId email');
     if (!user) {
       throw new PaymentError(404, 'User not found');
@@ -93,27 +94,18 @@ class PaymentService {
   }
 
   async handlePaymentIntentSucceeded(paymentIntentId: string): Promise<void> {
-    const order = await Order.findOneAndUpdate(
-      { paymentIntentId },
-      { status: 'processing' },
-      { new: true },
+    const order = await Order.findOne(
+      { paymentIntentId, paymentFlowVersion: { $ne: 'manual_capture' }, status: 'pending' },
     );
-
-    if (!order) {
-      console.warn(`Order not found for PaymentIntent ${paymentIntentId}`);
-    }
+    if (order) await verifyLegacyCapturedPayment(order);
   }
 
   async handlePaymentIntentFailed(paymentIntentId: string): Promise<void> {
-    const order = await Order.findOneAndUpdate(
-      { paymentIntentId },
-      { status: 'cancelled' },
-      { new: true },
+    const order = await Order.findOne(
+      { paymentIntentId, paymentFlowVersion: { $ne: 'manual_capture' }, status: 'pending' },
     );
-
-    if (!order) {
-      console.warn(`Order not found for PaymentIntent ${paymentIntentId}`);
-    }
+    // A delayed failure must never cancel an order whose current Stripe state is paid.
+    if (order) await verifyLegacyCapturedPayment(order);
   }
 }
 

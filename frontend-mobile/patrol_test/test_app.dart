@@ -1,4 +1,6 @@
 import 'package:patrol/patrol.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:toko_mart/core/config/stripe_config.dart';
 import 'package:toko_mart/app.dart';
 import 'package:toko_mart/shared/services/notification_service.dart';
 import 'package:toko_mart/shared/services/storage_service.dart';
@@ -9,8 +11,18 @@ void testApp(
   String description,
   Future<void> Function(PatrolIntegrationTester $, Modules modules) test, {
   List<String>? tags,
+  bool initializeStripe = false,
 }) {
   patrolTest(description, tags: tags, ($) async {
+    if (initializeStripe) {
+      await dotenv.load(fileName: '.env');
+      if (!(dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '')
+          .startsWith('pk_test_')) {
+        throw StateError(
+            'Local payment verification requires a Stripe test publishable key');
+      }
+      await StripeConfig.initialize();
+    }
     final storage = await StorageService.init();
     await storage.clear();
 

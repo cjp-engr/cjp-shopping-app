@@ -22,9 +22,11 @@ import '../../../cart/presentation/bloc/cart_bloc.dart';
 import '../../../cart/domain/entities/cart_item_entity.dart';
 import '../../../cart/presentation/bloc/cart_event.dart';
 import '../../../cart/presentation/bloc/cart_state.dart';
+import 'package:toko_mart/core/config/checkout_config.dart';
 import 'package:toko_mart/features/checkout/bloc/payment_bloc.dart';
 import 'package:toko_mart/features/checkout/screens/order_confirmation_screen.dart';
 import 'package:toko_mart/features/checkout/screens/payment_screen.dart';
+import 'package:toko_mart/features/checkout/utils/checkout_session_payload.dart';
 
 class CheckoutScreen extends StatefulWidget {
   /// Product IDs of the items selected in the cart for this checkout.
@@ -263,6 +265,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _openPaymentScreen(orderData, selectedItems);
   }
 
+  /// Session flow: the orders are placed. Clear the checked-out items, close the payment screen and show
+  /// the orders. The legacy flow shows OrderConfirmationScreen instead.
+  void _onCheckoutPlaced(List<String> orderIds) {
+    if (!mounted) return;
+    _completed = true;
+    context.read<CartBloc>().add(CartItemsCheckedOut(widget.selectedIds));
+    final userId = context.read<AuthBloc>().state.user?.id;
+    if (userId != null) {
+      context.read<OrderBloc>().add(OrdersLoadRequested(userId));
+    }
+    Navigator.of(context).pop(); // PaymentScreen is on top
+    context.go('/orders');
+  }
+
   /// Shipping -> Payment step. Pays via Stripe first; once the payment
   /// succeeds the order is created with the resulting paymentIntentId and the
   /// OrderBloc `placed` listener shows OrderConfirmationScreen.
@@ -273,9 +289,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final client = await ApiClient.get();
     if (!mounted) return;
     final amountInCents = ((orderData['total'] as double) * 100).round();
-    // ignore: avoid_print
-    print(
-        'Opening PaymentScreen: total=${orderData['total']}, shipping=${orderData['shipping']}, tax=${orderData['tax']}, amountInCents=$amountInCents');
     _pendingPaymentIntentId = null;
     _pendingCardBrand = null;
     _pendingPaymentMethodId = null;
@@ -298,6 +311,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             child: PaymentScreen(
               amountInCents: amountInCents,
               cartItems: selectedItems,
+              // Session flow (CHECKOUT_FLOW=manual_capture): the server prices the cart and holds each
+              // seller's payment. Otherwise the legacy one-step charge below is used.
+              checkoutPayload: kCardCheckoutUsesSessions
+                  ? checkoutSessionPayload(orderData, paymentType: _paymentType)
+                  : null,
+              buyerId: kCardCheckoutUsesSessions
+                  ? orderData['userId'] as String?
+                  : null,
+              onCheckoutPlaced: _onCheckoutPlaced,
               onBack: () => Navigator.of(routeCtx).pop(),
               onPaymentSuccess: (paymentIntentId, paymentMethodId) {
                 _pendingPaymentIntentId = paymentIntentId;
@@ -572,15 +594,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     groupValue: _paymentType,
                                     onChanged: (v) =>
                                         setState(() => _paymentType = v!),
-                                    child: const Column(
+                                    child: Column(
                                       children: [
                                         RadioListTile<String>(
-                                          title: Text('Credit/Debit Card'),
+                                          key: keys.orders
+                                              .paymentOption('credit-card'),
+                                          title: const Text('Credit/Debit Card'),
                                           value: 'credit-card',
                                           contentPadding: EdgeInsets.zero,
                                         ),
                                         RadioListTile<String>(
-                                          title: Text('Cash on Delivery'),
+                                          key: keys.orders
+                                              .paymentOption('cash-on-delivery'),
+                                          title: const Text('Cash on Delivery'),
                                           value: 'cash-on-delivery',
                                           contentPadding: EdgeInsets.zero,
                                         ),
@@ -885,6 +911,9 @@ class _AddressOption extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        key: icon == Icons.add_location_alt_rounded
+            ? keys.orders.checkoutNewAddressOption
+            : null,
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         child: AnimatedContainer(

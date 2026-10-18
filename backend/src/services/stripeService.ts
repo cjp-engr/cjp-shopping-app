@@ -121,6 +121,104 @@ export function constructWebhookEvent(
   }
 }
 
+export interface ManualCaptureIntentParams {
+  amountMinor: number;
+  currency: string;
+  customerId: string;
+  metadata: Record<string, string>;
+  paymentMethodId?: string;
+  idempotencyKey: string;
+}
+
+export async function createManualCapturePaymentIntent(
+  params: ManualCaptureIntentParams,
+): Promise<{ id: string; clientSecret: string; status: string }> {
+  try {
+    const intent = await getStripe().paymentIntents.create(
+      {
+        amount: params.amountMinor,
+        currency: params.currency,
+        capture_method: 'manual',
+        customer: params.customerId,
+        metadata: params.metadata,
+        payment_method_types: ['card'],
+        ...(params.paymentMethodId && { payment_method: params.paymentMethodId }),
+      },
+      { idempotencyKey: params.idempotencyKey },
+    );
+    return { id: intent.id, clientSecret: intent.client_secret!, status: intent.status };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`${LOG_PREFIX} Failed to create manual-capture payment intent: ${message}`);
+    throw new StripeError('Failed to create manual-capture payment intent', err as Error);
+  }
+}
+
+export async function listCustomerIntentsSince(
+  customerId: string,
+  createdSinceSeconds: number,
+): Promise<Stripe.PaymentIntent[]> {
+  try {
+    const result = await getStripe().paymentIntents.list({
+      customer: customerId,
+      created: { gte: createdSinceSeconds },
+      limit: 100,
+    });
+    return result.data;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`${LOG_PREFIX} Failed to list payment intents: ${message}`);
+    throw new StripeError('Failed to list payment intents', err as Error);
+  }
+}
+
+export async function cancelPaymentIntent(id: string, idempotencyKey: string): Promise<{ id: string; status: string }> {
+  try {
+    const intent = await getStripe().paymentIntents.cancel(id, {}, { idempotencyKey });
+    return { id: intent.id, status: intent.status };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`${LOG_PREFIX} Failed to cancel payment intent ${id}: ${message}`);
+    throw new StripeError(`Failed to cancel payment intent ${id}`, err as Error);
+  }
+}
+
+export async function capturePaymentIntent(
+  id: string,
+  amountToCaptureMinor: number,
+  idempotencyKey: string,
+): Promise<{ id: string; status: string; amountReceived: number }> {
+  try {
+    const intent = await getStripe().paymentIntents.capture(
+      id,
+      { amount_to_capture: amountToCaptureMinor },
+      { idempotencyKey },
+    );
+    return { id: intent.id, status: intent.status, amountReceived: intent.amount_received };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`${LOG_PREFIX} Failed to capture payment intent ${id}: ${message}`);
+    throw new StripeError(`Failed to capture payment intent ${id}`, err as Error);
+  }
+}
+
+/** A failure is ambiguous when Stripe may have acted: no HTTP status, or a server-side error. */
+export function isAmbiguousStripeError(err: unknown): boolean {
+  if (!(err instanceof StripeError)) return true;
+  const status = (err.originalError as { statusCode?: number } | undefined)?.statusCode;
+  return status === undefined || status >= 500;
+}
+
+export async function retrieveIntentWithCharge(id: string): Promise<Stripe.PaymentIntent> {
+  try {
+    return await getStripe().paymentIntents.retrieve(id, { expand: ['latest_charge'] });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`${LOG_PREFIX} Failed to retrieve payment intent ${id} with charge: ${message}`);
+    throw new StripeError(`Failed to retrieve payment intent ${id}`, err as Error);
+  }
+}
+
 export async function retrievePaymentIntent(id: string): Promise<Stripe.PaymentIntent> {
   try {
     return await getStripe().paymentIntents.retrieve(id);
@@ -129,4 +227,23 @@ export async function retrievePaymentIntent(id: string): Promise<Stripe.PaymentI
     console.error(`${LOG_PREFIX} Failed to retrieve payment intent ${id}: ${message}`);
     throw new StripeError(`Failed to retrieve payment intent ${id}`, err as Error);
   }
+}
+
+export async function retrieveStripeEvent(id: string): Promise<Stripe.Event> {
+  return getStripe().events.retrieve(id);
+}
+
+/** Auto-pagination is essential: a refund outside the first page still reduces the balance. */
+export async function listIntentRefunds(paymentIntentId: string): Promise<Stripe.Refund[]> {
+  const refunds: Stripe.Refund[] = [];
+  for await (const refund of getStripe().refunds.list({ payment_intent: paymentIntentId, limit: 100 })) refunds.push(refund);
+  return refunds;
+}
+
+export async function createOrderRefund(paymentIntentId: string, amount: number, idempotencyKey: string, orderId: string): Promise<Stripe.Refund> {
+  return getStripe().refunds.create({ payment_intent: paymentIntentId, amount, reason: 'requested_by_customer', metadata: { orderId, operationKey: idempotencyKey } }, { idempotencyKey });
+}
+
+export async function retrieveRefund(id: string): Promise<Stripe.Refund> {
+  return getStripe().refunds.retrieve(id);
 }

@@ -25,6 +25,11 @@ import reviewRoutes from './routes/reviewRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import checkoutRoutes from './routes/checkoutRoutes.js';
+import { startDraftCleaner } from './services/draftCleaner.js';
+import { startAcceptanceScanner } from './services/acceptanceScanner.js';
+import { startPaymentOperationWorker } from './services/paymentOperationWorker.js';
+import { startStripeInboxWorker } from './services/stripeInboxWorker.js';
 
 const app = express();
 configureTrustProxy(app);
@@ -86,6 +91,7 @@ app.use('/api/reviews', apiLimiter, reviewRoutes);
 app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/coupons', apiLimiter, couponRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/checkout', apiLimiter, checkoutRoutes);
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'TokoMart API', version: '1.0.0' });
@@ -101,6 +107,10 @@ app.listen(PORT, () => {
   console.log(`📍 API: http://localhost:${PORT}`);
   console.log(`❤️  Health Check: http://localhost:${PORT}/health\n`);
   startAutoCompleteJob();
+  startDraftCleaner();
+  startAcceptanceScanner();
+  startPaymentOperationWorker();
+  startStripeInboxWorker();
 });
 
 export default app;

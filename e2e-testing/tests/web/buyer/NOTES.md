@@ -48,6 +48,37 @@ Same structure as `checkout.spec.ts` but the product has size variants. The test
 
 ---
 
+### TC-STRIPE-01, TC-STRIPE-02, TC-STRIPE-04 — `stripe-checkout.spec.ts`
+**Card payment through the Stripe Payment Element**
+
+| TC | Scenario |
+|----|----------|
+| TC-STRIPE-01 | Successful card payment places the order |
+| TC-STRIPE-02 | Declined card shows the decline message and keeps the buyer on review |
+| TC-STRIPE-04 | The Stripe card element renders on the payment step |
+
+Uses the `CheckoutPage` page object (`fillStripeCard`) and the test cards in `helpers/checkout-flow.ts`.
+
+---
+
+### TC-AUTH-01 … TC-AUTH-06 — `card-checkout-authorization.spec.ts`
+**Manual-capture card checkout (authorize now, capture on fulfilment)**
+
+Runs only when the backend and the web app use `CHECKOUT_FLOW=manual_capture`; otherwise the whole describe is skipped.
+
+| TC | Scenario |
+|----|----------|
+| TC-AUTH-01 | Single seller, new card: payment is reserved and the order is pending |
+| TC-AUTH-02 | Single seller, saved card: payment is reserved and the order is pending |
+| TC-AUTH-03 | Two sellers: each payment is reserved and each seller gets its own order |
+| TC-AUTH-04 | Declined card: no order is placed and the buyer stays on review |
+| TC-AUTH-05 | 3DS challenge cancelled, then resumed from the same checkout session |
+| TC-AUTH-06 | An expired checkout is not resumed and its attempt is cleared |
+
+3DS steps drive Stripe's challenge frame: `challengeButton()` finds the frame that holds the FAIL or COMPLETE button.
+
+---
+
 ## Structure
 
 ```
@@ -55,7 +86,9 @@ web/buyer/
 ├── NOTES.md                    ← this file
 ├── login.spec.ts               ← TC-001
 ├── checkout.spec.ts            ← TC-022, TC-023, TC-024
-└── variant-checkout.spec.ts   ← TC-098, TC-105, TC-106
+├── variant-checkout.spec.ts    ← TC-098, TC-105, TC-106
+├── stripe-checkout.spec.ts     ← TC-STRIPE-01, TC-STRIPE-02, TC-STRIPE-04
+└── card-checkout-authorization.spec.ts ← TC-AUTH-01 … TC-AUTH-06 (manual_capture only)
 ```
 
 ## Key notes

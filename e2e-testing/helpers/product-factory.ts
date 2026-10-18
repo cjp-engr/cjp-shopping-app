@@ -11,7 +11,7 @@ export async function createDiscountedProduct(
 ): Promise<string> {
   const price = opts.price ?? 100;
   const discount = opts.discount ?? 20;
-  const res = await request.post(`${API_URL}/api/products`, {
+  const res = await request.post(`${API_URL}/api/seller/products`, {
     headers: { ...authHeaders(sellerToken), 'Content-Type': 'application/json' },
     data: {
       name: `E2E Sale Product ${Date.now()}`,
@@ -21,6 +21,7 @@ export async function createDiscountedProduct(
       category: 'Clothing',
       stock: 10,
       image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400',
+      imageUrls: ['https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400'],
       ...randomShipping(),
     },
   });
@@ -36,7 +37,7 @@ export async function createSimpleProduct(
   name: string,
   opts: { price?: number; category?: string } = {},
 ): Promise<string> {
-  const res = await request.post(`${API_URL}/api/products`, {
+  const res = await request.post(`${API_URL}/api/seller/products`, {
     headers: { ...authHeaders(sellerToken), 'Content-Type': 'application/json' },
     data: {
       name,
@@ -45,6 +46,7 @@ export async function createSimpleProduct(
       category: opts.category ?? 'Electronics',
       stock: 5,
       image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400',
+      imageUrls: ['https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400'],
       ...randomShipping(),
     },
   });

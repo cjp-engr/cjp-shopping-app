@@ -96,11 +96,23 @@ patrol_test/
 ├── modules/
 │   ├── module.dart         # base Module class
 │   ├── modules.dart        # Modules aggregator
-│   └── auth.dart           # Auth module (login, signup)
+│   ├── auth.dart           # Auth module (login, signup)
+│   └── local_payment_api.dart # shared setup/checks for opt-in local Stripe tests
 ├── 0_auth/                 # Authentication tests
 ├── 1_seller/               # Seller flow tests
 └── 2_buyer/                # Buyer flow tests
 ```
+
+The local Stripe verification cases share API fixture setup through
+`modules/local_payment_api.dart`; UI payment and seller/buyer actions remain in
+the test files. They run only with `LOCAL_PAYMENT_VERIFICATION=true` and the
+isolated emulator API. See [local payment verification](../../docs/local-payment-verification.md)
+for the exact targets and setup. API clients close even when a UI assertion fails.
+
+`test_bundle.dart` and `integration_test/patrol_test_bundle.dart` are generated
+by Patrol. Keep run-specific generated changes out of feature diffs. The checked-in
+bundle is currently referenced by the integration entrypoint, so do not delete it
+without updating that entrypoint and its generation workflow together.
 
 ## Test coverage
 

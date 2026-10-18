@@ -26,6 +26,42 @@ jobs:
       - run: npm run build
       - run: npm test
 
+  backend-integration:
+    name: Backend database integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      TEST_MONGODB_URI: mongodb://127.0.0.1:27017/tokomart_payment_test?replicaSet=rs0
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci --legacy-peer-deps
+      - name: Start an isolated MongoDB replica set
+        run: bash scripts/start-integration-mongo.sh
+      - name: Run transaction and restart integration tests
+        run: npm run test:integration -- --reporter=default --reporter=junit --outputFile.junit=test-results/backend-integration.xml
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-integration-results
+          path: backend/test-results/backend-integration.xml
+          if-no-files-found: warn
+      - name: Show database logs on failure
+        if: failure()
+        run: docker logs tokomart-integration-mongo
+      - name: Remove the test database container
+        if: always()
+        run: docker rm --force tokomart-integration-mongo
+
   frontend:
     name: Web frontend lint & build
     runs-on: ubuntu-latest
@@ -41,6 +77,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
+      - run: npm test
       - run: npm run build
 
   flutter:

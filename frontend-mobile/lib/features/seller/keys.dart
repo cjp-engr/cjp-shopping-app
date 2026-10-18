@@ -10,6 +10,7 @@ class SellerKeys {
   _SellerKey categorySheetItem(String category) =>
       _SellerKey('categorySheetItem_$category');
   final dashboardScreen = const _SellerKey('dashboardScreen');
+  final ordersTab = const _SellerKey('ordersTab');
   final sellerNavTab = const _SellerKey('sellerNavTab');
 
   final wizardNextButton = const _SellerKey('wizardNextButton');
@@ -86,4 +87,14 @@ class SellerKeys {
   // ignore: library_private_types_in_public_api
   _SellerKey deleteProductButton(String id) =>
       _SellerKey('deleteProductButton_$id');
+
+  // Order acceptance (parameterized by order id)
+  // ignore: library_private_types_in_public_api
+  _SellerKey acceptOrderButton(String id) => _SellerKey('acceptOrderButton_$id');
+  // ignore: library_private_types_in_public_api
+  _SellerKey acceptDeadlineText(String id) =>
+      _SellerKey('acceptDeadlineText_$id');
+  // ignore: library_private_types_in_public_api
+  _SellerKey capturePendingText(String id) =>
+      _SellerKey('capturePendingText_$id');
 }

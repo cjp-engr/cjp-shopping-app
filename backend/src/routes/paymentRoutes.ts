@@ -1,5 +1,6 @@
 import express from 'express';
 import { protect } from '../middleware/auth.js';
+import { rejectLegacyCardIntent } from '../middleware/checkoutFlowGuard.js';
 import { createIntent, handleWebhook, saveCard } from '../controllers/paymentController.js';
 
 const router = express.Router();
@@ -8,7 +9,7 @@ const router = express.Router();
 router.post('/webhook', handleWebhook);
 
 // Create PaymentIntent: requires auth
-router.post('/create-intent', protect, createIntent);
+router.post('/create-intent', protect, rejectLegacyCardIntent, createIntent);
 
 // Save card to customer: requires auth
 router.post('/save-card', protect, saveCard);

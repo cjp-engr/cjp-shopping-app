@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +11,7 @@ import '../../../../core/theme/theme_colors.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../products/domain/entities/product_entity.dart';
 import '../../data/models/seller_order_model.dart';
+import '../../domain/seller_acceptance.dart';
 import '../bloc/seller_bloc.dart';
 import '../bloc/seller_event.dart';
 import '../bloc/seller_state.dart';
@@ -38,6 +42,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
   bool _couponsLoading = false;
   bool _couponsRequested = false;
 
+  // Acceptance: a clock for deadline text and a poll while a capture resolves
+  final ValueNotifier<DateTime> _now = ValueNotifier(DateTime.now());
+  Timer? _clockTimer;
+  Timer? _capturePollTimer;
+
   @override
   void initState() {
     super.initState();
@@ -50,7 +59,10 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
         TabController(length: 3, vsync: this, initialIndex: initialIndex);
     _tabController.addListener(_onTabChanged);
     _initVoucherRepo();
+    _clockTimer = Timer.periodic(
+        const Duration(seconds: 30), (_) => _now.value = DateTime.now());
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncCapturePolling(context.read<SellerBloc>().state.orders);
       context.read<SellerBloc>().add(const SellerProductsLoadRequested());
       // If opened directly on Orders tab (e.g. from a notification tap),
       // trigger the lazy load that _onTabChanged would normally handle.
@@ -59,6 +71,37 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
         context.read<SellerBloc>().add(const SellerOrdersLoadRequested());
       }
     });
+  }
+
+  /// Polls silently while any listed order awaits its payment capture, and
+  /// stops as soon as none does.
+  void _syncCapturePolling(List<SellerOrderData> orders) {
+    if (!hasCapturePending(orders)) {
+      _capturePollTimer?.cancel();
+      _capturePollTimer = null;
+      return;
+    }
+    _capturePollTimer ??= Timer.periodic(capturePollInterval, (_) {
+      if (!mounted) return;
+      _now.value = DateTime.now();
+      context
+          .read<SellerBloc>()
+          .add(const SellerOrdersLoadRequested(silent: true));
+    });
+  }
+
+  void _showStatusMessage(BuildContext context, SellerState state) {
+    final scheme = Theme.of(context).colorScheme;
+    final isInfo = state.statusMessageIsInfo;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(
+          state.statusMessage!,
+          style: isInfo ? null : TextStyle(color: scheme.onError),
+        ),
+        backgroundColor: isInfo ? null : scheme.error,
+      ));
   }
 
   Future<void> _initVoucherRepo() async {
@@ -114,6 +157,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
 
   @override
   void dispose() {
+    _clockTimer?.cancel();
+    _capturePollTimer?.cancel();
+    _now.dispose();
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
@@ -205,6 +251,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
               builder: (context, state) {
                 final badge = state.actionableOrderCount;
                 return Tab(
+                  key: keys.seller.ordersTab,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -242,12 +289,26 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
           ],
         ),
       ),
-      body: BlocListener<SellerBloc, SellerState>(
-        listenWhen: (p, c) =>
-            (p.status != c.status && c.status == SellerStatus.failure) ||
-            (p.ordersStatus != c.ordersStatus &&
-                c.ordersStatus == SellerOrdersStatus.failure),
-        listener: (context, state) {},
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<SellerBloc, SellerState>(
+            listenWhen: (p, c) =>
+                (p.status != c.status && c.status == SellerStatus.failure) ||
+                (p.ordersStatus != c.ordersStatus &&
+                    c.ordersStatus == SellerOrdersStatus.failure),
+            listener: (context, state) {},
+          ),
+          BlocListener<SellerBloc, SellerState>(
+            listenWhen: (p, c) =>
+                p.statusMessage != c.statusMessage && c.statusMessage != null,
+            listener: _showStatusMessage,
+          ),
+          BlocListener<SellerBloc, SellerState>(
+            listenWhen: (p, c) =>
+                hasCapturePending(p.orders) != hasCapturePending(c.orders),
+            listener: (_, state) => _syncCapturePolling(state.orders),
+          ),
+        ],
         child: Column(
           children: [
             // ── Stats row — rebuilds only when counts change ─────────────
@@ -281,9 +342,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
                   BlocBuilder<SellerBloc, SellerState>(
                     buildWhen: (p, c) =>
                         p.orders != c.orders ||
-                        p.ordersStatus != c.ordersStatus,
+                        p.ordersStatus != c.ordersStatus ||
+                        p.updatingOrderIds != c.updatingOrderIds,
                     builder: (context, state) => _OrdersTab(
                       state: state,
+                      now: _now,
                       statusFilter: _orderStatusFilter,
                       onStatusChanged: (s) =>
                           setState(() => _orderStatusFilter = s),
@@ -606,11 +669,13 @@ class _ProductsTab extends StatelessWidget {
 
 class _OrdersTab extends StatelessWidget {
   final SellerState state;
+  final ValueListenable<DateTime> now;
   final String statusFilter;
   final ValueChanged<String> onStatusChanged;
 
   const _OrdersTab({
     required this.state,
+    required this.now,
     required this.statusFilter,
     required this.onStatusChanged,
   });
@@ -754,6 +819,8 @@ class _OrdersTab extends StatelessWidget {
                         const SizedBox(height: AppSizes.sm),
                     itemBuilder: (context, index) => _OrderCard(
                       order: filtered[index],
+                      now: now,
+                      busy: state.updatingOrderIds.contains(filtered[index].id),
                       onTap: () => _SellerOrderDetailSheet.show(
                           context, filtered[index]),
                     ),
@@ -776,8 +843,15 @@ class _StatusTab {
 
 class _OrderCard extends StatelessWidget {
   final SellerOrderData order;
+  final ValueListenable<DateTime> now;
+  final bool busy;
   final VoidCallback? onTap;
-  const _OrderCard({required this.order, this.onTap});
+  const _OrderCard({
+    required this.order,
+    required this.now,
+    this.busy = false,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -902,18 +976,37 @@ class _OrderCard extends StatelessWidget {
                         order.canCancel) ...[
                       const SizedBox(height: 10),
                       Divider(height: 1, color: context.borderColor),
+                      if (order.canMarkPreparing)
+                        _AcceptanceInfo(order: order, now: now),
                       const SizedBox(height: 10),
                       Row(
                         children: [
                           if (order.canMarkPreparing)
                             Expanded(
-                              child: _OrderActionBtn(
-                                label: AppStrings.prepare,
-                                icon: Icons.pending_actions_outlined,
-                                color: AppColors.primary,
-                                onTap: () => context.read<SellerBloc>().add(
-                                    SellerOrderStatusUpdateRequested(
-                                        order.id, 'preparing')),
+                              flex: 5,
+                              child: ValueListenableBuilder<DateTime>(
+                                valueListenable: now,
+                                builder: (context, current, _) {
+                                  final capturePending =
+                                      isCapturePending(order);
+                                  final canAccept = !busy &&
+                                      canAcceptOrder(order, current);
+                                  return _OrderActionBtn(
+                                    key: keys.seller
+                                        .acceptOrderButton(order.id),
+                                    label: AppStrings.acceptAndStartPreparing,
+                                    icon: Icons.pending_actions_outlined,
+                                    color: AppColors.primary,
+                                    busy: busy || capturePending,
+                                    onTap: canAccept
+                                        ? () => context
+                                            .read<SellerBloc>()
+                                            .add(
+                                                SellerOrderStatusUpdateRequested(
+                                                    order.id, 'preparing'))
+                                        : null,
+                                  );
+                                },
                               ),
                             ),
                           if (order.canMarkToShip)
@@ -943,12 +1036,15 @@ class _OrderCard extends StatelessWidget {
                             const SizedBox(width: AppSizes.sm),
                           if (order.canCancel)
                             Expanded(
+                              flex: order.canMarkPreparing ? 2 : 1,
                               child: _OrderActionBtn(
                                 label: 'Cancel',
                                 icon: Icons.cancel_outlined,
                                 color: AppColors.danger,
-                                onTap: () =>
-                                    _showSellerCancelDialog(context, order.id),
+                                onTap: busy
+                                    ? null
+                                    : () => _showSellerCancelDialog(
+                                        context, order.id),
                               ),
                             ),
                         ],
@@ -1241,41 +1337,98 @@ class _OrderItemRow extends StatelessWidget {
       );
 }
 
+/// Pending-order line: the remaining acceptance time and, while the payment
+/// is being charged, a charging notice.
+class _AcceptanceInfo extends StatelessWidget {
+  final SellerOrderData order;
+  final ValueListenable<DateTime> now;
+  const _AcceptanceInfo({required this.order, required this.now});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<DateTime>(
+      valueListenable: now,
+      builder: (context, current, _) {
+        final deadlineText = acceptanceDeadlineText(order, current);
+        final charging = isCapturePending(order);
+        if (deadlineText == null && !charging) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Wrap(
+            spacing: AppSizes.sm,
+            children: [
+              if (deadlineText != null)
+                Text(
+                  deadlineText,
+                  key: keys.seller.acceptDeadlineText(order.id),
+                  style: TextStyle(fontSize: 12, color: context.onSurfaceMuted),
+                ),
+              if (charging)
+                Text(
+                  AppStrings.chargingPayment,
+                  key: keys.seller.capturePendingText(order.id),
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.primary),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _OrderActionBtn extends StatelessWidget {
   final String label;
   final IconData icon;
   final Color color;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool busy;
 
   const _OrderActionBtn({
+    super.key,
     required this.label,
     required this.icon,
     required this.color,
     required this.onTap,
+    this.busy = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    final tint = enabled ? color : context.onSurfaceMuted;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: color.withAlpha(15),
+          color: tint.withAlpha(15),
           borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-          border: Border.all(color: color.withAlpha(80)),
+          border: Border.all(color: tint.withAlpha(80)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 15, color: color),
+            if (busy)
+              SizedBox(
+                width: 15,
+                height: 15,
+                child: CircularProgressIndicator(strokeWidth: 2, color: tint),
+              )
+            else
+              Icon(icon, size: 15, color: tint),
             const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: color,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: tint,
+                ),
               ),
             ),
           ],

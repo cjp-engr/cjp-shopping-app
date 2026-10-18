@@ -1,12 +1,14 @@
 import Product from '../models/Product.js';
-import Order, { OrderStatus } from '../models/Order.js';
+import Order, { OrderStatus, type IOrder } from '../models/Order.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { isSellerVisibleOrder, sellerVisibleOrderFilter } from './orderVisibility.js';
+import { acceptOrder } from './orderAcceptance.js';
 
-const VALID_TRANSITIONS: Record<string, string[]> = {
+export const VALID_TRANSITIONS: Record<string, string[]> = {
   pending:    ['preparing', 'cancelled'],
   preparing:  ['processing', 'cancelled'],
   processing: ['shipped', 'cancelled'],
-  shipped:    ['delivered', 'cancelled'],
+  shipped:    ['delivered'],
   delivered:  [],
   cancelled:  [],
 };
@@ -104,7 +106,7 @@ export async function deleteSellerProduct(productId: string, sellerId: string) {
 export async function getSellerOrders(sellerId: string) {
   const sellerProductIds = await Product.find({ sellerId }).distinct('_id');
 
-  const orders = await Order.find({ 'items.product': { $in: sellerProductIds } })
+  const orders = await Order.find({ 'items.product': { $in: sellerProductIds }, ...sellerVisibleOrderFilter() })
     .populate('items.product')
     .populate('userId', 'firstName lastName email')
     .sort({ createdAt: -1 });
@@ -144,14 +146,23 @@ export async function getSellerOrders(sellerId: string) {
   });
 }
 
+/** `resolving` means the seller's acceptance started a capture that is still settling; the order is not yet `preparing`. */
+export type SellerStatusOutcome = 'completed' | 'resolving';
+
 export async function updateSellerOrderStatus(
   orderId: string,
   sellerId: string,
   status: OrderStatus,
   cancelReason?: string,
-) {
+): Promise<{ order: IOrder; outcome: SellerStatusOutcome }> {
   const order = await Order.findById(orderId);
-  if (!order) throw new AppError(404, 'Order not found');
+  if (!order || !isSellerVisibleOrder(order)) throw new AppError(404, 'Order not found', 'order_not_found');
+
+  // Acceptance owns the seller-ownership check, the deadline and any card capture.
+  if (status === 'preparing' && order.status === 'pending') {
+    const accepted = await acceptOrder({ orderId, sellerId });
+    return { order: accepted.order, outcome: accepted.kind };
+  }
 
   const sellerProductIds = await Product.find({ sellerId }).distinct('_id');
   const sellerIdSet = new Set(sellerProductIds.map(id => id.toString()));
@@ -163,11 +174,17 @@ export async function updateSellerOrderStatus(
         : item.product?.toString();
     return productId ? sellerIdSet.has(productId) : false;
   });
-  if (!hasSellersProduct) throw new AppError(403, 'Not authorized to update this order');
+  if (!hasSellersProduct) throw new AppError(403, 'Not authorized to update this order', 'not_order_seller');
 
   const allowed = VALID_TRANSITIONS[order.status] ?? [];
   if (!allowed.includes(status)) {
     throw new AppError(400, `Cannot transition order from '${order.status}' to '${status}'`);
+  }
+
+  // Seller refunds/releases are a later feature. Never cancel a paid card without returning money.
+  if (status === 'cancelled' && (order.paymentFlowVersion === 'manual_capture'
+      || ['credit-card', 'debit-card'].includes(order.paymentMethod.type))) {
+    throw new AppError(409, 'Seller cancellation for card payments is not available yet', 'cancellation_unavailable');
   }
 
   if (status === 'cancelled') {
@@ -186,5 +203,5 @@ export async function updateSellerOrderStatus(
 
   order.status = status;
   await order.save();
-  return order;
+  return { order, outcome: 'completed' };
 }

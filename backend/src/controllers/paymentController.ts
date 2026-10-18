@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import { constructWebhookEvent, StripeError } from '../services/stripeService.js';
 import paymentService, { PaymentError } from '../services/paymentService.js';
+import StripeEventInbox from '../models/StripeEventInbox.js';
+import { processStripeInboxEvent, stripeEventSnapshot } from '../services/stripeInboxWorker.js';
 import { sendSuccess, sendError, ErrorCodes, isRetryable } from '../utils/apiResponse.js';
 
 const LOG_PREFIX = '[PaymentController]';
@@ -110,17 +112,35 @@ export const handleWebhook = async (
     return;
   }
 
-  const intentId: string = (event.data.object as { id: string }).id;
+  let inboxEntry;
+  try {
+    inboxEntry = await StripeEventInbox.findOneAndUpdate(
+      { eventId: event.id },
+      { $setOnInsert: { type: event.type, status: 'received', receivedAt: new Date(), eventObject: stripeEventSnapshot(event) } },
+      { upsert: true, new: true },
+    );
+  } catch (err) {
+    // Not recorded: return non-2xx so Stripe retries the delivery
+    console.error('Webhook inbox write failed:', err);
+    res.status(500).json({ error: 'Event could not be recorded' });
+    return;
+  }
+
+  if (inboxEntry.status === 'processed') {
+    res.status(200).json({ received: true, duplicate: true });
+    return;
+  }
 
   try {
-    if (event.type === 'payment_intent.succeeded') {
-      await paymentService.handlePaymentIntentSucceeded(intentId);
-    } else if (event.type === 'payment_intent.payment_failed') {
-      await paymentService.handlePaymentIntentFailed(intentId);
+    const outcome = await processStripeInboxEvent(event.id, event);
+    if (outcome === 'failed') {
+      res.status(500).json({ error: 'Event processing will be retried' });
+      return;
     }
   } catch (err) {
-    // Log but always return 200 — Stripe retries on non-200
     console.error('Webhook handler error:', err);
+    res.status(500).json({ error: 'Event processing will be retried' });
+    return;
   }
 
   res.status(200).json({ received: true });
