@@ -251,6 +251,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
               builder: (context, state) {
                 final badge = state.actionableOrderCount;
                 return Tab(
+                  key: keys.seller.ordersTab,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

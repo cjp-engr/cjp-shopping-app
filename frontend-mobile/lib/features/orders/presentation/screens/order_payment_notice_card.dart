@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:toko_mart/keys.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/utils/order_payment_notice.dart';
 
@@ -73,6 +74,7 @@ class OrderPaymentNoticeCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
+                  key: keys.orders.paymentNoticeTitle(notice.title),
                   notice.title,
                   style: textTheme.bodyMedium?.copyWith(
                     color: style.foreground,

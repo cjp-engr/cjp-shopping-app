@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:toko_mart/keys.dart';
 import 'package:toko_mart/features/checkout/bloc/payment_bloc.dart';
 
 class SavedCardsListWidget extends StatelessWidget {
@@ -168,6 +169,7 @@ class SavedCardsListWidget extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
+              key: keys.orders.savedPaymentCard(method.id),
               onTap: isLoading ? null : () => onCardSelected(method),
               borderRadius: BorderRadius.circular(10),
               child: Container(

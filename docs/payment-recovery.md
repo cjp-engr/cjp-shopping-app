@@ -16,12 +16,13 @@ Cancellation completes fulfillment cancellation even if releasing the card hold 
 temporarily unavailable. `release_pending` means the hold is still being released;
 `released` means Stripe confirmed cancellation of the authorization. Bank balances
 can take additional time to reflect release. This does not issue refunds for already
-captured payments or change legacy paid-order cancellation behavior.
+captured payments. Legacy paid-order cancellation uses the separate refund path documented in
+[Existing paid orders](legacy-payment-reconciliation.md).
 
 ## Recovery loops
 
 The existing payment-operation worker now handles checkout-level releases as well as
-order-level capture and release. It excludes intent creation and refund operations.
+order-level capture, release, and legacy refunds. It excludes intent creation operations.
 Release operations retain a stable idempotency key and renew their lease while Stripe
 calls are in progress. Temporary failures retry with backoff, up to the existing five
 attempts. Exhausted operations remain `needs_support` and are never labelled successful.
@@ -58,5 +59,9 @@ and recovery after processing is interrupted. Database integration tests use a s
 local replica-set database ending in `_test` and mock Stripe calls.
 
 Before rollout, verify hold creation, buyer cancellation, and hold release in Stripe
-test mode from both web and a physical mobile device. Keep production checkout flags
-unchanged until the remaining rollout and legacy-payment work is reviewed.
+test mode from both web and a physical mobile device. Local web and Android emulator
+verification is recorded in [Local payment verification](local-payment-verification.md).
+Follow [Payment rollout](payment-rollout.md) before changing hosted checkout flags;
+it covers always-on workers, monitoring, coordinated enablement, and rollback. See
+[Backend payment verification](backend-payment-verification.md) for full-flow, process-restart,
+deadline coverage and the database integration CI job.

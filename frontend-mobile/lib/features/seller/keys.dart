@@ -10,6 +10,7 @@ class SellerKeys {
   _SellerKey categorySheetItem(String category) =>
       _SellerKey('categorySheetItem_$category');
   final dashboardScreen = const _SellerKey('dashboardScreen');
+  final ordersTab = const _SellerKey('ordersTab');
   final sellerNavTab = const _SellerKey('sellerNavTab');
 
   final wizardNextButton = const _SellerKey('wizardNextButton');

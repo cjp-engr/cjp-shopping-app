@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:toko_mart/keys.dart';
 // Only PaymentMethod is needed; flutter_stripe also exports a `Card` that
 // would clash with Material's Card.
 import 'package:flutter_stripe/flutter_stripe.dart' show PaymentMethod;
@@ -454,6 +455,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        key: label == 'New Card' ? keys.orders.paymentNewCardTab : keys.orders.paymentSavedCardsTab,
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Padding(
@@ -490,6 +492,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       width: double.infinity,
       height: 56,
       child: FilledButton(
+        key: keys.orders.paymentSubmitButton,
         onPressed: (_canPlaceOrder && !isLoading) ? _handlePlaceOrder : null,
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFFD97706),

@@ -17,10 +17,11 @@ final class Checkout extends Module {
     String state = 'Metro Manila',
     String zip = '1000',
   }) async {
-    await $(keys.orders.checkoutStreetField).enterText(street);
-    await $(keys.orders.checkoutCityField).enterText(city);
-    await $(keys.orders.checkoutStateField).enterText(state);
-    await $(keys.orders.checkoutZipField).enterText(zip);
+    await $(keys.orders.checkoutNewAddressOption).scrollTo().tap();
+    await $(keys.orders.checkoutStreetField).scrollTo().enterText(street);
+    await $(keys.orders.checkoutCityField).scrollTo().enterText(city);
+    await $(keys.orders.checkoutStateField).scrollTo().enterText(state);
+    await $(keys.orders.checkoutZipField).scrollTo().enterText(zip);
   }
 
   Future<void> selectCOD() async {

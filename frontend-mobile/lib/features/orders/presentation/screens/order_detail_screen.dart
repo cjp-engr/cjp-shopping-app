@@ -1,5 +1,6 @@
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
+import 'package:toko_mart/keys.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../bloc/order_bloc.dart';
@@ -710,6 +711,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               SizedBox(
                 height: AppSizes.buttonHeight,
                 child: OutlinedButton.icon(
+                  key: keys.orders.cancelOrderButton,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.danger,
                     side: const BorderSide(color: AppColors.danger),

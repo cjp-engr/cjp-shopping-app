@@ -594,15 +594,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     groupValue: _paymentType,
                                     onChanged: (v) =>
                                         setState(() => _paymentType = v!),
-                                    child: const Column(
+                                    child: Column(
                                       children: [
                                         RadioListTile<String>(
-                                          title: Text('Credit/Debit Card'),
+                                          key: keys.orders
+                                              .paymentOption('credit-card'),
+                                          title: const Text('Credit/Debit Card'),
                                           value: 'credit-card',
                                           contentPadding: EdgeInsets.zero,
                                         ),
                                         RadioListTile<String>(
-                                          title: Text('Cash on Delivery'),
+                                          key: keys.orders
+                                              .paymentOption('cash-on-delivery'),
+                                          title: const Text('Cash on Delivery'),
                                           value: 'cash-on-delivery',
                                           contentPadding: EdgeInsets.zero,
                                         ),
@@ -907,6 +911,9 @@ class _AddressOption extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        key: icon == Icons.add_location_alt_rounded
+            ? keys.orders.checkoutNewAddressOption
+            : null,
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         child: AnimatedContainer(

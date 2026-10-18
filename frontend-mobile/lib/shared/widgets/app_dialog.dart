@@ -332,6 +332,7 @@ class AppFormDialog extends StatelessWidget {
                     ? Colors.white.withValues(alpha: 0.08)
                     : AppColors.border),
             _ActionButton(
+              key: keys.widgets.dialogConfirmButton,
               label: confirmLabel,
               color: actionColor,
               filled: true,

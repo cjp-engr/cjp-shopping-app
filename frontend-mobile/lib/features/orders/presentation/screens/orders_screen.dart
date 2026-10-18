@@ -377,6 +377,7 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
     final paymentNotice = orderPaymentNotice(order);
 
     return InkWell(
+      key: keys.orders.orderCard(order.id),
       onTap: () => context
           .push('/orders/${order.id}?seller=${Uri.encodeComponent(sellerKey)}'),
       borderRadius: BorderRadius.circular(AppSizes.radiusLg),

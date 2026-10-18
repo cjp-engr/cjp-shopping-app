@@ -20,7 +20,7 @@ Map<String, dynamic> _paymentJson() => {
 
 void main() {
   test('buyer parses the refund review code without exposing internal error details', () {
-    final order = OrderModel.fromJson({..._baseJson(), 'paymentError': {'code': 'refund_review', 'message': 'internal details'}});
+    final order = OrderModel.fromJson({..._baseJson(), 'paymentError': const {'code': 'refund_review', 'message': 'internal details'}});
     expect(order.paymentErrorCode, 'refund_review');
   });
   test('seller card cancellation stays unavailable while legacy COD is allowed', () {
