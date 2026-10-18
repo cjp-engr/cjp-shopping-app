@@ -1,4 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { RefundRequestReview } from '../components/seller/RefundRequestReview';
+import { netOrderRevenue } from '../utils/refund';
+import { refundService } from '../services/refundService';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import type { Product } from '../types/product';
@@ -15,7 +18,7 @@ import {
   Package, Plus, Edit, Trash2, Truck, CheckCircle,
   XCircle, Clock, AlertCircle, ShoppingBag, Store,
   ImageOff, DollarSign, Tag, ChevronRight, ClipboardList,
-  Eye, Info,
+  Eye, Info, RotateCcw,
 } from 'lucide-react';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { getStatusConfig } from '../utils/orderUtils';
@@ -83,6 +86,9 @@ export const SellerDashboard: React.FC = () => {
   const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
   const acceptInFlight = useRef(new Set<string>());
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
+  // Number of refund requests, for the Return/Refund filter. Reads stay available even when new requests are switched off.
+  const [refundTotal, setRefundTotal] = useState(0);
+  const loadRefundTotal = () => { void refundService.sellerList(1).then(page => setRefundTotal(page.total)).catch(() => {}); };
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; productId: string | null; loading: boolean }>({ open: false, productId: null, loading: false });
   const [shipDialogOrderId, setShipDialogOrderId] = useState<string | null>(null);
@@ -147,6 +153,7 @@ export const SellerDashboard: React.FC = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadProducts();
     loadOrders();
+    loadRefundTotal();
   }, []);
 
   // Keep acceptance deadlines current so an expired order stops offering the accept button
@@ -366,7 +373,7 @@ export const SellerDashboard: React.FC = () => {
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(orders.filter(o => o.status === 'delivered').reduce((s, o) => s + o.total, 0))}
+              {formatCurrency(orders.filter(o => o.status === 'delivered').reduce((s, o) => s + netOrderRevenue(o), 0))}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Revenue</p>
           </div>
@@ -542,7 +549,7 @@ export const SellerDashboard: React.FC = () => {
           )}
 
           {/* Status filter tabs */}
-          {!loadingOrders && orders.length > 0 && (() => {
+          {!loadingOrders && (orders.length > 0 || refundTotal > 0) && (() => {
             const statusTabs = [
               { key: 'all',        label: 'All',        icon: ShoppingBag },
               { key: 'pending',    label: 'Pending',    icon: Clock },
@@ -551,12 +558,13 @@ export const SellerDashboard: React.FC = () => {
               { key: 'shipped',    label: 'To Receive', icon: Truck },
               { key: 'delivered',  label: 'Delivered',  icon: CheckCircle },
               { key: 'cancelled',  label: 'Cancelled',  icon: XCircle },
-            ].filter(t => t.key === 'all' || orders.some(o => o.status === t.key));
+              { key: 'refunds',    label: 'Return/Refund', icon: RotateCcw },
+            ].filter(t => t.key === 'all' || (t.key === 'refunds' ? refundTotal > 0 || orderStatusFilter === 'refunds' : orders.some(o => o.status === t.key)));
 
             return (
               <div className="flex flex-wrap gap-2">
                 {statusTabs.map(({ key, label, icon: Icon }) => {
-                  const count = key === 'all' ? orders.length : orders.filter(o => o.status === key).length;
+                  const count = key === 'all' ? orders.length : key === 'refunds' ? refundTotal : orders.filter(o => o.status === key).length;
                   const active = orderStatusFilter === key;
                   return (
                     <button
@@ -580,7 +588,9 @@ export const SellerDashboard: React.FC = () => {
             );
           })()}
 
-          {loadingOrders ? (
+          {orderStatusFilter === 'refunds' ? (
+            <RefundRequestReview onUpdated={() => { void loadOrders(); loadRefundTotal(); }} />
+          ) : loadingOrders ? (
             <div className="flex justify-center py-12"><Spinner size="lg" /></div>
           ) : orders.length === 0 ? (
             <Card className="text-center py-12">

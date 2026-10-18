@@ -129,6 +129,18 @@ describe('payment operation worker (replica set, Stripe mocked)', () => {
     await mongoose.disconnect();
   });
 
+  it('rejects a malformed delivered-purpose job through its dedicated executor, not legacy handling', async () => {
+    const order = await makeOrder({ status: 'delivered', paymentStatus: 'captured' });
+    const operation = await PaymentOperation.create({ action: 'refund', refundPurpose: 'delivered_items',
+      refundRequestId: new mongoose.Types.ObjectId(), orderId: order._id, paymentIntentId: order.paymentIntentId,
+      amountMinor: 1000, currency: 'usd', idempotencyKey: `refund-request:${new mongoose.Types.ObjectId()}:refund:1` });
+    await processDueOperations('worker', now);
+    const stored = (await PaymentOperation.findById(operation.id))!;
+    expect(stored.status).toBe('needs_support');
+    expect(stored.lastError?.code).toBe('delivered_refund_review');
+    expect(retrieveIntentWithCharge).not.toHaveBeenCalled();
+  });
+
   it('resumes a capture operation whose lease expired and finalizes the order', async () => {
     const order = await makeOrder();
     const operation = await makeOperation(order, 'capture', {

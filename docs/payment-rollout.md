@@ -1,5 +1,48 @@
 # Manual-capture payment rollout
 
+## Delivered-item refunds (2026-10-18)
+
+This is a separate feature behind `DELIVERED_REFUNDS_ENABLED=false`. Recording
+delivery timestamps and compatible response fields can ship before enablement.
+The flag gates new buyer submissions and seller decisions, not refund history,
+the payment worker or provider reconciliation of approvals already committed.
+
+Enable only after backend schema/index creation, compatible web/mobile readers,
+and local verification. Verify the named `one_active_refund_per_order` partial
+unique index and the buyer/key unique index exist; resolve conflicting historical
+data before enablement, never delete requests to make an index build succeed.
+Deploy backend/executor first, then web and mobile. Require installed clients to
+handle `partially_refunded`; do not enable while older supported clients would
+misrepresent these payments. Keep the backend running for worker/inbox recovery.
+
+Policy: selected whole units, original discounted price plus allocated tax,
+submission within 168 hours of recorded delivery. Shipping is included only on
+the final paid-unit selection when this and all earlier confirmed refunds use
+seller-fault reasons; `other` remains item-only. Change of mind is pending-only,
+and rejected after delivery. Older submitted item-only quotes retain their amount.
+Deploy the shipping-aware worker/accounting and web/mobile quote readers together.
+Timely
+requests remain decidable later. Approval starts payment refund immediately,
+without a physical return. COD/PayPal, photos, return logistics, appeals and
+automatic decision timeouts remain outside scope. Historical orders without
+trustworthy delivery dates or allocations remain ineligible; no date backfill.
+
+Observe requested age (seller silence), processing age (provider pending),
+needs_review requests, needs_support payment operations, failed inbox entries,
+and any divergence between selected units and refunded+reserved amount. Bank
+processing is separate from seller approval. Revenue subtracts confirmed refunded
+amounts only; original order totals remain unchanged.
+
+Rollback: disable new submissions/decisions with the flag. Keep the new worker,
+schemas, partial-status readers and refund event handling deployed until every
+approved request is settled or explicitly reconciled. Never clear reservations,
+replace idempotency keys, restore delivered stock or stop workers as rollback.
+
+Local evidence is recorded in `docs/local-payment-verification.md`. Unit/widget
+and replica-set integration checks plus real Stripe TEST-mode service verification
+are covered. Owner-run web/mobile UI acceptance and hosted checks remain separate;
+Playwright/Patrol were intentionally not created, changed or run under AGENTS.md.
+
 ## Release decision and evidence
 
 Local gate **passed on 2026-10-18**: real Stripe test-mode web and Android emulator checks covered new/saved cards, separate seller authorizations, capture on seller acceptance, buyer cancellation, and accelerated deadline release. See [local evidence and limitations](local-payment-verification.md) and [backend recovery/CI coverage](backend-payment-verification.md).

@@ -3,6 +3,7 @@ import Order, { OrderStatus, type IOrder } from '../models/Order.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { isSellerVisibleOrder, sellerVisibleOrderFilter } from './orderVisibility.js';
 import { acceptOrder } from './orderAcceptance.js';
+import { markOrderDelivered } from './orderDelivery.js';
 import { canSellerCancelPending, cancelOrderAsSeller, type SellerPaymentOperation } from './sellerCancellation.js';
 
 export const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -215,6 +216,13 @@ export async function updateSellerOrderStatus(
       ),
     );
     if (cancelReason) order.cancelReason = cancelReason;
+  }
+
+  if (status === 'delivered') {
+    // Conditional on still being shipped, so a stale read cannot replace another change or move the refund deadline.
+    const delivered = await markOrderDelivered(orderId, 'shipped', new Date(), { role: 'seller', id: sellerId });
+    if (!delivered) throw new AppError(409, 'Order changed while updating its status');
+    return { order: delivered, outcome: 'completed' };
   }
 
   if (status === 'shipped' && !order.shippedAt) {

@@ -7,6 +7,7 @@ import { cancelPaymentIntent, retrieveIntentWithCharge, retrievePaymentIntent } 
 import { finalizeCapture } from './orderCapture.js';
 import { cancelPendingOrder } from './orderCancellation.js';
 import { releaseCheckoutSession, releaseIntentForSeller } from './checkoutCompensation.js';
+import { handleDeliveredRefundEvent } from './deliveredRefund.js';
 
 /** Manual-capture intents carry checkout metadata; legacy intents do not. */
 export function isManualCaptureIntent(object: { metadata?: Record<string, string> | null }): boolean {
@@ -20,6 +21,9 @@ export function isManualCaptureIntent(object: { metadata?: Record<string, string
  * now guarded, handlers.
  */
 export async function dispatchWebhookEvent(event: Stripe.Event): Promise<void> {
+  if (['refund.created', 'refund.updated', 'refund.failed', 'charge.refunded', 'charge.refund.updated'].includes(event.type)) {
+    return handleDeliveredRefundEvent(event);
+  }
   const object = event.data.object as Stripe.PaymentIntent;
 
   if (!isManualCaptureIntent(object)) {
@@ -57,7 +61,7 @@ async function onManualSucceeded(event: Stripe.PaymentIntent): Promise<void> {
     console.error(`[Webhook] Capture success for intent ${event.id} matches no order yet; no change made`);
     return;
   }
-  if (order.paymentStatus === 'captured') return;
+  if (['captured', 'partially_refunded', 'refunded'].includes(order.paymentStatus ?? '')) return;
 
   const current = await retrieveIntentWithCharge(event.id);
   if (current.status !== 'succeeded') return;

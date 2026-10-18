@@ -24,8 +24,9 @@ import {
   Eye,
 } from 'lucide-react';
 import { ReviewModal } from '../components/common/ReviewModal';
+import { CompletedRefunds } from '../components/orders/CompletedRefunds';
 
-type TabKey = 'all' | 'pending' | 'preparing' | 'to-ship' | 'to-receive' | 'complete' | 'cancelled';
+type TabKey = 'all' | 'pending' | 'preparing' | 'to-ship' | 'to-receive' | 'complete' | 'cancelled' | 'refunds';
 
 const TABS: { key: TabKey; label: string; statuses: OrderStatus[] }[] = [
   { key: 'all',        label: 'All',        statuses: [] },
@@ -34,6 +35,7 @@ const TABS: { key: TabKey; label: string; statuses: OrderStatus[] }[] = [
   { key: 'to-ship',    label: 'To Ship',    statuses: ['processing'] },
   { key: 'to-receive', label: 'To Receive', statuses: ['shipped'] },
   { key: 'complete',   label: 'Complete',   statuses: ['delivered'] },
+  { key: 'refunds', label: 'Return/Refund', statuses: [] },
   { key: 'cancelled',  label: 'Cancelled',  statuses: ['cancelled'] },
 ];
 
@@ -196,13 +198,13 @@ export const OrderHistory: React.FC = () => {
                 data-testid={`order-tab-${tab.key}`}
               >
                 {tab.label}
-                <span
+                {tab.key !== 'refunds' && <span
                   className={`inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-xs font-bold ${
                     isActive ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-500'
                   }`}
                 >
                   {count}
-                </span>
+                </span>}
               </button>
             );
           })}
@@ -210,7 +212,7 @@ export const OrderHistory: React.FC = () => {
       </div>
 
       {/* Orders list */}
-      {filteredOrders.length === 0 ? (
+      {activeTab === 'refunds' ? <CompletedRefunds /> : filteredOrders.length === 0 ? (
         <Card className="text-center py-16" data-testid="orders-empty">
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
             <Package className="w-8 h-8 text-gray-300" />

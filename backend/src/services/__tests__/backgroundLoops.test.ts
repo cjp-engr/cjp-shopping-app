@@ -8,6 +8,7 @@ vi.mock('../../models/PaymentOperation.js', () => ({ default: { find: vi.fn() } 
 vi.mock('../orderCancellation.js', () => ({ cancelPendingOrder: vi.fn() }));
 vi.mock('../orderCapture.js', () => ({ resumeCapture: vi.fn() }));
 vi.mock('../paymentRelease.js', () => ({ releaseIntentOperation: vi.fn() }));
+vi.mock('../deliveredRefund.js', () => ({ resumeDeliveredRefund: vi.fn(), reconcileReviewDeliveredRefunds: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../paymentOperationService.js', () => ({ claimNextOperation, failOperation: vi.fn() }));
 
 import { startAcceptanceScanner } from '../acceptanceScanner.js';

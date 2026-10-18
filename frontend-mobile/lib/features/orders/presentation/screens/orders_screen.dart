@@ -22,11 +22,13 @@ import '../../../../shared/widgets/review_bottom_sheet.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import 'order_payment_notice_card.dart';
+import '../../../refunds/presentation/completed_refunds.dart';
 
 class _TabDef {
+  final bool refunds;
   final String label;
   final List<String> statuses;
-  const _TabDef(this.label, this.statuses);
+  const _TabDef(this.label, this.statuses, {this.refunds = false});
 
   List<OrderEntity> filter(List<OrderEntity> orders) => statuses.isEmpty
       ? orders
@@ -39,6 +41,7 @@ const _kTabs = [
   _TabDef(AppStrings.statusToShip, ['processing']),
   _TabDef(AppStrings.statusToReceive, ['shipped']),
   _TabDef(AppStrings.statusComplete, ['delivered']),
+  _TabDef('Return/Refund', [], refunds: true),
   _TabDef(AppStrings.statusCancelled, ['cancelled']),
 ];
 
@@ -92,7 +95,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                 dividerColor: context.borderColor,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 16),
                 tabs: _kTabs.map((tab) {
-                  final count = tab.filter(orders).length;
+                  final count = tab.refunds ? 0 : tab.filter(orders).length;
                   return Tab(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -142,6 +145,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                   : TabBarView(
                       controller: _tabController,
                       children: _kTabs.map((tab) {
+                        if (tab.refunds) return const CompletedRefunds();
                         final filtered = tab.filter(orders);
                         return _OrderList(
                           orders: filtered,
@@ -649,7 +653,9 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                                 BorderRadius.circular(AppSizes.radiusSm),
                           ),
                           textStyle: const TextStyle(
-                              fontFamily: 'PlusJakartaSans', fontSize: 13, fontWeight: FontWeight.w600),
+                              fontFamily: 'PlusJakartaSans',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),

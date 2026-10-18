@@ -10,6 +10,9 @@ import Cart from '../../models/Cart.js';
 import CheckoutSession from '../../models/CheckoutSession.js';
 import PaymentOperation from '../../models/PaymentOperation.js';
 import StripeEventInbox from '../../models/StripeEventInbox.js';
+import RefundRequest from '../../models/RefundRequest.js';
+import { createRefundRequest, decideRefundRequest } from '../refundRequestService.js';
+import { markOrderDelivered } from '../orderDelivery.js';
 import { createCheckoutSession } from '../checkoutService.js';
 import { authorizeCheckoutSession } from '../checkoutAuthorization.js';
 import { finalizeCheckoutSession } from '../checkoutFinalization.js';
@@ -95,7 +98,7 @@ async function crashAfterProviderAction(action: 'capture' | 'release' | 'refund'
 
 beforeAll(async () => {
   await connectIntegrationDb();
-  await Promise.all([Order.init(), Product.init(), Coupon.init(), Cart.init(), CheckoutSession.init(), PaymentOperation.init(), StripeEventInbox.init()]);
+  await Promise.all([Order.init(), Product.init(), Coupon.init(), Cart.init(), CheckoutSession.init(), PaymentOperation.init(), StripeEventInbox.init(), RefundRequest.init()]);
 });
 beforeEach(async () => {
   vi.resetAllMocks();
@@ -115,7 +118,7 @@ afterEach(async () => {
   await provider.close();
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
-  await Promise.all([Order.deleteMany({}), Product.deleteMany({}), Coupon.deleteMany({}), Cart.deleteMany({}), CheckoutSession.deleteMany({}), PaymentOperation.deleteMany({}), StripeEventInbox.deleteMany({})]);
+  await Promise.all([Order.deleteMany({}), Product.deleteMany({}), Coupon.deleteMany({}), Cart.deleteMany({}), CheckoutSession.deleteMany({}), PaymentOperation.deleteMany({}), StripeEventInbox.deleteMany({}), RefundRequest.deleteMany({})]);
 });
 afterAll(async () => { await mongoose.disconnect(); });
 
@@ -263,6 +266,27 @@ describe('real process crashes and fresh-process recovery', () => {
     expect((await PaymentOperation.findOne({ action: 'refund' }))!.status).toBe('succeeded');
     expect((await Product.findById(product.id))!.stock).toBe(10);
     expect(provider.refundCalls).toHaveLength(1);
+  });
+  it('reconciles one partial delivered refund after the worker process dies after provider creation', async () => {
+    vi.stubEnv('DELIVERED_REFUNDS_ENABLED', 'true'); vi.stubEnv('SELLER_SEES_MANUAL_CAPTURE', 'true');
+    const { orders: [order], products: [product] } = await checkout();
+    const orderId = order._id.toString();
+    await acceptOrder({ orderId, sellerId: sellerA.toString() });
+    await Order.updateOne({ _id: order._id }, { $set: { status: 'shipped', shippedAt: new Date() } });
+    await markOrderDelivered(orderId, 'shipped', new Date(), { role: 'buyer', id: buyer.toString() });
+    const delivered = (await Order.findById(orderId))!;
+    const lineId = (delivered.items[0] as unknown as { _id: mongoose.Types.ObjectId })._id.toString();
+    const r = await createRefundRequest(orderId, buyer.toString(), { items: [{ lineId, quantity: 1 }], reasonCode: 'damaged', description: 'One broken unit', idempotencyKey: 'partial-restart' });
+    await decideRefundRequest(r.id, sellerA.toString(), { decision: 'approve' });
+    const acted = provider.blockResponseAfter('refund'); const worker = startProcess('recover', '-', '-', new Date());
+    await Promise.race([acted, worker.exited.then(result => { throw new Error(`Worker exited before partial refund: ${result.code} ${worker.output()}`); })]);
+    worker.child.kill('SIGKILL'); await worker.exited;
+    expect((await RefundRequest.findById(r.id))!.state).toBe('processing');
+    await recoverInFreshProcess(); await recoverInFreshProcess();
+    expect((await RefundRequest.findById(r.id))!.state).toBe('refunded');
+    expect((await Order.findById(orderId))!).toMatchObject({ status: 'delivered', paymentStatus: 'partially_refunded', refundedAmountMinor: r.amountMinor, refundReservedAmountMinor: 0 });
+    expect(provider.refundCalls).toHaveLength(1); expect(provider.refunds).toHaveLength(1);
+    expect((await Product.findById(product.id))!.stock).toBe(8);
   });
 
   it('replays a persisted interrupted webhook in a new process without recapturing', async () => {

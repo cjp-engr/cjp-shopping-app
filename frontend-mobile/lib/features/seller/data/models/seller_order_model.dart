@@ -69,7 +69,8 @@ class SellerOrderPayment {
     'cash-on-delivery': 'Cash on Delivery',
   };
 
-  String get methodLabel => _labels[type] ??
+  String get methodLabel =>
+      _labels[type] ??
       type
           .split('-')
           .map((part) => part.isEmpty
@@ -188,6 +189,8 @@ class SellerOrderData {
   final DateTime? placedAt;
   final DateTime? acceptBy;
   final DateTime? authorizationExpiresAt;
+  final int refundedAmountMinor;
+  final String currency;
 
   /// Server-derived: this seller can cancel this pending order right now.
   final bool canSellerCancelPending;
@@ -217,6 +220,8 @@ class SellerOrderData {
     this.placedAt,
     this.acceptBy,
     this.authorizationExpiresAt,
+    this.refundedAmountMinor = 0,
+    this.currency = 'usd',
     this.canSellerCancelPending = false,
     this.cancelledByRole,
     this.cancelledAt,
@@ -230,6 +235,7 @@ class SellerOrderData {
   bool get canMarkPreparing => status == 'pending';
   bool get canMarkToShip => status == 'preparing';
   bool get canMarkShipped => status == 'processing';
+
   /// A pending order is cancellable only when the server says so. After pending the
   /// existing rule stays: cash on delivery only, never a card order.
   bool get canCancel {
@@ -261,6 +267,8 @@ class SellerOrderData {
         placedAt: placedAt,
         acceptBy: acceptBy,
         authorizationExpiresAt: authorizationExpiresAt,
+        refundedAmountMinor: refundedAmountMinor,
+        currency: currency,
         canSellerCancelPending: canSellerCancelPending,
         cancelledByRole: cancelledByRole,
         cancelledAt: cancelledAt,
@@ -332,6 +340,8 @@ class SellerOrderData {
       placedAt: parseOptionalDate(json['placedAt']),
       acceptBy: parseOptionalDate(json['acceptBy']),
       authorizationExpiresAt: parseOptionalDate(json['authorizationExpiresAt']),
+      refundedAmountMinor: (json['refundedAmountMinor'] as num?)?.toInt() ?? 0,
+      currency: json['currency'] as String? ?? 'usd',
       canSellerCancelPending: json['canSellerCancelPending'] == true,
       cancelledByRole: json['cancelledByRole'] is String
           ? json['cancelledByRole'] as String

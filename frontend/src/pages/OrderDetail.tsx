@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import type { Order } from '../types/order';
 import orderService from '../services/orderService';
+import { RefundRequestPanel } from '../components/orders/RefundRequestPanel';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
@@ -356,6 +357,8 @@ export const OrderDetail: React.FC = () => {
           <p>{order.shippingAddress.country}</p>
         </div>
       </Card>
+
+      {order.status === 'delivered' && <RefundRequestPanel key={order.id} orderId={order.id} onUpdated={() => { void orderService.getOrderById(order.id).then(setOrder).catch(() => {}); }} />}
 
       {/* Payment */}
       <Card>

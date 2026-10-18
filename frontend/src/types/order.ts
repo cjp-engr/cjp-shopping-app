@@ -10,6 +10,11 @@ export interface PaymentMethod {
 }
 
 export interface Order {
+  deliveredAt?: string;
+  refundRequestDeadlineAt?: string;
+  refundedAmountMinor?: number;
+  refundReservedAmountMinor?: number;
+  currency?: string;
   id: string;
   userId: string;
   items: CartItem[];

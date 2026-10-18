@@ -1,5 +1,6 @@
 // Schemas describe the existing wire format; controllers intentionally use
 // different response envelopes. Keep request fields separate from stored models.
+import { refundSchemas } from './refundSchemas.js';
 export type Schema = Record<string, unknown>;
 export const ref = (name: string): Schema => ({ $ref: `#/components/schemas/${name}` });
 const str = { type: 'string' };
@@ -69,7 +70,7 @@ const orderItemInput = {
 };
 const orderPaymentFields = {
   paymentFlowVersion: { type: 'string', enum: ['legacy', 'manual_capture'], description: 'manual_capture orders authorize the card at checkout and are charged when the seller accepts; legacy orders are unchanged.' },
-  paymentStatus: { type: 'string', enum: ['awaiting_authorization', 'authorized', 'capture_pending', 'captured', 'release_pending', 'released', 'refund_pending', 'refunded', 'failed', 'not_required'], description: 'Card payment progress for manual_capture orders.' },
+  paymentStatus: { type: 'string', enum: ['awaiting_authorization', 'authorized', 'capture_pending', 'captured', 'release_pending', 'released', 'refund_pending', 'refunded', 'partially_refunded', 'failed', 'not_required'], description: 'Card payment progress for manual_capture orders.' },
   acceptBy: { ...date, description: 'Deadline for the seller to accept; unaccepted orders cancel after it.' },
   authorizationExpiresAt: { ...date, description: 'When the card authorization lapses at the payment provider.' },
   capturedAt: { ...date, description: 'When the full amount was captured.' },
@@ -80,6 +81,7 @@ const orderPaymentFields = {
 const pagination = { total: { type: 'integer', minimum: 0 }, page: { type: 'integer' }, pages: { type: 'integer', minimum: 0 } };
 
 export const schemas: Record<string, Schema> = {
+  ...refundSchemas,
   Error: obj({ success: failure, message: str, code: { type: 'string', description: 'Machine-readable error code, present on errors that carry one (for example seller order acceptance).' }, errors: arr(ref('ValidationIssue')), stack: { type: 'string', description: 'Development mode only.' } }, ['success', 'message']),
   ValidationIssue: obj({
     type: { type: 'string', enum: ['field', 'alternative', 'alternative_grouped', 'unknown_fields'] },

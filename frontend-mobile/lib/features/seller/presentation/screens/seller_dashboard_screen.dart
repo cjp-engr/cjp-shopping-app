@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../../refunds/data/refund_api.dart';
+import '../../../refunds/presentation/refund_review_panel.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -37,6 +39,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
   String _orderStatusFilter = 'all';
   bool _ordersRequested = false;
 
+  /// Number of refund requests, for the Return/Refund chip. Reading stays available when new requests are off.
+  int _refundTotal = 0;
+
   // Voucher tab state
   VoucherRepository? _voucherRepo;
   List<VoucherModel> _coupons = [];
@@ -70,6 +75,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
       if (initialIndex == 1 && !_ordersRequested) {
         _ordersRequested = true;
         context.read<SellerBloc>().add(const SellerOrdersLoadRequested());
+        _loadRefundTotal();
       }
     });
   }
@@ -113,10 +119,26 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
     } catch (_) {}
   }
 
+  Future<void> _loadRefundTotal() async {
+    final RefundApi api;
+    try {
+      api = context.read<RefundApi>();
+    } catch (_) {
+      return; // No refund API in this tree (some widget tests): the chip just stays hidden.
+    }
+    try {
+      final page = await api.sellerList(1);
+      if (mounted) setState(() => _refundTotal = page.total);
+    } catch (_) {
+      // The chip is a convenience; the list itself reports its own errors.
+    }
+  }
+
   void _onTabChanged() {
     if (_tabController.index == 1 && !_ordersRequested) {
       _ordersRequested = true;
       context.read<SellerBloc>().add(const SellerOrdersLoadRequested());
+      _loadRefundTotal();
     }
     if (_tabController.index == 2 && !_couponsRequested) {
       _couponsRequested = true;
@@ -349,6 +371,13 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
                       state: state,
                       now: _now,
                       statusFilter: _orderStatusFilter,
+                      refundTotal: _refundTotal,
+                      onRefundsChanged: () {
+                        context
+                            .read<SellerBloc>()
+                            .add(const SellerOrdersLoadRequested(silent: true));
+                        _loadRefundTotal();
+                      },
                       onStatusChanged: (s) =>
                           setState(() => _orderStatusFilter = s),
                     ),
@@ -672,12 +701,16 @@ class _OrdersTab extends StatelessWidget {
   final SellerState state;
   final ValueListenable<DateTime> now;
   final String statusFilter;
+  final int refundTotal;
+  final VoidCallback onRefundsChanged;
   final ValueChanged<String> onStatusChanged;
 
   const _OrdersTab({
     required this.state,
     required this.now,
     required this.statusFilter,
+    required this.refundTotal,
+    required this.onRefundsChanged,
     required this.onStatusChanged,
   });
 
@@ -693,6 +726,7 @@ class _OrdersTab extends StatelessWidget {
     _StatusTab('delivered', AppStrings.stepDelivered,
         Icons.check_circle_outline_rounded),
     _StatusTab('cancelled', AppStrings.statusCancelled, Icons.cancel_outlined),
+    _StatusTab('refunds', 'Return/Refund', Icons.currency_exchange),
   ];
 
   @override
@@ -710,8 +744,11 @@ class _OrdersTab extends StatelessWidget {
     }
 
     final visibleTabs = _allTabs
-        .where(
-            (t) => t.key == 'all' || state.orders.any((o) => o.status == t.key))
+        .where((t) =>
+            t.key == 'all' ||
+            (t.key == 'refunds'
+                ? refundTotal > 0 || statusFilter == 'refunds'
+                : state.orders.any((o) => o.status == t.key)))
         .toList();
 
     final filtered = statusFilter == 'all'
@@ -739,7 +776,11 @@ class _OrdersTab extends StatelessWidget {
                   final isActive = tab.key == statusFilter;
                   final count = tab.key == 'all'
                       ? state.orders.length
-                      : state.orders.where((o) => o.status == tab.key).length;
+                      : tab.key == 'refunds'
+                          ? refundTotal
+                          : state.orders
+                              .where((o) => o.status == tab.key)
+                              .length;
                   return GestureDetector(
                     onTap: () => onStatusChanged(tab.key),
                     child: AnimatedContainer(
@@ -805,27 +846,30 @@ class _OrdersTab extends StatelessWidget {
             ),
 
           Expanded(
-            child: filtered.isEmpty
-                ? Center(
-                    child: Text(
-                      AppStrings.noOrdersWithStatus,
-                      style: TextStyle(color: context.onSurfaceMuted),
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.xl),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: AppSizes.sm),
-                    itemBuilder: (context, index) => _OrderCard(
-                      order: filtered[index],
-                      now: now,
-                      busy: state.updatingOrderIds.contains(filtered[index].id),
-                      onTap: () => _SellerOrderDetailSheet.show(
-                          context, filtered[index]),
-                    ),
-                  ),
+            child: statusFilter == 'refunds'
+                ? RefundReviewList(onUpdated: onRefundsChanged)
+                : filtered.isEmpty
+                    ? Center(
+                        child: Text(
+                          AppStrings.noOrdersWithStatus,
+                          style: TextStyle(color: context.onSurfaceMuted),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(
+                            AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.xl),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSizes.sm),
+                        itemBuilder: (context, index) => _OrderCard(
+                          order: filtered[index],
+                          now: now,
+                          busy: state.updatingOrderIds
+                              .contains(filtered[index].id),
+                          onTap: () => _SellerOrderDetailSheet.show(
+                              context, filtered[index]),
+                        ),
+                      ),
           ),
         ],
       ),
@@ -990,21 +1034,19 @@ class _OrderCard extends StatelessWidget {
                                 builder: (context, current, _) {
                                   final capturePending =
                                       isCapturePending(order);
-                                  final canAccept = !busy &&
-                                      canAcceptOrder(order, current);
+                                  final canAccept =
+                                      !busy && canAcceptOrder(order, current);
                                   return _OrderActionBtn(
-                                    key: keys.seller
-                                        .acceptOrderButton(order.id),
+                                    key:
+                                        keys.seller.acceptOrderButton(order.id),
                                     label: AppStrings.acceptAndStartPreparing,
                                     icon: Icons.pending_actions_outlined,
                                     color: AppColors.primary,
                                     busy: busy || capturePending,
                                     onTap: canAccept
-                                        ? () => context
-                                            .read<SellerBloc>()
-                                            .add(
-                                                SellerOrderStatusUpdateRequested(
-                                                    order.id, 'preparing'))
+                                        ? () => context.read<SellerBloc>().add(
+                                            SellerOrderStatusUpdateRequested(
+                                                order.id, 'preparing'))
                                         : null,
                                   );
                                 },
@@ -1027,7 +1069,8 @@ class _OrderCard extends StatelessWidget {
                                 label: AppStrings.markShipped,
                                 icon: Icons.local_shipping_outlined,
                                 color: AppColors.primary,
-                                onTap: () => _confirmMarkShipped(context, order.id),
+                                onTap: () =>
+                                    _confirmMarkShipped(context, order.id),
                               ),
                             ),
                           if ((order.canMarkPreparing ||
@@ -1045,8 +1088,8 @@ class _OrderCard extends StatelessWidget {
                                 color: AppColors.danger,
                                 onTap: busy
                                     ? null
-                                    : () => _showSellerCancelDialog(
-                                        context, order),
+                                    : () =>
+                                        _showSellerCancelDialog(context, order),
                               ),
                             ),
                         ],
@@ -1074,7 +1117,9 @@ class _OrderCard extends StatelessWidget {
       confirmLabel: AppStrings.markShipped,
     );
     if (confirm == true && context.mounted) {
-      context.read<SellerBloc>().add(SellerOrderStatusUpdateRequested(orderId, 'shipped'));
+      context
+          .read<SellerBloc>()
+          .add(SellerOrderStatusUpdateRequested(orderId, 'shipped'));
     }
   }
 
@@ -1392,8 +1437,8 @@ class _AcceptanceInfo extends StatelessWidget {
                 Text(
                   AppStrings.chargingPayment,
                   key: keys.seller.capturePendingText(order.id),
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.primary),
+                  style:
+                      const TextStyle(fontSize: 12, color: AppColors.primary),
                 ),
             ],
           ),
@@ -2290,8 +2335,7 @@ class _VouchersTab extends StatelessWidget {
                       style: TextStyle(fontSize: 15, color: Colors.grey[500])),
                   const SizedBox(height: 6),
                   Text(AppStrings.tapToCreateVoucher,
-                      style:
-                          TextStyle(fontSize: 13, color: Colors.grey[400])),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[400])),
                 ],
               ),
             ),
@@ -2306,164 +2350,164 @@ class _VouchersTab extends StatelessWidget {
         padding: const EdgeInsets.all(AppSizes.md),
         itemCount: coupons.length,
         itemBuilder: (ctx, i) {
-        final c = coupons[i];
-        final daysLeft = c.daysLeft;
-        final isExpired = c.isExpired;
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(
-            color: ctx.surfaceColor,
-            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(8),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: IntrinsicHeight(
-            child: Row(
-              children: [
-                // Color strip
-                Container(
-                  width: 6,
-                  decoration: BoxDecoration(
-                    color: c.isActive && !isExpired
-                        ? Colors.orange
-                        : Colors.grey[300],
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(10),
-                      bottomLeft: Radius.circular(10),
-                    ),
-                  ),
-                ),
-                // Icon
-                Container(
-                  width: 56,
-                  color: c.isActive && !isExpired
-                      ? Colors.orange.withValues(alpha: 0.08)
-                      : Colors.grey.withValues(alpha: 0.05),
-                  child: Center(
-                    child: Icon(
-                      Icons.local_offer_outlined,
-                      size: 26,
-                      color: c.isActive && !isExpired
-                          ? Colors.orange
-                          : Colors.grey[400],
-                    ),
-                  ),
-                ),
-                // Content
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              c.code,
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: c.isActive && !isExpired
-                                    ? AppColors.success
-                                    : Colors.grey,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                isExpired
-                                    ? AppStrings.expired
-                                    : (c.isActive
-                                        ? AppStrings.active
-                                        : AppStrings.inactive),
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          c.discountLabel,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 13),
-                        ),
-                        if (c.description != null)
-                          Text(c.description!,
-                              style: TextStyle(
-                                  fontSize: 11, color: Colors.grey[600])),
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            if (c.minOrderAmount > 0)
-                              Text(
-                                  'Min \$${c.minOrderAmount.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                      fontSize: 11, color: Colors.grey[500])),
-                            if (c.usageLimit != null)
-                              Text('${c.usedCount}/${c.usageLimit} used',
-                                  style: TextStyle(
-                                      fontSize: 11, color: Colors.grey[500])),
-                            if (daysLeft != null && !isExpired)
-                              Text(
-                                  '$daysLeft day${daysLeft != 1 ? 's' : ''} left',
-                                  style: TextStyle(
-                                      fontSize: 11, color: Colors.grey[500])),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Actions
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      color: AppColors.primary,
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: ctx,
-                          isScrollControlled: true,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.vertical(top: Radius.circular(20)),
-                          ),
-                          builder: (_) => _CouponFormSheet(
-                            existing: c,
-                            onSave: (data) => onSave(data, editId: c.id),
-                          ),
-                        );
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 18),
-                      color: AppColors.danger,
-                      onPressed: () => onDelete(c.id),
-                    ),
-                  ],
+          final c = coupons[i];
+          final daysLeft = c.daysLeft;
+          final isExpired = c.isExpired;
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: ctx.surfaceColor,
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(8),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
-          ),
-        );
-      },
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  // Color strip
+                  Container(
+                    width: 6,
+                    decoration: BoxDecoration(
+                      color: c.isActive && !isExpired
+                          ? Colors.orange
+                          : Colors.grey[300],
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(10),
+                        bottomLeft: Radius.circular(10),
+                      ),
+                    ),
+                  ),
+                  // Icon
+                  Container(
+                    width: 56,
+                    color: c.isActive && !isExpired
+                        ? Colors.orange.withValues(alpha: 0.08)
+                        : Colors.grey.withValues(alpha: 0.05),
+                    child: Center(
+                      child: Icon(
+                        Icons.local_offer_outlined,
+                        size: 26,
+                        color: c.isActive && !isExpired
+                            ? Colors.orange
+                            : Colors.grey[400],
+                      ),
+                    ),
+                  ),
+                  // Content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                c.code,
+                                style: const TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: c.isActive && !isExpired
+                                      ? AppColors.success
+                                      : Colors.grey,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  isExpired
+                                      ? AppStrings.expired
+                                      : (c.isActive
+                                          ? AppStrings.active
+                                          : AppStrings.inactive),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            c.discountLabel,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 13),
+                          ),
+                          if (c.description != null)
+                            Text(c.description!,
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.grey[600])),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              if (c.minOrderAmount > 0)
+                                Text(
+                                    'Min \$${c.minOrderAmount.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                        fontSize: 11, color: Colors.grey[500])),
+                              if (c.usageLimit != null)
+                                Text('${c.usedCount}/${c.usageLimit} used',
+                                    style: TextStyle(
+                                        fontSize: 11, color: Colors.grey[500])),
+                              if (daysLeft != null && !isExpired)
+                                Text(
+                                    '$daysLeft day${daysLeft != 1 ? 's' : ''} left',
+                                    style: TextStyle(
+                                        fontSize: 11, color: Colors.grey[500])),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Actions
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        color: AppColors.primary,
+                        onPressed: () {
+                          showModalBottomSheet(
+                            context: ctx,
+                            isScrollControlled: true,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(20)),
+                            ),
+                            builder: (_) => _CouponFormSheet(
+                              existing: c,
+                              onSave: (data) => onSave(data, editId: c.id),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        color: AppColors.danger,
+                        onPressed: () => onDelete(c.id),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

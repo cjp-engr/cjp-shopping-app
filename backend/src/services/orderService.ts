@@ -8,6 +8,7 @@ import { AppError } from '../middleware/errorHandler.js';
 import { computeSellerTotals, priceLine, type ProductLike } from './checkoutPricing.js';
 import { buyerVisibleOrderFilter, isBuyerVisibleOrder } from './orderVisibility.js';
 import { cancelPendingOrder } from './orderCancellation.js';
+import { markOrderDelivered } from './orderDelivery.js';
 import { SELLER_ACCEPT_WINDOW_MS } from './paymentOperationPolicy.js';
 
 interface OrderItem {
@@ -308,7 +309,8 @@ export async function confirmOrderReceived(orderId: string, userId: string) {
   if (order.userId.toString() !== userId) throw new AppError(403, 'Not authorized');
   if (order.status !== 'shipped') throw new AppError(400, 'Order must be shipped before confirming receipt');
 
-  order.status = 'delivered';
-  await order.save();
-  return order;
+  // Conditional on still being shipped: a stale read cannot overwrite a newer status or move the refund deadline.
+  const delivered = await markOrderDelivered(orderId, 'shipped', new Date(), { role: 'buyer', id: userId });
+  if (!delivered) throw new AppError(409, 'Order changed while confirming receipt');
+  return delivered;
 }

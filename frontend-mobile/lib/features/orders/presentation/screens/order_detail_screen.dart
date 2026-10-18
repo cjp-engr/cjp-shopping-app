@@ -1,4 +1,5 @@
 import 'dart:developer' as dev;
+import '../../../refunds/presentation/refund_request_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:toko_mart/keys.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -461,6 +462,11 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                     ? 'Your card authorization ends sooner than usual, so the seller has less time to accept this order.'
                     : null,
               ),
+              const SizedBox(height: AppSizes.sm),
+            ],
+
+            if (order.status == 'delivered') ...[
+              RefundRequestPanel(key: ValueKey('refund_${order.id}'), orderId: order.id, onUpdated: () => context.read<OrderBloc>().add(OrdersLoadRequested(order.userId))),
               const SizedBox(height: AppSizes.sm),
             ],
 

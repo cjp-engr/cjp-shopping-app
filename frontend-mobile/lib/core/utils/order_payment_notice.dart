@@ -49,8 +49,10 @@ OrderPaymentNotice? orderPaymentNotice(OrderEntity order) {
   if (order.paymentErrorCode == 'refund_review' || order.paymentErrorCode == 'legacy_payment_review') {
     return const OrderPaymentNotice(tone: OrderPaymentTone.warning, title: 'Payment needs review', body: 'Please contact support to check this payment or refund. Do not pay again.');
   }
-  if (!_isManualCapture(order) && !['refund_pending', 'refunded'].contains(order.paymentStatus)) return null;
+  if (!_isManualCapture(order) && !['refund_pending', 'refunded', 'partially_refunded'].contains(order.paymentStatus)) return null;
   switch (order.paymentStatus) {
+    case 'partially_refunded':
+      return const OrderPaymentNotice(tone: OrderPaymentTone.neutral, title: 'Partially refunded', body: 'Part of your payment was refunded. See item refund history for amounts and decisions.');
     case 'authorized':
       return const OrderPaymentNotice(
         tone: OrderPaymentTone.info,

@@ -149,6 +149,11 @@ class OrderModel extends OrderEntity {
     super.placedAt,
     super.acceptBy,
     super.authorizationExpiresAt,
+    super.deliveredAt,
+    super.refundRequestDeadlineAt,
+    super.refundedAmountMinor,
+    super.refundReservedAmountMinor,
+    super.currency,
     super.cancelledByRole,
     super.cancelledAt,
   });
@@ -204,10 +209,19 @@ class OrderModel extends OrderEntity {
           : null,
       placedAt: parseOptionalDate(json['placedAt']),
       paymentErrorCode: json['paymentError'] is Map
-          ? (json['paymentError']['code'] is String ? json['paymentError']['code'] as String : null)
+          ? (json['paymentError']['code'] is String
+              ? json['paymentError']['code'] as String
+              : null)
           : null,
       acceptBy: parseOptionalDate(json['acceptBy']),
       authorizationExpiresAt: parseOptionalDate(json['authorizationExpiresAt']),
+      deliveredAt: parseOptionalDate(json['deliveredAt']),
+      refundRequestDeadlineAt:
+          parseOptionalDate(json['refundRequestDeadlineAt']),
+      refundedAmountMinor: (json['refundedAmountMinor'] as num?)?.toInt() ?? 0,
+      refundReservedAmountMinor:
+          (json['refundReservedAmountMinor'] as num?)?.toInt() ?? 0,
+      currency: json['currency'] as String? ?? 'usd',
       cancelledByRole: json['cancelledByRole'] is String
           ? json['cancelledByRole'] as String
           : null,

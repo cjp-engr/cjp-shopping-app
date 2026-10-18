@@ -19,6 +19,9 @@ function order(overrides: Partial<Order> = {}): Order {
 }
 
 const DAY = 24 * 60 * 60 * 1000;
+it('shows a partial refund without describing the whole payment as refunded', () => {
+  expect(paymentStatusNotice(order({ status: 'delivered', paymentFlowVersion: 'legacy', paymentStatus: 'partially_refunded' }))?.title).toBe('Partially refunded');
+});
 it('does not offer the buyer cancellation once a legacy payment is refunded', () => {
   expect(canBuyerCancel(order({ paymentFlowVersion: 'legacy', paymentStatus: 'refunded' }))).toBe(false);
 });

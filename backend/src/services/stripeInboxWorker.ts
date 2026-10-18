@@ -14,7 +14,9 @@ export function stripeEventSnapshot(event: Stripe.Event): Record<string, unknown
       checkoutSessionId: object.metadata.checkoutSessionId,
       sellerId: object.metadata.sellerId,
       draftOrderId: object.metadata.draftOrderId,
+      refundRequestId: object.metadata.refundRequestId,
     } : undefined,
+    ...('payment_intent' in object ? { payment_intent: typeof object.payment_intent === 'string' ? object.payment_intent : (object.payment_intent as { id?: string } | null)?.id } : {}),
     last_payment_error: object.last_payment_error ? {
       code: object.last_payment_error.code,
       message: object.last_payment_error.message,

@@ -75,6 +75,9 @@ class OrderEntity extends Equatable {
   final DateTime? placedAt;
   final DateTime? acceptBy;
   final DateTime? authorizationExpiresAt;
+  final DateTime? deliveredAt, refundRequestDeadlineAt;
+  final int refundedAmountMinor, refundReservedAmountMinor;
+  final String currency;
 
   /// Who cancelled the order (`buyer`, `seller`, `system`); absent on older cancellations.
   final String? cancelledByRole;
@@ -104,6 +107,11 @@ class OrderEntity extends Equatable {
     this.placedAt,
     this.acceptBy,
     this.authorizationExpiresAt,
+    this.deliveredAt,
+    this.refundRequestDeadlineAt,
+    this.refundedAmountMinor = 0,
+    this.refundReservedAmountMinor = 0,
+    this.currency = 'usd',
     this.cancelledByRole,
     this.cancelledAt,
   });
@@ -122,5 +130,10 @@ class OrderEntity extends Equatable {
         paymentErrorCode,
         acceptBy,
         cancelledByRole,
+        deliveredAt,
+        refundRequestDeadlineAt,
+        refundedAmountMinor,
+        refundReservedAmountMinor,
+        currency,
       ];
 }

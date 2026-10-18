@@ -229,6 +229,11 @@ const adaptOrder = (order: RawOrder): AdaptedOrder => {
     authorizationExpiresAt: order.authorizationExpiresAt,
     cancelledByRole: order.cancelledByRole,
     cancelledAt: order.cancelledAt,
+    deliveredAt: order.deliveredAt,
+    refundRequestDeadlineAt: order.refundRequestDeadlineAt,
+    refundedAmountMinor: order.refundedAmountMinor,
+    refundReservedAmountMinor: order.refundReservedAmountMinor,
+    currency: order.currency,
     canSellerCancelPending: order.canSellerCancelPending,
   };
 };
