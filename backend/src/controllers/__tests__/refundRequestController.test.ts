@@ -29,7 +29,7 @@ describe('refund request HTTP boundary', () => {
   });
   it('uses documented default pagination and delegates eligibility/history', async () => {
     const c = context(); await controller.listSellerRefundRequests(c.req, c.res, c.next);
-    expect(service.listSellerRefundRequests).toHaveBeenCalledWith('actor', 1, 20);
+    expect(service.listSellerRefundRequests).toHaveBeenCalledWith('actor', 1, 20, undefined);
     await controller.refundEligibility(c.req, c.res, c.next);
     expect(getRefundEligibility).toHaveBeenCalledWith('order', 'actor');
     await controller.listBuyerRefundRequests(c.req, c.res, c.next);

@@ -20,7 +20,7 @@ export async function listCompletedBuyerRefundRequests(req: AuthRequest, res: Re
   try { res.json({ success: true, ...await service.listCompletedBuyerRefundRequests(req.user!.id, Number(req.query.page ?? 1), Number(req.query.limit ?? 20)) }); } catch (err) { next(err); }
 }
 export async function listSellerRefundRequests(req: AuthRequest, res: Response, next: NextFunction) {
-  try { res.json({ success: true, ...await service.listSellerRefundRequests(req.user!.id, Number(req.query.page ?? 1), Number(req.query.limit ?? 20)) }); } catch (err) { next(err); }
+  try { res.json({ success: true, ...await service.listSellerRefundRequests(req.user!.id, Number(req.query.page ?? 1), Number(req.query.limit ?? 20), req.query.status as string | undefined) }); } catch (err) { next(err); }
 }
 export async function decideRefundRequest(req: AuthRequest, res: Response, next: NextFunction) {
   try {

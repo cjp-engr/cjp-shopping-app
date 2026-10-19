@@ -191,14 +191,31 @@ export async function listBuyerRefundRequests(orderId: string, buyerId: string):
   if (!await Order.exists({ _id: orderId, userId: buyerId, status: { $ne: 'awaiting_payment' } })) throw notFound();
   return (await RefundRequest.find({ orderId, buyerId }).sort({ submittedAt: -1, _id: -1 })).map(refundRequestView);
 }
-export async function listSellerRefundRequests(sellerId: string, page = 1, limit = 20) {
+/**
+ * The seller's Return/Refund tab groups requests by what the seller has done with them:
+ * `in_progress` (not decided yet), `approved` (approved, whether the refund is still processing,
+ * needs payment review, or is finished) and `rejected`.
+ */
+export const SELLER_REFUND_GROUPS = {
+  in_progress: ['requested'],
+  approved: ['processing', 'needs_review', 'refunded'],
+  rejected: ['rejected'],
+} as const;
+export type SellerRefundGroup = keyof typeof SELLER_REFUND_GROUPS;
+
+export async function listSellerRefundRequests(sellerId: string, page = 1, limit = 20, group?: string) {
   ids(sellerId);
   if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100 || !Number.isSafeInteger((page - 1) * limit)) throw invalid();
+  if (group !== undefined && !Object.hasOwn(SELLER_REFUND_GROUPS, group)) throw invalid();
   const orderIds = await Order.find({ sellerId, ...sellerVisibleOrderFilter() }).distinct('_id');
-  const filter = { sellerId, orderId: { $in: orderIds } };
-  const [total, requests] = await Promise.all([
-    RefundRequest.countDocuments(filter), RefundRequest.find(filter).sort({ submittedAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit),
-  ]);
+  const base = { sellerId, orderId: { $in: orderIds } };
+  // Counts for every group, so the tab can show them whichever group is open.
+  const groups = Object.keys(SELLER_REFUND_GROUPS) as SellerRefundGroup[];
+  const countValues = await Promise.all(groups.map(g => RefundRequest.countDocuments({ ...base, state: { $in: SELLER_REFUND_GROUPS[g] } })));
+  const counts = Object.fromEntries(groups.map((g, i) => [g, countValues[i]])) as Record<SellerRefundGroup, number>;
+  const filter = group ? { ...base, state: { $in: SELLER_REFUND_GROUPS[group as SellerRefundGroup] } } : base;
+  const total = group ? counts[group as SellerRefundGroup] : countValues.reduce((a, b) => a + b, 0);
+  const requests = await RefundRequest.find(filter).sort({ submittedAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit);
   // The seller's Return/Refund tab shows an order-style card: the buyer's name and the order date come with each request.
   const [buyers, orders] = await Promise.all([
     User.find({ _id: { $in: [...new Set(requests.map(r => r.buyerId.toString()))] } }).select('firstName lastName').lean(),
@@ -212,7 +229,7 @@ export async function listSellerRefundRequests(sellerId: string, page = 1, limit
       buyerName: buyerNames.get(r.buyerId.toString()) || null,
       orderPlacedAt: placedAt.get(r.orderId.toString()),
     })),
-    page, pages: Math.ceil(total / limit), total,
+    page, pages: Math.ceil(total / limit), total, counts,
   };
 }
 

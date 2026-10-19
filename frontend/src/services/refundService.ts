@@ -1,5 +1,5 @@
 import { API_ENDPOINTS, getAuthHeaders } from '../config/api';
-import type { RefundEligibility, RefundInput, RefundRequest, SellerRefundPage } from '../types/refund';
+import type { RefundEligibility, RefundInput, RefundRequest, SellerRefundGroup, SellerRefundPage } from '../types/refund';
 export class RefundApiError extends Error {
   readonly status: number;
   readonly code: string | undefined;
@@ -18,7 +18,7 @@ export const refundService = {
   async eligibility(id: string): Promise<RefundEligibility> { return (await request<{ eligibility: RefundEligibility }>(`${API_ENDPOINTS.ORDERS}/${id}/refund-eligibility`)).eligibility; },
   async history(id: string): Promise<RefundRequest[]> { return (await request<{ requests: RefundRequest[] }>(`${API_ENDPOINTS.ORDERS}/${id}/refund-requests`)).requests; },
   async submit(id: string, body: RefundInput): Promise<RefundRequest> { return (await request<{ request: RefundRequest }>(`${API_ENDPOINTS.ORDERS}/${id}/refund-requests`, 'POST', body)).request; },
-  async sellerList(page = 1): Promise<SellerRefundPage> { return request<SellerRefundPage>(`${sellerUrl}?page=${page}&limit=20`); },
+  async sellerList(page = 1, group?: SellerRefundGroup): Promise<SellerRefundPage> { return request<SellerRefundPage>(`${sellerUrl}?page=${page}&limit=20${group ? `&status=${group}` : ''}`); },
   async decide(id: string, decision: 'approve' | 'reject', rejectionReason?: string): Promise<RefundRequest> {
     return (await request<{ request: RefundRequest }>(`${sellerUrl}/${id}/decision`, 'PUT', { decision, ...(decision === 'reject' ? { rejectionReason } : {}) })).request;
   },

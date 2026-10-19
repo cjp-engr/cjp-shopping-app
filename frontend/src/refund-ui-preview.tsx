@@ -9,12 +9,17 @@ import './index.css';
 let mode = 'request';
 let disabledAfterAttempt = false; let sellerReads = 0;
 const refund = { id: 'r', orderId: '368f1cf7', units: [{ lineId: 'a', ordinal: 1, merchandiseMinor: 7999, taxMinor: 640, productName: 'Hiking Backpack · 40L' }], amountMinor: 10038, shippingMinor: 1399, currency: 'usd', state: 'requested', reasonCode: 'wrong_item', description: 'I ordered the 40L backpack, but received the 25L version.', canDecide: true, sellerName: 'SellerX Xavier', buyerName: 'Buyer1 Monte Cristo', orderPlacedAt: '2026-10-18T10:00:00Z', submittedAt: '2026-10-18T14:39:00Z', completedAt: '2026-10-19T01:00:00Z' };
+const pageOf = (path: string) => Number(/page=(\d+)/.exec(path)?.[1] ?? 1);
+// Three pages of three approved refunds, so scrolling can be checked.
+const pagedCompleted = (path: string) => { const page = pageOf(path); return { requests: [0, 1, 2].map(i => ({ ...refund, id: `c${page}-${i}`, orderId: `order${page}${i}abcdef`, state: i === 1 ? 'processing' : 'refunded', sellerName: `Seller ${page}.${i}` })), page, pages: 3, total: 9 }; };
+// Two pages of three requests waiting for a decision.
+const pagedSeller = (path: string) => { const page = pageOf(path); return { requests: [0, 1, 2].map(i => ({ ...refund, id: `s${page}-${i}`, orderId: `sorder${page}${i}abcdef`, buyerName: `Buyer ${page}.${i}` })), page, pages: 2, total: 6, counts: { in_progress: 6, approved: 5, rejected: 1 } }; };
 window.fetch = async (url, options) => {
   if (options?.method && options.method !== 'GET') { disabledAfterAttempt = true; return new Response(JSON.stringify({ message: 'Simulated interrupted response. No payments changed.' }), { status: 502 }); }
   const path = String(url);
   const data = path.includes('/refund-eligibility') ? { eligibility: { orderId: '368f1cf7', eligible: mode === 'request', reason: mode === 'request' ? undefined : 'active_request', requestsEnabled: !disabledAfterAttempt, currency: 'usd', deliveredAt: '2026-10-18T14:38:00Z', deadlineAt: '2026-10-25T14:38:00Z', shippingRefundableMinor: 1399, lines: [{ lineId: 'a', productName: 'Hiking Backpack · 40L', quantityAvailable: 1, quantityOrdered: 1, availableUnitAmountsMinor: [8639] }] } }
-    : path.includes('/completed') ? { requests: [{ ...refund, state: 'refunded' }, { ...refund, id: 'r2', orderId: '6ad4d9ac99', state: 'processing', completedAt: undefined, decidedAt: '2026-10-19T02:00:00Z' }], page: 1, pages: 1, total: 2 }
-    : path.includes('/seller/') ? { requests: [{ ...refund, orderId: path.includes('page=2') ? 'page2' : 'page1' }], page: path.includes('page=2') ? 2 : 1, pages: 2, total: 21 }
+    : path.includes('/completed') ? pagedCompleted(path)
+    : path.includes('/seller/') ? pagedSeller(path)
     : { requests: mode === 'request' ? [] : [refund] };
   if (path.includes('/seller/') && ++sellerReads === 2) await new Promise(resolve => setTimeout(resolve, 1400));
   return new Response(JSON.stringify({ success: true, ...data }), { status: 200, headers: { 'Content-Type': 'application/json' } });

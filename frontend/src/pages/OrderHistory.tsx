@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { ReviewModal } from '../components/common/ReviewModal';
 import { CompletedRefunds } from '../components/orders/CompletedRefunds';
+import { refundService } from '../services/refundService';
 
 type TabKey = 'all' | 'pending' | 'preparing' | 'to-ship' | 'to-receive' | 'complete' | 'cancelled' | 'refunds';
 
@@ -66,6 +67,15 @@ export const OrderHistory: React.FC = () => {
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [reviewModal, setReviewModal] = useState<ReviewModalState | null>(null);
   const [reviewMap, setReviewMap] = useState<Map<string, ReviewData>>(new Map());
+  // Approved refunds, for the Return/Refund tab badge; the tab itself reports changes after it loads.
+  const [refundCount, setRefundCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    refundService.completed(1).then(page => { if (!cancelled) setRefundCount(page.total); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -138,7 +148,7 @@ export const OrderHistory: React.FC = () => {
     : orders.filter(o => TABS.find(t => t.key === activeTab)!.statuses.includes(o.status));
 
   const tabCount = (tab: typeof TABS[number]) =>
-    tab.key === 'all' ? orders.length : orders.filter(o => tab.statuses.includes(o.status)).length;
+    tab.key === 'all' ? orders.length : tab.key === 'refunds' ? refundCount : orders.filter(o => tab.statuses.includes(o.status)).length;
 
   if (loading) {
     return (
@@ -198,13 +208,13 @@ export const OrderHistory: React.FC = () => {
                 data-testid={`order-tab-${tab.key}`}
               >
                 {tab.label}
-                {tab.key !== 'refunds' && <span
+                <span
                   className={`inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-xs font-bold ${
                     isActive ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-500'
                   }`}
                 >
                   {count}
-                </span>}
+                </span>
               </button>
             );
           })}
@@ -212,7 +222,7 @@ export const OrderHistory: React.FC = () => {
       </div>
 
       {/* Orders list */}
-      {activeTab === 'refunds' ? <CompletedRefunds /> : filteredOrders.length === 0 ? (
+      {activeTab === 'refunds' ? <CompletedRefunds onTotal={setRefundCount} /> : filteredOrders.length === 0 ? (
         <Card className="text-center py-16" data-testid="orders-empty">
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
             <Package className="w-8 h-8 text-gray-300" />

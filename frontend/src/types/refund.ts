@@ -11,4 +11,6 @@ export interface RefundRequest {
   buyerName?: string | null;
 }
 export interface RefundInput { items: Array<{ lineId: string; quantity: number }>; reasonCode: RefundReason; description: string; idempotencyKey: string }
-export interface SellerRefundPage { requests: RefundRequest[]; page: number; pages: number; total: number }
+/** What the seller has done with a request: not decided yet, approved (processing or refunded), or rejected. */
+export type SellerRefundGroup = 'in_progress' | 'approved' | 'rejected';
+export interface SellerRefundPage { requests: RefundRequest[]; page: number; pages: number; total: number; counts?: Record<SellerRefundGroup, number> }

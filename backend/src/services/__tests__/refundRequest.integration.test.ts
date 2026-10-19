@@ -98,6 +98,30 @@ describe('delivered refund requests (replica set)', () => {
       await User.collection.deleteOne({ _id: seller });
     }
   });
+  it('groups the seller list into in progress, approved and rejected, with a count for each', async () => {
+    const make = async (state: string) => {
+      const target = await order(); const request = await create(target.id);
+      if (state !== 'requested') await RefundRequest.updateOne({ _id: request.id }, { $set: { state } });
+      return request.id;
+    };
+    const waiting = await make('requested');
+    const processing = await make('processing');
+    const review = await make('needs_review');
+    const refunded = await make('refunded');
+    const rejected = await make('rejected');
+
+    const ids = async (group?: string) => (await listSellerRefundRequests(seller.toString(), 1, 20, group)).requests.map(r => r.id).sort();
+
+    expect(await ids('in_progress')).toEqual([waiting]);
+    expect(await ids('approved')).toEqual([processing, review, refunded].sort());
+    expect(await ids('rejected')).toEqual([rejected]);
+    expect(await ids()).toHaveLength(5);
+    const approved = await listSellerRefundRequests(seller.toString(), 1, 2, 'approved');
+    expect(approved).toMatchObject({ total: 3, pages: 2, counts: { in_progress: 1, approved: 3, rejected: 1 } });
+    expect((await listSellerRefundRequests(seller.toString(), 1, 20)).counts).toEqual({ in_progress: 1, approved: 3, rejected: 1 });
+    await expect(listSellerRefundRequests(seller.toString(), 1, 20, 'everything')).rejects.toMatchObject({ statusCode: 400 });
+    expect((await listSellerRefundRequests(stranger.toString(), 1, 20, 'approved')).counts).toEqual({ in_progress: 0, approved: 0, rejected: 0 });
+  });
   it('adds the buyer name and the order date to each refund in the seller list', async () => {
     await User.collection.insertOne({ _id: buyer, firstName: 'Buyer1', lastName: 'Monte Cristo' });
     try {

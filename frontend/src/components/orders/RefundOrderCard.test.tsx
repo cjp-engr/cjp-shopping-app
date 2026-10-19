@@ -84,4 +84,29 @@ describe('refund order card', () => {
       expect(asSeller({ ...seller, buyerName: null })).toContain('>Buyer<');
     });
   });
+
+  describe("inside the buyer's own order page (inOrder)", () => {
+    const inOrder = (request: RefundRequest) =>
+      renderToStaticMarkup(<MemoryRouter><RefundOrderCard request={request} inOrder /></MemoryRouter>);
+
+    it('drops what the page already shows: store header link, order strip and View Details', () => {
+      const html = inOrder({ ...base, sellerName: undefined, orderPlacedAt: undefined });
+      expect(html).toContain('Refund request'); expect(html).not.toContain('>Store<');
+      expect(html).not.toContain('href='); expect(html).not.toContain('Order #');
+      expect(html).not.toContain('View Details'); expect(html).toContain('Refund details');
+      expect(html).toContain('Hiking Backpack - 40L'); expect(html).toContain('$100.38');
+    });
+
+    it('says a request is waiting for the seller', () => {
+      const html = inOrder({ ...base, state: 'requested', completedAt: undefined });
+      expect(html).toContain('Awaiting seller review'); expect(html).toContain('Waiting for the seller. You can check the decision here.');
+      expect(html).toContain('1 item requested'); expect(html).toContain('Submitted ');
+    });
+
+    it("shows a rejection with the seller's reason", () => {
+      const html = inOrder({ ...base, state: 'rejected', completedAt: undefined, decidedAt: '2026-10-19T03:00:00Z', rejectionReason: 'Item was used' });
+      expect(html).toContain('The seller rejected this request.'); expect(html).toContain('Reason: Item was used');
+      expect(html).toContain('Rejected '); expect(html).toContain('1 item rejected');
+    });
+  });
 });

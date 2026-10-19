@@ -31,5 +31,5 @@ export const refundSchemas = {
   RefundEligibilityResponse: response({ eligibility: ref('RefundEligibility') }, ['eligibility']),
   RefundRequestResponse: response({ request: ref('RefundRequest') }, ['request']),
   BuyerRefundRequestsResponse: response({ requests: { type: 'array', items: ref('RefundRequest') } }, ['requests']),
-  SellerRefundRequestsResponse: response({ requests: { type: 'array', items: ref('RefundRequest') }, page: { type: 'integer', minimum: 1 }, pages: integer, total: integer }, ['requests', 'page', 'pages', 'total']),
+  SellerRefundRequestsResponse: response({ requests: { type: 'array', items: ref('RefundRequest') }, page: { type: 'integer', minimum: 1 }, pages: integer, total: integer, counts: { type: 'object', description: 'Seller list only: how many requests are in each group, whichever group was requested.', properties: { in_progress: integer, approved: integer, rejected: integer } } }, ['requests', 'page', 'pages', 'total']),
 };

@@ -18,6 +18,7 @@ export const decideRefundRules = [
 export const sellerRefundListRules = [
   query('page').optional().isString().bail().matches(/^[1-9]\d*$/).custom(v => Number.isSafeInteger(Number(v))),
   query('limit').optional().isString().bail().matches(/^[1-9]\d*$/).isInt({ min: 1, max: 100 }),
+  query('status').optional().isString().bail().isIn(['in_progress', 'approved', 'rejected']),
 ];
 export function validateRefund(req: Request, _res: Response, next: NextFunction) {
   if (!validationResult(req).isEmpty()) return next(new AppError(400, 'Invalid refund request', 'refund_validation'));

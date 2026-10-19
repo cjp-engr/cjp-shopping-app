@@ -57,7 +57,7 @@ const STATUS_BORDER_CLASS: Record<string, string> = {
   cancelled:  'border-l-red-400',
 };
 
-type Tab = 'products' | 'orders' | 'vouchers';
+type Tab = 'products' | 'orders' | 'vouchers' | 'refunds';
 
 type SellerOrder = Order & { buyer?: { id: string; firstName: string; lastName: string; email: string } };
 
@@ -69,7 +69,7 @@ export const SellerDashboard: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [tab, setTab] = useState<Tab>(() => {
     const t = searchParams.get('tab');
-    return (t === 'orders' || t === 'vouchers') ? t : 'products';
+    return (t === 'orders' || t === 'vouchers' || t === 'refunds') ? t : 'products';
   });
 
   // Products state
@@ -86,9 +86,9 @@ export const SellerDashboard: React.FC = () => {
   const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
   const acceptInFlight = useRef(new Set<string>());
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
-  // Number of refund requests, for the Return/Refund filter. Reads stay available even when new requests are switched off.
+  // Every refund request the seller has, in all three groups, for the Return/Refund tab badge. Reads stay available even when new requests are switched off.
   const [refundTotal, setRefundTotal] = useState(0);
-  const loadRefundTotal = () => { void refundService.sellerList(1).then(page => setRefundTotal(page.total)).catch(() => {}); };
+  const loadRefundTotal = () => { void refundService.sellerList(1, 'in_progress').then(page => setRefundTotal(page.counts ? Object.values(page.counts).reduce((sum, n) => sum + n, 0) : page.total)).catch(() => {}); };
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; productId: string | null; loading: boolean }>({ open: false, productId: null, loading: false });
   const [shipDialogOrderId, setShipDialogOrderId] = useState<string | null>(null);
@@ -390,6 +390,7 @@ export const SellerDashboard: React.FC = () => {
                 { key: 'products', label: 'My Products', Icon: ShoppingBag, badge: null },
                 { key: 'orders',   label: 'Orders',      Icon: Package,     badge: actionableCount || null },
                 { key: 'vouchers', label: 'Vouchers',    Icon: Tag,         badge: null },
+                { key: 'refunds',  label: 'Return/Refund', Icon: RotateCcw, badge: refundTotal || null },
               ] as const).map(({ key, label, Icon, badge }) => (
                 <button
                   key={key}
@@ -549,7 +550,7 @@ export const SellerDashboard: React.FC = () => {
           )}
 
           {/* Status filter tabs */}
-          {!loadingOrders && (orders.length > 0 || refundTotal > 0) && (() => {
+          {!loadingOrders && orders.length > 0 && (() => {
             const statusTabs = [
               { key: 'all',        label: 'All',        icon: ShoppingBag },
               { key: 'pending',    label: 'Pending',    icon: Clock },
@@ -558,13 +559,12 @@ export const SellerDashboard: React.FC = () => {
               { key: 'shipped',    label: 'To Receive', icon: Truck },
               { key: 'delivered',  label: 'Delivered',  icon: CheckCircle },
               { key: 'cancelled',  label: 'Cancelled',  icon: XCircle },
-              { key: 'refunds',    label: 'Return/Refund', icon: RotateCcw },
-            ].filter(t => t.key === 'all' || (t.key === 'refunds' ? refundTotal > 0 || orderStatusFilter === 'refunds' : orders.some(o => o.status === t.key)));
+            ].filter(t => t.key === 'all' || orders.some(o => o.status === t.key));
 
             return (
               <div className="flex flex-wrap gap-2">
                 {statusTabs.map(({ key, label, icon: Icon }) => {
-                  const count = key === 'all' ? orders.length : key === 'refunds' ? refundTotal : orders.filter(o => o.status === key).length;
+                  const count = key === 'all' ? orders.length : orders.filter(o => o.status === key).length;
                   const active = orderStatusFilter === key;
                   return (
                     <button
@@ -588,9 +588,7 @@ export const SellerDashboard: React.FC = () => {
             );
           })()}
 
-          {orderStatusFilter === 'refunds' ? (
-            <RefundRequestReview onUpdated={() => { void loadOrders(); loadRefundTotal(); }} />
-          ) : loadingOrders ? (
+          {loadingOrders ? (
             <div className="flex justify-center py-12"><Spinner size="lg" /></div>
           ) : orders.length === 0 ? (
             <Card className="text-center py-12">
@@ -794,6 +792,11 @@ export const SellerDashboard: React.FC = () => {
             });
           })()}
         </div>
+      )}
+
+      {/* ── Return/Refund Tab ── */}
+      {tab === 'refunds' && (
+        <RefundRequestReview onUpdated={() => { void loadOrders(); loadRefundTotal(); }} />
       )}
 
       {/* ── Vouchers Tab ── */}

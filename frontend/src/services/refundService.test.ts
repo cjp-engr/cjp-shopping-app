@@ -9,6 +9,14 @@ describe('delivered refund client', () => {
     expect(await refundService.completed(2)).toMatchObject({ page: 2, total: 21 });
     expect(fetcher.mock.calls[0][0]).toBe('/api/orders/refund-requests/completed?page=2&limit=20');
   });
+  it('asks the seller list for one status group, and for everything when none is given', async () => {
+    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ requests: [], page: 1, pages: 0, total: 0, counts: { in_progress: 2, approved: 1, rejected: 0 } }) }); vi.stubGlobal('fetch', fetcher);
+    const page = await refundService.sellerList(1, 'approved');
+    await refundService.sellerList(2);
+    expect(page.counts).toEqual({ in_progress: 2, approved: 1, rejected: 0 });
+    expect(fetcher.mock.calls[0][0]).toBe('/api/seller/refund-requests?page=1&limit=20&status=approved');
+    expect(fetcher.mock.calls[1][0]).toBe('/api/seller/refund-requests?page=2&limit=20');
+  });
   it('sends selections and stable key without a client-controlled amount', async () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ request: { id: 'r', state: 'requested' } }) }); vi.stubGlobal('fetch', fetcher);
     const input = { items: [{ lineId: 'a', quantity: 1 }], reasonCode: 'damaged' as const, description: 'Broken', idempotencyKey: 'same-key' };

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import type { Order } from '../types/order';
 import { canSellerCancel } from '../utils/orderPayment';
@@ -239,7 +238,6 @@ export const SellerOrderDetail: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto" data-testid="seller-order-detail-page">
-      {order.status === 'delivered' && <Link to="/seller?tab=orders" className="text-primary-600">Review refund requests in seller orders</Link>}
       {/* Back link */}
       <button
         onClick={() => navigate('/seller?tab=orders')}

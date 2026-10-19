@@ -1,13 +1,13 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle2, ChevronDown, Clock3, Eye, Package, Store, TriangleAlert, User } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Clock3, Eye, RotateCcw, Store, TriangleAlert, User } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import type { RefundRequest } from '../../types/refund';
 import { formatDate } from '../../utils/formatters';
 import { refundDateCaption, refundMoney, refundReasonLabels, refundStateLabels } from '../../utils/refund';
-import { RefundBreakdown } from './RefundPresentation';
+import { RefundBreakdown, RefundItemImage } from './RefundPresentation';
 
 export type RefundViewer = 'buyer' | 'seller';
 
@@ -27,6 +27,8 @@ const BANNERS: Record<RefundViewer, Partial<Record<State, { tone: Tone; message:
     refunded: { tone: 'emerald', message: 'The refund is confirmed. Your bank may take additional time to post it.' },
     processing: { tone: 'amber', message: 'Approved by the seller. Your refund is processing.' },
     needs_review: { tone: 'red', message: 'The payment needs reconciliation. Do not submit a replacement request.' },
+    requested: { tone: 'amber', message: 'Waiting for the seller. You can check the decision here.' },
+    rejected: { tone: 'red', message: 'The seller rejected this request.' },
   },
   seller: {
     requested: { tone: 'amber', message: 'Awaiting your decision. The buyer keeps the item if you approve.' },
@@ -75,23 +77,14 @@ function itemsOf(request: RefundRequest): RefundItem[] {
   }));
 }
 
-function ItemImage({ src, name }: { src?: string; name: string }) {
-  const [failed, setFailed] = useState(false);
-  return (
-    <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-      {src && !failed
-        ? <img src={src} alt={name} loading="lazy" onError={() => setFailed(true)} className="h-full w-full object-cover" />
-        : <Package className="h-6 w-6" aria-hidden />}
-    </div>
-  );
-}
-
 /**
  * A refund request laid out like the order card in My Orders: who it is with and its status,
  * order number and date, the items with their prices, a total bar, a status banner and actions.
  * `children` is the area for a seller's decision controls, shown between the banner and the buttons.
+ * `inOrder` is for the buyer's own order page, which already shows the store, the order and its
+ * link: the card then drops the store link, the order strip and View Details.
  */
-export function RefundOrderCard({ request, viewer = 'buyer', children }: { request: RefundRequest; viewer?: RefundViewer; children?: ReactNode }) {
+export function RefundOrderCard({ request, viewer = 'buyer', inOrder = false, children }: { request: RefundRequest; viewer?: RefundViewer; inOrder?: boolean; children?: ReactNode }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const status = STATUS[request.state];
@@ -109,32 +102,47 @@ export function RefundOrderCard({ request, viewer = 'buyer', children }: { reque
 
   return (
     <Card padding="none" className={`overflow-hidden ${seller ? `border-l-4 ${status.border}` : ''}`} data-testid={`refund-card-${request.id}`}>
-      <Link
-        to={orderPath}
-        className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/40"
-      >
-        <div className="flex min-w-0 items-center gap-2">
-          <PartyIcon className="h-4 w-4 flex-shrink-0 text-gray-400 dark:text-gray-500" aria-hidden />
-          <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">{party}</span>
+      {inOrder ? (
+        <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-3 dark:border-gray-700">
+          <div className="flex min-w-0 items-center gap-2">
+            <RotateCcw className="h-4 w-4 flex-shrink-0 text-gray-400 dark:text-gray-500" aria-hidden />
+            <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">Refund request</span>
+          </div>
+          <Badge variant={status.variant} className="flex flex-shrink-0 items-center gap-1">
+            <StatusIcon className="h-3.5 w-3.5" aria-hidden />
+            {refundStateLabels[request.state]}
+          </Badge>
         </div>
-        <Badge variant={status.variant} className="flex flex-shrink-0 items-center gap-1">
-          <StatusIcon className="h-3.5 w-3.5" aria-hidden />
-          {refundStateLabels[request.state]}
-        </Badge>
-      </Link>
+      ) : (
+        <>
+          <Link
+            to={orderPath}
+            className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/40"
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <PartyIcon className="h-4 w-4 flex-shrink-0 text-gray-400 dark:text-gray-500" aria-hidden />
+              <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">{party}</span>
+            </div>
+            <Badge variant={status.variant} className="flex flex-shrink-0 items-center gap-1">
+              <StatusIcon className="h-3.5 w-3.5" aria-hidden />
+              {refundStateLabels[request.state]}
+            </Badge>
+          </Link>
 
-      <Link
-        to={orderPath}
-        className="flex flex-wrap gap-x-4 gap-y-0.5 border-b border-gray-100 bg-gray-50 px-5 py-2 text-xs text-gray-500 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-700/50"
-      >
-        <span>Order #{request.orderId.slice(0, 8).toUpperCase()}</span>
-        {request.orderPlacedAt && <><span aria-hidden>·</span><span>{formatDate(request.orderPlacedAt)}</span></>}
-      </Link>
+          <Link
+            to={orderPath}
+            className="flex flex-wrap gap-x-4 gap-y-0.5 border-b border-gray-100 bg-gray-50 px-5 py-2 text-xs text-gray-500 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-700/50"
+          >
+            <span>Order #{request.orderId.slice(0, 8).toUpperCase()}</span>
+            {request.orderPlacedAt && <><span aria-hidden>·</span><span>{formatDate(request.orderPlacedAt)}</span></>}
+          </Link>
+        </>
+      )}
 
       <div className="divide-y divide-gray-100 dark:divide-gray-700">
         {items.map(item => (
           <div key={item.lineId} className="flex gap-4 px-5 py-4">
-            <ItemImage src={item.image} name={item.name} />
+            <RefundItemImage src={item.image} name={item.name} />
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-sm font-medium text-gray-900 dark:text-gray-100">{item.name}</p>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">x{item.quantity} · {refundReasonLabels[request.reasonCode]}</p>
@@ -171,9 +179,11 @@ export function RefundOrderCard({ request, viewer = 'buyer', children }: { reque
       {children}
 
       <div className="flex items-center gap-2 border-t border-gray-100 px-5 py-3 dark:border-gray-700">
-        <Button variant="outline" size="sm" onClick={() => navigate(orderPath)} data-testid="view-refund-order-btn" aria-label={`View order ${request.orderId}`}>
-          <Eye className="mr-1.5 h-4 w-4" /> View Details
-        </Button>
+        {!inOrder && (
+          <Button variant="outline" size="sm" onClick={() => navigate(orderPath)} data-testid="view-refund-order-btn" aria-label={`View order ${request.orderId}`}>
+            <Eye className="mr-1.5 h-4 w-4" /> View Details
+          </Button>
+        )}
         <div className="flex-1" />
         <Button variant="outline" size="sm" onClick={() => setOpen(value => !value)} aria-expanded={open} aria-controls={detailsId}>
           Refund details

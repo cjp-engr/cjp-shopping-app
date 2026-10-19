@@ -26,10 +26,6 @@ export function netOrderRevenue(order: { total: number; refundedAmountMinor?: nu
 export const refundStateLabels = { requested: 'Awaiting seller review', rejected: 'Rejected', processing: 'Refund processing', refunded: 'Refunded', needs_review: 'Refund needs payment review' };
 /** States that appear in the Return/Refund tab: the seller has approved the request. Waiting and rejected requests stay with the order under Completed. */
 export const approvedRefundStates: string[] = ['processing', 'needs_review', 'refunded'];
-/** What the card's amount line says, by where the request is in its life. */
-export function refundAmountCaption(state: string) {
-  return state === 'refunded' ? 'Refund completed' : approvedRefundStates.includes(state) ? 'Refund approved' : 'Requested refund';
-}
 export function refundDateCaption(request: { state: string; submittedAt: string; decidedAt?: string; completedAt?: string }) {
   if (request.state === 'refunded') return `Completed ${refundDate(request.completedAt)}`;
   if (approvedRefundStates.includes(request.state)) return `Approved ${refundDate(request.decidedAt ?? request.submittedAt)}`;
