@@ -22,6 +22,7 @@ import '../../../../shared/widgets/review_bottom_sheet.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import 'order_payment_notice_card.dart';
+import '../../../refunds/data/refund_api.dart';
 import '../../../refunds/presentation/completed_refunds.dart';
 
 class _TabDef {
@@ -56,6 +57,9 @@ class _OrdersScreenState extends State<OrdersScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
+  /// Approved refunds, for the Return/Refund tab badge; the tab reports changes once it loads.
+  int _refundCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +67,22 @@ class _OrdersScreenState extends State<OrdersScreen>
     final user = context.read<AuthBloc>().state.user;
     if (user != null) {
       context.read<OrderBloc>().add(OrdersLoadRequested(user.id));
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadRefundCount());
+  }
+
+  Future<void> _loadRefundCount() async {
+    final RefundApi api;
+    try {
+      api = context.read<RefundApi>();
+    } catch (_) {
+      return; // No refund API in this tree (some widget tests): the badge stays hidden.
+    }
+    try {
+      final page = await api.completed(1);
+      if (mounted) setState(() => _refundCount = page.total);
+    } catch (_) {
+      // The badge is a convenience; the tab reports its own errors.
     }
   }
 
@@ -95,7 +115,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                 dividerColor: context.borderColor,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 16),
                 tabs: _kTabs.map((tab) {
-                  final count = tab.refunds ? 0 : tab.filter(orders).length;
+                  final count =
+                      tab.refunds ? _refundCount : tab.filter(orders).length;
                   return Tab(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -145,7 +166,13 @@ class _OrdersScreenState extends State<OrdersScreen>
                   : TabBarView(
                       controller: _tabController,
                       children: _kTabs.map((tab) {
-                        if (tab.refunds) return const CompletedRefunds();
+                        if (tab.refunds) {
+                          return CompletedRefunds(onTotal: (total) {
+                            if (mounted && total != _refundCount) {
+                              setState(() => _refundCount = total);
+                            }
+                          });
+                        }
                         final filtered = tab.filter(orders);
                         return _OrderList(
                           orders: filtered,

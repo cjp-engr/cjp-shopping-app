@@ -6,7 +6,7 @@ import 'package:toko_mart/features/refunds/data/refund_models.dart';
 import 'package:toko_mart/features/refunds/presentation/refund_request_panel.dart';
 import 'package:toko_mart/features/refunds/presentation/refund_review_panel.dart';
 import 'package:toko_mart/features/refunds/presentation/completed_refunds.dart';
-import 'package:toko_mart/features/refunds/presentation/refund_request_card.dart';
+import 'package:toko_mart/features/refunds/presentation/refund_order_card.dart';
 import 'package:toko_mart/features/seller/data/models/seller_order_model.dart';
 import 'package:toko_mart/features/seller/presentation/bloc/seller_state.dart';
 import 'package:toko_mart/core/utils/order_payment_notice.dart';
@@ -29,8 +29,9 @@ void main() {
                   size: size, textScaler: const TextScaler.linear(2)),
               child: Scaffold(
                   body: SingleChildScrollView(
-                      child: RefundRequestCard(
-                          sellerReview: true,
+                      child: RefundOrderCard(
+                          viewer: RefundViewer.seller,
+                          inOrder: true,
                           request: RefundRequestData.fromJson({
                             'id': 'r',
                             'orderId': '12345678',
@@ -52,11 +53,15 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.text('Refunded'), findsOneWidget);
+      await tester.ensureVisible(find.text('Refund details'));
+      await tester.tap(find.text('Refund details'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
       expect(find.text('Shipping refund'), findsOneWidget);
     });
   }
   testWidgets(
-      'refund tab shows seller-approved requests, hides ones still waiting, and pages safely',
+      'refund tab shows seller-approved requests, hides ones still waiting, and loads the next page as you scroll',
       (tester) async {
     final api = FakeApi();
     when(() => api.completed(1))
@@ -107,11 +112,20 @@ void main() {
         findsOneWidget);
     expect(find.textContaining('Approved '), findsWidgets);
     expect(find.text('Still waiting for the seller'), findsNothing);
-    await tester.scrollUntilVisible(find.text('Next'), 300);
-    await tester.tap(find.text('Next'));
+    // No pagination controls: the next page loads when the end of the list comes into view.
+    expect(find.text('Next'), findsNothing);
+    expect(find.text('Previous'), findsNothing);
+    expect(find.textContaining('Page '), findsNothing);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -3000));
     await tester.pumpAndSettle();
+
     verify(() => api.completed(2)).called(1);
-    expect(find.text('Page 2 of 2'), findsOneWidget);
+    // The new page is appended below; scroll to it (the list only builds what is near the screen).
+    await tester.drag(find.byType(ListView), const Offset(0, -3000));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('refund-card-r2')), findsOneWidget);
+    expect(find.text('Next'), findsNothing);
   });
   test(
       'confirmed refunds reduce seller revenue and partial legacy payment gets a notice',
@@ -160,8 +174,8 @@ void main() {
             body: SingleChildScrollView(
                 child: RefundRequestPanel(orderId: 'o', api: api)))));
     await tester.pumpAndSettle();
-    await tester.enterText(
-        find.byKey(const ValueKey('refund_quantity_a')), '1');
+    await tester.tap(find.byTooltip('Increase refund quantity for Mug'));
+    await tester.pump();
     await tester.enterText(
         find.byKey(const ValueKey('refund_description')), 'Broken handle');
     await tester.pump();
@@ -179,7 +193,7 @@ void main() {
       'seller rejection requires a reason and approval requires confirmation',
       (tester) async {
     final api = FakeApi();
-    when(() => api.sellerList(1))
+    when(() => api.sellerList(1, 'in_progress'))
         .thenAnswer((_) async => SellerRefundPage.fromJson({
               'page': 1,
               'pages': 1,

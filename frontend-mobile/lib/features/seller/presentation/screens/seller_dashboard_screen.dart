@@ -39,7 +39,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
   String _orderStatusFilter = 'all';
   bool _ordersRequested = false;
 
-  /// Number of refund requests, for the Return/Refund chip. Reading stays available when new requests are off.
+  /// Every refund request the seller has (all three groups), for the Return/Refund tab badge. Reading stays available when new requests are off.
   int _refundTotal = 0;
 
   // Voucher tab state
@@ -60,9 +60,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
         ? 1
         : widget.initialTab == 'vouchers'
             ? 2
-            : 0;
+            : widget.initialTab == 'refunds'
+                ? 3
+                : 0;
     _tabController =
-        TabController(length: 3, vsync: this, initialIndex: initialIndex);
+        TabController(length: 4, vsync: this, initialIndex: initialIndex);
     _tabController.addListener(_onTabChanged);
     _initVoucherRepo();
     _clockTimer = Timer.periodic(
@@ -70,12 +72,12 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _syncCapturePolling(context.read<SellerBloc>().state.orders);
       context.read<SellerBloc>().add(const SellerProductsLoadRequested());
+      _loadRefundTotal();
       // If opened directly on Orders tab (e.g. from a notification tap),
       // trigger the lazy load that _onTabChanged would normally handle.
       if (initialIndex == 1 && !_ordersRequested) {
         _ordersRequested = true;
         context.read<SellerBloc>().add(const SellerOrdersLoadRequested());
-        _loadRefundTotal();
       }
     });
   }
@@ -124,13 +126,17 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
     try {
       api = context.read<RefundApi>();
     } catch (_) {
-      return; // No refund API in this tree (some widget tests): the chip just stays hidden.
+      return; // No refund API in this tree (some widget tests): the badge just stays hidden.
     }
     try {
-      final page = await api.sellerList(1);
-      if (mounted) setState(() => _refundTotal = page.total);
+      final page = await api.sellerList(1, 'in_progress');
+      if (mounted) {
+        setState(() => _refundTotal = page.counts.isEmpty
+            ? page.total
+            : page.counts.values.fold(0, (sum, n) => sum + n));
+      }
     } catch (_) {
-      // The chip is a convenience; the list itself reports its own errors.
+      // The badge is a convenience; the list itself reports its own errors.
     }
   }
 
@@ -138,7 +144,6 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
     if (_tabController.index == 1 && !_ordersRequested) {
       _ordersRequested = true;
       context.read<SellerBloc>().add(const SellerOrdersLoadRequested());
-      _loadRefundTotal();
     }
     if (_tabController.index == 2 && !_couponsRequested) {
       _couponsRequested = true;
@@ -257,6 +262,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
+          // Four tabs no longer fit side by side on a phone.
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           indicatorColor: Colors.white,
           indicatorWeight: 3,
           labelColor: Colors.white,
@@ -308,6 +316,35 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
             const Tab(
               icon: Icon(Icons.local_offer_outlined, size: 18),
               text: AppStrings.vouchers,
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.currency_exchange, size: 18),
+                  const SizedBox(width: 6),
+                  const Text('Return/Refund'),
+                  if (_refundTotal > 0) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppColors.danger,
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusFull),
+                      ),
+                      child: Text(
+                        '$_refundTotal',
+                        style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ],
         ),
@@ -371,13 +408,6 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
                       state: state,
                       now: _now,
                       statusFilter: _orderStatusFilter,
-                      refundTotal: _refundTotal,
-                      onRefundsChanged: () {
-                        context
-                            .read<SellerBloc>()
-                            .add(const SellerOrdersLoadRequested(silent: true));
-                        _loadRefundTotal();
-                      },
                       onStatusChanged: (s) =>
                           setState(() => _orderStatusFilter = s),
                     ),
@@ -389,6 +419,15 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
                     onDelete: _deleteCoupon,
                     onSave: _saveCoupon,
                     onRefresh: _loadCoupons,
+                  ),
+                  // Return/Refund tab: In Progress, Approved, Rejected
+                  RefundReviewList(
+                    onUpdated: () {
+                      context
+                          .read<SellerBloc>()
+                          .add(const SellerOrdersLoadRequested(silent: true));
+                      _loadRefundTotal();
+                    },
                   ),
                 ],
               ),
@@ -701,16 +740,12 @@ class _OrdersTab extends StatelessWidget {
   final SellerState state;
   final ValueListenable<DateTime> now;
   final String statusFilter;
-  final int refundTotal;
-  final VoidCallback onRefundsChanged;
   final ValueChanged<String> onStatusChanged;
 
   const _OrdersTab({
     required this.state,
     required this.now,
     required this.statusFilter,
-    required this.refundTotal,
-    required this.onRefundsChanged,
     required this.onStatusChanged,
   });
 
@@ -726,7 +761,6 @@ class _OrdersTab extends StatelessWidget {
     _StatusTab('delivered', AppStrings.stepDelivered,
         Icons.check_circle_outline_rounded),
     _StatusTab('cancelled', AppStrings.statusCancelled, Icons.cancel_outlined),
-    _StatusTab('refunds', 'Return/Refund', Icons.currency_exchange),
   ];
 
   @override
@@ -744,11 +778,8 @@ class _OrdersTab extends StatelessWidget {
     }
 
     final visibleTabs = _allTabs
-        .where((t) =>
-            t.key == 'all' ||
-            (t.key == 'refunds'
-                ? refundTotal > 0 || statusFilter == 'refunds'
-                : state.orders.any((o) => o.status == t.key)))
+        .where(
+            (t) => t.key == 'all' || state.orders.any((o) => o.status == t.key))
         .toList();
 
     final filtered = statusFilter == 'all'
@@ -776,11 +807,7 @@ class _OrdersTab extends StatelessWidget {
                   final isActive = tab.key == statusFilter;
                   final count = tab.key == 'all'
                       ? state.orders.length
-                      : tab.key == 'refunds'
-                          ? refundTotal
-                          : state.orders
-                              .where((o) => o.status == tab.key)
-                              .length;
+                      : state.orders.where((o) => o.status == tab.key).length;
                   return GestureDetector(
                     onTap: () => onStatusChanged(tab.key),
                     child: AnimatedContainer(
@@ -846,30 +873,27 @@ class _OrdersTab extends StatelessWidget {
             ),
 
           Expanded(
-            child: statusFilter == 'refunds'
-                ? RefundReviewList(onUpdated: onRefundsChanged)
-                : filtered.isEmpty
-                    ? Center(
-                        child: Text(
-                          AppStrings.noOrdersWithStatus,
-                          style: TextStyle(color: context.onSurfaceMuted),
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(
-                            AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.xl),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: AppSizes.sm),
-                        itemBuilder: (context, index) => _OrderCard(
-                          order: filtered[index],
-                          now: now,
-                          busy: state.updatingOrderIds
-                              .contains(filtered[index].id),
-                          onTap: () => _SellerOrderDetailSheet.show(
-                              context, filtered[index]),
-                        ),
-                      ),
+            child: filtered.isEmpty
+                ? Center(
+                    child: Text(
+                      AppStrings.noOrdersWithStatus,
+                      style: TextStyle(color: context.onSurfaceMuted),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.xl),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: AppSizes.sm),
+                    itemBuilder: (context, index) => _OrderCard(
+                      order: filtered[index],
+                      now: now,
+                      busy: state.updatingOrderIds.contains(filtered[index].id),
+                      onTap: () => _SellerOrderDetailSheet.show(
+                          context, filtered[index]),
+                    ),
+                  ),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/theme_colors.dart';
 import '../data/refund_models.dart';
@@ -17,46 +18,27 @@ class RefundSurface extends StatelessWidget {
       child: Padding(padding: const EdgeInsets.all(20), child: child));
 }
 
-class RefundProduct extends StatelessWidget {
-  final String name, detail;
+/// 56px product image for refund rows, with a placeholder when there is no image or it fails to load.
+class RefundItemImage extends StatelessWidget {
   final String? image;
-  final Widget? child;
-  const RefundProduct(
-      {super.key,
-      required this.name,
-      required this.detail,
-      this.image,
-      this.child});
+  const RefundItemImage({super.key, this.image});
   @override
   Widget build(BuildContext context) {
     final fallback = Container(
         color: context.surfaceVariantColor,
         alignment: Alignment.center,
         child: Icon(Icons.inventory_2_outlined,
-            color: context.onSurfaceSecondary));
-    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: SizedBox(
-              width: 64,
-              height: 76,
-              child: image == null || image!.isEmpty
-                  ? fallback
-                  : Image.network(image!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => fallback))),
-      const SizedBox(width: 12),
-      Expanded(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(name,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 5),
-        Text(detail,
-            style: TextStyle(fontSize: 12, color: context.onSurfaceSecondary)),
-        if (child != null) child!
-      ]))
-    ]);
+            size: 22, color: context.onSurfaceSecondary));
+    return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+            width: 56,
+            height: 56,
+            child: image == null || image!.isEmpty
+                ? fallback
+                : Image.network(image!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => fallback)));
   }
 }
 
@@ -72,6 +54,8 @@ class RefundBreakdown extends StatelessWidget {
       this.tax});
   @override
   Widget build(BuildContext context) {
+    // The label takes the free space and the amount keeps its own width at the right edge. (A
+    // Flexible amount would split the space with the label and end up beside it instead.)
     Widget line(String label, int value) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -80,10 +64,9 @@ class RefundBreakdown extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 13, color: context.onSurfaceSecondary))),
           const SizedBox(width: 12),
-          Flexible(
-              child: Text(refundMoney(value, currency),
-                  textAlign: TextAlign.end,
-                  style: const TextStyle(fontSize: 13)))
+          Text(refundMoney(value, currency),
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
         ]));
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       line(tax == null ? 'Items & original tax' : 'Items after discounts',
@@ -92,18 +75,22 @@ class RefundBreakdown extends StatelessWidget {
       line('Shipping refund', shipping),
       Divider(color: context.borderColor),
       const SizedBox(height: 10),
-      Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 16,
-          runSpacing: 8,
-          children: [
-            const Text('Refund total',
-                style: TextStyle(fontWeight: FontWeight.w600)),
-            Text(refundMoney(amount, currency),
-                style:
-                    const TextStyle(fontSize: 24, fontWeight: FontWeight.w700))
-          ])
+      // Full width so the amount sits at the right edge; wraps under the label when text is very large.
+      SizedBox(
+          width: double.infinity,
+          child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                const Text('Refund total',
+                    style:
+                        TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                Text(refundMoney(amount, currency),
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.w700)),
+              ]))
     ]);
   }
 }
@@ -111,51 +98,92 @@ class RefundBreakdown extends StatelessWidget {
 class RefundPolicy extends StatelessWidget {
   final DateTime? deliveredAt;
   const RefundPolicy({super.key, this.deliveredAt});
-  @override
-  Widget build(BuildContext context) => ExpansionTile(
-          tilePadding: EdgeInsets.zero,
-          childrenPadding: const EdgeInsets.only(bottom: 16),
-          leading: const Icon(Icons.schedule_outlined, size: 20),
-          title: const Text('Refund policy & shipping',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-          children: [
-            Text(
-                'Request within seven days of recorded delivery. Seller approval starts the refund; no return is required. Shipping is included only when all paid items are refunded for seller fault. Change of mind is only allowed while pending.',
-                style: TextStyle(
-                    fontSize: 13,
-                    height: 1.6,
-                    color: context.onSurfaceSecondary)),
-            if (deliveredAt != null)
-              Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text('Delivered ${refundDate(deliveredAt)}',
-                      style: const TextStyle(fontSize: 12)))
-          ]);
-}
 
-class RefundStatusBadge extends StatelessWidget {
-  final RefundRequestData request;
-  const RefundStatusBadge({super.key, required this.request});
+  static const _rules = [
+    'Request within seven days of recorded delivery.',
+    'Seller approval starts the refund. No return is needed.',
+    'Shipping is refunded only when every paid item is refunded for a seller-fault reason.',
+    'Change of mind is only allowed while the order is pending.',
+  ];
+
   @override
-  Widget build(BuildContext context) {
-    final done = request.state == 'refunded';
-    final color = done
-        ? (context.isDark ? Colors.green.shade200 : Colors.green.shade800)
-        : (context.isDark ? Colors.amber.shade200 : Colors.brown.shade800);
-    return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-            color: (done ? AppColors.success : AppColors.warning)
-                .withAlpha(context.isDark ? 35 : 22),
-            borderRadius: BorderRadius.circular(9)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(done ? Icons.check_circle_outline : Icons.schedule_outlined,
-              size: 16, color: color),
-          const SizedBox(width: 6),
-          Flexible(
-              child: Text(request.stateLabel,
+  Widget build(BuildContext context) => Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withAlpha(18),
+              blurRadius: 16,
+              offset: const Offset(0, 3)),
+          BoxShadow(
+              color: Colors.black.withAlpha(6),
+              blurRadius: 4,
+              offset: const Offset(0, 1)),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      // The default tile draws coloured divider lines above and below; the card needs none.
+      child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+              shape: const Border(),
+              collapsedShape: const Border(),
+              tilePadding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.md, vertical: 4),
+              childrenPadding: const EdgeInsets.fromLTRB(
+                  AppSizes.md, 0, AppSizes.md, AppSizes.md),
+              expandedCrossAxisAlignment: CrossAxisAlignment.start,
+              iconColor: context.onSurfaceSecondary,
+              collapsedIconColor: context.onSurfaceSecondary,
+              leading: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                      color: AppColors.primary.withAlpha(30),
+                      shape: BoxShape.circle),
+                  child: Icon(Icons.policy_outlined,
+                      size: 18,
+                      color: context.isDark
+                          ? Colors.orange.shade200
+                          : Colors.brown.shade700)),
+              title: Text('Refund policy & shipping',
                   style: TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600, color: color)))
-        ]));
-  }
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: context.onSurfaceColor)),
+              children: [
+                for (final rule in _rules)
+                  Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Icon(Icons.check_circle_outline,
+                                    size: 16,
+                                    color: context.onSurfaceSecondary)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                                child: Text(rule,
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        height: 1.5,
+                                        color: context.onSurfaceSecondary))),
+                          ])),
+                if (deliveredAt != null)
+                  Container(
+                      margin: const EdgeInsets.only(top: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                          color: context.surfaceVariantColor,
+                          borderRadius: BorderRadius.circular(8)),
+                      child: Text('Delivered ${refundDate(deliveredAt)}',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: context.onSurfaceSecondary))),
+              ])));
 }

@@ -46,6 +46,8 @@ String? _bannerOf(RefundViewer viewer, String state) {
     'processing': 'Approved by the seller. Your refund is processing.',
     'needs_review':
         'The payment needs reconciliation. Do not submit a replacement request.',
+    'requested': 'Waiting for the seller. You can check the decision here.',
+    'rejected': 'The seller rejected this request.',
   }[state];
 }
 
@@ -97,16 +99,20 @@ String _dateCaption(RefundRequestData r) {
 /// A refund request laid out like the order card in My Orders: who it is with and its status,
 /// order number and date, the items with their prices, a total bar, a status banner and actions.
 /// [decision] is the seller's approve and reject area, shown between the banner and the buttons.
+/// [inOrder] is for the buyer's own order page, which already shows the store and the order: the
+/// card then drops the store name, the order strip and View Details.
 class RefundOrderCard extends StatefulWidget {
   final RefundRequestData request;
   final RefundViewer viewer;
   final Widget? decision;
+  final bool inOrder;
   final VoidCallback? onViewOrder;
   const RefundOrderCard(
       {super.key,
       required this.request,
       this.viewer = RefundViewer.buyer,
       this.decision,
+      this.inOrder = false,
       this.onViewOrder});
   @override
   State<RefundOrderCard> createState() => _RefundOrderCardState();
@@ -152,49 +158,65 @@ class _RefundOrderCardState extends State<RefundOrderCard> {
         Padding(
           padding: const EdgeInsets.fromLTRB(
               AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.sm),
-          child: Row(children: [
-            SellerAvatar(name: partyName, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-                child: Text(partyName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: context.onSurfaceColor))),
-            const SizedBox(width: 8),
-            Flexible(
-                child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                  color: look.color.withAlpha(24),
-                  borderRadius: BorderRadius.circular(20)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(look.icon, size: 14, color: look.color),
-                const SizedBox(width: 4),
-                Flexible(
-                    child: Text(r.stateLabel,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: look.color))),
-              ]),
-            )),
-          ]),
+          // A Wrap, not a Row of Expanded and Flexible: those split the free space between them, which
+          // cut the status pill off and left it floating beside the title. Here the pill keeps its full
+          // width, sits at the right edge when there is room, and drops below the title when there is not.
+          child: SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    Row(mainAxisSize: MainAxisSize.min, children: [
+                      if (widget.inOrder)
+                        Icon(Icons.currency_exchange,
+                            size: 18, color: context.onSurfaceSecondary)
+                      else
+                        SellerAvatar(name: partyName, size: 20),
+                      const SizedBox(width: 8),
+                      Flexible(
+                          child: Text(
+                              widget.inOrder ? 'Refund request' : partyName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.onSurfaceColor))),
+                    ]),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                          color: look.color.withAlpha(24),
+                          borderRadius: BorderRadius.circular(20)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(look.icon, size: 14, color: look.color),
+                        const SizedBox(width: 4),
+                        Flexible(
+                            child: Text(r.stateLabel,
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: look.color))),
+                      ]),
+                    ),
+                  ])),
         ),
         const Divider(height: 1),
-        Container(
-          width: double.infinity,
-          color: context.surfaceVariantColor,
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.md, vertical: AppSizes.sm),
-          child: Text(
-              'Order #${shortId.toUpperCase()}${r.orderPlacedAt == null ? '' : '  ·  ${refundOrderDate(r.orderPlacedAt)}'}',
-              style:
-                  TextStyle(fontSize: 12, color: context.onSurfaceSecondary)),
-        ),
+        if (!widget.inOrder)
+          Container(
+            width: double.infinity,
+            color: context.surfaceVariantColor,
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.md, vertical: AppSizes.sm),
+            child: Text(
+                'Order #${shortId.toUpperCase()}${r.orderPlacedAt == null ? '' : '  ·  ${refundOrderDate(r.orderPlacedAt)}'}',
+                style:
+                    TextStyle(fontSize: 12, color: context.onSurfaceSecondary)),
+          ),
         for (final line in lines) _ItemRow(line: line, request: r, word: word),
         Container(
           width: double.infinity,
@@ -235,15 +257,51 @@ class _RefundOrderCardState extends State<RefundOrderCard> {
                             color: context.onSurfaceColor)),
                     if (r.rejectionReason != null)
                       Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text('Reason: ${r.rejectionReason}',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: context.onSurfaceColor))),
+                          padding: const EdgeInsets.only(top: 8, bottom: 4),
+                          // The reason as a quote: an accent bar, a light fill, readable text.
+                          child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                  color: Colors.white
+                                      .withAlpha(context.isDark ? 14 : 150),
+                                  child: IntrinsicHeight(
+                                      child: Row(children: [
+                                    Container(width: 3, color: look.color),
+                                    Expanded(
+                                        child: Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                                10, 8, 10, 8),
+                                            child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                      seller
+                                                          ? 'Your reason'
+                                                          : 'Seller\u2019s reason',
+                                                      style: TextStyle(
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          letterSpacing: 0.4,
+                                                          color: context
+                                                              .onSurfaceSecondary)),
+                                                  const SizedBox(height: 2),
+                                                  Text(r.rejectionReason!,
+                                                      style: TextStyle(
+                                                          fontSize: 13,
+                                                          height: 1.4,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          color: context
+                                                              .onSurfaceColor)),
+                                                ]))),
+                                  ]))))),
                     Padding(
                         padding: const EdgeInsets.only(top: 2),
+                        // Only a refund that is approved or done goes to a payment method.
                         child: Text(
-                            '${_dateCaption(r)} · original payment method',
+                            '${_dateCaption(r)}${r.approvedBySeller ? ' · original payment method' : ''}',
                             style: TextStyle(
                                 fontSize: 12,
                                 color: context.onSurfaceSecondary))),
@@ -254,29 +312,57 @@ class _RefundOrderCardState extends State<RefundOrderCard> {
           Padding(
               padding: const EdgeInsets.all(AppSizes.md),
               child: widget.decision),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-              AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.sm),
-          // A Wrap so the two buttons stack instead of overflowing at large text sizes.
-          child: Wrap(
-              alignment: widget.onViewOrder != null
-                  ? WrapAlignment.spaceBetween
-                  : WrapAlignment.end,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                if (widget.onViewOrder != null)
-                  OutlinedButton.icon(
-                      onPressed: widget.onViewOrder,
-                      icon: const Icon(Icons.visibility_outlined, size: 16),
-                      label: const Text('View Details')),
-                TextButton.icon(
-                    onPressed: () => setState(() => _open = !_open),
-                    icon: Icon(_open ? Icons.expand_less : Icons.expand_more,
-                        size: 18),
-                    label: const Text('Refund details')),
+        if (widget.onViewOrder != null && !widget.inOrder)
+          // Same button as "Track Order" on My Orders: outlined brand orange, full width.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.sm),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: widget.onViewOrder,
+                icon: const Icon(Icons.visibility_outlined, size: 16),
+                label: const Text('View Details'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusSm)),
+                  textStyle: const TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ),
+        if (widget.onViewOrder == null || widget.inOrder)
+          const Divider(height: 1),
+        // Same anatomy as the other expandable rows: icon, title, chevron at the right edge.
+        Semantics(
+          button: true,
+          expanded: _open,
+          child: InkWell(
+            onTap: () => setState(() => _open = !_open),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.md, vertical: 14),
+              child: Row(children: [
+                Icon(Icons.receipt_long_outlined,
+                    size: 20, color: context.onSurfaceSecondary),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: Text('Refund details',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: context.onSurfaceColor))),
+                Icon(_open ? Icons.expand_less : Icons.expand_more,
+                    color: context.onSurfaceSecondary),
               ]),
+            ),
+          ),
         ),
         if (_open)
           Padding(
@@ -315,26 +401,12 @@ class _ItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fallback = Container(
-        color: context.surfaceVariantColor,
-        alignment: Alignment.center,
-        child: Icon(Icons.inventory_2_outlined,
-            size: 22, color: context.onSurfaceSecondary));
     final quantity = line.amounts.length;
     final each = line.each;
     return Padding(
       padding: const EdgeInsets.all(AppSizes.md),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        ClipRRect(
-            borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-            child: SizedBox(
-                width: 56,
-                height: 56,
-                child: line.image == null || line.image!.isEmpty
-                    ? fallback
-                    : Image.network(line.image!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => fallback))),
+        RefundItemImage(image: line.image),
         const SizedBox(width: 12),
         Expanded(
             child:
@@ -352,10 +424,12 @@ class _ItemRow extends StatelessWidget {
         const SizedBox(width: 12),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Text(refundMoney(line.total, request.currency),
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.primaryDark)),
+                  color: request.state == 'rejected'
+                      ? context.onSurfaceSecondary
+                      : AppColors.primaryDark)),
           const SizedBox(height: 4),
           Text(
               each != null && quantity > 1

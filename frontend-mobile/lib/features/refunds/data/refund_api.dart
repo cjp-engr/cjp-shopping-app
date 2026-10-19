@@ -55,9 +55,11 @@ class RefundApi {
           '/orders/$id/refund-requests',
           method: 'POST',
           data: input))['request'] as Map));
-  Future<SellerRefundPage> sellerList(int page) async =>
-      SellerRefundPage.fromJson(
-          await _request('/seller/refund-requests?page=$page&limit=20'));
+
+  /// [status] is `in_progress`, `approved` or `rejected`; omit it for every request.
+  Future<SellerRefundPage> sellerList(int page, [String? status]) async =>
+      SellerRefundPage.fromJson(await _request(
+          '/seller/refund-requests?page=$page&limit=20${status == null ? '' : '&status=$status'}'));
   Future<RefundRequestData> decide(
           String id, String decision, String? reason) async =>
       RefundRequestData.fromJson(Map<String, dynamic>.from((await _request(

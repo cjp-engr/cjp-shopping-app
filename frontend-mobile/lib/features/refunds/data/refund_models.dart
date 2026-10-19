@@ -167,8 +167,15 @@ class RefundRequestData {
 class SellerRefundPage {
   final List<RefundRequestData> requests;
   final int page, pages, total;
+
+  /// How many requests are in each group (`in_progress`, `approved`, `rejected`); seller list only.
+  final Map<String, int> counts;
   SellerRefundPage.fromJson(Map<String, dynamic> json)
-      : requests = List<RefundRequestData>.unmodifiable(
+      : counts = Map<String, int>.unmodifiable({
+          for (final e in (json['counts'] as Map? ?? const {}).entries)
+            e.key as String: (e.value as num).toInt()
+        }),
+        requests = List<RefundRequestData>.unmodifiable(
             (json['requests'] as List? ?? []).map((v) =>
                 RefundRequestData.fromJson(
                     Map<String, dynamic>.from(v as Map)))),

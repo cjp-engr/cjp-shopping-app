@@ -1,12 +1,86 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 import '../data/refund_api.dart';
 import '../data/refund_models.dart';
 import 'refund_bloc.dart';
 import 'refund_order_card.dart';
 
-/// The seller's Return/Refund list: every refund request with its decision controls. It sits in
-/// the Orders tab behind the Return/Refund chip.
+class _Group {
+  final String key, label, empty;
+  final IconData icon;
+  const _Group(this.key, this.label, this.icon, this.empty);
+}
+
+/// What the seller has done with a request: not decided yet, approved (processing or refunded), or rejected.
+const _groups = [
+  _Group('in_progress', 'In Progress', Icons.access_time_rounded,
+      'No refund requests in progress.'),
+  _Group('approved', 'Approved', Icons.check_circle_outline_rounded,
+      'No approved refunds yet.'),
+  _Group(
+      'rejected', 'Rejected', Icons.cancel_outlined, 'No rejected requests.'),
+];
+
+class _GroupChips extends StatelessWidget {
+  final RefundState state;
+  const _GroupChips({required this.state});
+  @override
+  Widget build(BuildContext context) =>
+      Wrap(spacing: 8, runSpacing: 8, children: [
+        for (final g in _groups)
+          Builder(builder: (context) {
+            final active = g.key == state.group;
+            final fg = active ? Colors.white : AppColors.textMuted;
+            return GestureDetector(
+              key: ValueKey('refund-group-${g.key}'),
+              onTap: state.busy || active
+                  ? null
+                  : () =>
+                      context.read<RefundBloc>().add(LoadRefunds(group: g.key)),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                    color: active ? AppColors.primary : Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                    border: Border.all(
+                        color: active ? AppColors.primary : AppColors.border)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(g.icon, size: 13, color: fg),
+                  const SizedBox(width: 4),
+                  Text(g.label,
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: fg)),
+                  const SizedBox(width: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                        color: active
+                            ? Colors.white.withAlpha(51)
+                            : AppColors.surfaceVariant,
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusFull)),
+                    child: Text('${state.counts[g.key] ?? 0}',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: fg)),
+                  ),
+                ]),
+              ),
+            );
+          }),
+      ]);
+}
+
+/// The seller's Return/Refund tab: refund requests in three groups (In Progress, Approved, Rejected),
+/// with the decision controls on the ones still waiting. More requests load as the list is scrolled.
 class RefundReviewList extends StatelessWidget {
   final RefundApi? api;
   final VoidCallback? onUpdated;
@@ -15,59 +89,97 @@ class RefundReviewList extends StatelessWidget {
   Widget build(BuildContext context) => BlocProvider(
       create: (_) =>
           RefundBloc(api ?? context.read<RefundApi>())..add(LoadRefunds()),
+      child: _ReviewBody(onUpdated: onUpdated));
+}
+
+class _ReviewBody extends StatefulWidget {
+  final VoidCallback? onUpdated;
+  const _ReviewBody({this.onUpdated});
+  @override
+  State<_ReviewBody> createState() => _ReviewBodyState();
+}
+
+class _ReviewBodyState extends State<_ReviewBody> {
+  final _scroll = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_maybeLoadMore);
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// Asks for the next page when the end of the list is close, or when the list is too short to scroll.
+  void _maybeLoadMore() {
+    if (!mounted || !_scroll.hasClients) return;
+    final bloc = context.read<RefundBloc>();
+    final s = bloc.state;
+    if (s.busy || s.loadingMore || s.page >= s.pages || s.error != null) return;
+    if (_scroll.position.maxScrollExtent - _scroll.position.pixels < 320) {
+      bloc.add(LoadMoreRefunds());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => BlocListener<RefundBloc, RefundState>(
+      listenWhen: (p, c) =>
+          !identical(p.requests, c.requests) || p.busy != c.busy,
+      listener: (_, __) =>
+          WidgetsBinding.instance.addPostFrameCallback((_) => _maybeLoadMore()),
       child: BlocConsumer<RefundBloc, RefundState>(
         listenWhen: (p, c) => p.mutations != c.mutations,
-        listener: (_, state) => onUpdated?.call(),
-        builder: (context, state) =>
-            ListView(padding: const EdgeInsets.all(16), children: [
-          Row(children: [
-            const Expanded(
-                child:
-                    Text('Review the buyer’s issue and exact refund amount.')),
-            IconButton(
-                tooltip: 'Refresh refund requests',
-                onPressed: state.busy
-                    ? null
-                    : () => context
-                        .read<RefundBloc>()
-                        .add(LoadRefunds(page: state.page)),
-                icon: const Icon(Icons.refresh))
-          ]),
-          if (state.busy) const LinearProgressIndicator(),
-          if (state.error != null)
-            Semantics(
-                liveRegion: true,
-                child: Text(state.error!,
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error))),
-          if (!state.busy && state.requests.isEmpty)
-            const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(child: Text('No refund requests.'))),
-          for (final r in state.requests)
-            Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _SellerRequest(
-                    key: ValueKey(r.id), request: r, busy: state.busy)),
-          if (state.pages > 0)
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              TextButton(
-                  onPressed: state.busy || state.page <= 1
-                      ? null
-                      : () => context
-                          .read<RefundBloc>()
-                          .add(LoadRefunds(page: state.page - 1)),
-                  child: const Text('Previous')),
-              Text('Page ${state.page} of ${state.pages}'),
-              TextButton(
-                  onPressed: state.busy || state.page >= state.pages
-                      ? null
-                      : () => context
-                          .read<RefundBloc>()
-                          .add(LoadRefunds(page: state.page + 1)),
-                  child: const Text('Next')),
+        listener: (_, state) => widget.onUpdated?.call(),
+        builder: (context, state) => ListView(
+            controller: _scroll,
+            padding: const EdgeInsets.all(16),
+            children: [
+              Row(children: [
+                const Expanded(
+                    child: Text(
+                        'Review the buyer\u2019s issue and exact refund amount.')),
+                IconButton(
+                    tooltip: 'Refresh refund requests',
+                    onPressed: state.busy
+                        ? null
+                        : () => context.read<RefundBloc>().add(LoadRefunds()),
+                    icon: const Icon(Icons.refresh))
+              ]),
+              _GroupChips(state: state),
+              const SizedBox(height: 12),
+              if (state.busy) const LinearProgressIndicator(),
+              if (state.error != null)
+                Semantics(
+                    liveRegion: true,
+                    child: Text(state.error!,
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.error))),
+              if (!state.busy && state.requests.isEmpty)
+                Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 32),
+                    child: Center(
+                        child: Text(_groups
+                            .firstWhere((g) => g.key == state.group)
+                            .empty))),
+              for (final r in state.requests)
+                Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _SellerRequest(
+                        key: ValueKey(r.id), request: r, busy: state.busy)),
+              if (state.loadingMore)
+                const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                        child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2.5)))),
             ]),
-        ]),
       ));
 }
 
