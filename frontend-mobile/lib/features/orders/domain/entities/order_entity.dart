@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../refund_mark.dart';
 
 class OrderAddressEntity {
   final String street;
@@ -17,6 +18,8 @@ class OrderAddressEntity {
 }
 
 class OrderItemEntity {
+  /// This line's id in the order, used to match refunds to items.
+  final String? lineId;
   final String productId;
   final String productName;
   final String productImage;
@@ -29,6 +32,7 @@ class OrderItemEntity {
   final Map<String, String> selectedAttributes;
 
   const OrderItemEntity({
+    this.lineId,
     required this.productId,
     required this.productName,
     required this.productImage,
@@ -77,6 +81,9 @@ class OrderEntity extends Equatable {
   final DateTime? authorizationExpiresAt;
   final DateTime? deliveredAt, refundRequestDeadlineAt;
   final int refundedAmountMinor, refundReservedAmountMinor;
+
+  /// Items with refunded units, for marking them in the order lists.
+  final List<RefundedItemMark> refundedItems;
   final String currency;
 
   /// Who cancelled the order (`buyer`, `seller`, `system`); absent on older cancellations.
@@ -111,6 +118,7 @@ class OrderEntity extends Equatable {
     this.refundRequestDeadlineAt,
     this.refundedAmountMinor = 0,
     this.refundReservedAmountMinor = 0,
+    this.refundedItems = const [],
     this.currency = 'usd',
     this.cancelledByRole,
     this.cancelledAt,
@@ -134,6 +142,7 @@ class OrderEntity extends Equatable {
         refundRequestDeadlineAt,
         refundedAmountMinor,
         refundReservedAmountMinor,
+        refundedItems.map((m) => (m.lineId, m.refunded, m.processing)).toList(),
         currency,
       ];
 }

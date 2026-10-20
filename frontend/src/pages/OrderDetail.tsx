@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import type { Order } from '../types/order';
 import orderService from '../services/orderService';
 import { RefundRequestPanel } from '../components/orders/RefundRequestPanel';
+import { RefundItemMark } from '../components/orders/RefundItemMark';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
@@ -187,7 +188,7 @@ export const OrderDetail: React.FC = () => {
             </div>
 
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {sellerItems.map(({ product, quantity, selectedVariant }) => {
+              {sellerItems.map(({ lineId, product, quantity, selectedVariant }) => {
                 const existingReview = reviewMap.get(product.id);
                 const itemKey = selectedVariant?.key ?? product.id;
                 const rawPrice = selectedVariant?.price ?? product.price;
@@ -214,6 +215,7 @@ export const OrderDetail: React.FC = () => {
                           </p>
                         )}
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">x{quantity}</p>
+                        <RefundItemMark marks={order.refundedItems} lineId={lineId} quantity={quantity} />
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-sm font-semibold text-primary-600">

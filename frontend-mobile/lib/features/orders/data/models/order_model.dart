@@ -1,5 +1,6 @@
 import '../../../../core/utils/json_date.dart';
 import '../../domain/entities/order_entity.dart';
+import '../../domain/refund_mark.dart';
 
 class OrderAddressModel extends OrderAddressEntity {
   const OrderAddressModel({
@@ -30,6 +31,7 @@ class OrderAddressModel extends OrderAddressEntity {
 
 class OrderItemModel extends OrderItemEntity {
   const OrderItemModel({
+    super.lineId,
     required super.productId,
     required super.productName,
     required super.productImage,
@@ -83,6 +85,7 @@ class OrderItemModel extends OrderItemEntity {
       }
 
       return OrderItemModel(
+        lineId: json['_id']?.toString(),
         productId:
             product['_id']?.toString() ?? product['id']?.toString() ?? '',
         productName: product['name'] ?? json['productName'] ?? '',
@@ -110,6 +113,7 @@ class OrderItemModel extends OrderItemEntity {
       });
     }
     return OrderItemModel(
+      lineId: json['_id']?.toString(),
       productId: product?.toString() ?? json['productId']?.toString() ?? '',
       productName: json['productName'] ?? '',
       productImage: json['productImage'] ?? '',
@@ -153,6 +157,7 @@ class OrderModel extends OrderEntity {
     super.refundRequestDeadlineAt,
     super.refundedAmountMinor,
     super.refundReservedAmountMinor,
+    super.refundedItems,
     super.currency,
     super.cancelledByRole,
     super.cancelledAt,
@@ -221,6 +226,14 @@ class OrderModel extends OrderEntity {
       refundedAmountMinor: (json['refundedAmountMinor'] as num?)?.toInt() ?? 0,
       refundReservedAmountMinor:
           (json['refundReservedAmountMinor'] as num?)?.toInt() ?? 0,
+      refundedItems: [
+        for (final m in (json['refundedItems'] as List? ?? const []))
+          if (m is Map && m['lineId'] != null)
+            RefundedItemMark(
+                lineId: m['lineId'].toString(),
+                refunded: (m['refunded'] as num?)?.toInt() ?? 0,
+                processing: (m['processing'] as num?)?.toInt() ?? 0),
+      ],
       currency: json['currency'] as String? ?? 'usd',
       cancelledByRole: json['cancelledByRole'] is String
           ? json['cancelledByRole'] as String

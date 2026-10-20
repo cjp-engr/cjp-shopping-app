@@ -6,6 +6,7 @@ import { RefundOrderCard } from '../orders/RefundOrderCard';
 import { useLoadMoreSentinel } from '../../hooks/useLoadMoreSentinel';
 import { refundService } from '../../services/refundService';
 import type { RefundRequest, SellerRefundGroup, SellerRefundPage } from '../../types/refund';
+import { createMoreGuard } from '../../utils/moreGuard';
 import { canLoadMore, hasMore, initialPaged, pagedReducer } from '../../utils/pagedList';
 import { refundMoney } from '../../utils/refund';
 
@@ -28,11 +29,12 @@ export function RefundRequestReview({ onUpdated }: { onUpdated?: () => void }) {
   const [actionError, setActionError] = useState('');
   const generation = useRef(0);
   const decisionInFlight = useRef(false);
-  const moreInFlight = useRef(false);
+  const [moreGuard] = useState(createMoreGuard);
 
   /** Loads a group's first page into the list and returns the group counts for the caller to keep. */
   const fetchFirst = useCallback(async (target: SellerRefundGroup): Promise<SellerRefundPage['counts']> => {
     const current = ++generation.current;
+    moreGuard.invalidate(); // a load-more still pending belongs to the old list or group
     try {
       const result = await refundService.sellerList(1, target);
       if (current !== generation.current) return undefined;
@@ -42,7 +44,7 @@ export function RefundRequestReview({ onUpdated }: { onUpdated?: () => void }) {
       if (current === generation.current) dispatch({ type: 'firstFailed', message: 'Could not load refund requests.' });
       return undefined;
     }
-  }, []);
+  }, [moreGuard]);
 
   useEffect(() => {
     const counter = generation; // the aliased ref lets the cleanup invalidate in-flight responses
@@ -51,10 +53,9 @@ export function RefundRequestReview({ onUpdated }: { onUpdated?: () => void }) {
   }, [fetchFirst, group]);
 
   const loadMore = useCallback(async () => {
-    if (moreInFlight.current) return;
-    moreInFlight.current = true;
-    dispatch({ type: 'moreStart' });
     const current = generation.current;
+    if (!moreGuard.tryStart(current)) return;
+    dispatch({ type: 'moreStart' });
     try {
       const result = await refundService.sellerList(state.page + 1, group);
       if (current !== generation.current) return;
@@ -63,9 +64,9 @@ export function RefundRequestReview({ onUpdated }: { onUpdated?: () => void }) {
     } catch {
       if (current === generation.current) dispatch({ type: 'moreFailed' });
     } finally {
-      moreInFlight.current = false;
+      moreGuard.finish(current);
     }
-  }, [state.page, group]);
+  }, [state.page, group, moreGuard]);
 
   const loading = state.status === 'loading';
   const sentinel = useLoadMoreSentinel(canLoadMore(state) && !busy, () => void loadMore(), state.items.length);

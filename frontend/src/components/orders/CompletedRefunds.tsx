@@ -1,34 +1,30 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { useLoadMoreSentinel } from '../../hooks/useLoadMoreSentinel';
 import { refundService } from '../../services/refundService';
 import type { RefundRequest } from '../../types/refund';
+import { createMoreGuard } from '../../utils/moreGuard';
 import { canLoadMore, hasMore, initialPaged, pagedReducer } from '../../utils/pagedList';
 import { approvedRefundStates } from '../../utils/refund';
 import { refundSecondary, refundSurface } from './RefundPresentation';
 import { RefundOrderCard } from './RefundOrderCard';
 
 /** The buyer's Return/Refund tab: refunds a seller has approved. More load as the list is scrolled. */
-export function CompletedRefunds({ onTotal }: { onTotal?: (total: number) => void } = {}) {
+export function CompletedRefunds() {
   const [state, dispatch] = useReducer(pagedReducer<RefundRequest>, undefined, initialPaged<RefundRequest>);
   const generation = useRef(0);
-  const inFlight = useRef(false);
-  // Tells the page how many approved refunds there are, for the tab badge, without refetching when the callback changes.
-  const onTotalRef = useRef(onTotal);
-  useEffect(() => { onTotalRef.current = onTotal; }, [onTotal]);
+  const [moreGuard] = useState(createMoreGuard);
 
   const fetchFirst = useCallback(async () => {
     const current = ++generation.current;
+    moreGuard.invalidate(); // a load-more still pending belongs to the old list
     try {
       const result = await refundService.completed(1);
-      if (current === generation.current) {
-        dispatch({ type: 'first', items: result.requests, page: result.page, pages: result.pages });
-        onTotalRef.current?.(result.total);
-      }
+      if (current === generation.current) dispatch({ type: 'first', items: result.requests, page: result.page, pages: result.pages });
     } catch {
       if (current === generation.current) dispatch({ type: 'firstFailed', message: 'Could not load your refunds. Please try again.' });
     }
-  }, []);
+  }, [moreGuard]);
 
   useEffect(() => {
     const counter = generation; // the aliased ref lets the cleanup invalidate in-flight responses
@@ -39,19 +35,18 @@ export function CompletedRefunds({ onTotal }: { onTotal?: (total: number) => voi
   const reload = () => { dispatch({ type: 'reload' }); void fetchFirst(); };
 
   const loadMore = useCallback(async () => {
-    if (inFlight.current) return;
-    inFlight.current = true;
-    dispatch({ type: 'moreStart' });
     const current = generation.current;
+    if (!moreGuard.tryStart(current)) return;
+    dispatch({ type: 'moreStart' });
     try {
       const result = await refundService.completed(state.page + 1);
       if (current === generation.current) dispatch({ type: 'more', items: result.requests, page: result.page, pages: result.pages });
     } catch {
       if (current === generation.current) dispatch({ type: 'moreFailed' });
     } finally {
-      inFlight.current = false;
+      moreGuard.finish(current);
     }
-  }, [state.page]);
+  }, [state.page, moreGuard]);
 
   const sentinel = useLoadMoreSentinel(canLoadMore(state), () => void loadMore(), state.items.length);
   const loading = state.status === 'loading';

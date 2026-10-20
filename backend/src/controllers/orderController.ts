@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import * as orderService from '../services/orderService.js';
+import { attachRefundedItems } from '../services/orderRefundMarks.js';
 
 export const createOrder = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -22,14 +23,14 @@ export const createOrder = async (req: AuthRequest, res: Response, next: NextFun
 export const getOrders = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const orders = await orderService.getUserOrders(req.user!.id);
-    res.status(200).json({ success: true, count: orders.length, orders });
+    res.status(200).json({ success: true, count: orders.length, orders: await attachRefundedItems(orders) });
   } catch (err) { next(err); }
 };
 
 export const getOrder = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const order = await orderService.getOrderById(req.params.id, req.user!.id);
-    res.status(200).json({ success: true, order });
+    res.status(200).json({ success: true, order: (await attachRefundedItems([order]))[0] });
   } catch (err) { next(err); }
 };
 

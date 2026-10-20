@@ -184,6 +184,11 @@ export async function attemptDeliveredRefund(requestId: string): Promise<void> {
 }
 
 export async function reconcileReviewDeliveredRefunds(now = new Date()): Promise<void> {
+  // A crash between marking an operation needs_support and marking its request needs_review would leave the
+  // request in processing with nothing watching it. An operation never needs support while its request is
+  // legitimately processing, so such a request is moved to review here and picked up below.
+  const stranded = await PaymentOperation.find({ refundPurpose: 'delivered_items', status: 'needs_support' }).distinct('refundRequestId');
+  if (stranded.length) await RefundRequest.updateMany({ _id: { $in: stranded }, state: 'processing' }, { $set: { state: 'needs_review', errorCode: 'delivered_refund_review' } });
   const due = { $or: [{ nextReconcileAt: { $exists: false } }, { nextReconcileAt: null }, { nextReconcileAt: { $lte: now } }] };
   const requests = await RefundRequest.find({ state: 'needs_review', ...due }).sort({ nextReconcileAt: 1, _id: 1 }).limit(50).select('_id');
   for (const r of requests) {

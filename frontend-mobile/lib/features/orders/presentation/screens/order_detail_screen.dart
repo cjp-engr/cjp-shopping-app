@@ -22,6 +22,8 @@ import '../../../../shared/widgets/review_bottom_sheet.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import 'order_payment_notice_card.dart';
+import '../../domain/refund_mark.dart';
+import '../widgets/refund_item_badge.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final String orderId;
@@ -512,7 +514,10 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _OrderItemRow(item: item),
+                          _OrderItemRow(
+                              item: item,
+                              mark: refundMarkFor(widget.order.refundedItems,
+                                  item.lineId, item.quantity)),
                           if (review != null)
                             _ReviewCard(
                               review: review,
@@ -975,7 +980,8 @@ class _SummaryRow extends StatelessWidget {
 
 class _OrderItemRow extends StatelessWidget {
   final OrderItemEntity item;
-  const _OrderItemRow({required this.item});
+  final RefundMark? mark;
+  const _OrderItemRow({required this.item, this.mark});
 
   @override
   Widget build(BuildContext context) {
@@ -1031,6 +1037,7 @@ class _OrderItemRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
+                  RefundItemBadge(mark: mark),
                   const SizedBox(height: 4),
                   item.hasDiscount
                       ? RichText(

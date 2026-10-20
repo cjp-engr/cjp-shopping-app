@@ -147,6 +147,26 @@ describe('delivered refund settlement (replica set, Stripe mocked)', () => {
     await processDueOperations('w2', new Date(now.getTime() + 61000));
     expect((await RefundRequest.findById(r.id))!.state).toBe('refunded');
   });
+  it('moves a request stranded in processing to review when a crash left its operation needing support', async () => {
+    const o = await fixture(); const r = await approve(o);
+    // The crash window: the operation was already marked needs_support, the request update never ran.
+    await PaymentOperation.updateOne({ refundRequestId: r.id }, { $set: { status: 'needs_support' }, $unset: { leaseOwner: '', leaseExpiresAt: '', nextAttemptAt: '' } });
+    expect((await RefundRequest.findById(r.id))!.state).toBe('processing');
+    await processDueOperations('w', now);
+    expect(await RefundRequest.findById(r.id)).toMatchObject({ state: 'needs_review', errorCode: 'delivered_refund_review' });
+    expect(stripe.createOrderRefund).not.toHaveBeenCalled();
+    // From review the normal reconciliation can still settle a refund Stripe turns out to have.
+    providerRefunds.push(providerRefund(`refund-request:${r.id}:refund:1`, o.id, r.id)); payment.latest_charge.amount_refunded = 1080;
+    await processDueOperations('w2', new Date(now.getTime() + 120000));
+    expect((await RefundRequest.findById(r.id))!.state).toBe('refunded');
+  });
+  it('leaves a processing request alone while its operation is still pending or in progress', async () => {
+    const o = await fixture(); const r = await approve(o);
+    vi.mocked(stripe.retrieveIntentWithCharge).mockRejectedValueOnce(new Error('temporary read outage'));
+    await processDueOperations('w', now);
+    expect((await PaymentOperation.findOne({ refundRequestId: r.id }))!.status).toBe('pending');
+    expect((await RefundRequest.findById(r.id))!.state).toBe('processing');
+  });
   it('does not let fifty unresolved review requests starve a later recoverable refund', async () => {
     const o = await fixture(); const r = await approve(o);
     const original = (await RefundRequest.findById(r.id))!.toObject();

@@ -39,3 +39,15 @@ export const refundEligibilityLabels: Record<string, string> = {
   payment_not_refundable: 'This payment is not eligible for another refund.', seller_unverified: 'Seller details need review.',
   active_request: 'A refund request is already awaiting a decision or payment outcome.', no_units_left: 'All refundable units have been requested.', review_needed: 'Payment details need review before another refund can be requested.',
 };
+
+/**
+ * How to mark an order item that has refunded units: "Refunded" when all of it was paid back, a count
+ * when only some was, and "Refund processing" while approved units are still being paid back.
+ * `done` is false while any part is still processing. Null when nothing was refunded.
+ */
+export function refundMark(marks: ReadonlyArray<{ lineId: string; refunded: number; processing: number }> | undefined, lineId: string | undefined, quantity: number): { label: string; done: boolean } | null {
+  const mark = lineId ? marks?.find(m => m.lineId === lineId) : undefined;
+  if (!mark || mark.refunded + mark.processing === 0) return null;
+  if (mark.processing === 0) return { label: mark.refunded >= quantity ? 'Refunded' : `${mark.refunded} of ${quantity} refunded`, done: true };
+  return { label: mark.refunded === 0 ? 'Refund processing' : `${mark.refunded} refunded, ${mark.processing} processing`, done: false };
+}

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -69,6 +70,44 @@ void main() {
       verify(() => api.completed(1)).called(1);
       verifyNever(() => api.completed(2));
       expect(find.text('Mug 1'), findsOneWidget);
+    });
+
+    testWidgets(
+        'a page that was still loading when the list was refreshed is dropped, and the next page is asked for again',
+        (tester) async {
+      final firstPages = [
+        _page(1, 2, [_request('1', 'refunded')]),
+        _page(1, 2, [_request('fresh1', 'refunded')]),
+      ];
+      when(() => api.completed(1))
+          .thenAnswer((_) async => firstPages.removeAt(0));
+      final stale = Completer<SellerRefundPage>();
+      final secondPages = <Future<SellerRefundPage>>[
+        stale.future,
+        Future.value(_page(2, 2, [_request('fresh2', 'refunded')])),
+      ];
+      when(() => api.completed(2)).thenAnswer((_) => secondPages.removeAt(0));
+      // A pending request keeps the spinner animating, so the test pumps by hand instead of settling.
+      Future<void> settle() async {
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+      }
+
+      await tester.pumpWidget(MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(body: CompletedRefunds(api: api))));
+      await settle(); // page 1 shows; page 2 is asked for and is slow
+
+      await tester.tap(find.byTooltip('Refresh refunds'));
+      await settle();
+      stale.complete(_page(2, 2, [_request('stale2', 'refunded')]));
+      await settle();
+
+      expect(find.text('Mug stale2'), findsNothing);
+      expect(find.text('Mug fresh1'), findsOneWidget);
+      expect(find.text('Mug fresh2'), findsOneWidget);
+      verify(() => api.completed(2)).called(2);
     });
 
     testWidgets('keeps loading pages until the end, each only once',

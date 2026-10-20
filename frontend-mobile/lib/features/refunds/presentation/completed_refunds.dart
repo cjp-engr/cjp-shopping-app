@@ -12,10 +12,7 @@ import 'refund_order_card.dart';
 /// there are no page buttons.
 class CompletedRefunds extends StatefulWidget {
   final RefundApi? api;
-
-  /// Told how many approved refunds there are whenever the first page loads, for the tab badge.
-  final ValueChanged<int>? onTotal;
-  const CompletedRefunds({super.key, this.api, this.onTotal});
+  const CompletedRefunds({super.key, this.api});
   @override
   State<CompletedRefunds> createState() => _CompletedRefundsState();
 }
@@ -25,6 +22,9 @@ class _CompletedRefundsState extends State<CompletedRefunds> {
   final List<RefundRequestData> _requests = [];
   int _page = 1, _pages = 0;
   bool _busy = true, _loadingMore = false, _moreFailed = false;
+
+  /// Bumped by every refresh, so a page that was still loading when the list was reloaded is dropped.
+  int _generation = 0;
   String? _error;
 
   @override
@@ -43,16 +43,19 @@ class _CompletedRefundsState extends State<CompletedRefunds> {
   RefundApi get _api => widget.api ?? context.read<RefundApi>();
 
   Future<void> _load() async {
+    final generation = ++_generation;
     if (mounted) {
       setState(() {
         _busy = true;
         _error = null;
         _moreFailed = false;
+        _loadingMore =
+            false; // a load-more still pending belongs to the old list
       });
     }
     try {
       final data = await _api.completed(1);
-      if (mounted) {
+      if (mounted && generation == _generation) {
         setState(() {
           _requests
             ..clear()
@@ -60,28 +63,28 @@ class _CompletedRefundsState extends State<CompletedRefunds> {
           _page = data.page;
           _pages = data.pages;
         });
-        widget.onTotal?.call(data.total);
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && generation == _generation) {
         setState(
             () => _error = 'Could not load your refunds. Please try again.');
       }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted && generation == _generation) setState(() => _busy = false);
     }
-    _checkAfterFrame();
+    if (generation == _generation) _checkAfterFrame();
   }
 
   Future<void> _loadMore() async {
     if (_loadingMore || _busy || _page >= _pages) return;
+    final generation = _generation;
     setState(() {
       _loadingMore = true;
       _moreFailed = false;
     });
     try {
       final data = await _api.completed(_page + 1);
-      if (mounted) {
+      if (mounted && generation == _generation) {
         final known = _requests.map((r) => r.id).toSet();
         setState(() {
           _requests.addAll(data.requests.where((r) => !known.contains(r.id)));
@@ -90,11 +93,15 @@ class _CompletedRefundsState extends State<CompletedRefunds> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _moreFailed = true);
+      if (mounted && generation == _generation) {
+        setState(() => _moreFailed = true);
+      }
     } finally {
-      if (mounted) setState(() => _loadingMore = false);
+      if (mounted && generation == _generation) {
+        setState(() => _loadingMore = false);
+      }
     }
-    _checkAfterFrame();
+    if (generation == _generation) _checkAfterFrame();
   }
 
   void _checkAfterFrame() =>

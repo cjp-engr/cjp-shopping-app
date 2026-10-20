@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { refundQuote, refundShippingQuote, refundReasonLabels } from './refund';
+import { refundQuote, refundShippingQuote, refundReasonLabels, refundMark } from './refund';
 const lines = [{ lineId: 'a', productName: 'Mug', quantityOrdered: 2, quantityAvailable: 2, availableUnitAmountsMinor: [1080, 1079] }];
 describe('delivered refund shipping quote', () => {
   it('shows shipping only for all remaining units with an eligible seller-fault reason', () => {
@@ -10,5 +10,29 @@ describe('delivered refund shipping quote', () => {
     expect(refundShippingQuote(lines, { a: 2 }, 'damaged')).toBe(0);
     expect(refundShippingQuote(lines, { a: 3 }, 'damaged', 500)).toBe(0);
     expect(refundReasonLabels).not.toHaveProperty('change_of_mind');
+  });
+});
+
+describe('refund mark on an order item', () => {
+  const marks = [{ lineId: 'a', refunded: 1, processing: 1 }, { lineId: 'b', refunded: 2, processing: 0 }, { lineId: 'c', refunded: 0, processing: 1 }];
+
+  it('says Refunded when every unit of the item was paid back', () => {
+    expect(refundMark(marks, 'b', 2)).toEqual({ label: 'Refunded', done: true });
+  });
+
+  it('says how many units were refunded when only some were', () => {
+    expect(refundMark([{ lineId: 'a', refunded: 1, processing: 0 }], 'a', 3)).toEqual({ label: '1 of 3 refunded', done: true });
+  });
+
+  it('says Refund processing while approved units are still being paid back', () => {
+    expect(refundMark(marks, 'c', 1)).toEqual({ label: 'Refund processing', done: false });
+    expect(refundMark(marks, 'a', 2)).toEqual({ label: '1 refunded, 1 processing', done: false });
+  });
+
+  it('marks nothing for an item without refunds, an unknown item or an order without marks', () => {
+    expect(refundMark(marks, 'z', 1)).toBeNull();
+    expect(refundMark(undefined, 'a', 1)).toBeNull();
+    expect(refundMark(marks, undefined, 1)).toBeNull();
+    expect(refundMark([{ lineId: 'a', refunded: 0, processing: 0 }], 'a', 1)).toBeNull();
   });
 });
