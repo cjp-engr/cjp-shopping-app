@@ -5,6 +5,7 @@ import { isSellerVisibleOrder, sellerVisibleOrderFilter } from './orderVisibilit
 import { acceptOrder } from './orderAcceptance.js';
 import { markOrderDelivered } from './orderDelivery.js';
 import { canSellerCancelPending, cancelOrderAsSeller, type SellerPaymentOperation } from './sellerCancellation.js';
+import { refundedItemsByOrder } from './orderRefundMarks.js';
 
 export const VALID_TRANSITIONS: Record<string, string[]> = {
   pending:    ['preparing', 'cancelled'],
@@ -121,6 +122,7 @@ export async function getSellerOrders(sellerId: string) {
   // Filter each order's items to only this seller's products.
   // After populate, item.product is a Document — extract _id to compare.
   const sellerIdSet = new Set(sellerProductIds.map(id => id.toString()));
+  const refundMarks = await refundedItemsByOrder(orders.map(order => order.id));
   return orders.map(order => {
     // An order is one seller's: with a persisted sellerId every item is theirs, even if its product was deleted.
     const ownsOrder = order.sellerId?.toString() === sellerId;
@@ -151,7 +153,7 @@ export async function getSellerOrders(sellerId: string) {
       },
       firstProduct ? { shippingFee: firstProduct.shippingFee, shippingFeeAmounts: feeAmounts } : undefined,
     );
-    return { ...doc, items: filteredItems, canSellerCancelPending: canSellerCancelPending(order, sellerId) };
+    return { ...doc, items: filteredItems, canSellerCancelPending: canSellerCancelPending(order, sellerId), refundedItems: refundMarks.get(order.id) ?? [] };
   });
 }
 

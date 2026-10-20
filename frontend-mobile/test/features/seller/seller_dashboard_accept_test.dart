@@ -34,25 +34,29 @@ void main() {
     await tester.pump();
   }
 
-  Finder acceptButton(String id) => find.byKey(sellerKeys.acceptOrderButton(id));
+  Finder acceptButton(String id) =>
+      find.byKey(sellerKeys.acceptOrderButton(id));
 
   testWidgets('pending order shows the accept label and the remaining time',
       (tester) async {
     when(() => repo.getSellerOrders()).thenAnswer((_) async => [
-          sellerOrder(acceptBy: DateTime.now().add(const Duration(hours: 3, minutes: 20, seconds: 30))),
+          sellerOrder(
+              acceptBy: DateTime.now()
+                  .add(const Duration(hours: 3, minutes: 20, seconds: 30))),
         ]);
     await pumpDashboard(tester);
 
     expect(find.text('Accept & start preparing'), findsOneWidget);
-    expect(find.byKey(sellerKeys.acceptDeadlineText('order-1')), findsOneWidget);
+    expect(
+        find.byKey(sellerKeys.acceptDeadlineText('order-1')), findsOneWidget);
     expect(find.textContaining('Accept within 3h'), findsOneWidget);
     expect(find.text('Charging payment…'), findsNothing);
   });
 
-  testWidgets('tapping accept twice sends one request and shows the info notice',
+  testWidgets(
+      'tapping accept twice sends one request and shows the info notice',
       (tester) async {
-    when(() => repo.getSellerOrders())
-        .thenAnswer((_) async => [sellerOrder()]);
+    when(() => repo.getSellerOrders()).thenAnswer((_) async => [sellerOrder()]);
     when(() => repo.updateOrderStatus('order-1', 'preparing',
         cancelReason: any(named: 'cancelReason'))).thenAnswer((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -77,8 +81,7 @@ void main() {
   });
 
   testWidgets('a failed accept shows the mapped error', (tester) async {
-    when(() => repo.getSellerOrders())
-        .thenAnswer((_) async => [sellerOrder()]);
+    when(() => repo.getSellerOrders()).thenAnswer((_) async => [sellerOrder()]);
     when(() => repo.updateOrderStatus('order-1', 'preparing',
             cancelReason: any(named: 'cancelReason')))
         .thenThrow(const SellerOrderException('x', code: 'capture_failed'));
@@ -110,7 +113,8 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
     await tester.pump();
     expect(find.text('Charging payment…'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget); // the button spinner only
+    expect(find.byType(CircularProgressIndicator),
+        findsOneWidget); // the button spinner only
 
     // second tick: captured, polling stops
     await tester.pump(const Duration(seconds: 5));
@@ -125,7 +129,8 @@ void main() {
 
   testWidgets('an expired deadline disables accept', (tester) async {
     when(() => repo.getSellerOrders()).thenAnswer((_) async => [
-          sellerOrder(acceptBy: DateTime.now().subtract(const Duration(minutes: 1))),
+          sellerOrder(
+              acceptBy: DateTime.now().subtract(const Duration(minutes: 1))),
         ]);
     await pumpDashboard(tester);
 

@@ -26,57 +26,61 @@ const _groups = [
 class _GroupChips extends StatelessWidget {
   final RefundState state;
   const _GroupChips({required this.state});
+
+  /// One line of three equal chips (like a segmented control): they never wrap onto a second line;
+  /// on a narrow screen or at large text the content of each chip shrinks to fit instead.
   @override
-  Widget build(BuildContext context) =>
-      Wrap(spacing: 8, runSpacing: 8, children: [
-        for (final g in _groups)
-          Builder(builder: (context) {
-            final active = g.key == state.group;
-            final fg = active ? Colors.white : AppColors.textMuted;
-            return GestureDetector(
-              key: ValueKey('refund-group-${g.key}'),
-              onTap: state.busy || active
-                  ? null
-                  : () =>
-                      context.read<RefundBloc>().add(LoadRefunds(group: g.key)),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                    color: active ? AppColors.primary : Colors.transparent,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                    border: Border.all(
-                        color: active ? AppColors.primary : AppColors.border)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(g.icon, size: 13, color: fg),
-                  const SizedBox(width: 4),
-                  Text(g.label,
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: fg)),
-                  const SizedBox(width: 4),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                    decoration: BoxDecoration(
-                        color: active
-                            ? Colors.white.withAlpha(51)
-                            : AppColors.surfaceVariant,
-                        borderRadius:
-                            BorderRadius.circular(AppSizes.radiusFull)),
-                    child: Text('${state.counts[g.key] ?? 0}',
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: fg)),
-                  ),
-                ]),
-              ),
-            );
-          }),
+  Widget build(BuildContext context) => Row(children: [
+        for (var i = 0; i < _groups.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(child: _chip(context, _groups[i])),
+        ],
       ]);
+
+  Widget _chip(BuildContext context, _Group g) {
+    final active = g.key == state.group;
+    final fg = active ? Colors.white : AppColors.textMuted;
+    return GestureDetector(
+      key: ValueKey('refund-group-${g.key}'),
+      onTap: state.busy || active
+          ? null
+          : () => context.read<RefundBloc>().add(LoadRefunds(group: g.key)),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        // A fixed height so chips whose content shrinks by different amounts still match.
+        height: 38,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+            color: active ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+            border: Border.all(
+                color: active ? AppColors.primary : AppColors.border)),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(g.icon, size: 13, color: fg),
+            const SizedBox(width: 4),
+            Text(g.label,
+                style: TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w600, color: fg)),
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                  color: active
+                      ? Colors.white.withAlpha(51)
+                      : AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusFull)),
+              child: Text('${state.counts[g.key] ?? 0}',
+                  style: TextStyle(
+                      fontSize: 11, fontWeight: FontWeight.w700, color: fg)),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
 /// The seller's Return/Refund tab: refund requests in three groups (In Progress, Approved, Rejected),
@@ -125,6 +129,17 @@ class _ReviewBodyState extends State<_ReviewBody> {
     }
   }
 
+  /// Pull to refresh: reloads the open group from its first page and finishes when the load does.
+  Future<void> _refresh() async {
+    final bloc = context.read<RefundBloc>();
+    if (bloc.state.busy) return;
+    bloc.add(LoadRefunds());
+    // If the bloc is busy with something else it ignores the event and emits nothing; do not wait forever.
+    await bloc.stream
+        .firstWhere((s) => !s.busy)
+        .timeout(const Duration(seconds: 20), onTimeout: () => bloc.state);
+  }
+
   @override
   Widget build(BuildContext context) => BlocListener<RefundBloc, RefundState>(
       listenWhen: (p, c) =>
@@ -134,52 +149,48 @@ class _ReviewBodyState extends State<_ReviewBody> {
       child: BlocConsumer<RefundBloc, RefundState>(
         listenWhen: (p, c) => p.mutations != c.mutations,
         listener: (_, state) => widget.onUpdated?.call(),
-        builder: (context, state) => ListView(
-            controller: _scroll,
-            padding: const EdgeInsets.all(16),
-            children: [
-              Row(children: [
-                const Expanded(
-                    child: Text(
-                        'Review the buyer\u2019s issue and exact refund amount.')),
-                IconButton(
-                    tooltip: 'Refresh refund requests',
-                    onPressed: state.busy
-                        ? null
-                        : () => context.read<RefundBloc>().add(LoadRefunds()),
-                    icon: const Icon(Icons.refresh))
+        builder: (context, state) => RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView(
+              controller: _scroll,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: [
+                const Text(
+                    'Review the buyer\u2019s issue and exact refund amount.'),
+                const SizedBox(height: 12),
+                _GroupChips(state: state),
+                const SizedBox(height: 12),
+                if (state.busy) const LinearProgressIndicator(),
+                if (state.error != null)
+                  Semantics(
+                      liveRegion: true,
+                      child: Text(state.error!,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error))),
+                if (!state.busy && state.requests.isEmpty)
+                  Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                          child: Text(_groups
+                              .firstWhere((g) => g.key == state.group)
+                              .empty))),
+                for (final r in state.requests)
+                  Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _SellerRequest(
+                          key: ValueKey(r.id), request: r, busy: state.busy)),
+                if (state.loadingMore)
+                  const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                          child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2.5)))),
               ]),
-              _GroupChips(state: state),
-              const SizedBox(height: 12),
-              if (state.busy) const LinearProgressIndicator(),
-              if (state.error != null)
-                Semantics(
-                    liveRegion: true,
-                    child: Text(state.error!,
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.error))),
-              if (!state.busy && state.requests.isEmpty)
-                Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                        child: Text(_groups
-                            .firstWhere((g) => g.key == state.group)
-                            .empty))),
-              for (final r in state.requests)
-                Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _SellerRequest(
-                        key: ValueKey(r.id), request: r, busy: state.busy)),
-              if (state.loadingMore)
-                const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Center(
-                        child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2.5)))),
-            ]),
+        ),
       ));
 }
 

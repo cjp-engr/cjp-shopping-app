@@ -33,3 +33,22 @@ RefundMark? refundMarkFor(
           : '${mark.refunded} refunded, ${mark.processing} processing',
       false);
 }
+
+/// How a whole order is labelled once money was paid back: fully or partly refunded, or a refund still
+/// being paid back (not [RefundMark.done]). Null when nothing was refunded.
+RefundMark? orderRefundLabel({
+  String? paymentStatus,
+  int refundedAmountMinor = 0,
+  int refundReservedAmountMinor = 0,
+}) {
+  if (paymentStatus == 'refunded') {
+    return const RefundMark('Fully refunded', true);
+  }
+  if (refundedAmountMinor > 0) {
+    return const RefundMark('Partially refunded', true);
+  }
+  if (refundReservedAmountMinor > 0) {
+    return const RefundMark('Refund processing', false);
+  }
+  return null;
+}

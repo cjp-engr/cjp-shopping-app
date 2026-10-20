@@ -25,6 +25,7 @@ router.route('/products/:id')
   .delete(deleteProduct);
 router.route('/orders').get(getSellerOrders);
 router.route('/orders/:id/status').put(updateSellerOrderStatus);
+router.route('/orders/:id/refund-requests').get(refunds.listSellerOrderRefundRequests);
 router.route('/refund-requests').get(sellerRefundListRules, validateRefund, refunds.listSellerRefundRequests);
 router.route('/refund-requests/:id/decision').put(decideRefundRules, validateRefund, refunds.decideRefundRequest);
 

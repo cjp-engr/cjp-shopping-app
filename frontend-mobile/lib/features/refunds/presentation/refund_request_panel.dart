@@ -15,19 +15,27 @@ class RefundRequestPanel extends StatelessWidget {
   final String orderId;
   final RefundApi? api;
   final VoidCallback? onUpdated;
+
+  /// The page that shows the panel notifies this when it is pulled down; the panel then reloads.
+  final Listenable? refreshSignal;
   const RefundRequestPanel(
-      {super.key, required this.orderId, this.api, this.onUpdated});
+      {super.key,
+      required this.orderId,
+      this.api,
+      this.onUpdated,
+      this.refreshSignal});
   @override
   Widget build(BuildContext context) => BlocProvider(
       create: (_) =>
           RefundBloc(api ?? context.read<RefundApi>(), orderId: orderId)
             ..add(LoadRefunds()),
-      child: _RefundForm(onUpdated: onUpdated));
+      child: _RefundForm(onUpdated: onUpdated, refreshSignal: refreshSignal));
 }
 
 class _RefundForm extends StatefulWidget {
   final VoidCallback? onUpdated;
-  const _RefundForm({this.onUpdated});
+  final Listenable? refreshSignal;
+  const _RefundForm({this.onUpdated, this.refreshSignal});
   @override
   State<_RefundForm> createState() => _RefundFormState();
 }
@@ -40,10 +48,32 @@ class _RefundFormState extends State<_RefundForm> {
 
   /// null: open only when the order has no earlier request. Set by the button that opens or closes it.
   bool? _formOpen;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.refreshSignal?.addListener(_reload);
+  }
+
+  @override
+  void didUpdateWidget(_RefundForm old) {
+    super.didUpdateWidget(old);
+    if (old.refreshSignal != widget.refreshSignal) {
+      old.refreshSignal?.removeListener(_reload);
+      widget.refreshSignal?.addListener(_reload);
+    }
+  }
+
   @override
   void dispose() {
+    widget.refreshSignal?.removeListener(_reload);
     _description.dispose();
     super.dispose();
+  }
+
+  void _reload() {
+    final bloc = context.read<RefundBloc>();
+    if (!bloc.state.busy) bloc.add(LoadRefunds());
   }
 
   void _setQuantity(String id, int value) =>
@@ -405,21 +435,12 @@ class _RefundFormState extends State<_RefundForm> {
         final formOpen =
             canRequest && (state.retryPending || (_formOpen ?? !hasHistory));
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Expanded(
-                child: Text(
-                    e?.eligible == true && !hasHistory
-                        ? 'Request a refund'
-                        : 'Item refunds',
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w700))),
-            IconButton(
-                tooltip: 'Refresh refunds',
-                onPressed: state.busy
-                    ? null
-                    : () => context.read<RefundBloc>().add(LoadRefunds()),
-                icon: const Icon(Icons.refresh))
-          ]),
+          Text(
+              e?.eligible == true && !hasHistory
+                  ? 'Request a refund'
+                  : 'Item refunds',
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           if (state.busy) const LinearProgressIndicator(),
           if (state.error != null)
             Padding(

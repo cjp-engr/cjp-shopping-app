@@ -94,7 +94,8 @@ void main() {
     );
 
     for (final entry in {
-      'capture_failed': 'The payment could not be charged. Try accepting again.',
+      'capture_failed':
+          'The payment could not be charged. Try accepting again.',
       'acceptance_deadline_passed':
           'The acceptance window for this order has ended.',
       'unmapped_code': 'Could not accept the order. Please try again.',
@@ -191,8 +192,8 @@ void main() {
       setUp: () => stubUpdate(() async => SellerStatusResult.completed),
       build: build,
       seed: () => seeded([sellerOrder(status: 'preparing')]),
-      act: (bloc) => bloc.add(
-          const SellerOrderStatusUpdateRequested('order-1', 'processing')),
+      act: (bloc) => bloc
+          .add(const SellerOrderStatusUpdateRequested('order-1', 'processing')),
       verify: (bloc) {
         expect(bloc.state.orders.single.status, 'processing');
         verifyNever(() => repo.getSellerOrders());
@@ -204,8 +205,8 @@ void main() {
       setUp: () => stubUpdate(() async => throw Exception('boom')),
       build: build,
       seed: () => seeded([sellerOrder(status: 'preparing')]),
-      act: (bloc) => bloc.add(
-          const SellerOrderStatusUpdateRequested('order-1', 'processing')),
+      act: (bloc) => bloc
+          .add(const SellerOrderStatusUpdateRequested('order-1', 'processing')),
       verify: (bloc) {
         expect(bloc.state.ordersStatus, SellerOrdersStatus.failure);
         expect(bloc.state.errorMessage, contains('boom'));

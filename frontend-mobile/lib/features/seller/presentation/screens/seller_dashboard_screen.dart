@@ -13,6 +13,10 @@ import '../../../../core/theme/theme_colors.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../products/domain/entities/product_entity.dart';
 import '../../data/models/seller_order_model.dart';
+import '../../../orders/domain/refund_mark.dart';
+import '../../../orders/presentation/widgets/refund_item_badge.dart';
+import '../../../refunds/data/refund_models.dart' show refundMoney;
+import '../../../refunds/presentation/seller_order_refunds.dart';
 import '../../domain/seller_acceptance.dart';
 import '../../domain/seller_cancellation.dart';
 import '../bloc/seller_bloc.dart';
@@ -120,6 +124,31 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
       _voucherRepo = VoucherRepository(client);
     } catch (_) {}
   }
+
+  /// One tab label for the dashboard's tab bar: icon on the left, the name, and a red count when there is one.
+  Widget _tabLabel(IconData icon, String label, {int badge = 0}) => Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: 6),
+          Text(label),
+          if (badge > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: AppColors.danger,
+                borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+              ),
+              child: Text('$badge',
+                  style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white)),
+            ),
+          ],
+        ],
+      );
 
   Future<void> _loadRefundInProgress() async {
     final RefundApi api;
@@ -271,80 +300,24 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
           labelStyle:
               const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
           tabs: [
-            const Tab(
-              icon: Icon(Icons.shopping_bag_outlined, size: 18),
-              text: AppStrings.myProducts,
-            ),
+            Tab(
+                child: _tabLabel(
+                    Icons.shopping_bag_outlined, AppStrings.myProducts)),
             BlocBuilder<SellerBloc, SellerState>(
               buildWhen: (p, c) =>
                   p.actionableOrderCount != c.actionableOrderCount,
-              builder: (context, state) {
-                final badge = state.actionableOrderCount;
-                return Tab(
-                  key: keys.seller.ordersTab,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.receipt_long_outlined, size: 18),
-                      const SizedBox(width: 6),
-                      const Text('Orders'),
-                      if (badge > 0) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: AppColors.danger,
-                            borderRadius:
-                                BorderRadius.circular(AppSizes.radiusFull),
-                          ),
-                          child: Text(
-                            '$badge',
-                            style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              },
-            ),
-            const Tab(
-              icon: Icon(Icons.local_offer_outlined, size: 18),
-              text: AppStrings.vouchers,
-            ),
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.currency_exchange, size: 18),
-                  const SizedBox(width: 6),
-                  const Text('Return/Refund'),
-                  if (_refundInProgress > 0) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: AppColors.danger,
-                        borderRadius:
-                            BorderRadius.circular(AppSizes.radiusFull),
-                      ),
-                      child: Text(
-                        '$_refundInProgress',
-                        style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ],
+              builder: (context, state) => Tab(
+                key: keys.seller.ordersTab,
+                child: _tabLabel(Icons.receipt_long_outlined, 'Orders',
+                    badge: state.actionableOrderCount),
               ),
             ),
+            Tab(
+                child:
+                    _tabLabel(Icons.local_offer_outlined, AppStrings.vouchers)),
+            Tab(
+                child: _tabLabel(Icons.currency_exchange, 'Return/Refund',
+                    badge: _refundInProgress)),
           ],
         ),
       ),
@@ -924,6 +897,10 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cfg = _statusConfig(order.status);
+    final refundLabel = orderRefundLabel(
+        paymentStatus: order.paymentStatus,
+        refundedAmountMinor: order.refundedAmountMinor,
+        refundReservedAmountMinor: order.refundReservedAmountMinor);
 
     return Material(
       color: context.surfaceColor,
@@ -990,6 +967,11 @@ class _OrderCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ── Refund status ────────────────────────────────────────
+                    if (refundLabel != null) ...[
+                      RefundItemBadge(mark: refundLabel),
+                      const SizedBox(height: AppSizes.sm),
+                    ],
                     // ── Buyer ────────────────────────────────────────────────
                     if (order.buyer != null) ...[
                       Row(
@@ -1034,7 +1016,10 @@ class _OrderCard extends StatelessWidget {
                     // ── Items ────────────────────────────────────────────────
                     ...order.items.map((item) => Padding(
                           padding: const EdgeInsets.only(bottom: 6),
-                          child: _OrderItemRow(item: item),
+                          child: _OrderItemRow(
+                              item: item,
+                              mark: refundMarkFor(order.refundedItems,
+                                  item.lineId, item.quantity)),
                         )),
 
                     // ── Actions ──────────────────────────────────────────────
@@ -1319,7 +1304,8 @@ class _StatusBadge extends StatelessWidget {
 
 class _OrderItemRow extends StatelessWidget {
   final SellerOrderItemData item;
-  const _OrderItemRow({required this.item});
+  final RefundMark? mark;
+  const _OrderItemRow({required this.item, this.mark});
 
   @override
   Widget build(BuildContext context) {
@@ -1373,6 +1359,7 @@ class _OrderItemRow extends StatelessWidget {
                         fontSize: 10, color: AppColors.textMuted),
                   ),
                 ],
+                RefundItemBadge(mark: mark),
                 const SizedBox(height: 2),
                 item.hasDiscount
                     ? RichText(
@@ -1863,6 +1850,13 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                             style: const TextStyle(
                                 fontSize: 12, color: AppColors.textMuted),
                           ),
+                          RefundItemBadge(
+                              mark: orderRefundLabel(
+                                  paymentStatus: order.paymentStatus,
+                                  refundedAmountMinor:
+                                      order.refundedAmountMinor,
+                                  refundReservedAmountMinor:
+                                      order.refundReservedAmountMinor)),
                         ],
                       ),
                     ),
@@ -2048,6 +2042,8 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                             children: [
                               _DetailItemRow(
                                 item: e.value,
+                                mark: refundMarkFor(order.refundedItems,
+                                    e.value.lineId, e.value.quantity),
                                 onTap: e.value.productId.isNotEmpty
                                     ? () {
                                         Navigator.of(context).pop();
@@ -2116,9 +2112,30 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                             value: '\$${total.toStringAsFixed(2)}',
                             isTotal: true,
                           ),
+                          if (order.refundedAmountMinor > 0) ...[
+                            const SizedBox(height: 8),
+                            _SummaryLine(
+                              label: 'Refunded',
+                              value:
+                                  '-${refundMoney(order.refundedAmountMinor, order.currency)}',
+                              valueColor: AppColors.success,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Divider(
+                                  height: 1, color: context.borderColor),
+                            ),
+                            _SummaryLine(
+                              label: 'Net after refunds',
+                              value: '\$${order.netTotal.toStringAsFixed(2)}',
+                              isTotal: true,
+                            ),
+                          ],
                         ],
                       ),
                     ),
+                    const SizedBox(height: AppSizes.sm),
+                    SellerOrderRefunds(orderId: order.id),
                   ],
                 ),
               ),
@@ -2206,7 +2223,8 @@ class _SheetSection extends StatelessWidget {
 class _DetailItemRow extends StatelessWidget {
   final SellerOrderItemData item;
   final VoidCallback? onTap;
-  const _DetailItemRow({required this.item, this.onTap});
+  final RefundMark? mark;
+  const _DetailItemRow({required this.item, this.onTap, this.mark});
 
   @override
   Widget build(BuildContext context) {
@@ -2256,6 +2274,7 @@ class _DetailItemRow extends StatelessWidget {
                         fontSize: 11, color: AppColors.textMuted),
                   ),
                 ],
+                RefundItemBadge(mark: mark),
                 const SizedBox(height: 2),
                 item.hasDiscount
                     ? RichText(

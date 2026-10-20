@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Clock3, RotateCcw } from 'lucide-react';
+import { Clock3 } from 'lucide-react';
 import { refundService, RefundApiError } from '../../services/refundService';
 import type { RefundEligibility, RefundInput, RefundReason, RefundRequest } from '../../types/refund';
 import { refundDate, refundEligibilityLabels, refundQuote, refundShippingQuote } from '../../utils/refund';
-import { refundButton, refundSecondary } from './RefundPresentation';
+import { refundButton } from './RefundPresentation';
 import { RefundOrderCard } from './RefundOrderCard';
 import { RefundRequestForm } from './RefundRequestForm';
 
@@ -38,16 +38,12 @@ export function RefundRequestPanel({ orderId, onUpdated }: { orderId: string; on
     } catch (e) {
       const unresolved = !(e instanceof RefundApiError) || e.status >= 500; setUncertain(unresolved);
       if (!unresolved) attempt.current = null;
-      setError(unresolved ? 'The response was interrupted. Retry the same request or refresh its status; do not submit a new request.' : (e as Error).message);
+      setError(unresolved ? 'The response was interrupted. Retry the same request, or reload the page to see its status; do not submit a new request.' : (e as Error).message);
       await load().catch(() => {});
     } finally { inFlight.current = false; setBusy(false); }
   };
-  const refresh = async () => {
-    if (inFlight.current) return; setBusy(true); setError('');
-    try { await load(); onUpdated?.(); } catch { setError('Could not refresh refund details.'); } finally { setBusy(false); }
-  };
   return <section className="space-y-5" aria-label="Delivered item refunds">
-    <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-bold text-gray-900 dark:text-white">{eligibility?.eligible ? 'Request a refund' : 'Item refunds'}</h2><button type="button" onClick={() => void refresh()} disabled={busy} className={refundSecondary} aria-label="Refresh refunds"><RotateCcw className={`h-4 w-4 ${busy ? 'motion-safe:animate-spin' : ''}`} /></button></div>
+    <div><h2 className="text-lg font-bold text-gray-900 dark:text-white">{eligibility?.eligible ? 'Request a refund' : 'Item refunds'}</h2></div>
     {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">{error}</p>}
     {!eligibility && !error && <p role="status">Loading refund details…</p>}
     {eligibility && !eligibility.requestsEnabled && <p className="text-sm text-gray-600 dark:text-gray-300">New refund requests are currently unavailable.</p>}

@@ -32,8 +32,6 @@ export function CompletedRefunds() {
     return () => { counter.current++; };
   }, [fetchFirst]);
 
-  const reload = () => { dispatch({ type: 'reload' }); void fetchFirst(); };
-
   const loadMore = useCallback(async () => {
     const current = generation.current;
     if (!moreGuard.tryStart(current)) return;
@@ -54,16 +52,11 @@ export function CompletedRefunds() {
 
   return (
     <section className="space-y-5" aria-label="Return and refund">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Return/Refund</h2>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-            Refunds your seller has approved, including ones still being processed. Requests waiting for the seller stay with your order under Completed.
-          </p>
-        </div>
-        <button type="button" className={refundSecondary} disabled={loading} onClick={reload} aria-label="Refresh refunds">
-          <RotateCcw className="h-4 w-4" />
-        </button>
+      <div>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Return/Refund</h2>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+          Refunds your seller has approved, including ones still being processed. Requests waiting for the seller stay with your order under Completed.
+        </p>
       </div>
 
       {state.status === 'error' && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{state.error}</p>}

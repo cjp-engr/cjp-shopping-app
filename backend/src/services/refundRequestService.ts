@@ -216,21 +216,28 @@ export async function listSellerRefundRequests(sellerId: string, page = 1, limit
   const filter = group ? { ...base, state: { $in: SELLER_REFUND_GROUPS[group as SellerRefundGroup] } } : base;
   const total = group ? counts[group as SellerRefundGroup] : countValues.reduce((a, b) => a + b, 0);
   const requests = await RefundRequest.find(filter).sort({ submittedAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit);
-  // The seller's Return/Refund tab shows an order-style card: the buyer's name and the order date come with each request.
+  return { requests: await sellerRequestViews(requests), page, pages: Math.ceil(total / limit), total, counts };
+}
+
+/** The seller's order-style card: the buyer's name and the date the order was placed come with each request. */
+async function sellerRequestViews(requests: ReadonlyArray<IRefundRequest>) {
   const [buyers, orders] = await Promise.all([
     User.find({ _id: { $in: [...new Set(requests.map(r => r.buyerId.toString()))] } }).select('firstName lastName').lean(),
     Order.find({ _id: { $in: requests.map(r => r.orderId) } }).select('createdAt').lean(),
   ]);
   const buyerNames = new Map(buyers.map(u => [u._id.toString(), `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim()]));
   const placedAt = new Map(orders.map(o => [o._id.toString(), o.createdAt]));
-  return {
-    requests: requests.map(r => ({
-      ...refundRequestView(r),
-      buyerName: buyerNames.get(r.buyerId.toString()) || null,
-      orderPlacedAt: placedAt.get(r.orderId.toString()),
-    })),
-    page, pages: Math.ceil(total / limit), total, counts,
-  };
+  return requests.map(r => ({
+    ...refundRequestView(r),
+    buyerName: buyerNames.get(r.buyerId.toString()) || null,
+    orderPlacedAt: placedAt.get(r.orderId.toString()),
+  }));
+}
+
+/** One order's refund requests in every state (newest first), for the refund history on the seller's order page. */
+export async function listSellerOrderRefundRequests(orderId: string, sellerId: string) {
+  ids(orderId, sellerId);
+  return sellerRequestViews(await RefundRequest.find({ orderId, sellerId }).sort({ submittedAt: -1, _id: -1 }));
 }
 
 const APPROVED_REFUND_STATES = ['processing', 'needs_review', 'refunded'];

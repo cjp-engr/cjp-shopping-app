@@ -52,13 +52,14 @@ void main() {
       },
       build: build,
       seed: seeded,
-      act: (bloc) => bloc
-          .add(const SellerOrderCancelRequested('order-1', 'Out of stock')),
+      act: (bloc) =>
+          bloc.add(const SellerOrderCancelRequested('order-1', 'Out of stock')),
       verify: (bloc) {
         final s = bloc.state;
         expect(s.orders.single.status, 'cancelled');
         expect(s.orders.single.paymentStatus, 'release_pending');
-        expect(s.statusMessage, 'Order cancelled. The card hold is being released.');
+        expect(s.statusMessage,
+            'Order cancelled. The card hold is being released.');
         expect(s.statusMessageIsInfo, isTrue);
         expect(s.updatingOrderIds, isEmpty);
         verify(() => repo.cancelOrder('order-1', 'Out of stock')).called(1);
@@ -71,13 +72,15 @@ void main() {
       setUp: () {
         stubCancel(() async => const SellerCancelOutcome(
             paymentOperation: SellerPaymentOperation.completed));
-        stubReload([sellerOrder(status: 'cancelled', paymentStatus: 'released')]);
+        stubReload(
+            [sellerOrder(status: 'cancelled', paymentStatus: 'released')]);
       },
       build: build,
       seed: seeded,
       act: (bloc) => bloc.add(const SellerOrderCancelRequested('order-1', 'x')),
       verify: (bloc) {
-        expect(bloc.state.statusMessage, 'Order cancelled. The card hold was released.');
+        expect(bloc.state.statusMessage,
+            'Order cancelled. The card hold was released.');
       },
     );
 
@@ -85,7 +88,8 @@ void main() {
       'a COD cancellation is a plain confirmation',
       setUp: () {
         stubCancel(() async => const SellerCancelOutcome());
-        stubReload([sellerOrder(status: 'cancelled', paymentStatus: 'not_required')]);
+        stubReload(
+            [sellerOrder(status: 'cancelled', paymentStatus: 'not_required')]);
       },
       build: build,
       seed: seeded,
@@ -101,7 +105,8 @@ void main() {
       setUp: () {
         stubCancel(() async => throw const SellerOrderException('x',
             code: 'cancellation_conflict'));
-        stubReload([sellerOrder(status: 'preparing', paymentStatus: 'captured')]);
+        stubReload(
+            [sellerOrder(status: 'preparing', paymentStatus: 'captured')]);
       },
       build: build,
       seed: seeded,
@@ -127,7 +132,8 @@ void main() {
       seed: seeded,
       act: (bloc) => bloc.add(const SellerOrderCancelRequested('order-1', 'x')),
       verify: (bloc) {
-        expect(bloc.state.statusMessage, 'This order cannot be cancelled by the seller.');
+        expect(bloc.state.statusMessage,
+            'This order cannot be cancelled by the seller.');
         verify(() => repo.getSellerOrders()).called(1);
       },
     );
@@ -142,7 +148,8 @@ void main() {
       seed: seeded,
       act: (bloc) => bloc.add(const SellerOrderCancelRequested('order-1', 'x')),
       verify: (bloc) {
-        expect(bloc.state.statusMessage, 'Enter a reason of 1 to 1000 characters.');
+        expect(bloc.state.statusMessage,
+            'Enter a reason of 1 to 1000 characters.');
         expect(bloc.state.updatingOrderIds, isEmpty);
         verifyNever(() => repo.getSellerOrders());
       },
@@ -167,7 +174,8 @@ void main() {
       'a blank reason never reaches the server',
       build: build,
       seed: seeded,
-      act: (bloc) => bloc.add(const SellerOrderCancelRequested('order-1', '   ')),
+      act: (bloc) =>
+          bloc.add(const SellerOrderCancelRequested('order-1', '   ')),
       verify: (bloc) {
         expect(bloc.state.statusMessage, contains('reason'));
         expect(bloc.state.statusMessageIsInfo, isFalse);
@@ -179,7 +187,8 @@ void main() {
       'a second request for the same order while one is in flight is ignored',
       setUp: () {
         final gate = Completer<SellerCancelOutcome>();
-        when(() => repo.cancelOrder(any(), any())).thenAnswer((_) => gate.future);
+        when(() => repo.cancelOrder(any(), any()))
+            .thenAnswer((_) => gate.future);
         stubReload([sellerOrder(status: 'cancelled')]);
         addTearDown(() {
           if (!gate.isCompleted) gate.complete(const SellerCancelOutcome());
@@ -206,8 +215,8 @@ void main() {
         stubReload([sellerOrder(status: 'cancelled')]);
       },
       build: build,
-      seed: () => seeded().copyWith(
-          statusMessage: 'Old notice', statusMessageIsInfo: false),
+      seed: () => seeded()
+          .copyWith(statusMessage: 'Old notice', statusMessageIsInfo: false),
       act: (bloc) => bloc.add(const SellerOrderCancelRequested('order-1', 'x')),
       verify: (bloc) {
         expect(bloc.state.statusMessage, 'Order cancelled.');
@@ -224,7 +233,8 @@ void main() {
             .thenAnswer((_) async => SellerStatusResult.completed);
       },
       build: build,
-      seed: () => seeded([sellerOrder(status: 'preparing', paymentType: 'cash-on-delivery')]),
+      seed: () => seeded(
+          [sellerOrder(status: 'preparing', paymentType: 'cash-on-delivery')]),
       act: (bloc) => bloc.add(const SellerOrderStatusUpdateRequested(
           'order-1', 'cancelled',
           cancelReason: 'x')),

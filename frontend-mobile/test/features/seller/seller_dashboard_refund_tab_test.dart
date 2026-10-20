@@ -184,4 +184,45 @@ void main() {
           reason: 'badge $n');
     }
   });
+
+  testWidgets(
+      'all four dashboard tabs have the same layout: icon left of the label, on one line',
+      (tester) async {
+    await pumpDashboard(tester);
+
+    final bar = find.byType(TabBar);
+    final centers = <double>[];
+    for (final label in [
+      'My Products',
+      'Orders',
+      'Vouchers',
+      'Return/Refund'
+    ]) {
+      final text =
+          tester.getRect(find.descendant(of: bar, matching: find.text(label)));
+      // The icon of the same tab: the nearest one to the left of the label.
+      final icons = tester
+          .widgetList<Icon>(
+              find.descendant(of: bar, matching: find.byType(Icon)))
+          .toList();
+      expect(icons, hasLength(4));
+      final tabRect = tester.getRect(find
+          .ancestor(of: find.text(label), matching: find.byType(Tab))
+          .first);
+      final icon = tester.getRect(find.descendant(
+          of: find
+              .ancestor(of: find.text(label), matching: find.byType(Tab))
+              .first,
+          matching: find.byType(Icon)));
+      expect(icon.right, lessThanOrEqualTo(text.left),
+          reason: '$label icon is left of its label');
+      expect((icon.center.dy - text.center.dy).abs(), lessThan(2),
+          reason: '$label icon and label share a line');
+      expect(tabRect.height, lessThanOrEqualTo(48));
+      centers.add(text.center.dy);
+    }
+    // Every label sits at the same height, so the row reads as one line.
+    expect(centers.every((c) => (c - centers.first).abs() < 1), isTrue,
+        reason: 'labels at $centers');
+  });
 }

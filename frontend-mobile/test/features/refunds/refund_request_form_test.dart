@@ -41,7 +41,8 @@ void main() {
     when(() => api.eligibility('o')).thenAnswer((_) async => _eligibility());
   });
 
-  Future<void> pumpForm(WidgetTester tester, {double textScale = 1}) async {
+  Future<void> pumpForm(WidgetTester tester,
+      {double textScale = 1, Listenable? refreshSignal}) async {
     await tester.pumpWidget(MaterialApp(
         home: MediaQuery(
             data: MediaQueryData(
@@ -49,11 +50,32 @@ void main() {
                 textScaler: TextScaler.linear(textScale)),
             child: Scaffold(
                 body: SingleChildScrollView(
-                    child: RefundRequestPanel(orderId: 'o', api: api))))));
+                    child: RefundRequestPanel(
+                        orderId: 'o',
+                        api: api,
+                        refreshSignal: refreshSignal))))));
     await tester.pumpAndSettle();
   }
 
   Finder tooltip(String message) => find.byTooltip(message);
+
+  testWidgets(
+      'has no refresh button; the order page reloads it when it is pulled down',
+      (tester) async {
+    final signal = ValueNotifier<int>(0);
+    addTearDown(signal.dispose);
+    await pumpForm(tester, refreshSignal: signal);
+
+    expect(find.byIcon(Icons.refresh), findsNothing);
+    expect(find.byTooltip('Refresh refunds'), findsNothing);
+    verify(() => api.eligibility('o')).called(1);
+
+    signal.value++;
+    await tester.pumpAndSettle();
+
+    verify(() => api.eligibility('o')).called(1);
+    verify(() => api.history('o')).called(greaterThanOrEqualTo(1));
+  });
 
   testWidgets(
       'is one card: header with the request-by date, then only items that can still be refunded',

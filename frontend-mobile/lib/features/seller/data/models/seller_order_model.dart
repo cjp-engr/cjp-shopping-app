@@ -1,4 +1,5 @@
 import '../../../../core/utils/json_date.dart';
+import '../../../orders/domain/refund_mark.dart';
 
 class SellerOrderAddress {
   final String street;
@@ -91,6 +92,8 @@ class SellerOrderPayment {
 }
 
 class SellerOrderItemData {
+  /// This line's id in the order, used to match refunds to items.
+  final String? lineId;
   final String productId;
   final String productName;
   final String productImage;
@@ -101,6 +104,7 @@ class SellerOrderItemData {
   final Map<String, String> selectedAttributes;
 
   const SellerOrderItemData({
+    this.lineId,
     required this.productId,
     required this.productName,
     required this.productImage,
@@ -145,6 +149,7 @@ class SellerOrderItemData {
         0;
     if (product is Map) {
       return SellerOrderItemData(
+        lineId: json['_id']?.toString(),
         productId: product['_id']?.toString() ?? '',
         productName: product['name'] ?? json['productName'] ?? '',
         productImage: product['image'] ?? json['productImage'] ?? '',
@@ -156,6 +161,7 @@ class SellerOrderItemData {
       );
     }
     return SellerOrderItemData(
+      lineId: json['_id']?.toString(),
       productId: product?.toString() ?? '',
       productName: json['productName'] ?? '',
       productImage: json['productImage'] ?? '',
@@ -189,8 +195,11 @@ class SellerOrderData {
   final DateTime? placedAt;
   final DateTime? acceptBy;
   final DateTime? authorizationExpiresAt;
-  final int refundedAmountMinor;
+  final int refundedAmountMinor, refundReservedAmountMinor;
   final String currency;
+
+  /// Items with refunded units, for marking them in the order views.
+  final List<RefundedItemMark> refundedItems;
 
   /// Server-derived: this seller can cancel this pending order right now.
   final bool canSellerCancelPending;
@@ -221,6 +230,8 @@ class SellerOrderData {
     this.acceptBy,
     this.authorizationExpiresAt,
     this.refundedAmountMinor = 0,
+    this.refundReservedAmountMinor = 0,
+    this.refundedItems = const [],
     this.currency = 'usd',
     this.canSellerCancelPending = false,
     this.cancelledByRole,
@@ -229,6 +240,13 @@ class SellerOrderData {
 
   String get shortId =>
       id.length >= 8 ? id.substring(0, 8).toUpperCase() : id.toUpperCase();
+
+  /// What the seller keeps after refunds (never below zero).
+  double get netTotal {
+    final factor = currency.toLowerCase() == 'jpy' ? 1 : 100;
+    final minor = (total * factor).round() - refundedAmountMinor;
+    return (minor < 0 ? 0 : minor) / factor;
+  }
 
   bool get isActive => !['delivered', 'cancelled'].contains(status);
   bool get isPending => status == 'pending';
@@ -268,6 +286,8 @@ class SellerOrderData {
         acceptBy: acceptBy,
         authorizationExpiresAt: authorizationExpiresAt,
         refundedAmountMinor: refundedAmountMinor,
+        refundReservedAmountMinor: refundReservedAmountMinor,
+        refundedItems: refundedItems,
         currency: currency,
         canSellerCancelPending: canSellerCancelPending,
         cancelledByRole: cancelledByRole,
@@ -341,6 +361,16 @@ class SellerOrderData {
       acceptBy: parseOptionalDate(json['acceptBy']),
       authorizationExpiresAt: parseOptionalDate(json['authorizationExpiresAt']),
       refundedAmountMinor: (json['refundedAmountMinor'] as num?)?.toInt() ?? 0,
+      refundReservedAmountMinor:
+          (json['refundReservedAmountMinor'] as num?)?.toInt() ?? 0,
+      refundedItems: [
+        for (final m in (json['refundedItems'] as List? ?? const []))
+          if (m is Map && m['lineId'] != null)
+            RefundedItemMark(
+                lineId: m['lineId'].toString(),
+                refunded: (m['refunded'] as num?)?.toInt() ?? 0,
+                processing: (m['processing'] as num?)?.toInt() ?? 0),
+      ],
       currency: json['currency'] as String? ?? 'usd',
       canSellerCancelPending: json['canSellerCancelPending'] == true,
       cancelledByRole: json['cancelledByRole'] is String

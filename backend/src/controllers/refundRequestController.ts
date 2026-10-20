@@ -22,6 +22,9 @@ export async function listCompletedBuyerRefundRequests(req: AuthRequest, res: Re
 export async function listSellerRefundRequests(req: AuthRequest, res: Response, next: NextFunction) {
   try { res.json({ success: true, ...await service.listSellerRefundRequests(req.user!.id, Number(req.query.page ?? 1), Number(req.query.limit ?? 20), req.query.status as string | undefined) }); } catch (err) { next(err); }
 }
+export async function listSellerOrderRefundRequests(req: AuthRequest, res: Response, next: NextFunction) {
+  try { res.json({ success: true, requests: await service.listSellerOrderRefundRequests(req.params.id, req.user!.id) }); } catch (err) { next(err); }
+}
 export async function decideRefundRequest(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const request = await service.decideRefundRequest(req.params.id, req.user!.id, req.body);

@@ -99,7 +99,8 @@ void main() {
           home: Scaffold(body: CompletedRefunds(api: api))));
       await settle(); // page 1 shows; page 2 is asked for and is slow
 
-      await tester.tap(find.byTooltip('Refresh refunds'));
+      await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
+      await settle();
       await settle();
       stale.complete(_page(2, 2, [_request('stale2', 'refunded')]));
       await settle();
@@ -108,6 +109,26 @@ void main() {
       expect(find.text('Mug fresh1'), findsOneWidget);
       expect(find.text('Mug fresh2'), findsOneWidget);
       verify(() => api.completed(2)).called(2);
+    });
+
+    testWidgets(
+        'has no refresh button: the list is refreshed by pulling it down',
+        (tester) async {
+      when(() => api.completed(1))
+          .thenAnswer((_) async => _page(1, 1, [_request('1', 'refunded')]));
+      await pump(tester);
+
+      expect(find.byIcon(Icons.refresh), findsNothing);
+      expect(find.byTooltip('Refresh refunds'), findsNothing);
+
+      when(() => api.completed(1))
+          .thenAnswer((_) async => _page(1, 1, [_request('2', 'refunded')]));
+      await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
+      await tester.pumpAndSettle();
+
+      verify(() => api.completed(1)).called(2);
+      expect(find.text('Mug 2'), findsOneWidget);
+      expect(find.text('Mug 1'), findsNothing);
     });
 
     testWidgets('keeps loading pages until the end, each only once',
@@ -184,6 +205,83 @@ void main() {
           theme: AppTheme.light,
           home: Scaffold(body: RefundReviewList(api: api))));
       await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+        'has no refresh button: the list is refreshed by pulling it down',
+        (tester) async {
+      when(() => api.sellerList(1, 'in_progress')).thenAnswer((_) async =>
+          _page(1, 1, [_request('a0', 'requested', buyer: 'Before Pull')]));
+      await pump(tester);
+
+      expect(find.byIcon(Icons.refresh), findsNothing);
+      expect(find.byTooltip('Refresh refund requests'), findsNothing);
+      expect(find.byType(RefreshIndicator), findsOneWidget);
+
+      when(() => api.sellerList(1, 'in_progress')).thenAnswer((_) async =>
+          _page(1, 1, [_request('a1', 'requested', buyer: 'After Pull')]));
+      await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
+      await tester.pumpAndSettle();
+
+      verify(() => api.sellerList(1, 'in_progress')).called(2);
+      expect(find.text('After Pull'), findsOneWidget);
+      expect(find.text('Before Pull'), findsNothing);
+    });
+
+    testWidgets(
+        'pulling down reloads the group that is open, not the first one',
+        (tester) async {
+      when(() => api.sellerList(1, 'in_progress'))
+          .thenAnswer((_) async => _page(1, 1, [_request('a0', 'requested')]));
+      when(() => api.sellerList(1, 'approved')).thenAnswer((_) async =>
+          _page(1, 1, [_request('p0', 'processing', buyer: 'Approved Buyer')]));
+      await pump(tester);
+      await tester.tap(find.byKey(const ValueKey('refund-group-approved')));
+      await tester.pumpAndSettle();
+
+      await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
+      await tester.pumpAndSettle();
+
+      verify(() => api.sellerList(1, 'approved')).called(2);
+      verify(() => api.sellerList(1, 'in_progress')).called(1);
+      expect(find.text('Approved Buyer'), findsOneWidget);
+    });
+
+    for (final (width, textScale) in [
+      (375.0, 1.0),
+      (320.0, 1.0),
+      (375.0, 1.6)
+    ]) {
+      testWidgets(
+          'the three group chips share one line and one size at width $width, text x$textScale',
+          (tester) async {
+        tester.view.physicalSize = Size(width, 812);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        when(() => api.sellerList(1, 'in_progress')).thenAnswer((_) async =>
+            _page(1, 1, [_request('a0', 'requested')],
+                counts: {'in_progress': 0, 'approved': 4, 'rejected': 2}));
+        await tester.pumpWidget(MaterialApp(
+            theme: AppTheme.light,
+            home: MediaQuery(
+                data: MediaQueryData(
+                    size: Size(width, 812),
+                    textScaler: TextScaler.linear(textScale)),
+                child: Scaffold(body: RefundReviewList(api: api)))));
+        await tester.pumpAndSettle();
+
+        final chips = [
+          for (final key in ['in_progress', 'approved', 'rejected'])
+            tester.getRect(find.byKey(ValueKey('refund-group-$key')))
+        ];
+        expect(chips.map((c) => c.top).toSet().length, 1,
+            reason: 'all three on one line: $chips');
+        expect(chips.map((c) => c.width.round()).toSet().length, 1,
+            reason: 'equal widths: $chips');
+        expect(chips.last.right, lessThanOrEqualTo(width - 16 + 0.5));
+        expect(tester.takeException(), isNull);
+      });
     }
 
     testWidgets(

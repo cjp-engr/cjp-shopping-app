@@ -35,9 +35,11 @@ void main() {
     await tester.pump();
   }
 
-  Finder cancelButton(String id) => find.byKey(sellerKeys.cancelOrderButton(id));
+  Finder cancelButton(String id) =>
+      find.byKey(sellerKeys.cancelOrderButton(id));
 
-  testWidgets('a pending order offers Cancel only when the server says it can be cancelled',
+  testWidgets(
+      'a pending order offers Cancel only when the server says it can be cancelled',
       (tester) async {
     when(() => repo.getSellerOrders()).thenAnswer((_) async => [
           sellerOrder(id: 'can', canSellerCancelPending: true),
@@ -49,7 +51,8 @@ void main() {
     expect(cancelButton('cannot'), findsNothing);
   });
 
-  testWidgets('confirming without a reason shows the requirement and sends nothing',
+  testWidgets(
+      'confirming without a reason shows the requirement and sends nothing',
       (tester) async {
     when(() => repo.getSellerOrders())
         .thenAnswer((_) async => [sellerOrder(canSellerCancelPending: true)]);
@@ -60,38 +63,47 @@ void main() {
     await tester.tap(find.text('Yes, Cancel'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Enter a reason for the cancellation. The buyer will see it.'),
+    expect(
+        find.text(
+            'Enter a reason for the cancellation. The buyer will see it.'),
         findsOneWidget);
     expect(find.byKey(sellerKeys.cancelReasonField), findsOneWidget);
     verifyNever(() => repo.cancelOrder(any(), any()));
   });
 
-  testWidgets('a reason sends one cancellation and shows the release as in progress',
+  testWidgets(
+      'a reason sends one cancellation and shows the release as in progress',
       (tester) async {
     var loads = 0;
     when(() => repo.getSellerOrders()).thenAnswer((_) async {
       loads++;
       return loads < 2
           ? [sellerOrder(canSellerCancelPending: true)]
-          : [sellerOrder(status: 'cancelled', paymentStatus: 'release_pending')];
+          : [
+              sellerOrder(status: 'cancelled', paymentStatus: 'release_pending')
+            ];
     });
-    when(() => repo.cancelOrder('order-1', 'Out of stock')).thenAnswer((_) async =>
-        const SellerCancelOutcome(paymentOperation: SellerPaymentOperation.pending));
+    when(() => repo.cancelOrder('order-1', 'Out of stock')).thenAnswer(
+        (_) async => const SellerCancelOutcome(
+            paymentOperation: SellerPaymentOperation.pending));
     await pumpDashboard(tester);
 
     await tester.tap(cancelButton('order-1'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(sellerKeys.cancelReasonField), '  Out of stock ');
+    await tester.enterText(
+        find.byKey(sellerKeys.cancelReasonField), '  Out of stock ');
     await tester.tap(find.text('Yes, Cancel'));
     await tester.pumpAndSettle();
 
     verify(() => repo.cancelOrder('order-1', 'Out of stock')).called(1);
     expect(find.text('Order cancelled. The card hold is being released.'),
         findsOneWidget);
-    expect(find.text('Order cancelled. The card hold was released.'), findsNothing);
+    expect(find.text('Order cancelled. The card hold was released.'),
+        findsNothing);
   });
 
-  testWidgets('losing the race shows the conflict message and the real order state',
+  testWidgets(
+      'losing the race shows the conflict message and the real order state',
       (tester) async {
     var loads = 0;
     when(() => repo.getSellerOrders()).thenAnswer((_) async {
@@ -112,11 +124,13 @@ void main() {
 
     await tester.tap(cancelButton('order-1'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(sellerKeys.cancelReasonField), 'Out of stock');
+    await tester.enterText(
+        find.byKey(sellerKeys.cancelReasonField), 'Out of stock');
     await tester.tap(find.text('Yes, Cancel'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Refresh to see its latest status'), findsOneWidget);
+    expect(find.textContaining('Refresh to see its latest status'),
+        findsOneWidget);
     expect(cancelButton('order-1'), findsNothing);
   });
 }

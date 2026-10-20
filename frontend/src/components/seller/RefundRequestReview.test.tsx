@@ -12,6 +12,11 @@ describe('seller Return/Refund tabs', () => {
     expect(html.match(/role="tab"/g)).toHaveLength(3);
   });
 
+  it('has no refresh button: the list loads when the tab opens or a group is chosen', () => {
+    expect(html).not.toContain('Refresh refund requests');
+    expect(html).not.toContain('aria-label="Refresh');
+  });
+
   it('opens on In Progress, the requests still waiting for the seller', () => {
     expect(html).toMatch(/role="tab" aria-selected="true"[^>]*data-testid="refund-group-in_progress"/);
     expect(html).toMatch(/role="tab" aria-selected="false"[^>]*data-testid="refund-group-approved"/);

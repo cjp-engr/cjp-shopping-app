@@ -31,6 +31,14 @@ describe('refund request form', () => {
     expect(html).not.toContain('Mug');
   });
 
+  it('draws the request-by pill with shades that exist, so its text can be read in dark mode', () => {
+    const html = render();
+    const pill = html.slice(html.lastIndexOf('<span', html.indexOf('Request by ')), html.indexOf('Request by '));
+    // The orange palette stops at 900; a dark: shade that does not exist leaves a light pill with light text.
+    expect(pill).not.toMatch(/primary-950/);
+    expect(pill).toContain('dark:bg-primary-500/15'); expect(pill).toContain('dark:text-primary-300');
+  });
+
   it('keeps the labels the stepper and fields are found by', () => {
     const html = render();
     expect(html).toContain('aria-label="Decrease refund quantity for Hiking Backpack"');

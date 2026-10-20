@@ -40,7 +40,8 @@ void main() {
     test('is null without a deadline or once the order is not pending', () {
       expect(text(acceptBy: null), isNull);
       expect(
-          text(status: 'preparing', acceptBy: now.add(const Duration(hours: 2))),
+          text(
+              status: 'preparing', acceptBy: now.add(const Duration(hours: 2))),
           isNull);
     });
 

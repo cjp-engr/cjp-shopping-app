@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import { CheckCircle, Clock, RotateCcw, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, XCircle } from 'lucide-react';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { refundButton, refundField, refundSecondary } from '../orders/RefundPresentation';
 import { RefundOrderCard } from '../orders/RefundOrderCard';
@@ -94,15 +94,6 @@ export function RefundRequestReview({ onUpdated }: { onUpdated?: () => void }) {
     }
   };
 
-  const refresh = () => {
-    setActionError('');
-    dispatch({ type: 'reload' });
-    void fetchFirst(group).then(latest => {
-      if (latest) setCounts(latest);
-      onUpdated?.();
-    });
-  };
-
   const chooseGroup = (key: SellerRefundGroup) => {
     if (key === group) return;
     setActionError('');
@@ -115,14 +106,9 @@ export function RefundRequestReview({ onUpdated }: { onUpdated?: () => void }) {
 
   return (
     <section className="space-y-5" aria-label="Seller refund requests">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Return/Refund</h2>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Review the buyer’s issue and exact refund amount.</p>
-        </div>
-        <button type="button" disabled={!!busy || loading} aria-label="Refresh refund requests" onClick={refresh} className={refundSecondary}>
-          <RotateCcw className="h-4 w-4" />
-        </button>
+      <div>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Return/Refund</h2>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Review the buyer’s issue and exact refund amount.</p>
       </div>
 
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Refund status">

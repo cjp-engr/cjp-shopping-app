@@ -62,7 +62,8 @@ void main() {
 
   group('cancellationOutcomeMessage', () {
     test('never says money was returned until the release is complete', () {
-      final pending = cancellationOutcomeMessage(SellerPaymentOperation.pending);
+      final pending =
+          cancellationOutcomeMessage(SellerPaymentOperation.pending);
       expect(pending, contains('being released'));
       expect(pending, isNot(contains('was released')));
       expect(cancellationOutcomeMessage(SellerPaymentOperation.completed),
@@ -184,9 +185,9 @@ void main() {
     });
 
     test('copyWith keeps the capability and the audit fields', () {
-      final order = sellerOrder(
-              canSellerCancelPending: true, cancelledByRole: 'seller')
-          .copyWith(status: 'cancelled');
+      final order =
+          sellerOrder(canSellerCancelPending: true, cancelledByRole: 'seller')
+              .copyWith(status: 'cancelled');
       expect(order.status, 'cancelled');
       expect(order.canSellerCancelPending, isTrue);
       expect(order.cancelledByRole, 'seller');

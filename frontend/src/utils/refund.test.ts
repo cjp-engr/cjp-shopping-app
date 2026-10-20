@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { refundQuote, refundShippingQuote, refundReasonLabels, refundMark, sellerRefundBadge } from './refund';
+import { refundQuote, refundShippingQuote, refundReasonLabels, refundMark, sellerRefundBadge, orderRefundLabel } from './refund';
 const lines = [{ lineId: 'a', productName: 'Mug', quantityOrdered: 2, quantityAvailable: 2, availableUnitAmountsMinor: [1080, 1079] }];
 describe('delivered refund shipping quote', () => {
   it('shows shipping only for all remaining units with an eligible seller-fault reason', () => {
@@ -48,5 +48,25 @@ describe('seller Return/Refund tab badge', () => {
 
   it('falls back to the page total from a server without group counts', () => {
     expect(sellerRefundBadge({ total: 3 })).toBe(3);
+  });
+});
+
+describe('refund label for a whole order', () => {
+  it('says Fully refunded once everything paid was paid back', () => {
+    expect(orderRefundLabel({ paymentStatus: 'refunded', refundedAmountMinor: 3200 })).toEqual({ label: 'Fully refunded', done: true });
+  });
+
+  it('says Partially refunded when some money was paid back but not all', () => {
+    expect(orderRefundLabel({ paymentStatus: 'partially_refunded', refundedAmountMinor: 1080 })).toEqual({ label: 'Partially refunded', done: true });
+  });
+
+  it('says Refund processing while an approved refund is still being paid back', () => {
+    expect(orderRefundLabel({ paymentStatus: 'captured', refundedAmountMinor: 0, refundReservedAmountMinor: 1080 })).toEqual({ label: 'Refund processing', done: false });
+  });
+
+  it('shows nothing for an order with no refund', () => {
+    expect(orderRefundLabel({ paymentStatus: 'captured' })).toBeNull();
+    expect(orderRefundLabel({ paymentStatus: 'captured', refundedAmountMinor: 0, refundReservedAmountMinor: 0 })).toBeNull();
+    expect(orderRefundLabel({})).toBeNull();
   });
 });

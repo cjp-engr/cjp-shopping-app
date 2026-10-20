@@ -83,6 +83,15 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
   // productId → { rating, comment, _id, ... }
   final Map<String, Map<String, dynamic>> _reviews = {};
 
+  /// Bumped when the page is pulled down, so the refund panel reloads with the rest of the page.
+  final _refundRefresh = ValueNotifier<int>(0);
+
+  @override
+  void dispose() {
+    _refundRefresh.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -232,6 +241,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
           if (user != null) {
             context.read<OrderBloc>().add(OrdersLoadRequested(user.id));
           }
+          _refundRefresh.value++;
           await _fetchReviews();
         },
         child: SingleChildScrollView(
@@ -468,7 +478,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
             ],
 
             if (order.status == 'delivered') ...[
-              RefundRequestPanel(key: ValueKey('refund_${order.id}'), orderId: order.id, onUpdated: () => context.read<OrderBloc>().add(OrdersLoadRequested(order.userId))),
+              RefundRequestPanel(key: ValueKey('refund_${order.id}'), orderId: order.id, refreshSignal: _refundRefresh, onUpdated: () => context.read<OrderBloc>().add(OrdersLoadRequested(order.userId))),
               const SizedBox(height: AppSizes.sm),
             ],
 

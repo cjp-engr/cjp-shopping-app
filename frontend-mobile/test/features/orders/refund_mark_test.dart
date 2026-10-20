@@ -84,4 +84,32 @@ void main() {
       expect(order.refundedItems, isEmpty);
     });
   });
+
+  group('orderRefundLabel', () {
+    test('says Fully refunded once everything paid was paid back', () {
+      final mark = orderRefundLabel(
+          paymentStatus: 'refunded', refundedAmountMinor: 3200)!;
+      expect((mark.label, mark.done), ('Fully refunded', true));
+    });
+
+    test('says Partially refunded when some money was paid back but not all',
+        () {
+      final mark = orderRefundLabel(
+          paymentStatus: 'partially_refunded', refundedAmountMinor: 1080)!;
+      expect((mark.label, mark.done), ('Partially refunded', true));
+    });
+
+    test(
+        'says Refund processing while an approved refund is still being paid back',
+        () {
+      final mark = orderRefundLabel(
+          paymentStatus: 'captured', refundReservedAmountMinor: 1080)!;
+      expect((mark.label, mark.done), ('Refund processing', false));
+    });
+
+    test('shows nothing for an order with no refund', () {
+      expect(orderRefundLabel(paymentStatus: 'captured'), isNull);
+      expect(orderRefundLabel(), isNull);
+    });
+  });
 }

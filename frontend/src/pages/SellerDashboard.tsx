@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { RefundRequestReview } from '../components/seller/RefundRequestReview';
 import { netOrderRevenue, sellerRefundBadge } from '../utils/refund';
+import { OrderRefundBadge } from '../components/orders/OrderRefundBadge';
+import { RefundItemMark } from '../components/orders/RefundItemMark';
 import { refundService } from '../services/refundService';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -633,6 +635,7 @@ export const SellerDashboard: React.FC = () => {
                       <StatusIcon className="w-3 h-3" />
                       {cfg.label}
                     </Badge>
+                    <OrderRefundBadge order={order} />
                     <div className="flex-1" />
                     <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{formatDate(order.createdAt)}</span>
                     <span className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{formatCurrency(order.total)}</span>
@@ -700,7 +703,7 @@ export const SellerDashboard: React.FC = () => {
 
                     {/* ── Items ── */}
                     <div className="space-y-1.5">
-                      {order.items.map(({ product, quantity, selectedVariant }) => {
+                      {order.items.map(({ lineId, product, quantity, selectedVariant }) => {
                         const rawPrice = selectedVariant?.price ?? product.price;
                         const discountPercent =
                           selectedVariant?.discount ?? product.discount ?? 0;
@@ -742,6 +745,7 @@ export const SellerDashboard: React.FC = () => {
                                   Qty {quantity} × {formatCurrency(rawPrice)}
                                 </p>
                               )}
+                              <RefundItemMark marks={order.refundedItems} lineId={lineId} quantity={quantity} />
                             </div>
                             <p className="text-sm font-bold text-gray-900 dark:text-gray-100 flex-shrink-0 tabular-nums">
                               {formatCurrency(salePrice * quantity)}

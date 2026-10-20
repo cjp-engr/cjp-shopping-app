@@ -52,7 +52,7 @@ export function RefundRequestForm({
               <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Select an item</h3>
             </div>
             {eligibility.deadlineAt && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-800 dark:bg-primary-950 dark:text-primary-200">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-800 dark:bg-primary-500/15 dark:text-primary-300">
                 <Clock3 className="h-3.5 w-3.5 shrink-0" aria-hidden />Request by {refundDate(eligibility.deadlineAt)}
               </span>
             )}

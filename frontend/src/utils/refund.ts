@@ -56,3 +56,14 @@ export function refundMark(marks: ReadonlyArray<{ lineId: string; refunded: numb
 export function sellerRefundBadge(page: { total: number; counts?: Record<string, number> }): number {
   return page.counts?.in_progress ?? page.total;
 }
+
+/**
+ * How a whole order is labelled once money was paid back: fully or partly refunded, or a refund still
+ * being paid back. `done` is false while it is still processing. Null when nothing was refunded.
+ */
+export function orderRefundLabel(order: { paymentStatus?: string | null; refundedAmountMinor?: number; refundReservedAmountMinor?: number }): { label: string; done: boolean } | null {
+  if (order.paymentStatus === 'refunded') return { label: 'Fully refunded', done: true };
+  if ((order.refundedAmountMinor ?? 0) > 0) return { label: 'Partially refunded', done: true };
+  if ((order.refundReservedAmountMinor ?? 0) > 0) return { label: 'Refund processing', done: false };
+  return null;
+}

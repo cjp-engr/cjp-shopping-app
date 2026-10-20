@@ -56,6 +56,14 @@ class RefundApi {
           method: 'POST',
           data: input))['request'] as Map));
 
+  /// One order's refund requests in every state, for the refund history on the seller's order screen.
+  Future<List<RefundRequestData>> sellerOrderRefunds(String orderId) async =>
+      ((await _request('/seller/orders/$orderId/refund-requests'))['requests']
+              as List)
+          .map((r) =>
+              RefundRequestData.fromJson(Map<String, dynamic>.from(r as Map)))
+          .toList();
+
   /// [status] is `in_progress`, `approved` or `rejected`; omit it for every request.
   Future<SellerRefundPage> sellerList(int page, [String? status]) async =>
       SellerRefundPage.fromJson(await _request(

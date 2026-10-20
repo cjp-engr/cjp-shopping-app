@@ -83,6 +83,7 @@ interface RawItemProduct {
 }
 
 interface RawItem {
+  _id?: string;
   product?: RawItemProduct | string;
   productName?: string;
   productImage?: string;
@@ -203,6 +204,7 @@ const adaptOrder = (order: RawOrder): AdaptedOrder => {
           discount: variantId ? undefined : discountPercent,
           createdAt: new Date().toISOString(),
         },
+        lineId: item._id,
         quantity: item.quantity,
         selectedVariant,
         isSelected: false,
@@ -231,6 +233,7 @@ const adaptOrder = (order: RawOrder): AdaptedOrder => {
     cancelledAt: order.cancelledAt,
     deliveredAt: order.deliveredAt,
     refundRequestDeadlineAt: order.refundRequestDeadlineAt,
+    refundedItems: order.refundedItems,
     refundedAmountMinor: order.refundedAmountMinor,
     refundReservedAmountMinor: order.refundReservedAmountMinor,
     currency: order.currency,

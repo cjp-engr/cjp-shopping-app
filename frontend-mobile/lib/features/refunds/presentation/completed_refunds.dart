@@ -125,18 +125,11 @@ class _CompletedRefundsState extends State<CompletedRefunds> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: [
-              Row(children: [
-                Expanded(
-                    child: Text('Return/Refund',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w800))),
-                IconButton(
-                    tooltip: 'Refresh refunds',
-                    onPressed: _busy ? null : _load,
-                    icon: const Icon(Icons.refresh))
-              ]),
+              Text('Return/Refund',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w800)),
               Text('Refunds your sellers have approved.',
                   style: TextStyle(
                       fontSize: 14, color: context.onSurfaceSecondary)),
