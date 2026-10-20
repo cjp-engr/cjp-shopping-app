@@ -87,7 +87,7 @@ void main() {
   }
 
   testWidgets(
-      'Return/Refund is a dashboard tab after Vouchers, badged with the total number of requests',
+      'Return/Refund is a dashboard tab after Vouchers, badged with the requests still waiting for the seller',
       (tester) async {
     await pumpDashboard(tester);
 
@@ -102,7 +102,7 @@ void main() {
         tester.getTopLeft(find.text('Return/Refund')).dx >
             tester.getTopLeft(find.text('Vouchers')).dx,
         isTrue);
-    expect(find.descendant(of: find.byType(TabBar), matching: find.text('6')),
+    expect(find.descendant(of: find.byType(TabBar), matching: find.text('2')),
         findsOneWidget);
     // The old entry points are gone.
     expect(find.byTooltip('Refund requests'), findsNothing);
@@ -165,8 +165,23 @@ void main() {
     await pumpDashboard(tester);
 
     expect(find.text('Return/Refund'), findsOneWidget);
-    expect(find.descendant(of: find.byType(TabBar), matching: find.text('6')),
+    expect(find.descendant(of: find.byType(TabBar), matching: find.text('2')),
         findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'no badge when nothing is waiting, even with approved and rejected requests',
+      (tester) async {
+    when(() => refunds.sellerList(1, 'in_progress')).thenAnswer((_) async =>
+        _page('requested', 0, inProgress: 0, approved: 4, rejected: 2));
+    await pumpDashboard(tester);
+
+    expect(find.text('Return/Refund'), findsOneWidget);
+    for (final n in ['0', '4', '2', '6']) {
+      expect(find.descendant(of: find.byType(TabBar), matching: find.text(n)),
+          findsNothing,
+          reason: 'badge $n');
+    }
   });
 }

@@ -84,12 +84,13 @@ class RefundBreakdown extends StatelessWidget {
               spacing: 12,
               runSpacing: 4,
               children: [
+                // The type of the Order Total row on the order screen.
                 const Text('Refund total',
                     style:
-                        TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
                 Text(refundMoney(amount, currency),
                     style: const TextStyle(
-                        fontSize: 24, fontWeight: FontWeight.w700)),
+                        fontSize: 16, fontWeight: FontWeight.w900)),
               ]))
     ]);
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { refundQuote, refundShippingQuote, refundReasonLabels, refundMark } from './refund';
+import { refundQuote, refundShippingQuote, refundReasonLabels, refundMark, sellerRefundBadge } from './refund';
 const lines = [{ lineId: 'a', productName: 'Mug', quantityOrdered: 2, quantityAvailable: 2, availableUnitAmountsMinor: [1080, 1079] }];
 describe('delivered refund shipping quote', () => {
   it('shows shipping only for all remaining units with an eligible seller-fault reason', () => {
@@ -34,5 +34,19 @@ describe('refund mark on an order item', () => {
     expect(refundMark(undefined, 'a', 1)).toBeNull();
     expect(refundMark(marks, undefined, 1)).toBeNull();
     expect(refundMark([{ lineId: 'a', refunded: 0, processing: 0 }], 'a', 1)).toBeNull();
+  });
+});
+
+describe('seller Return/Refund tab badge', () => {
+  it('counts only the requests still waiting for the seller, whatever else the seller has', () => {
+    expect(sellerRefundBadge({ total: 2, counts: { in_progress: 2, approved: 4, rejected: 2 } })).toBe(2);
+  });
+
+  it('is 0 (no badge) when nothing is waiting, even if there are approved and rejected requests', () => {
+    expect(sellerRefundBadge({ total: 0, counts: { in_progress: 0, approved: 4, rejected: 2 } })).toBe(0);
+  });
+
+  it('falls back to the page total from a server without group counts', () => {
+    expect(sellerRefundBadge({ total: 3 })).toBe(3);
   });
 });

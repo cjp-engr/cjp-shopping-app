@@ -464,4 +464,12 @@ void main() {
     expect(details.width, closeTo(card.width, 1));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('the total bar amount is as big as the order total, 16 w900',
+      (tester) async {
+    await tester.pumpWidget(_card(_json()));
+
+    final style = tester.widget<Text>(find.text(r'$100.38')).style!;
+    expect((style.fontSize, style.fontWeight), (16.0, FontWeight.w900));
+  });
 }

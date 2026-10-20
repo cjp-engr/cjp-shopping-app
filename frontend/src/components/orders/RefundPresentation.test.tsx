@@ -12,6 +12,12 @@ describe('refund presentation', () => {
     expect(html).toContain('Refund total'); expect(html).toContain('$100.38');
   });
 
+  it('shows the refund total in the same type as the order total: bold, not enlarged', () => {
+    const html = renderToStaticMarkup(<RefundBreakdown amount={10038} shipping={1399} currency="usd" />);
+    const row = html.slice(html.indexOf('Refund total') - 400, html.indexOf('$100.38') + 20);
+    expect(row).toContain('font-bold'); expect(row).not.toContain('text-2xl'); expect(row).not.toContain('tracking-tight');
+  });
+
   it('formats dates safely', () => {
     expect(refundDate('invalid')).toBe('Date unavailable');
     expect(refundDate(undefined)).toBe('Date unavailable');

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { RefundRequestReview } from '../components/seller/RefundRequestReview';
-import { netOrderRevenue } from '../utils/refund';
+import { netOrderRevenue, sellerRefundBadge } from '../utils/refund';
 import { refundService } from '../services/refundService';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -86,9 +86,9 @@ export const SellerDashboard: React.FC = () => {
   const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
   const acceptInFlight = useRef(new Set<string>());
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
-  // Every refund request the seller has, in all three groups, for the Return/Refund tab badge. Reads stay available even when new requests are switched off.
-  const [refundTotal, setRefundTotal] = useState(0);
-  const loadRefundTotal = () => { void refundService.sellerList(1, 'in_progress').then(page => setRefundTotal(page.counts ? Object.values(page.counts).reduce((sum, n) => sum + n, 0) : page.total)).catch(() => {}); };
+  // Requests still waiting for the seller, for the Return/Refund tab badge (hidden at 0). Reads stay available even when new requests are switched off.
+  const [refundInProgress, setRefundInProgress] = useState(0);
+  const loadRefundInProgress = () => { void refundService.sellerList(1, 'in_progress').then(page => setRefundInProgress(sellerRefundBadge(page))).catch(() => {}); };
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; productId: string | null; loading: boolean }>({ open: false, productId: null, loading: false });
   const [shipDialogOrderId, setShipDialogOrderId] = useState<string | null>(null);
@@ -153,7 +153,7 @@ export const SellerDashboard: React.FC = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadProducts();
     loadOrders();
-    loadRefundTotal();
+    loadRefundInProgress();
   }, []);
 
   // Keep acceptance deadlines current so an expired order stops offering the accept button
@@ -390,7 +390,7 @@ export const SellerDashboard: React.FC = () => {
                 { key: 'products', label: 'My Products', Icon: ShoppingBag, badge: null },
                 { key: 'orders',   label: 'Orders',      Icon: Package,     badge: actionableCount || null },
                 { key: 'vouchers', label: 'Vouchers',    Icon: Tag,         badge: null },
-                { key: 'refunds',  label: 'Return/Refund', Icon: RotateCcw, badge: refundTotal || null },
+                { key: 'refunds',  label: 'Return/Refund', Icon: RotateCcw, badge: refundInProgress || null },
               ] as const).map(({ key, label, Icon, badge }) => (
                 <button
                   key={key}
@@ -796,7 +796,7 @@ export const SellerDashboard: React.FC = () => {
 
       {/* ── Return/Refund Tab ── */}
       {tab === 'refunds' && (
-        <RefundRequestReview onUpdated={() => { void loadOrders(); loadRefundTotal(); }} />
+        <RefundRequestReview onUpdated={() => { void loadOrders(); loadRefundInProgress(); }} />
       )}
 
       {/* ── Vouchers Tab ── */}

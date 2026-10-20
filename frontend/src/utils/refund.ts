@@ -51,3 +51,8 @@ export function refundMark(marks: ReadonlyArray<{ lineId: string; refunded: numb
   if (mark.processing === 0) return { label: mark.refunded >= quantity ? 'Refunded' : `${mark.refunded} of ${quantity} refunded`, done: true };
   return { label: mark.refunded === 0 ? 'Refund processing' : `${mark.refunded} refunded, ${mark.processing} processing`, done: false };
 }
+
+/** The seller's Return/Refund tab badge: the requests still waiting for the seller (0 hides the badge). */
+export function sellerRefundBadge(page: { total: number; counts?: Record<string, number> }): number {
+  return page.counts?.in_progress ?? page.total;
+}

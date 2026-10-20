@@ -24,5 +24,5 @@ export function RefundBreakdown({ amount, shipping, tax, currency }: { amount: n
   return <dl className="space-y-3 text-sm"><div className="flex justify-between gap-3"><dt className="text-gray-600 dark:text-gray-300">{tax === undefined ? 'Items & original tax' : 'Items after discounts'}</dt><dd>{refundMoney(amount - shipping - (tax ?? 0), currency)}</dd></div>
     {tax !== undefined && <div className="flex justify-between gap-3"><dt className="text-gray-600 dark:text-gray-300">Original tax</dt><dd>{refundMoney(tax, currency)}</dd></div>}
     <div className="flex justify-between gap-3"><dt className="text-gray-600 dark:text-gray-300">Shipping refund</dt><dd>{refundMoney(shipping, currency)}</dd></div>
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4 font-semibold dark:border-gray-700"><dt>Refund total</dt><dd className="text-2xl tracking-tight">{refundMoney(amount, currency)}</dd></div></dl>;
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4 font-bold text-gray-900 dark:border-gray-700 dark:text-gray-100"><dt>Refund total</dt><dd>{refundMoney(amount, currency)}</dd></div></dl>;
 }

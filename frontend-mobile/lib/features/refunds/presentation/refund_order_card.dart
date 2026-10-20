@@ -232,8 +232,8 @@ class _RefundOrderCardState extends State<RefundOrderCard> {
             const SizedBox(width: 12),
             Text(refundMoney(r.amount, r.currency),
                 style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
                     color: context.onSurfaceColor)),
           ]),
         ),

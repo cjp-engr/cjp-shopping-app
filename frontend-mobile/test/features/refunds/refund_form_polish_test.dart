@@ -80,6 +80,17 @@ void main() {
       expect(amount.left, greaterThan(label.right));
     });
 
+    testWidgets('the refund total is set in the same type as the order total',
+        (tester) async {
+      await pumpForm(tester);
+
+      // The order screen's total row: label 15 w800, amount 16 w900.
+      final label = tester.widget<Text>(find.text('Refund total')).style!;
+      final amount = tester.widget<Text>(find.text(r'$0.00').last).style!;
+      expect((label.fontSize, label.fontWeight), (15.0, FontWeight.w800));
+      expect((amount.fontSize, amount.fontWeight), (16.0, FontWeight.w900));
+    });
+
     testWidgets('the same layout inside a refund card’s details',
         (tester) async {
       await tester.pumpWidget(MaterialApp(

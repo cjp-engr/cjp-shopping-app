@@ -39,8 +39,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
   String _orderStatusFilter = 'all';
   bool _ordersRequested = false;
 
-  /// Every refund request the seller has (all three groups), for the Return/Refund tab badge. Reading stays available when new requests are off.
-  int _refundTotal = 0;
+  /// Requests still waiting for the seller, for the Return/Refund tab badge (hidden at 0). Reading stays available when new requests are off.
+  int _refundInProgress = 0;
 
   // Voucher tab state
   VoucherRepository? _voucherRepo;
@@ -72,7 +72,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _syncCapturePolling(context.read<SellerBloc>().state.orders);
       context.read<SellerBloc>().add(const SellerProductsLoadRequested());
-      _loadRefundTotal();
+      _loadRefundInProgress();
       // If opened directly on Orders tab (e.g. from a notification tap),
       // trigger the lazy load that _onTabChanged would normally handle.
       if (initialIndex == 1 && !_ordersRequested) {
@@ -121,7 +121,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
     } catch (_) {}
   }
 
-  Future<void> _loadRefundTotal() async {
+  Future<void> _loadRefundInProgress() async {
     final RefundApi api;
     try {
       api = context.read<RefundApi>();
@@ -131,9 +131,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
     try {
       final page = await api.sellerList(1, 'in_progress');
       if (mounted) {
-        setState(() => _refundTotal = page.counts.isEmpty
-            ? page.total
-            : page.counts.values.fold(0, (sum, n) => sum + n));
+        setState(
+            () => _refundInProgress = page.counts['in_progress'] ?? page.total);
       }
     } catch (_) {
       // The badge is a convenience; the list itself reports its own errors.
@@ -324,7 +323,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
                   const Icon(Icons.currency_exchange, size: 18),
                   const SizedBox(width: 6),
                   const Text('Return/Refund'),
-                  if (_refundTotal > 0) ...[
+                  if (_refundInProgress > 0) ...[
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -335,7 +334,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
                             BorderRadius.circular(AppSizes.radiusFull),
                       ),
                       child: Text(
-                        '$_refundTotal',
+                        '$_refundInProgress',
                         style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
@@ -426,7 +425,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen>
                       context
                           .read<SellerBloc>()
                           .add(const SellerOrdersLoadRequested(silent: true));
-                      _loadRefundTotal();
+                      _loadRefundInProgress();
                     },
                   ),
                 ],
