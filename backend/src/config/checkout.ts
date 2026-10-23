@@ -30,3 +30,11 @@ export function acceptanceScanIntervalMs(): number {
 export function operationWorkerIntervalMs(): number {
   return positiveIntegerFromEnv('OPERATION_WORKER_INTERVAL_MS', 15 * 1000);
 }
+
+/**
+ * Whether buyers can submit delivered-item refund requests and sellers can decide them. Reading
+ * requests stays available, and already-approved refunds keep settling, when this is off.
+ */
+export function deliveredRefundsEnabled(): boolean {
+  return process.env.DELIVERED_REFUNDS_ENABLED === 'true';
+}

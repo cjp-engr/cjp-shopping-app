@@ -9,6 +9,7 @@ import { claimNextOperation, failOperation } from './paymentOperationService.js'
 import { LEASE_MS, orderOperationKey } from './paymentOperationPolicy.js';
 import { releaseIntentOperation } from './paymentRelease.js';
 import { resumeLegacyRefund } from './legacyRefund.js';
+import { resumeDeliveredRefund, reconcileReviewDeliveredRefunds } from './deliveredRefund.js';
 
 const LOG_PREFIX = '[PaymentWorker]';
 const MAX_OPERATIONS_PER_RUN = 50;
@@ -60,6 +61,14 @@ async function runOperation(operation: IPaymentOperation, owner: string, now: Da
   } else if (operation.action === 'release') {
     await resumeRelease(operation, owner);
   } else if (operation.action === 'refund') {
+    if (operation.refundPurpose === 'delivered_items') {
+      await resumeDeliveredRefund(operation, owner, now);
+      return;
+    }
+    if (operation.refundPurpose) {
+      await failOperation(operation.id, owner, { code: 'refund_purpose_unknown', message: 'Unknown refund purpose' }, { ambiguous: true }, now);
+      return;
+    }
     await resumeLegacyRefund(operation, owner, now);
   }
 }
@@ -219,6 +228,7 @@ export async function processDueOperations(owner: string, clock: Clock = () => n
   const repairedReleases = await repairSucceededReleases();
   const releasedOrphans = await repairOrphanedReleases(now());
   const revertedCaptures = await repairOrphanedCaptures(now());
+  await reconcileReviewDeliveredRefunds(now());
   return handled + repairedReleases + releasedOrphans + revertedCaptures;
 }
 

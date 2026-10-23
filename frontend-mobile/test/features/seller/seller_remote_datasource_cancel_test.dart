@@ -31,7 +31,8 @@ void main() {
     await dataSource.cancelOrder('o1', '  Out of stock  ');
 
     verify(() => dio.put('/seller/orders/o1/status',
-        data: {'status': 'cancelled', 'cancelReason': 'Out of stock'})).called(1);
+            data: {'status': 'cancelled', 'cancelReason': 'Out of stock'}))
+        .called(1);
   });
 
   test('reads the payment outcome of a card cancellation', () async {

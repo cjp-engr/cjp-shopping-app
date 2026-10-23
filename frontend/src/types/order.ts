@@ -9,7 +9,17 @@ export interface PaymentMethod {
   cardHolder?: string;
 }
 
+/** Units of one order line that were paid back, and approved ones still being paid back. */
+export interface RefundedItemMark { lineId: string; refunded: number; processing: number }
+
 export interface Order {
+  /** Items with refunded units, for marking them in the order lists. */
+  refundedItems?: RefundedItemMark[];
+  deliveredAt?: string;
+  refundRequestDeadlineAt?: string;
+  refundedAmountMinor?: number;
+  refundReservedAmountMinor?: number;
+  currency?: string;
   id: string;
   userId: string;
   items: CartItem[];

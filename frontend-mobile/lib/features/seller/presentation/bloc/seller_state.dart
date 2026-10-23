@@ -57,18 +57,20 @@ class SellerState extends Equatable {
     );
   }
 
-  int get activeOrderCount =>
-      orders.where((o) => o.isActive).length;
+  int get activeOrderCount => orders.where((o) => o.isActive).length;
 
-  int get pendingOrderCount =>
-      orders.where((o) => o.isPending).length;
+  int get pendingOrderCount => orders.where((o) => o.isPending).length;
 
-  double get revenue => orders
-      .where((o) => o.status == 'delivered')
-      .fold(0, (sum, o) => sum + o.total);
+  double get revenue =>
+      orders.where((o) => o.status == 'delivered').fold(0, (sum, o) {
+        final factor = o.currency.toLowerCase() == 'jpy' ? 1 : 100;
+        final minor = (o.total * factor).round() - o.refundedAmountMinor;
+        return sum + (minor < 0 ? 0 : minor) / factor;
+      });
 
   int get actionableOrderCount => orders
-      .where((o) => ['pending', 'preparing', 'processing', 'shipped'].contains(o.status))
+      .where((o) =>
+          ['pending', 'preparing', 'processing', 'shipped'].contains(o.status))
       .length;
 
   @override

@@ -18,7 +18,7 @@ export class PaymentProvider {
   create(params: any) {
     const id = `pi_flow_${++this.counter}`;
     this.intents.set(id, {
-      id, status: 'requires_capture', capture_method: 'manual', amount: params.amountMinor,
+      id, status: 'requires_capture', capture_method: 'manual', livemode: false, amount: params.amountMinor,
       amount_capturable: params.amountMinor, amount_received: 0, currency: params.currency,
       customer: params.customerId, metadata: params.metadata, client_secret: `test_secret_${id}`,
       latest_charge: { id: `ch_${id}`, paid: true, amount: params.amountMinor, amount_refunded: 0,
@@ -51,16 +51,16 @@ export class PaymentProvider {
     }
     return { id, status: intent.status };
   }
-  refund(id: string, amount: number, key: string, orderId: string) {
+  refund(id: string, amount: number, key: string, orderId: string, refundRequestId?: string) {
     this.refundCalls.push(key);
     const existing = this.refunds.find(refund => refund.metadata.operationKey === key);
     if (existing) return structuredClone(existing);
     const intent = this.intents.get(id);
-    if (intent.status !== 'succeeded' || amount !== intent.amount_received) throw new Error('Invalid test refund');
+    if (intent.status !== 'succeeded' || amount <= 0 || amount + intent.latest_charge.amount_refunded > intent.amount_received) throw new Error('Invalid test refund');
     const refund = { id: `re_flow_${this.refunds.length + 1}`, payment_intent: id, amount, currency: intent.currency,
-      status: 'succeeded', metadata: { orderId, operationKey: key } };
+      status: 'succeeded', metadata: { orderId, operationKey: key, ...(refundRequestId ? { refundRequestId } : {}) } };
     this.refunds.push(refund);
-    intent.latest_charge.amount_refunded = amount;
+    intent.latest_charge.amount_refunded += amount;
     return structuredClone(refund);
   }
   blockResponseAfter(action: 'capture' | 'release' | 'refund'): Promise<void> {
@@ -73,13 +73,13 @@ export class PaymentProvider {
         const chunks = [];
         for await (const chunk of request) chunks.push(chunk);
         const args = JSON.parse(Buffer.concat(chunks).toString()) as any[];
-        const [id, amount, key, orderId] = args;
+        const [id, amount, key, orderId, refundRequestId] = args;
         const action = request.url?.slice(1);
         let result;
         if (action === 'retrieve') result = this.retrieve(id);
         else if (action === 'capture') result = this.capture(id, amount, key);
         else if (action === 'release') result = this.release(id, amount);
-        else if (action === 'refund') result = this.refund(id, amount, key, orderId);
+        else if (action === 'refund') result = this.refund(id, amount, key, orderId, refundRequestId);
         else if (action === 'list-refunds') result = this.refunds.filter(refund => refund.payment_intent === id);
         else if (action === 'retrieve-refund') result = this.refunds.find(refund => refund.id === id);
         else { response.writeHead(404).end(); return; }

@@ -10,6 +10,7 @@ import { Spinner } from '../components/common/Spinner';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { getStatusConfig } from '../utils/orderUtils';
+import { ordersInTab } from '../utils/orderTabs';
 import { canBuyerCancel } from '../utils/orderPayment';
 import { fetchReviewStatuses, fetchSingleReview } from '../utils/reviewUtils';
 import type { ReviewData } from '../utils/reviewUtils';
@@ -24,8 +25,10 @@ import {
   Eye,
 } from 'lucide-react';
 import { ReviewModal } from '../components/common/ReviewModal';
+import { CompletedRefunds } from '../components/orders/CompletedRefunds';
+import { RefundItemMark } from '../components/orders/RefundItemMark';
 
-type TabKey = 'all' | 'pending' | 'preparing' | 'to-ship' | 'to-receive' | 'complete' | 'cancelled';
+type TabKey = 'all' | 'pending' | 'preparing' | 'to-ship' | 'to-receive' | 'complete' | 'cancelled' | 'refunds';
 
 const TABS: { key: TabKey; label: string; statuses: OrderStatus[] }[] = [
   { key: 'all',        label: 'All',        statuses: [] },
@@ -34,6 +37,7 @@ const TABS: { key: TabKey; label: string; statuses: OrderStatus[] }[] = [
   { key: 'to-ship',    label: 'To Ship',    statuses: ['processing'] },
   { key: 'to-receive', label: 'To Receive', statuses: ['shipped'] },
   { key: 'complete',   label: 'Complete',   statuses: ['delivered'] },
+  { key: 'refunds', label: 'Return/Refund', statuses: [] },
   { key: 'cancelled',  label: 'Cancelled',  statuses: ['cancelled'] },
 ];
 
@@ -131,12 +135,8 @@ export const OrderHistory: React.FC = () => {
     }
   };
 
-  const filteredOrders = activeTab === 'all'
-    ? orders
-    : orders.filter(o => TABS.find(t => t.key === activeTab)!.statuses.includes(o.status));
-
-  const tabCount = (tab: typeof TABS[number]) =>
-    tab.key === 'all' ? orders.length : orders.filter(o => tab.statuses.includes(o.status)).length;
+  const activeTabDef = TABS.find(t => t.key === activeTab)!;
+  const filteredOrders = ordersInTab(activeTabDef.key, activeTabDef.statuses, orders);
 
   if (loading) {
     return (
@@ -181,7 +181,6 @@ export const OrderHistory: React.FC = () => {
       <div className="border-b border-gray-200" data-testid="order-tabs">
         <nav className="-mb-px flex gap-0 overflow-x-auto scrollbar-none" aria-label="Order status tabs">
           {TABS.map((tab) => {
-            const count = tabCount(tab);
             const isActive = activeTab === tab.key;
             return (
               <button
@@ -196,13 +195,6 @@ export const OrderHistory: React.FC = () => {
                 data-testid={`order-tab-${tab.key}`}
               >
                 {tab.label}
-                <span
-                  className={`inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-xs font-bold ${
-                    isActive ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-500'
-                  }`}
-                >
-                  {count}
-                </span>
               </button>
             );
           })}
@@ -210,7 +202,7 @@ export const OrderHistory: React.FC = () => {
       </div>
 
       {/* Orders list */}
-      {filteredOrders.length === 0 ? (
+      {activeTab === 'refunds' ? <CompletedRefunds /> : filteredOrders.length === 0 ? (
         <Card className="text-center py-16" data-testid="orders-empty">
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
             <Package className="w-8 h-8 text-gray-300" />
@@ -280,7 +272,7 @@ export const OrderHistory: React.FC = () => {
 
                   {/* Items */}
                   <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {sellerItems.map(({ product, quantity, selectedVariant }) => {
+                    {sellerItems.map(({ lineId, product, quantity, selectedVariant }) => {
                       const existingReview = reviewMap.get(product.id);
                       const itemKey = selectedVariant?.key ?? product.id;
                       const rawPrice = selectedVariant?.price ?? product.price;
@@ -309,6 +301,7 @@ export const OrderHistory: React.FC = () => {
                                 </p>
                               )}
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">x{quantity}</p>
+                              <RefundItemMark marks={order.refundedItems} lineId={lineId} quantity={quantity} />
                             </div>
                             <div className="text-right flex-shrink-0">
                               <p className="text-sm font-semibold text-primary-600">

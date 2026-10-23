@@ -36,6 +36,7 @@ interface RawItemProduct {
 }
 
 interface RawItem {
+  _id?: string;
   product?: RawItemProduct | string;
   productName?: string;
   productImage?: string;
@@ -346,6 +347,7 @@ class OrderService {
         };
 
         return {
+          lineId: item._id,
           product,
           quantity: item.quantity,
           sellerId,
@@ -375,6 +377,12 @@ class OrderService {
       authorizationExpiresAt: order.authorizationExpiresAt,
       cancelledByRole: order.cancelledByRole,
       cancelledAt: order.cancelledAt,
+      deliveredAt: order.deliveredAt,
+      refundRequestDeadlineAt: order.refundRequestDeadlineAt,
+      refundedItems: order.refundedItems,
+      refundedAmountMinor: order.refundedAmountMinor,
+      refundReservedAmountMinor: order.refundReservedAmountMinor,
+      currency: order.currency,
     };
   }
 }

@@ -1,5 +1,36 @@
 # Local payment verification — 2026-10-18
 
+## Delivered-item refunds: continuation verification
+
+Fresh manual service-flow check on 2026-10-18 used Stripe test mode only and new
+fixtures in `tokomart_delivered_refund_manual_test` on port27018. The owner's
+standalone database, web/backend processes and automation folders were untouched.
+The verifier uses Stripe's published `pm_card_visa` fixture, following
+[Stripe testing documentation](https://docs.stripe.com/testing).
+
+- Order `6ad4c7ea81753138fa4b2848`, intent `pi_3URu0iJrMKRA89iL00ezozMh`.
+- Initial authorization: requires_capture, zero received. Existing seller acceptance
+  captured USD2660 minor units. Existing shipping/receipt transitions recorded delivery.
+- Requests `6ad4c7ec81753138fa4b2871` and `6ad4c7ee81753138fa4b2892` each selected
+  one unit and refunded USD1080 minor units after approval.
+- Refunds `re_3URu0iJrMKRA89iL0S5xGVos` and `re_3URu0iJrMKRA89iL05DO9jFA`
+  both verified succeeded. Total refunded2160; original shipping500 remained charged.
+- Final fulfillment delivered; payment partially_refunded; no reserved refund balance.
+  Product stock8 and soldCount2 stayed unchanged. Original order total26.60 remained.
+
+Reproduce from backend with `node --import tsx scripts/verify-delivered-refunds.mjs
+--run-test-mode` (one command). It refuses live keys and uses a fixed local `_test`
+database. Safe result JSON is written to ignored
+`backend/test-results/delivered-refund-manual-evidence.json`; no secrets are printed.
+Each execution creates a new test payment and fresh fixtures; do not run repeatedly
+without a reason. No hosted feature flags were enabled.
+
+This check exercised the actual backend services and Stripe, not the web/browser
+or native Stripe UI. New web logic tests and Flutter BLoC/widget tests supplement
+database race/restart/provider-mock tests. Owner UI acceptance remains outstanding.
+Per current AGENTS.md, no Playwright/Patrol work was done in this continuation.
+The older automation evidence below describes earlier authorized work only.
+
 ## Environment
 
 - Web: `http://localhost:5173`, built with `VITE_CHECKOUT_FLOW=manual_capture`.
@@ -106,3 +137,14 @@ Use the running `emulator-5554` and the same isolated backend. Run these Patrol 
 - `patrol_test/2_buyer/local_payment_settlement_test.dart`: requires explicit fresh `LOCAL_ACCEPT_ORDER_ID` (seller s1), `LOCAL_CANCEL_ORDER_ID` (the other seller), and `LOCAL_EXPIRED_ORDER_ID` (the accelerated-expiry order). These are one-time mutation fixtures; create new orders when repeating the settlement suite.
 
 On this Windows setup the runner used the Dart executable directly, JDK `C:/Program Files/Eclipse Adoptium/jdk-17.0.19.10-hotspot`, and a process-only `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=D:/Files/Automation/shopping-app-automation/frontend-mobile/.dart_tool/local-payment-verification/unused-socket-directory`. That final path must remain nonexistent to let Java fall back to TCP loopback. The sandbox required an approved external runner for the process signal handler and SDK cache. Generated `patrol_test/test_bundle.dart` changes are excluded from the final work.
+
+## Shipping policy amendment — 2026-10-18
+
+The shipping-aware backend and web/mobile quote changes were checked using mocked
+Stripe integration tests and unit/widget tests. The updated manual test script
+expects 1080 then 1580 refunded (including shipping500 once), total2660, payment
+status refunded, and delivered fulfillment unchanged. It writes a separate
+delivered-refund-shipping-evidence.json file. This updated actual Stripe check has
+not been rerun; the earlier real Stripe evidence above used the original policy
+and retained shipping. Owner UI acceptance remains required. Change of mind is
+pending-only and rejected for delivered requests.

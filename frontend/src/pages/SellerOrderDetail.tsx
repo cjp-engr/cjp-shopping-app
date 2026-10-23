@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import type { Order } from '../types/order';
+import type { RefundRequest } from '../types/refund';
 import { canSellerCancel } from '../utils/orderPayment';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
@@ -9,6 +10,11 @@ import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { getStatusConfig, formatPaymentMethodType, formatDeliveryOption } from '../utils/orderUtils';
 import sellerService, { SellerOrderError } from '../services/sellerService';
+import { refundService } from '../services/refundService';
+import { netOrderRevenue, refundMoney } from '../utils/refund';
+import { OrderRefundBadge } from '../components/orders/OrderRefundBadge';
+import { OrderRefundsSection } from '../components/orders/OrderRefundsSection';
+import { RefundItemMark } from '../components/orders/RefundItemMark';
 import {
   acceptanceDeadlineText, acceptanceErrorMessage, canAcceptOrder, cancelReasonError, cancellationErrorMessage,
   cancellationOutcomeMessage, CAPTURE_POLL_INTERVAL_MS, isCapturePending, isStaleCancellation, MAX_CANCEL_REASON_LENGTH,
@@ -62,6 +68,15 @@ export const SellerOrderDetail: React.FC = () => {
   const [now, setNow] = useState(() => new Date());
   const [cancelDialog, setCancelDialog] = useState<CancelDialogState>(CLOSED_CANCEL_DIALOG);
   const [currentStatus, setCurrentStatus] = useState(initialOrder?.status ?? '');
+  // The order's refund requests in every state, for the refunds section; a failed load just leaves it out.
+  const [refunds, setRefunds] = useState<RefundRequest[]>([]);
+  const refundedAmountMinor = order?.refundedAmountMinor ?? 0;
+  useEffect(() => {
+    if (!orderIdParam) return;
+    let cancelled = false;
+    refundService.sellerOrderRefunds(orderIdParam).then(list => { if (!cancelled) setRefunds(list); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [orderIdParam, refundedAmountMinor]);
 
   useEffect(() => {
     let cancelled = false;
@@ -256,10 +271,13 @@ export const SellerOrderDetail: React.FC = () => {
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{formatDate(order.createdAt)}</p>
         </div>
-        <Badge variant={statusConfig.variant} className="flex items-center gap-1.5 px-3 py-1.5 text-sm" data-testid="seller-order-status-badge">
-          <StatusIcon className="w-4 h-4" />
-          {statusConfig.label}
-        </Badge>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <OrderRefundBadge order={order} />
+          <Badge variant={statusConfig.variant} className="flex items-center gap-1.5 px-3 py-1.5 text-sm" data-testid="seller-order-status-badge">
+            <StatusIcon className="w-4 h-4" />
+            {statusConfig.label}
+          </Badge>
+        </div>
       </div>
 
       {/* Status error */}
@@ -303,7 +321,7 @@ export const SellerOrderDetail: React.FC = () => {
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Items Ordered</h2>
         </div>
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
-          {order.items.map(({ product, quantity, selectedVariant }) => {
+          {order.items.map(({ lineId, product, quantity, selectedVariant }) => {
             const rawPrice = selectedVariant?.price ?? product.price;
             const discountPercent =
               selectedVariant?.discount ?? product.discount ?? 0;
@@ -333,6 +351,7 @@ export const SellerOrderDetail: React.FC = () => {
                     </p>
                   )}
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">x{quantity}</p>
+                  <RefundItemMark marks={order.refundedItems} lineId={lineId} quantity={quantity} />
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-sm font-semibold text-primary-600 dark:text-primary-400">
@@ -409,8 +428,22 @@ export const SellerOrderDetail: React.FC = () => {
             <span>Total</span>
             <span className="tabular-nums">{formatCurrency(order.total)}</span>
           </div>
+          {refundedAmountMinor > 0 && (
+            <>
+              <div className="flex justify-between text-green-700 dark:text-green-400">
+                <span>Refunded</span>
+                <span className="tabular-nums">−{refundMoney(refundedAmountMinor, order.currency ?? 'usd')}</span>
+              </div>
+              <div className="flex justify-between font-bold text-gray-900 dark:text-gray-100 pt-2 border-t border-gray-100 dark:border-gray-700">
+                <span>Net after refunds</span>
+                <span className="tabular-nums">{formatCurrency(netOrderRevenue(order))}</span>
+              </div>
+            </>
+          )}
         </div>
       </Card>
+
+      <OrderRefundsSection requests={refunds} />
 
       {/* Shipping address */}
       <Card>

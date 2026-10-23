@@ -8,6 +8,10 @@ export const PAYMENT_OPERATION_STATUSES = [
 ] as const;
 export type PaymentOperationStatus = typeof PAYMENT_OPERATION_STATUSES[number];
 
+/** Refunds without a purpose are the older cancelled-order refunds (resumeLegacyRefund). */
+export const REFUND_PURPOSES = ['delivered_items'] as const;
+export type RefundPurpose = typeof REFUND_PURPOSES[number];
+
 export interface IPaymentOperation extends Document {
   action: PaymentOperationAction;
   orderId?: mongoose.Types.ObjectId;
@@ -21,6 +25,11 @@ export interface IPaymentOperation extends Document {
   nextAttemptAt?: Date;
   paymentIntentId?: string;
   stripeObjectId?: string;
+  /** Delivered-item refunds only: what the refund is for, the request it settles, and its immutable amount. */
+  refundPurpose?: RefundPurpose;
+  refundRequestId?: mongoose.Types.ObjectId;
+  amountMinor?: number;
+  currency?: string;
   completedAt?: Date;
   lastError?: { code: string; message: string; at: Date };
   createdAt: Date;
@@ -40,6 +49,10 @@ const PaymentOperationSchema = new Schema<IPaymentOperation>({
   nextAttemptAt: { type: Date },
   paymentIntentId: { type: String },
   stripeObjectId: { type: String },
+  refundPurpose: { type: String, enum: REFUND_PURPOSES },
+  refundRequestId: { type: Schema.Types.ObjectId, ref: 'RefundRequest' },
+  amountMinor: { type: Number, min: 1 },
+  currency: { type: String, lowercase: true },
   completedAt: { type: Date },
   lastError: {
     code: String,

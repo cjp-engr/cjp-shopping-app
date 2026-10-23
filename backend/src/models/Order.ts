@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { IAddress } from './User.js';
+import type { RefundAllocationV1 } from '../services/refundAllocation.js';
 
 export type OrderStatus = 'awaiting_payment' | 'pending' | 'preparing' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
@@ -43,6 +44,9 @@ export interface IOrder extends Document {
   status: OrderStatus;
   estimatedDelivery?: Date;
   shippedAt?: Date;
+  /** Recorded delivery time and the end of the buyer's refund window (delivery + 168h); written once, never backfilled. */
+  deliveredAt?: Date;
+  refundRequestDeadlineAt?: Date;
   refundRequestedAt?: Date;
   cancelReason?: string;
   /** Who cancelled the order and when; written once by the cancellation claim. Older orders have none. */
@@ -65,6 +69,16 @@ export interface IOrder extends Document {
   capturedAt?: Date;
   stockRestoredAt?: Date;
   refundId?: string;
+  /** Refundable amount of each unit, built once from this order's snapshot (see refundAllocation.ts). */
+  refundAllocation?: RefundAllocationV1;
+  /** The one unresolved delivered-item refund request, if any. */
+  activeRefundRequestId?: mongoose.Types.ObjectId;
+  refundedAmountMinor?: number;
+  refundReservedAmountMinor?: number;
+  refundedShippingMinor?: number;
+  refundReservedShippingMinor?: number;
+  /** Units that are reserved by an unresolved request or already refunded; they cannot be requested again. */
+  refundUnitsTaken?: Array<{ lineId: string; ordinal: number }>;
   paymentError?: { code: string; message: string; at: Date };
   createdAt: Date;
   updatedAt: Date;
@@ -72,7 +86,7 @@ export interface IOrder extends Document {
 
 export const PAYMENT_STATUSES = [
   'awaiting_authorization', 'authorized', 'capture_pending', 'captured',
-  'release_pending', 'released', 'refund_pending', 'refunded', 'failed', 'not_required',
+  'release_pending', 'released', 'refund_pending', 'refunded', 'partially_refunded', 'failed', 'not_required',
 ] as const;
 export type PaymentStatus = typeof PAYMENT_STATUSES[number];
 
@@ -125,6 +139,19 @@ const PaymentMethodSchema = new Schema<IPaymentMethod>({
   cardHolder: String
 });
 
+const RefundAllocationSchema = new Schema({
+  version: { type: Number, required: true },
+  currency: { type: String, required: true },
+  capturedAmountMinor: { type: Number, required: true },
+  shippingMinor: { type: Number, required: true },
+  units: [new Schema({
+    lineId: { type: String, required: true },
+    ordinal: { type: Number, required: true },
+    merchandiseMinor: { type: Number, required: true },
+    taxMinor: { type: Number, required: true },
+  }, { _id: false })],
+}, { _id: false });
+
 const OrderSchema = new Schema<IOrder>({
   userId: {
     type: Schema.Types.ObjectId,
@@ -173,6 +200,16 @@ const OrderSchema = new Schema<IOrder>({
   capturedAt: Date,
   stockRestoredAt: Date,
   refundId: { type: String },
+  refundAllocation: { type: RefundAllocationSchema },
+  activeRefundRequestId: { type: Schema.Types.ObjectId },
+  refundedAmountMinor: { type: Number, min: 0 },
+  refundReservedAmountMinor: { type: Number, min: 0 },
+  refundedShippingMinor: { type: Number, min: 0 },
+  refundReservedShippingMinor: { type: Number, min: 0 },
+  refundUnitsTaken: {
+    type: [new Schema({ lineId: { type: String, required: true }, ordinal: { type: Number, required: true } }, { _id: false })],
+    default: undefined,
+  },
   paymentError: {
     code: String,
     message: String,
@@ -223,6 +260,8 @@ const OrderSchema = new Schema<IOrder>({
   },
   estimatedDelivery: Date,
   shippedAt: Date,
+  deliveredAt: Date,
+  refundRequestDeadlineAt: Date,
   refundRequestedAt: Date,
   cancelReason: { type: String },
   cancelledByRole: { type: String, enum: CANCELLED_BY_ROLES },

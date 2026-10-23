@@ -1,4 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { RefundRequestReview } from '../components/seller/RefundRequestReview';
+import { netOrderRevenue, sellerRefundBadge } from '../utils/refund';
+import { OrderRefundBadge } from '../components/orders/OrderRefundBadge';
+import { RefundItemMark } from '../components/orders/RefundItemMark';
+import { refundService } from '../services/refundService';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import type { Product } from '../types/product';
@@ -15,7 +20,7 @@ import {
   Package, Plus, Edit, Trash2, Truck, CheckCircle,
   XCircle, Clock, AlertCircle, ShoppingBag, Store,
   ImageOff, DollarSign, Tag, ChevronRight, ClipboardList,
-  Eye, Info,
+  Eye, Info, RotateCcw,
 } from 'lucide-react';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { getStatusConfig } from '../utils/orderUtils';
@@ -54,7 +59,7 @@ const STATUS_BORDER_CLASS: Record<string, string> = {
   cancelled:  'border-l-red-400',
 };
 
-type Tab = 'products' | 'orders' | 'vouchers';
+type Tab = 'products' | 'orders' | 'vouchers' | 'refunds';
 
 type SellerOrder = Order & { buyer?: { id: string; firstName: string; lastName: string; email: string } };
 
@@ -66,7 +71,7 @@ export const SellerDashboard: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [tab, setTab] = useState<Tab>(() => {
     const t = searchParams.get('tab');
-    return (t === 'orders' || t === 'vouchers') ? t : 'products';
+    return (t === 'orders' || t === 'vouchers' || t === 'refunds') ? t : 'products';
   });
 
   // Products state
@@ -83,6 +88,9 @@ export const SellerDashboard: React.FC = () => {
   const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
   const acceptInFlight = useRef(new Set<string>());
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
+  // Requests still waiting for the seller, for the Return/Refund tab badge (hidden at 0). Reads stay available even when new requests are switched off.
+  const [refundInProgress, setRefundInProgress] = useState(0);
+  const loadRefundInProgress = () => { void refundService.sellerList(1, 'in_progress').then(page => setRefundInProgress(sellerRefundBadge(page))).catch(() => {}); };
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; productId: string | null; loading: boolean }>({ open: false, productId: null, loading: false });
   const [shipDialogOrderId, setShipDialogOrderId] = useState<string | null>(null);
@@ -147,6 +155,7 @@ export const SellerDashboard: React.FC = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadProducts();
     loadOrders();
+    loadRefundInProgress();
   }, []);
 
   // Keep acceptance deadlines current so an expired order stops offering the accept button
@@ -366,7 +375,7 @@ export const SellerDashboard: React.FC = () => {
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(orders.filter(o => o.status === 'delivered').reduce((s, o) => s + o.total, 0))}
+              {formatCurrency(orders.filter(o => o.status === 'delivered').reduce((s, o) => s + netOrderRevenue(o), 0))}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Revenue</p>
           </div>
@@ -383,6 +392,7 @@ export const SellerDashboard: React.FC = () => {
                 { key: 'products', label: 'My Products', Icon: ShoppingBag, badge: null },
                 { key: 'orders',   label: 'Orders',      Icon: Package,     badge: actionableCount || null },
                 { key: 'vouchers', label: 'Vouchers',    Icon: Tag,         badge: null },
+                { key: 'refunds',  label: 'Return/Refund', Icon: RotateCcw, badge: refundInProgress || null },
               ] as const).map(({ key, label, Icon, badge }) => (
                 <button
                   key={key}
@@ -625,6 +635,7 @@ export const SellerDashboard: React.FC = () => {
                       <StatusIcon className="w-3 h-3" />
                       {cfg.label}
                     </Badge>
+                    <OrderRefundBadge order={order} />
                     <div className="flex-1" />
                     <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{formatDate(order.createdAt)}</span>
                     <span className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{formatCurrency(order.total)}</span>
@@ -692,7 +703,7 @@ export const SellerDashboard: React.FC = () => {
 
                     {/* ── Items ── */}
                     <div className="space-y-1.5">
-                      {order.items.map(({ product, quantity, selectedVariant }) => {
+                      {order.items.map(({ lineId, product, quantity, selectedVariant }) => {
                         const rawPrice = selectedVariant?.price ?? product.price;
                         const discountPercent =
                           selectedVariant?.discount ?? product.discount ?? 0;
@@ -734,6 +745,7 @@ export const SellerDashboard: React.FC = () => {
                                   Qty {quantity} × {formatCurrency(rawPrice)}
                                 </p>
                               )}
+                              <RefundItemMark marks={order.refundedItems} lineId={lineId} quantity={quantity} />
                             </div>
                             <p className="text-sm font-bold text-gray-900 dark:text-gray-100 flex-shrink-0 tabular-nums">
                               {formatCurrency(salePrice * quantity)}
@@ -784,6 +796,11 @@ export const SellerDashboard: React.FC = () => {
             });
           })()}
         </div>
+      )}
+
+      {/* ── Return/Refund Tab ── */}
+      {tab === 'refunds' && (
+        <RefundRequestReview onUpdated={() => { void loadOrders(); loadRefundInProgress(); }} />
       )}
 
       {/* ── Vouchers Tab ── */}

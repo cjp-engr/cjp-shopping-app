@@ -1,5 +1,12 @@
 # Payment recovery and cancellation
 
+Delivered refund shipping: the final paid-unit seller-fault quote may include the
+original allocated shipping fee. Shipping is tracked in refundedShippingMinor and
+refundReservedShippingMinor separately from item units but included in total refund
+aggregates. Reconciliation must preserve both reservations on ambiguous outcomes;
+never clear shipping or issue a second fee refund manually. Older requests without
+shippingMinor keep their original item-only quote. Change of mind is pending-only.
+
 ## Buyer cancellation
 
 For orders placed using manual capture, the owning buyer may cancel while the order
@@ -83,6 +90,46 @@ and `PaymentOperation` entries in `needs_support`; a pending release is not proo
 hold has already disappeared from the buyer's bank.
 
 ## Verification
+
+### Delivered-item partial refunds
+
+Approved requests have their own `RefundRequest` and a `PaymentOperation` purpose
+`delivered_items`, with key `refund-request:<requestId>:refund:1`. Purpose-less
+refund operations retain the existing legacy cancellation handler. Unknown
+purposes fail closed. Delivered refunds never restore stock, sold counts or coupons.
+
+Approval reserves selected unit ordinals and their exact quoted amount. Fulfillment
+stays delivered. Provider success atomically converts reserved amount to confirmed
+refunded amount, clears the active request and completes the operation. Shipping
+remains charged; refunding every merchandise unit can still be partially_refunded.
+
+Read-only provider/network failures before any possible refund creation retry with
+the normal bounded backoff. An uncertain create, inconsistent provider object or
+failed/cancelled/requires_action refund stays needs_review with its reservation
+intact. The worker reconciles all provider refund pages and stable metadata before
+another mutation. It never substitutes a fresh key for an uncertain refund.
+
+Pending provider refunds are polled using their saved ID. Signed refund events
+persist minimal request/intent hints in the existing inbox and retrieve current
+provider state, so duplicate or delayed events cannot repeat aggregate updates.
+Review polling is scheduled in batches with nextReconcileAt to avoid a permanently
+unresolved oldest batch starving later recoverable requests. Worker restarts can
+find a refund created before its response/reference was saved.
+
+For needs_review: inspect the request/order/operation references and current Stripe
+TEST-mode refund list. Verify intent, amount, currency, request/operation metadata,
+and all prior confirmed refunds. A later matching pending/succeeded provider refund
+can be reconciled by the worker. A pre-create read failure that exhausts retries,
+external refund/dispute, permanently failed refund, or no unambiguous matching
+provider object requires an operator decision; there is no new admin screen or
+automatic replacement refund. Do not manually clear units/reservations, adjust
+the original order total or reset an uncertain operation to create again.
+
+The dedicated manual verifier is `backend/scripts/verify-delivered-refunds.mjs`.
+It requires --run-test-mode, refuses non-test Stripe keys, and uses only new fixtures
+in `tokomart_delivered_refund_manual_test` on 127.0.0.1:27018. It does not connect to
+27017, change existing orders or delete records. Keep its evidence separate from
+mocked test suites and actual web/mobile UI acceptance.
 
 Tests cover seller cancellation (ownership by persisted `sellerId`, reason validation,
 unsupported shapes, repeat requests keeping the first actor, release timeout finished by the

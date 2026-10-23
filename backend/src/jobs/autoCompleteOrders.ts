@@ -1,22 +1,12 @@
-import Order from '../models/Order.js';
+import { autoDeliverShippedOrders } from '../services/orderDelivery.js';
 
-const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 const CHECK_INTERVAL_MS = 60 * 60 * 1000; // run every hour
 
 async function autoCompleteOrders(): Promise<void> {
-  const cutoff = new Date(Date.now() - TWO_DAYS_MS);
+  const completed = await autoDeliverShippedOrders();
 
-  const result = await Order.updateMany(
-    {
-      status: 'shipped',
-      shippedAt: { $lte: cutoff },
-      refundRequestedAt: { $exists: false }
-    },
-    { $set: { status: 'delivered' } }
-  );
-
-  if (result.modifiedCount > 0) {
-    console.log(`[autoCompleteOrders] Auto-completed ${result.modifiedCount} order(s)`);
+  if (completed > 0) {
+    console.log(`[autoCompleteOrders] Auto-completed ${completed} order(s)`);
   }
 }
 

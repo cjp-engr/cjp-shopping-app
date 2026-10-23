@@ -62,12 +62,21 @@ class OrderPaymentNoticeCard extends StatelessWidget {
       padding: const EdgeInsets.all(AppSizes.md),
       decoration: BoxDecoration(
         color: style.background,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(style.icon, size: 20, color: style.foreground),
+          // The icon sits in its own round badge so it reads as a status mark, not as text.
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: style.foreground.withAlpha(28),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(style.icon, size: 18, color: style.foreground),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -90,14 +99,37 @@ class OrderPaymentNoticeCard extends StatelessWidget {
                   ),
                 ),
                 if (deadlineText != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    deadlineText!,
-                    key: const Key('order-acceptance-deadline'),
-                    style: textTheme.bodySmall?.copyWith(
-                      color: style.foreground,
-                      fontWeight: FontWeight.w600,
-                      height: 1.4,
+                  const SizedBox(height: 10),
+                  // The deadline is the one thing to act on, so it gets its own pill with a clock.
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: style.foreground.withAlpha(24),
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusFull),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.schedule,
+                              size: 14, color: style.foreground),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              deadlineText!,
+                              key: const Key('order-acceptance-deadline'),
+                              style: textTheme.bodySmall?.copyWith(
+                                color: style.foreground,
+                                fontWeight: FontWeight.w700,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

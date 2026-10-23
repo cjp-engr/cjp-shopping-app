@@ -1,4 +1,5 @@
 import 'dart:developer' as dev;
+import '../../../refunds/presentation/refund_request_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:toko_mart/keys.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,6 +22,8 @@ import '../../../../shared/widgets/review_bottom_sheet.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import 'order_payment_notice_card.dart';
+import '../../domain/refund_mark.dart';
+import '../widgets/refund_item_badge.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final String orderId;
@@ -79,6 +82,15 @@ class _OrderDetailView extends StatefulWidget {
 class _OrderDetailViewState extends State<_OrderDetailView> {
   // productId → { rating, comment, _id, ... }
   final Map<String, Map<String, dynamic>> _reviews = {};
+
+  /// Bumped when the page is pulled down, so the refund panel reloads with the rest of the page.
+  final _refundRefresh = ValueNotifier<int>(0);
+
+  @override
+  void dispose() {
+    _refundRefresh.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -229,6 +241,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
           if (user != null) {
             context.read<OrderBloc>().add(OrdersLoadRequested(user.id));
           }
+          _refundRefresh.value++;
           await _fetchReviews();
         },
         child: SingleChildScrollView(
@@ -464,6 +477,11 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               const SizedBox(height: AppSizes.sm),
             ],
 
+            if (order.status == 'delivered') ...[
+              RefundRequestPanel(key: ValueKey('refund_${order.id}'), orderId: order.id, refreshSignal: _refundRefresh, onUpdated: () => context.read<OrderBloc>().add(OrdersLoadRequested(order.userId))),
+              const SizedBox(height: AppSizes.sm),
+            ],
+
             // ── Order items grouped by seller ───────────────────────────
             _SectionCard(
               child: Column(
@@ -506,7 +524,10 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _OrderItemRow(item: item),
+                          _OrderItemRow(
+                              item: item,
+                              mark: refundMarkFor(widget.order.refundedItems,
+                                  item.lineId, item.quantity)),
                           if (review != null)
                             _ReviewCard(
                               review: review,
@@ -969,7 +990,8 @@ class _SummaryRow extends StatelessWidget {
 
 class _OrderItemRow extends StatelessWidget {
   final OrderItemEntity item;
-  const _OrderItemRow({required this.item});
+  final RefundMark? mark;
+  const _OrderItemRow({required this.item, this.mark});
 
   @override
   Widget build(BuildContext context) {
@@ -1025,6 +1047,7 @@ class _OrderItemRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
+                  RefundItemBadge(mark: mark),
                   const SizedBox(height: 4),
                   item.hasDiscount
                       ? RichText(

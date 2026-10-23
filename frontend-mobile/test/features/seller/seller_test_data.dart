@@ -1,3 +1,4 @@
+import 'package:toko_mart/features/orders/domain/refund_mark.dart';
 import 'package:toko_mart/features/seller/data/models/seller_order_model.dart';
 
 SellerOrderData sellerOrder({
@@ -10,6 +11,11 @@ SellerOrderData sellerOrder({
   String? paymentType,
   String? cancelReason,
   String? cancelledByRole,
+  List<SellerOrderItemData> items = const [],
+  double total = 10,
+  int refundedAmountMinor = 0,
+  int refundReservedAmountMinor = 0,
+  List<RefundedItemMark> refundedItems = const [],
 }) =>
     SellerOrderData(
       id: id,
@@ -19,9 +25,12 @@ SellerOrderData sellerOrder({
       discount: 0,
       tax: 0,
       shipping: 0,
-      total: 10,
+      total: total,
       createdAt: '2026-10-17T00:00:00.000Z',
-      items: const [],
+      items: items,
+      refundedAmountMinor: refundedAmountMinor,
+      refundReservedAmountMinor: refundReservedAmountMinor,
+      refundedItems: refundedItems,
       paymentStatus: paymentStatus,
       acceptBy: acceptBy,
       canSellerCancelPending: canSellerCancelPending,

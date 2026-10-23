@@ -22,15 +22,15 @@ void main() {
   }
 
   test('HTTP 200 is completed', () async {
-    stubPut(() async =>
-        Response(requestOptions: options, statusCode: 200, data: {'success': true}));
+    stubPut(() async => Response(
+        requestOptions: options, statusCode: 200, data: {'success': true}));
     expect(await dataSource.updateOrderStatus('o1', 'preparing'),
         SellerStatusResult.completed);
   });
 
   test('HTTP 202 is resolving', () async {
-    stubPut(() async =>
-        Response(requestOptions: options, statusCode: 202, data: {'success': true}));
+    stubPut(() async => Response(
+        requestOptions: options, statusCode: 202, data: {'success': true}));
     expect(await dataSource.updateOrderStatus('o1', 'preparing'),
         SellerStatusResult.resolving);
   });
@@ -60,7 +60,7 @@ void main() {
   test('a transport error stays a plain message', () async {
     stubPut(() async => throw DioException.connectionError(
         requestOptions: options, reason: 'offline'));
-    await expectLater(
-        dataSource.updateOrderStatus('o1', 'preparing'), throwsA('No internet connection.'));
+    await expectLater(dataSource.updateOrderStatus('o1', 'preparing'),
+        throwsA('No internet connection.'));
   });
 }

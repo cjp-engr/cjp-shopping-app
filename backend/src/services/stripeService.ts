@@ -243,8 +243,8 @@ export async function listIntentRefunds(paymentIntentId: string): Promise<Stripe
   return refunds;
 }
 
-export async function createOrderRefund(paymentIntentId: string, amount: number, idempotencyKey: string, orderId: string): Promise<Stripe.Refund> {
-  return getStripe().refunds.create({ payment_intent: paymentIntentId, amount, reason: 'requested_by_customer', metadata: { orderId, operationKey: idempotencyKey } }, { idempotencyKey });
+export async function createOrderRefund(paymentIntentId: string, amount: number, idempotencyKey: string, orderId: string, refundRequestId?: string): Promise<Stripe.Refund> {
+  return getStripe().refunds.create({ payment_intent: paymentIntentId, amount, reason: 'requested_by_customer', metadata: { orderId, operationKey: idempotencyKey, ...(refundRequestId ? { refundRequestId } : {}) } }, { idempotencyKey });
 }
 
 export async function retrieveRefund(id: string): Promise<Stripe.Refund> {

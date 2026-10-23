@@ -20,7 +20,7 @@ export function paymentStatusNotice(order: Order): PaymentStatusNotice | null {
   if (order.paymentErrorCode === 'refund_review' || order.paymentErrorCode === 'legacy_payment_review') {
     return { tone: 'warning', title: 'Payment needs review', body: 'Please contact support to check this payment or refund. Do not pay again.' };
   }
-  if (!isManualCaptureOrder(order) && !['refund_pending', 'refunded'].includes(order.paymentStatus ?? '')) return null;
+  if (!isManualCaptureOrder(order) && !['refund_pending', 'refunded', 'partially_refunded'].includes(order.paymentStatus ?? '')) return null;
   switch (order.paymentStatus) {
     case 'authorized':
       return {
@@ -40,6 +40,8 @@ export function paymentStatusNotice(order: Order): PaymentStatusNotice | null {
       return { tone: 'neutral', title: 'Refund in progress', body: 'Your refund has been requested and is being processed.' };
     case 'refunded':
       return { tone: 'success', title: 'Refunded', body: 'Your payment was refunded.' };
+    case 'partially_refunded':
+      return { tone: 'neutral', title: 'Partially refunded', body: 'Part of your payment was refunded. See item refund history for the amounts and decisions.' };
     case 'failed':
       return {
         tone: 'warning',
