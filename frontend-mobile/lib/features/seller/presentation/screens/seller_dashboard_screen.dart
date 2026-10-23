@@ -900,7 +900,8 @@ class _OrderCard extends StatelessWidget {
     final refundLabel = orderRefundLabel(
         paymentStatus: order.paymentStatus,
         refundedAmountMinor: order.refundedAmountMinor,
-        refundReservedAmountMinor: order.refundReservedAmountMinor);
+        refundReservedAmountMinor: order.refundReservedAmountMinor,
+        refundRequestActive: order.refundRequestActive);
 
     return Material(
       color: context.surfaceColor,
@@ -1856,7 +1857,9 @@ class _SellerOrderDetailSheet extends StatelessWidget {
                                   refundedAmountMinor:
                                       order.refundedAmountMinor,
                                   refundReservedAmountMinor:
-                                      order.refundReservedAmountMinor)),
+                                      order.refundReservedAmountMinor,
+                                  refundRequestActive:
+                                      order.refundRequestActive)),
                         ],
                       ),
                     ),

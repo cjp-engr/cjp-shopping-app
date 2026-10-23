@@ -12,6 +12,7 @@ import 'package:toko_mart/features/orders/presentation/bloc/order_bloc.dart';
 import 'package:toko_mart/features/orders/presentation/bloc/order_event.dart';
 import 'package:toko_mart/features/orders/presentation/bloc/order_state.dart';
 import 'package:toko_mart/features/orders/presentation/screens/orders_screen.dart';
+import 'package:toko_mart/features/orders/presentation/widgets/refund_item_badge.dart';
 import 'package:toko_mart/features/refunds/data/refund_api.dart';
 
 class MockOrderBloc extends MockBloc<OrderEvent, OrderState>
@@ -30,6 +31,7 @@ OrderModel _order(String id, String status, String payment, String itemName,
       'total': 12,
       'createdAt': '2026-10-17T00:00:00.000Z',
       'paymentStatus': payment,
+      'refundedAmountMinor': refunded.isEmpty ? 0 : 1080,
       'items': [
         {
           '_id': 'line-$id',
@@ -126,5 +128,73 @@ void main() {
     expect(find.text('Partly Mug'), findsOneWidget);
     expect(find.text('Gone Mug'), findsNothing);
     expect(find.text('Refunded'), findsOneWidget);
+    // The order itself carries the violet chip (the payment notice below says the same in words).
+    Finder chip(String label) => find.descendant(
+        of: find.byType(RefundItemBadge), matching: find.text(label));
+    expect(chip('Partially refunded'), findsOneWidget);
+    expect(chip('Fully refunded'), findsNothing);
+  });
+
+  testWidgets(
+      'a delivered order without a refund has no order chip, and a cancelled refunded order has none either',
+      (tester) async {
+    when(() => orders.state)
+        .thenReturn(OrderState(status: OrderStatus.success, orders: [
+      _order('a', 'delivered', 'captured', 'Kept Mug'),
+      _order('c', 'cancelled', 'refunded', 'Cancelled Mug'),
+    ]));
+    await pump(tester);
+
+    await tester.tap(find.text('Complete'));
+    await tester.pumpAndSettle();
+    expect(
+        find.descendant(
+            of: find.byType(RefundItemBadge), matching: find.byType(Text)),
+        findsNothing);
+
+    await tester.tap(find.text('Cancelled'));
+    await tester.pumpAndSettle();
+    expect(
+        find.descendant(
+            of: find.byType(RefundItemBadge),
+            matching: find.text('Fully refunded')),
+        findsNothing);
+  });
+
+  testWidgets(
+      'a delivered order with a refund request that is not settled shows a chip on its card',
+      (tester) async {
+    OrderModel withRefund(Map<String, dynamic> extra) => OrderModel.fromJson({
+          '_id': 'a',
+          'status': 'delivered',
+          'subtotal': 10,
+          'total': 12,
+          'createdAt': '2026-10-17T00:00:00.000Z',
+          'paymentStatus': 'captured',
+          'items': const [
+            {
+              '_id': 'line-a',
+              'product': 'p-a',
+              'productName': 'Headphones',
+              'productPrice': 10,
+              'quantity': 1
+            }
+          ],
+          ...extra,
+        });
+    when(() => orders.state)
+        .thenReturn(OrderState(status: OrderStatus.success, orders: [
+      withRefund({'activeRefundRequestId': 'r1'})
+    ]));
+    await pump(tester);
+
+    await tester.tap(find.text('Complete'));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.descendant(
+            of: find.byType(RefundItemBadge),
+            matching: find.text('Refund requested')),
+        findsOneWidget);
   });
 }

@@ -110,3 +110,38 @@ describe('refund order card', () => {
     });
   });
 });
+
+describe('refund card status on the Return/Refund tab', () => {
+  it('says Partially refunded when only some of the order was refunded, and Fully refunded when all of it was', () => {
+    expect(render({ ...base, orderPaymentStatus: 'partially_refunded' })).toContain('Partially refunded');
+    expect(render({ ...base, orderPaymentStatus: 'refunded' })).toContain('Fully refunded');
+    expect(render(base)).not.toContain('Fully refunded');
+  });
+
+  it('keeps the plain Refunded label on the order page, where the card is one request of several', () => {
+    const html = renderToStaticMarkup(<MemoryRouter><RefundOrderCard request={{ ...base, orderPaymentStatus: 'partially_refunded' }} inOrder /></MemoryRouter>);
+    expect(html).not.toContain('Partially refunded'); expect(html).toContain('Refunded');
+  });
+});
+
+describe('refund card chip design', () => {
+  it('uses the violet and amber chips instead of the green and yellow badges', () => {
+    const refunded = render({ ...base, orderPaymentStatus: 'refunded' });
+    expect(refunded).toContain('bg-violet-100'); expect(refunded).toContain('Fully refunded');
+    const partial = render({ ...base, orderPaymentStatus: 'partially_refunded' });
+    expect(partial).toContain('border-violet-300'); expect(partial).toContain('Partially refunded');
+    const processing = render({ ...base, state: 'processing' });
+    expect(processing).toContain('bg-amber-100'); expect(processing).toContain('Refund processing');
+    expect(render({ ...base, state: 'requested' })).toContain('bg-amber-100');
+  });
+
+  it('keeps the red badge for a rejected request', () => {
+    const html = render({ ...base, state: 'rejected', rejectionReason: 'Used' });
+    expect(html).toContain('bg-red-100'); expect(html).not.toContain('bg-violet-100');
+  });
+
+  it('draws the chip on the order page card too', () => {
+    const html = renderToStaticMarkup(<MemoryRouter><RefundOrderCard request={base} inOrder /></MemoryRouter>);
+    expect(html).toContain('bg-violet-100');
+  });
+});

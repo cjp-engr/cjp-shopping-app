@@ -16,6 +16,7 @@ SellerOrderData sellerOrder({
   int refundedAmountMinor = 0,
   int refundReservedAmountMinor = 0,
   List<RefundedItemMark> refundedItems = const [],
+  bool refundRequestActive = false,
 }) =>
     SellerOrderData(
       id: id,
@@ -31,6 +32,7 @@ SellerOrderData sellerOrder({
       refundedAmountMinor: refundedAmountMinor,
       refundReservedAmountMinor: refundReservedAmountMinor,
       refundedItems: refundedItems,
+      refundRequestActive: refundRequestActive,
       paymentStatus: paymentStatus,
       acceptBy: acceptBy,
       canSellerCancelPending: canSellerCancelPending,

@@ -5,6 +5,7 @@ import type { Order } from '../types/order';
 import orderService from '../services/orderService';
 import { RefundRequestPanel } from '../components/orders/RefundRequestPanel';
 import { RefundItemMark } from '../components/orders/RefundItemMark';
+import { OrderRefundBadge } from '../components/orders/OrderRefundBadge';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
@@ -160,10 +161,13 @@ export const OrderDetail: React.FC = () => {
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{formatDate(order.createdAt)}</p>
         </div>
-        <Badge variant={statusConfig.variant} className="flex items-center gap-1.5 px-3 py-1.5 text-sm" data-testid="order-status-badge">
-          <StatusIcon className="w-4 h-4" />
-          {statusConfig.label}
-        </Badge>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {isDelivered && <OrderRefundBadge order={order} />}
+          <Badge variant={statusConfig.variant} className="flex items-center gap-1.5 px-3 py-1.5 text-sm" data-testid="order-status-badge">
+            <StatusIcon className="w-4 h-4" />
+            {statusConfig.label}
+          </Badge>
+        </div>
       </div>
 
       {/* Seller groups */}

@@ -4,6 +4,8 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/seller_avatar.dart';
 import '../data/refund_models.dart';
+import '../../orders/domain/refund_mark.dart';
+import '../../orders/presentation/widgets/refund_item_badge.dart';
 import 'refund_components.dart';
 
 enum RefundViewer { buyer, seller }
@@ -23,6 +25,28 @@ _Look _lookOf(String state) {
       return const _Look(AppColors.danger, Icons.error_outline);
     default:
       return const _Look(AppColors.warning, Icons.schedule_outlined);
+  }
+}
+
+/// The chip in a card's header: violet for a settled refund (partial when only part of the order was
+/// refunded), amber while it is requested or being paid back. Null for rejected and needs-review, which
+/// keep their own red pill. On the order page the card is one request of several, so it keeps the plain
+/// "Refunded".
+RefundMark? _chipOf(RefundRequestData r, bool inOrder) {
+  switch (r.state) {
+    case 'refunded':
+      if (inOrder) return const RefundMark('Refunded', RefundKind.full);
+      return RefundMark(
+          r.cardStateLabel,
+          r.orderPaymentStatus == 'partially_refunded'
+              ? RefundKind.partial
+              : RefundKind.full);
+    case 'processing':
+      return const RefundMark('Refund processing', RefundKind.processing);
+    case 'requested':
+      return const RefundMark('Awaiting seller review', RefundKind.processing);
+    default:
+      return null;
   }
 }
 
@@ -186,23 +210,26 @@ class _RefundOrderCardState extends State<RefundOrderCard> {
                                   fontWeight: FontWeight.w700,
                                   color: context.onSurfaceColor))),
                     ]),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                          color: look.color.withAlpha(24),
-                          borderRadius: BorderRadius.circular(20)),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(look.icon, size: 14, color: look.color),
-                        const SizedBox(width: 4),
-                        Flexible(
-                            child: Text(r.stateLabel,
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: look.color))),
-                      ]),
-                    ),
+                    if (_chipOf(r, widget.inOrder) case final chip?)
+                      RefundItemBadge(mark: chip, topPadding: 0)
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                            color: look.color.withAlpha(24),
+                            borderRadius: BorderRadius.circular(20)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(look.icon, size: 14, color: look.color),
+                          const SizedBox(width: 4),
+                          Flexible(
+                              child: Text(r.stateLabel,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: look.color))),
+                        ]),
+                      ),
                   ])),
         ),
         const Divider(height: 1),

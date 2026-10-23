@@ -27,6 +27,7 @@ import {
 import { ReviewModal } from '../components/common/ReviewModal';
 import { CompletedRefunds } from '../components/orders/CompletedRefunds';
 import { RefundItemMark } from '../components/orders/RefundItemMark';
+import { OrderRefundBadge } from '../components/orders/OrderRefundBadge';
 
 type TabKey = 'all' | 'pending' | 'preparing' | 'to-ship' | 'to-receive' | 'complete' | 'cancelled' | 'refunds';
 
@@ -254,10 +255,13 @@ export const OrderHistory: React.FC = () => {
                       <Store className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
                       <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{sellerName}</span>
                     </div>
-                    <Badge variant={statusConfig.variant} className="flex items-center gap-1">
-                      <StatusIcon className="w-3.5 h-3.5" />
-                      {statusConfig.label}
-                    </Badge>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      {order.status === 'delivered' && <OrderRefundBadge order={order} />}
+                      <Badge variant={statusConfig.variant} className="flex items-center gap-1">
+                        <StatusIcon className="w-3.5 h-3.5" />
+                        {statusConfig.label}
+                      </Badge>
+                    </div>
                   </Link>
 
                   {/* Order meta — navigates to order detail */}

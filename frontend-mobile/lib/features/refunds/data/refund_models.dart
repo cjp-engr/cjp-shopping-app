@@ -122,6 +122,9 @@ class RefundRequestData {
   /// Store name (buyer list) or buyer name (seller list); null when the account is gone.
   final String? sellerName, buyerName;
   final DateTime? submittedAt, decidedAt, completedAt, orderPlacedAt;
+
+  /// Payment status of the whole order (`refunded`, `partially_refunded`, ...); null when the server sent none.
+  final String? orderPaymentStatus;
   final List<RefundUnitData> units;
   RefundRequestData.fromJson(Map<String, dynamic> json)
       : id = json['id'] as String? ?? '',
@@ -137,6 +140,7 @@ class RefundRequestData {
         sellerName = json['sellerName'] as String?,
         buyerName = json['buyerName'] as String?,
         orderPlacedAt = parseOptionalDate(json['orderPlacedAt']),
+        orderPaymentStatus = json['orderPaymentStatus'] as String?,
         submittedAt = parseOptionalDate(json['submittedAt']),
         decidedAt = parseOptionalDate(json['decidedAt']),
         completedAt = parseOptionalDate(json['completedAt']),
@@ -153,6 +157,21 @@ class RefundRequestData {
       : approvedBySeller
           ? 'Refund approved'
           : 'Requested refund';
+
+  /// The status on a Return/Refund card: a settled refund says Fully or Partially refunded by what
+  /// happened to the whole order; anything else keeps [stateLabel].
+  String get cardStateLabel {
+    if (state == 'refunded') {
+      if (orderPaymentStatus == 'refunded') {
+        return 'Fully refunded';
+      }
+      if (orderPaymentStatus == 'partially_refunded') {
+        return 'Partially refunded';
+      }
+    }
+    return stateLabel;
+  }
+
   String get stateLabel =>
       const {
         'requested': 'Awaiting seller review',

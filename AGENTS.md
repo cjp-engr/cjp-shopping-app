@@ -26,6 +26,7 @@ These rules apply to every agent working in this repo (Claude Code, Codex, ChatG
 - Read the relevant spec and plan before changing code. Do exactly what the task asks; do not add unrelated refactors, dependencies, or features.
 - Match the surrounding code: naming, comment density, idiom. Backend uses ESM imports with `.js` extensions.
 - Test first for logic and bug fixes. Finish a task only after the relevant tests, type-check, and lint pass; report real command output, not remembered results.
+- Run the full test suites (backend, web, mobile) only when the owner asks. Until then run the type-check, lint, and only the test file you wrote or changed, and say in the final message that the full suites were not run. This narrows the line above: "the relevant tests" means that one file, not the full suites.
 - Payment and order-state code must be safe under races and crashes: use the atomic claim pattern already in `backend/src/services/` (`orderAcceptance.ts`, `orderCancellation.ts`, `orderCapture.ts`), durable `PaymentOperation` records with stable idempotency keys, and never call Stripe inside a database transaction.
 - When a plan or request leaves a choice open, pick the safest reasonable option and list your choices in the final message.
 

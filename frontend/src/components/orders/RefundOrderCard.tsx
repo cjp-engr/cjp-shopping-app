@@ -6,8 +6,9 @@ import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import type { RefundRequest } from '../../types/refund';
 import { formatDate } from '../../utils/formatters';
-import { refundDateCaption, refundMoney, refundReasonLabels, refundStateLabels } from '../../utils/refund';
+import { refundCardChip, refundDateCaption, refundMoney, refundReasonLabels, refundStateLabels } from '../../utils/refund';
 import { RefundBreakdown, RefundItemImage } from './RefundPresentation';
+import { RefundChip } from './RefundChip';
 
 export type RefundViewer = 'buyer' | 'seller';
 
@@ -84,6 +85,19 @@ function itemsOf(request: RefundRequest): RefundItem[] {
  * `inOrder` is for the buyer's own order page, which already shows the store, the order and its
  * link: the card then drops the store link, the order strip and View Details.
  */
+/** The status in a card's header: a violet or amber refund chip, or the red/warning badge for rejected and needs-review. */
+function StateBadge({ request, inOrder = false }: { request: RefundRequest; inOrder?: boolean }) {
+  const chip = refundCardChip(request, inOrder);
+  if (chip) return <RefundChip kind={chip.kind} label={chip.label} className="flex-shrink-0" />;
+  const { variant, icon: Icon } = STATUS[request.state];
+  return (
+    <Badge variant={variant} className="flex flex-shrink-0 items-center gap-1">
+      <Icon className="h-3.5 w-3.5" aria-hidden />
+      {refundStateLabels[request.state]}
+    </Badge>
+  );
+}
+
 export function RefundOrderCard({ request, viewer = 'buyer', inOrder = false, children }: { request: RefundRequest; viewer?: RefundViewer; inOrder?: boolean; children?: ReactNode }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -108,10 +122,7 @@ export function RefundOrderCard({ request, viewer = 'buyer', inOrder = false, ch
             <RotateCcw className="h-4 w-4 flex-shrink-0 text-gray-400 dark:text-gray-500" aria-hidden />
             <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">Refund request</span>
           </div>
-          <Badge variant={status.variant} className="flex flex-shrink-0 items-center gap-1">
-            <StatusIcon className="h-3.5 w-3.5" aria-hidden />
-            {refundStateLabels[request.state]}
-          </Badge>
+          <StateBadge request={request} inOrder />
         </div>
       ) : (
         <>
@@ -123,10 +134,7 @@ export function RefundOrderCard({ request, viewer = 'buyer', inOrder = false, ch
               <PartyIcon className="h-4 w-4 flex-shrink-0 text-gray-400 dark:text-gray-500" aria-hidden />
               <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">{party}</span>
             </div>
-            <Badge variant={status.variant} className="flex flex-shrink-0 items-center gap-1">
-              <StatusIcon className="h-3.5 w-3.5" aria-hidden />
-              {refundStateLabels[request.state]}
-            </Badge>
+            <StateBadge request={request} />
           </Link>
 
           <Link
