@@ -1,500 +1,319 @@
 <div align="center">
 
-# TokoMart - Full-Stack E-Commerce Application
+# TokoMart
 
-A full-featured multi-seller e-commerce application with a React web frontend, Flutter mobile app, and Node.js/MongoDB backend, built with TypeScript, Tailwind CSS, Express, and Dart.
+A multi-seller shopping app with a React web frontend, Flutter mobile app, and Express/MongoDB backend.
 
-  <img src="docs/images/tokomart_web.png" alt="TokoMart" width="800" />
-  <img src="docs/images/tokomart_mobile.png" alt="TokoMart" width="800" />
+<img src="docs/images/tokomart_web.png" alt="TokoMart web application" width="800" />
+<img src="docs/images/tokomart_mobile.png" alt="TokoMart mobile application" width="800" />
 
 </div>
 
----
+TokoMart supports product discovery, seller-managed catalogs, multi-seller checkout, order fulfillment, and seller-approved refunds for delivered items. Stripe development and verification use **test mode only**.
 
-## 📋 Status
+The features below describe the current implementation. **Implemented, tested, enabled, and deployed are separate states.** Checkout and refund behavior depends on matching backend and client configuration; this README does not confirm which flags are enabled on a hosted environment.
 
-- ✅ **Core Features**: Complete
-- ✅ **Stripe Payment Integration**: Complete (web + mobile)
-- ✅ **Saved Payment Methods**: Complete (web + mobile)
-- ✅ **Web Payment Processing**: Fixed (PR #73)
-- ✅ **Mobile Code Quality**: Refactored
-- ⏳ **Chat with Auto-Reply**: Planned
-- ⏳ **Real-time Notifications**: In progress
+## Contents
 
----
+- [Implemented features](#implemented-features)
+- [Payment and order rules](#payment-and-order-rules)
+- [Technology and project structure](#technology-and-project-structure)
+- [Local setup](#local-setup)
+- [API documentation](#api-documentation)
+- [Checks and verification](#checks-and-verification)
+- [Deployment and recovery](#deployment-and-recovery)
+- [Troubleshooting](#troubleshooting)
+- [Documentation](#documentation)
 
-## ✨ Features
+## Implemented features
 
-### Shopping & Cart
-- **Product Browsing**: Search, filter by category/price/rating across all sellers
-- **Multi-Seller Support**: Products grouped by seller with independent shipping & tax
-- **Shopping Cart**: Add/remove items, persistent across sessions (MongoDB-backed)
-- **Per-Seller Checkout**: Each seller's subtotal, shipping, and tax calculated separately
-- **Wishlist**: Save products to favorites with unread badge
+### Accounts and profiles
 
-### Payment & Checkout
-- **Payment Methods**:
-  - ✅ **Credit/Debit Cards** (via Stripe)
-  - ✅ **Cash on Delivery** (COD)
-  - ✅ **Saved Payment Cards** (web + mobile)
-  - ✅ **Auto-select Default Card** (mobile)
-  - ✅ **Manage Cards** (view, delete, set default in profile)
-- **Checkout Flow**: Multi-step (shipping → payment → review) with saved addresses
-- **Shipping Options**: Standard, Express, Pickup — per-seller configured
+- JWT signup, login, session handling, and authenticated API access.
+- Profile editing, avatar uploads, saved shipping addresses, and saved payment-card management.
+- Buyer and seller navigation, public user profiles, and follow/unfollow functionality.
 
-### Orders & Reviews
-- **Order Management**: Track status (Pending → Preparing → Shipped → Delivered)
-- **Order History**: View past orders with per-item details
-- **Product Reviews**: Star rating + written review after delivery
-- **Cancellation**: Buyer/seller can cancel through `processing` status
+### Products and shopping
 
-### Seller Features
-- **Multi-Step Product Wizard**: 7-step form (Basic Info → Pricing → Description → Variants → Images → Shipping → Review)
-- **Product Management**: Create, edit, delete with real-time pricing breakdown
-- **Inventory Tracking**: Stock management with automatic restoration on cancellation
-- **Order Management**: Update status, track shipments
-- **Seller Dashboard**: Order inbox with new order notifications (polled every 30s)
+- Product browsing, search, category filters, sorting, and pagination.
+- Product details with pricing, discounts, images, stock, and variant selection.
+- Seller product creation, editing, and deletion, including variants and shipping configuration.
+- Buyer cart item selection and quantity changes, with server-backed cart persistence and account isolation.
+- Seller coupons and checkout validation.
+- Mobile wishlist selection. This currently lives in the wishlist BLoC; it is not a server-synced wishlist.
 
-### Users & Accounts
-- **Authentication**: JWT-based signup/login with bcrypt password hashing
-- **User Profiles**: Edit personal info, upload avatar, manage addresses & payment methods
-- **Role-Based Navigation**: Buyer vs Seller — navigation adapts per role
-- **Dark Mode**: System preference-aware with manual toggle
+### Checkout and payments
 
-### Technical
-- **Offline Support**: Yellow banner when network lost; graceful error handling
-- **Cart Persistence**: Synced to MongoDB (600ms debounce) and restored on login
-- **Cross-Account Isolation**: Cart cleared on logout; each user sees only their cart
-- **Responsive Design**: Mobile-first layout working on all screen sizes
-- **Error Handling**: User-friendly messages with retry hints for network failures
+- Multi-seller checkout with separate seller orders, delivery choices, discounts, tax, and shipping breakdowns.
+- New and saved Stripe cards, default-card management, and cash on delivery.
+- Optional authorization at checkout followed by capture when the seller accepts and starts preparing the order.
+- Pending-order cancellation, authorization release, acceptance deadlines, and recovery workers.
+- Separate compatibility handling for existing captured payments.
 
----
+### Orders and seller tools
 
-## 🏗️ Tech Stack
+- Buyer order history and order details; seller order lists, details, and fulfillment actions.
+- Fulfillment stages: `pending → preparing → processing → shipped → delivered`.
+- Buyer confirmation of receipt and automatic completion of eligible shipped orders.
+- Buyer and seller cancellation of eligible pending orders. Seller cancellation requires an explanation.
+- Refund status and quantity badges on affected order items, plus refunded amounts and net seller revenue.
+- Seller refund history on the order detail view and dedicated Return/Refund views.
 
-### Web Frontend (`frontend/`)
-| Layer | Technology |
-|---|---|
-| Framework | React 18 + TypeScript 5 |
-| Build | Vite 5 |
-| Styling | Tailwind CSS 3 |
-| Routing | React Router v6 |
-| State | React Context API |
-| Payment | Stripe.js + @stripe/react-stripe-js |
-| Icons | Lucide React |
+### Delivered-item refunds
 
-### Mobile App (`frontend-mobile/`)
-| Layer | Technology |
-|---|---|
-| Framework | Flutter 3 + Dart 3 |
-| State | BLoC / Cubit + flutter_bloc |
-| Navigation | GoRouter |
-| HTTP | Dio |
-| Payment | flutter_stripe |
-| E2E Tests | Patrol |
-| Connectivity | connectivity_plus |
+Available on **web and mobile**, backed by shared API and payment services:
 
-### Backend (`backend/`)
-| Layer | Technology |
-|---|---|
-| Runtime | Node.js 20.19+ + TypeScript 5 |
-| Framework | Express.js 4 |
-| Database | MongoDB + Mongoose |
-| Authentication | JWT + bcryptjs |
-| Payment | Stripe API |
-| File Upload | Multer |
-| Security | Helmet, CORS, rate-limiting |
+- Buyers select whole item units and describe an issue within seven days of recorded delivery.
+- Sellers approve the submitted quote or reject it with an explanation. Approval starts payment processing immediately; a physical return is not required.
+- Quotes use the original discounted item amounts and allocated original tax, not current catalog prices.
+- Shipping is included once with the final paid-unit selection only when the current request and all earlier confirmed refunds establish seller fault. Partial selections and `other` requests exclude shipping.
+- Change of mind is not accepted after delivery; cancellation for change of mind belongs to the pending-order stage.
+- Buyer Return/Refund lists seller-approved requests that are processing, need payment review, or have completed. Waiting and rejected requests remain in the order's history.
+- Seller requests are grouped into **In Progress**, **Approved**, and **Rejected**, with additional results loaded on scroll.
+- Fully refunded orders leave the buyer's Complete tab; their fulfillment record remains delivered. Partially refunded orders remain in Complete with item-level refund marks.
+- Durable operations, stable idempotency keys, reservations, webhooks, and reconciliation protect against repeated decisions, retries, and crashes.
 
----
+Delivered refunds currently support captured Stripe card payments. Physical returns, photos, appeals, automatic seller-decision timeouts, and delivered COD/PayPal refunds are outside this implementation. Historical orders without trustworthy delivery dates or payment allocations are ineligible.
 
-## 📁 Project Structure
+### Reviews and usability
 
-```
+- Product ratings and written reviews associated with delivered purchases.
+- Light/dark themes, responsive web layouts, network feedback, and retry/error states.
+- Refund forms show product context, readable deadlines, refund breakdowns, and approval confirmation.
+
+## Payment and order rules
+
+### Match the checkout flow across platforms
+
+The defaults retain the legacy card flow. To use authorization followed by seller capture, configure all participating clients consistently:
+
+- Backend: `CHECKOUT_FLOW=manual_capture`.
+- Web: `VITE_CHECKOUT_FLOW=manual_capture` before starting/building the app.
+- Mobile: `--dart-define=CHECKOUT_FLOW=manual_capture` at run/build time.
+- Seller visibility: `SELLER_SEES_MANUAL_CAPTURE=true` on the backend.
+
+For this flow, an uncaptured payment appearing in Stripe after checkout is an authorization, not a completed charge. Seller acceptance starts capture and preparation. The acceptance deadline is normally 24 hours, or earlier when the card authorization expires, with a safety margin. Expired orders are handled by the acceptance scanner.
+
+Eligible pending cancellations release the hold and restore reserved inventory, sold counters, and coupon usage once. Cancellation is refused after seller acceptance has claimed the order. Already-captured legacy payments use a separate reconciliation/refund path; they must not be charged again.
+
+See [payment recovery](docs/payment-recovery.md) and [legacy payment reconciliation](docs/legacy-payment-reconciliation.md) for supported payment states and failure handling.
+
+### Delivered refunds are separately gated
+
+`DELIVERED_REFUNDS_ENABLED=true` on the backend enables new delivered-refund requests and seller decisions; it is **off by default**. Reads and reconciliation of previously approved requests remain available when the flag is off.
+
+An approved refund is not necessarily settled. Only confirmed refunded amounts reduce seller revenue. Delivered refunds do not restore inventory, sold counters, or coupon usage, and do not change delivery back to an earlier stage. Previously submitted item-only quotes keep their original amounts rather than receiving an automatic shipping top-up.
+
+## Technology and project structure
+
+The repository currently declares:
+
+- **Web:** React 19, TypeScript 6, Vite 8, React Router 7, Tailwind CSS 3, Context, Lucide, and Stripe.js.
+- **Mobile:** Flutter/Dart, BLoC, GoRouter, Dio, SharedPreferences, and `flutter_stripe`. The checked-in lockfile requires Flutter **3.44+** and Dart **3.13+**.
+- **Backend:** Node.js, TypeScript 5, Express 4, Mongoose 8, MongoDB, Stripe, JWT, bcryptjs, and Cloudinary/Multer uploads.
+- **Verification:** Vitest, Flutter unit/widget tests, and database integration tests. Playwright and Patrol automation are maintained separately by the owner.
+
+```text
 shopping-app-automation/
-├── frontend/                       # React web app
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── common/             # Button, Card, Input, Badge, Spinner
-│   │   │   ├── layout/             # Navbar, Footer, Layout
-│   │   │   └── payment/            # CardElement, PaymentForm
-│   │   ├── pages/
-│   │   │   ├── auth/               # Login, Signup
-│   │   │   ├── shopping/           # Home, Products, ProductDetail, Cart
-│   │   │   ├── checkout/           # Checkout (3-step wizard)
-│   │   │   ├── orders/             # OrderHistory, OrderDetail
-│   │   │   ├── profile/            # Profile, PaymentMethods, Addresses
-│   │   │   └── seller/             # SellerDashboard, ProductWizard
-│   │   ├── context/                # Auth, Cart, Theme
-│   │   ├── hooks/                  # useOnlineStatus, useCart, useAuth
-│   │   ├── services/               # API clients (auth, cart, order, product, payment)
-│   │   ├── types/                  # TypeScript interfaces
-│   │   ├── utils/                  # formatters, validators, constants
-│   │   └── config/                 # API endpoints, Stripe config
-│   └── package.json
-│
-├── frontend-mobile/                # Flutter mobile app
-│   ├── lib/
-│   │   ├── core/
-│   │   │   ├── constants/          # AppStrings, AppColors, AppSizes
-│   │   │   ├── models/             # SavedPaymentMethod, etc
-│   │   │   ├── network/            # ConnectivityCubit, DioClient
-│   │   │   ├── services/           # StripeService, PaymentService
-│   │   │   ├── theme/              # ThemeData, colors
-│   │   │   └── widgets/            # OfflineBanner, CommonWidgets
-│   │   └── features/
-│   │       ├── auth/               # Login, Signup + Bloc
-│   │       ├── products/           # ProductList, ProductDetail + Bloc
-│   │       ├── cart/               # Cart screen + Bloc
-│   │       ├── checkout/           # Checkout flow + PaymentBloc
-│   │       ├── orders/             # OrderHistory, OrderDetail + Bloc
-│   │       ├── profile/            # Profile, PaymentMethods + Bloc
-│   │       ├── seller/             # SellerDashboard, ProductWizard
-│   │       └── wishlist/           # Wishlist + Bloc
-│   ├── patrol_test/                # E2E tests (auth, seller, buyer flows)
-│   └── pubspec.yaml
-│
-├── backend/                        # Express API
-│   ├── src/
-│   │   ├── config/                 # Database, Stripe setup
-│   │   ├── controllers/            # auth, products, orders, cart, reviews, payments, seller
-│   │   ├── middleware/             # JWT guard, error handler, multer
-│   │   ├── models/                 # User, Product, Order, Cart, Review, PaymentMethod
-│   │   ├── routes/                 # Route definitions
-│   │   ├── services/               # PaymentService, StripeService
-│   │   └── server.ts
-│   ├── .env
-│   └── package.json
-│
-├── e2e-testing/                    # Playwright test suite
-│   ├── fixtures/                   # Page object fixtures
-│   ├── helpers/                    # API client, product factory, test data
-│   ├── pages/                      # Page Object Model (POM) classes
-│   ├── tests/
-│   │   ├── auth/                   # Login, signup setup
-│   │   ├── api/                    # API layer tests (auth, products, orders, reviews, etc)
-│   │   └── web/                    # Browser E2E tests (buyer, seller, mixed flows)
-│   ├── playwright.config.ts
-│   └── package.json
-│
-├── IMPLEMENTATION_SUMMARY.md       # Recent fixes & refactoring
-├── FEATURE_ROADMAP.md              # Planned features (Chat, Auto-reply)
-├── FLUTTER_CODE_REVIEW.md          # Code quality guidelines followed
+├── backend/                 Express API, models, payment workers, and backend tests
+├── frontend/                React web application and unit tests
+├── frontend-mobile/         Flutter application and unit/widget tests
+├── e2e-testing/             Owner-maintained Playwright automation
+├── docs/                    Deployment, payment, recovery, and verification guides
+├── AGENTS.md                Repository rules for coding agents
 └── README.md
 ```
 
----
+## Local setup
 
-## 🚀 Getting Started
+The documented local setup uses these addresses after starting the apps:
+
+- Web app: [http://localhost:5173](http://localhost:5173)
+- Backend API: [http://localhost:5001/api](http://localhost:5001/api)
+- Backend health: [http://localhost:5001/health](http://localhost:5001/health)
+- Android emulator API: `http://10.0.2.2:5001/api`
+
+These match the [local verification setup](docs/local-payment-verification.md) and the mobile debug launch configuration. The example environment files still default to backend port 5000; set `PORT=5001` in `backend/.env` and `VITE_API_BASE_URL=http://localhost:5001/api` in `frontend/.env` to use the addresses above. Keep `CORS_ORIGIN=http://localhost:5173` for the web app. These are startup addresses, not a check that the servers are currently running.
 
 ### Prerequisites
-- **Node.js** v20.19+ and npm/yarn
-- **MongoDB** (local or [MongoDB Atlas](https://www.mongodb.com/atlas))
-- **Flutter** v3.x (mobile app only)
-- **Stripe Account** (for payment processing)
 
-### 1️⃣ Backend Setup
+- Node.js **22.12+ on the Node 22 line** and npm, compatible with the current build/test tooling.
+- A MongoDB **replica set** for transaction-based checkout, cancellation, and refund flows. Use an existing local replica set or an Atlas deployment.
+- A Stripe test account and publishable/secret test keys for card flows.
+- Cloudinary configuration for product/avatar uploads.
+- A compatible Flutter SDK and Android/iOS development tooling for mobile work.
 
-```bash
-cd backend
-npm install
-```
+Use separate development and test databases. Do not point seeds or integration tests at data you want to retain. The examples below do not create MongoDB containers or change system settings.
 
-Create `backend/.env`:
-```env
-MONGODB_URI=mongodb://localhost:27017/tokomart
-JWT_SECRET=your_secret_key_here
-STRIPE_SECRET_KEY=sk_test_...
-PORT=5000
-NODE_ENV=development
-```
-
-Start MongoDB and seed data:
-```bash
-# Option 1: Local MongoDB
-net start MongoDB
-
-# Option 2: Docker
-docker run -d -p 27017:27017 --name mongodb mongo:latest
-
-# Seed database
-cd backend
-npm run seed
-```
-
-Start backend:
-```bash
-npm run dev      # http://localhost:5000
-```
-
-### 2️⃣ Web Frontend Setup
-
-```bash
-cd frontend
-npm install
-```
-
-Create `frontend/.env`:
-```env
-VITE_API_BASE_URL=http://localhost:5000/api
-VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
-```
-
-Start dev server:
-```bash
-npm run dev      # http://localhost:5173
-```
-
-### 3️⃣ E2E Tests Setup
-
-```bash
-cd e2e-testing
-npm install
-npx playwright install chromium
-```
-
-Create `e2e-testing/.env` (optional):
-```env
-API_URL=http://localhost:5000
-WEB_URL=http://localhost:5173
-BUYER_EMAIL=b@test.com
-SELLER_EMAIL=s@test.com
-TEST_PASSWORD=Test750!!
-```
-
-Run tests:
-```bash
-npm test               # All projects
-npm run test:web       # Browser E2E only
-npm run test:api       # API tests only
-npm run test:ui        # Interactive Playwright UI
-npm run report         # HTML report
-```
-
-### 4️⃣ Mobile App Setup
-
-```bash
-cd frontend-mobile
-flutter pub get
-flutter run              # Run on emulator/device
-```
-
-Run Patrol E2E tests:
-```bash
-patrol test              # All tests
-patrol test --target patrol_test/login_test.dart  # Single test
-```
-
----
-
-## 🔐 Test Credentials
-
-| Role | Email | Password |
-|---|---|---|
-| Buyer | `b@test.com` | `Test750!!` |
-| Seller | `s@test.com` | `Test750!!` |
-
-Or register new accounts via **Sign Up**. Toggle seller role in Profile.
-
----
-
-## 📝 API Reference
-
-With the backend running locally, use [Swagger UI](http://localhost:5000/api-docs/) to browse and try all endpoints, or download [OpenAPI JSON](http://localhost:5000/api-docs.json). Adjust port 5000 to your configured `PORT`. Documentation is disabled when `NODE_ENV=production`.
-
-The [backend API guide](backend/README.md#api-documentation) explains signup, login, authorization, checkout, response formats, uploads, and contract maintenance. Login returns a top-level `token`. Paste that token alone into Swagger's **Authorize** dialog; Swagger adds the Bearer prefix.
-
-| Group | Base path | Access / behavior |
-|---|---|---|
-| Auth | `/api/auth` | Signup/login public; profile, saved cards and saved addresses require JWT |
-| Products | `/api/products` | Public catalog; writes require seller role. Filters include search, category, sort and pagination |
-| Cart | `/api/cart` | JWT; sync replaces the whole cart |
-| Orders | `/api/orders` | JWT; buyer status endpoint only cancels an owned pending order |
-| Seller | `/api/seller` | Seller JWT; product management and order fulfillment |
-| Reviews | `/api/reviews` | Product review listing public; create/update/check require JWT |
-| Users | `/api/users` | JWT; public profiles, search and follows |
-| Coupons | `/api/coupons` | JWT; management under `/seller` also requires seller role |
-| Payments | `/api/payments` | JWT for `create-intent` and `save-card`; signed raw-body webhook |
-| Health | `/health` | Public; outside the `/api` prefix |
-
-Confirm Stripe payments through the client SDK, then pass the succeeded intent to checkout. Full schemas, request examples, status codes, and stable operation IDs live in the OpenAPI specification.
-
----
-
-## 🧪 Test Coverage
-
-### Playwright (Web + API)
-
-| File | Scope | Tests |
-|---|---|---|
-| `tests/auth/` | Login/signup | TC-001 |
-| `tests/web/buyer/` | Product browse, detail, checkout | TC-010–TC-024 |
-| `tests/web/seller/` | Product wizard, CRUD, access control | TC-042–TC-065 |
-| `tests/web/mixed/` | Cart isolation, order isolation, catalog visibility | TC-008, TC-109, TC-112 |
-| `tests/api/` | Auth, health, orders, reviews, coupons, cart, rate-limit | 50+ tests |
-
-Full details: [`e2e-testing/README.md`](e2e-testing/README.md)
-
-### Patrol (Mobile)
-
-| Test | Scenario | TC ID |
-|---|---|---|
-| `0_auth/login_test.dart` | Login with valid credentials | S2 |
-| `1_seller/add_product_simple_test.dart` | Create simple product | TC-090 |
-| `1_seller/add_product_variant_test.dart` | Create variant product | TC-091 |
-| `2_buyer/*_cod_checkout_test.dart` | COD checkout | TC-095, TC-101 |
-| `2_buyer/*_credit_checkout_test.dart` | Card/saved card checkout | TC-096–TC-104 |
-
-Full details: [`frontend-mobile/patrol_test/README.md`](frontend-mobile/patrol_test/README.md)
-
----
-
-## 🛠️ Available Scripts
-
-### Web Frontend
-```bash
-cd frontend
-npm run dev       # Start dev server
-npm run build     # Production build
-npm run preview   # Preview build
-npm run lint      # ESLint
-```
+Run each setup block from the repository root in its own terminal. Copy `.env.example` only for a first setup; if an `.env` already exists, edit it rather than overwriting it.
 
 ### Backend
-```bash
+
+```powershell
 cd backend
-npm run dev       # Start with hot-reload
-npm run build     # Compile TypeScript
-npm start         # Run compiled build
-npm run seed      # Seed database
-npm run lint      # ESLint
+npm ci --legacy-peer-deps
+Copy-Item .env.example .env
 ```
 
-### E2E Tests
-```bash
-cd e2e-testing
-npm test          # All projects
-npm run test:web  # Browser E2E
-npm run test:api  # API tests
-npm run test:ui   # Interactive UI
-npm run report    # HTML report
+Configure `backend/.env` privately using the example as a guide:
+
+- `MONGODB_URI`: your intended development database on a replica set.
+- `JWT_SECRET`: a private signing secret.
+- `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`: test credentials and the signing secret for the matching webhook endpoint.
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`: upload configuration.
+- `PORT`, `CORS_ORIGIN`, and the checkout/refund flags for your chosen environment.
+
+For an existing local replica set named `rs0` exposed on port 27018, an example development URI is:
+
+```text
+mongodb://127.0.0.1:27018/tokomart_dev?replicaSet=rs0&directConnection=true
 ```
+
+Use your actual replica-set name, host, and intended database. Keep secret keys, credentials, and connection strings out of commits and client configuration.
+
+After configuring the environment:
+
+```powershell
+npm run dev
+```
+
+With `PORT=5001`, the API is [http://localhost:5001/api](http://localhost:5001/api), with a process health endpoint at [http://localhost:5001/health](http://localhost:5001/health). The web app runs separately on port 5173. Run `npm run seed` only if you deliberately want sample data in the configured database, or create accounts through Sign Up.
+
+The backend starts draft cleanup, seller-acceptance scanning, payment-operation recovery, Stripe inbox processing, and the order-completion job. See the [rollout guide](docs/payment-rollout.md) before changing job ownership or hosting topology.
+
+### Web
+
+```powershell
+cd frontend
+npm ci
+Copy-Item .env.example .env
+```
+
+Set public client configuration in `frontend/.env`:
+
+- `VITE_API_BASE_URL`: `http://localhost:5001/api` for the documented local backend.
+- `VITE_STRIPE_PUBLISHABLE_KEY`: the Stripe test publishable key.
+- `VITE_CHECKOUT_FLOW`: match the backend flow.
+
+```powershell
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173). Every `VITE_` value is exposed in the browser bundle; backend secrets do not belong there. Rebuild hosted web deployments after changing these values.
 
 ### Mobile
-```bash
+
+```powershell
 cd frontend-mobile
-flutter run                    # Run on device/emulator
-flutter build apk              # Android APK
-patrol test                    # All Patrol tests
-patrol test --target ...       # Single test
+flutter pub get
+Copy-Item .env.example .env
 ```
 
----
+Set `STRIPE_PUBLISHABLE_KEY` in the mobile `.env`. This file is bundled into the app and must contain public configuration only.
 
-## 📋 How This Was Built
+For an Android emulator using the documented local backend:
 
-This project uses an **AI-assisted development workflow**:
-
-1. **Design Phase** — Features designed in detail with `superpowers:brainstorming`
-2. **Planning Phase** — Step-by-step implementation plans via `superpowers:writing-plans`
-3. **Implementation** — Fresh subagent per task with automated review gates
-4. **Testing** — Scenario design → test strategy → code generation → review
-
-### Skills Used
-- `superpowers:brainstorming` — Design docs before code
-- `superpowers:writing-plans` — Detailed implementation plans
-- `superpowers:subagent-driven-development` — Task execution with reviews
-- `flutter-dart-code-review` — Mobile code quality gates
-- `frontend-code-review` — Web code quality gates
-- `backend-patterns` — API design & architecture
-- `ui-ux-pro-max` — Design system & UX guidance
-- `create-scenarios` → `test-strategy` → `generate-tests` — Test pipeline
-
----
-
-## 🔧 Troubleshooting
-
-### Port Already in Use
-```bash
-# Windows: Kill process on port
-Get-NetTCPConnection -LocalPort 5173 | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }
-
-# Run on different port
-cd frontend && npm run dev -- --port 3000
+```powershell
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:5001/api
 ```
 
-### MongoDB Connection Issues
-```bash
-# Verify MongoDB is running
-mongosh --eval "db.runCommand({ ping: 1 })"
+When the backend uses manual capture, include the matching flag:
 
-# Check .env
-cat backend/.env | grep MONGODB_URI
+```powershell
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:5001/api --dart-define=CHECKOUT_FLOW=manual_capture
 ```
 
-### Cart Not Loading After Login
-1. Open DevTools → Network tab
-2. Check `GET /api/cart` returns 200
-3. Verify backend is running
-4. Check `VITE_API_BASE_URL` points to correct backend
+For an iOS simulator, use `http://127.0.0.1:5001/api`. A physical device needs a reachable LAN or hosted API address; its `localhost` refers to the device itself.
 
-### Flutter 401 Errors on Launch
-- First launch may show 401 due to stale token
-- Solution: Log out and log back in
+Release builds require an explicit hosted HTTPS API URL ending in `/api`. The mobile API URL and checkout flow are build-time settings, not values read from the bundled `.env`.
 
-### Clear Local Session
-```javascript
-// Browser DevTools Console
-Object.keys(localStorage).filter(k => k.startsWith('shopping_app_')).forEach(k => localStorage.removeItem(k))
+## API documentation
+
+With the backend running in development mode:
+
+- [Swagger UI](http://localhost:5001/api-docs/)
+- [OpenAPI JSON](http://localhost:5001/api-docs.json)
+- [Backend API guide](backend/README.md#api-documentation)
+
+Adjust port 5001 when using a different backend port. API documentation is disabled when `NODE_ENV=production`. Login returns a token; Swagger's Authorize dialog accepts that token alone and supplies the Bearer prefix.
+
+API groups include authentication, products, carts, orders, seller fulfillment/refunds, reviews, users/follows, coupons, payments, and checkout sessions. Delivered-refund endpoints expose eligibility, buyer history and requests, and seller decisions. Consult OpenAPI for request schemas and access requirements.
+
+## Checks and verification
+
+The following commands are available for an explicitly requested full verification. For focused changes, run the relevant type/lint checks and the changed test file, following [AGENTS.md](AGENTS.md). Do not infer a current pass from historical results.
+
+Backend, from `backend/`:
+
+```powershell
+npx tsc --noEmit
+npm test
+npm run test:contracts
 ```
 
----
+Database integration tests must target a replica-set database whose name ends in `_test`, normally on port 27018:
 
-## 📊 Key Business Rules
-
-### Shipping & Tax
-- **Shipping**: Per-seller configured — Free or Buyer Pays with per-option fees
-- **Tax**: 8% of order subtotal (calculated per seller)
-- Both shown as breakdown in cart and checkout
-
-### Order Status Flow
+```powershell
+$env:TEST_MONGODB_URI='mongodb://127.0.0.1:27018/tokomart_integration_test?replicaSet=rs0&directConnection=true'
+npm run test:integration
 ```
-pending → preparing → processing → shipped → delivered
-         ↑ cancellable until processing
+
+Web, from `frontend/`:
+
+```powershell
+npx tsc -b
+npm run lint
+npm test
+npm run build
 ```
-Stock auto-restores on cancellation.
 
-### Cart Behavior
-- Synced to MongoDB (600ms debounce)
-- Restored from server on login
-- Cleared locally on logout (server-side preserved)
-- Per-user isolation (scoped by userId)
+Mobile, from `frontend-mobile/`:
 
----
+```powershell
+flutter analyze
+flutter test
+```
 
-## 📚 Documentation
+The delivered-refund review on **2026-10-23**, at commit `5a4b36c`, recorded:
 
-- **[Deployment guide](docs/deployment.md)** — Staging settings, proxy trust, background jobs, and mobile release configuration
-- **[Payment rollout](docs/payment-rollout.md)** — Checkout flags, recovery workers, enablement gates, monitoring, and rollback
+- Backend: **272 unit**, **33 contract**, and **414 integration** tests passed.
+- Web: **212 tests**, TypeScript, and ESLint passed.
+- Mobile: **343 tests** and analysis passed, with **five existing skips**.
 
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** — All fixes & refactoring completed
-- **[FEATURE_ROADMAP.md](FEATURE_ROADMAP.md)** — Planned features (Chat, Auto-reply)
-- **[FLUTTER_CODE_REVIEW.md](FLUTTER_CODE_REVIEW.md)** — Mobile code quality guidelines
-- **[backend/README.md](backend/README.md)** — Backend setup & API details
-- **[frontend/README.md](frontend/README.md)** — Web frontend details
-- **[frontend-mobile/README.md](frontend-mobile/README.md)** — Mobile app details
-- **[e2e-testing/README.md](e2e-testing/README.md)** — Test coverage & patterns
+These results apply to that reviewed revision. The README update itself does not rerun those suites. The actual Stripe test-mode check of the shipping-refund amendment, manual browser/device acceptance of the latest screens, and hosted enablement checks remain separate work. See [local verification evidence](docs/local-payment-verification.md).
 
----
+Playwright and Patrol files and runs are owner-maintained. They were intentionally excluded from this documentation update and the cited refund review.
 
-## 📜 License
+## Deployment and recovery
 
-Open source — available for educational and demonstration purposes.
+Use the [deployment guide](docs/deployment.md) and [payment rollout runbook](docs/payment-rollout.md) for hosting roots, public URLs, build settings, CORS, Stripe webhooks, worker requirements, monitoring, and rollback.
 
-## 🙏 Acknowledgments
+- Deploy the backend, web, and mobile builds with compatible checkout settings and refund response handling.
+- Keep payment recovery running for operations already approved, even when disabling new refund requests.
+- A process health check is not a guarantee of database readiness or payment settlement.
+- Verify the deployed environment separately; local implementation and tests do not establish hosted readiness.
 
-- **Icons**: [Lucide](https://lucide.dev)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com)
-- **Framework**: [React](https://react.dev) + [Vite](https://vitejs.dev)
-- **Mobile**: [Flutter](https://flutter.dev)
-- **Payments**: [Stripe](https://stripe.com)
-- **Testing**: [Playwright](https://playwright.dev) + [Patrol](https://patrol.dev)
+## Troubleshooting
+
+- **Port already in use:** check whether the app is already running and reuse the correct URL. Do not start duplicate instances or terminate an unfamiliar process. Change a port only when intentionally configuring a separate stack, and update its clients accordingly.
+- **Mobile and web show different data:** compare their configured backend URLs, selected accounts, and backend database. Do not assume an emulator's `localhost` is your development machine.
+- **Frontend still calls localhost after deployment:** update the public API URL and rebuild/redeploy the client. Vite and mobile build-time configuration do not change an existing bundle.
+- **MongoDB transactions fail:** confirm the configured database belongs to a replica set. An Atlas database and a local Docker database are separate deployments.
+- **CORS errors:** use the exact frontend origin in backend configuration, including its scheme and port and without an API path.
+- **Payment is uncaptured:** in manual-capture checkout this is expected before seller acceptance. Check order/payment status and worker activity rather than creating a replacement charge.
+- **Refund says processing or needs review:** retain its original request and operation key, and follow the [recovery guide](docs/payment-recovery.md). Bank posting can take longer than confirmed provider settlement.
+
+## Documentation
+
+- [Backend API and setup](backend/README.md) — `backend/README.md`
+- [Mobile architecture and setup](frontend-mobile/README.md) — `frontend-mobile/README.md`
+- [Deployment](docs/deployment.md) — `docs/deployment.md`
+- [Payment rollout and rollback](docs/payment-rollout.md) — `docs/payment-rollout.md`
+- [Payment and cancellation recovery](docs/payment-recovery.md) — `docs/payment-recovery.md`
+- [Legacy captured-payment reconciliation](docs/legacy-payment-reconciliation.md) — `docs/legacy-payment-reconciliation.md`
+- [Backend payment verification](docs/backend-payment-verification.md) — `docs/backend-payment-verification.md`
+- [Local verification evidence](docs/local-payment-verification.md) — `docs/local-payment-verification.md`
+- [Delivered-refund handoff](docs/delivered-refunds-handoff.md) — `docs/delivered-refunds-handoff.md`. Includes historical entries; use its latest updates and verify against code.
+- [Coding-agent and documentation rules](AGENTS.md) — `AGENTS.md`
+
+The feature-documentation convention is a grouped index at `docs/features.md`, linking to one file per feature under `docs/features/<area>/<feature-name>.md`. That inventory has not yet been populated; the feature summary above is an overview, not a substitute for verified per-feature documentation.

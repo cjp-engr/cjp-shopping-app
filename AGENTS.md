@@ -30,6 +30,16 @@ These rules apply to every agent working in this repo (Claude Code, Codex, ChatG
 - Payment and order-state code must be safe under races and crashes: use the atomic claim pattern already in `backend/src/services/` (`orderAcceptance.ts`, `orderCancellation.ts`, `orderCapture.ts`), durable `PaymentOperation` records with stable idempotency keys, and never call Stripe inside a database transaction.
 - When a plan or request leaves a choice open, pick the safest reasonable option and list your choices in the final message.
 
+## Feature inventory
+
+- Maintain `docs/features.md` as a short, grouped index linking to a separate Markdown file for every feature. Store feature files under `docs/features/<area>/<feature-name>.md`, using lowercase hyphenated names (for example, `docs/features/refunds/delivered-item-refunds.md`). Update the feature file and its index link whenever a feature is added, changed, or removed; create missing documentation when doing that work.
+- Group index links by feature area: Accounts & Profiles, Products & Catalog, Cart & Checkout, Payments, Orders & Delivery, Cancellations & Refunds, Seller Tools, and Reviews & Ratings. Add other sections only when supported by the code; these headings are organizational examples, not evidence that features exist.
+- Keep one feature per file within its primary area. Identify buyer/seller roles and backend/web/mobile support in that file; cross-link shared features instead of duplicating their documentation or status across files. Keep detailed rules and status in the feature file, not in the index.
+- In each feature file, record what it does, its main business rules, backend/web/mobile support, known limitations or remaining work, and relevant code or PR links.
+- Track implementation, verification, enablement, and deployment separately. Implemented code does not prove a feature is tested, enabled, or deployed. Mark unknown status explicitly and record the date and branch/commit of verification when available.
+- Before answering what features are implemented, read the index and relevant feature files, then verify the relevant code on the branch being discussed. Correct stale documentation; do not use plans or previous chat claims as proof of implementation.
+- If the inventory is missing, say so and inspect the relevant code rather than inventing feature status. Do not claim checks passed unless their results are available, or run full test suites merely to update the inventory; the owner's test-running rules above still apply.
+
 ## Commands (run from the repo root)
 
 - Backend unit tests and type-check: `cd backend && npx vitest run && npx tsc --noEmit`
