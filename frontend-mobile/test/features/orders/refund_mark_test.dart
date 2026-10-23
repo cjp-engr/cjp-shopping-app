@@ -12,7 +12,7 @@ void main() {
   group('refundMarkFor', () {
     test('says Refunded when every unit of the item was paid back', () {
       final mark = refundMarkFor(_marks, 'b', 2)!;
-      expect((mark.label, mark.done), ('Refunded', true));
+      expect((mark.label, mark.kind), ('Refunded', RefundKind.full));
     });
 
     test('says how many units were refunded when only some were', () {
@@ -20,14 +20,14 @@ void main() {
           const [RefundedItemMark(lineId: 'a', refunded: 1, processing: 0)],
           'a',
           3)!;
-      expect((mark.label, mark.done), ('1 of 3 refunded', true));
+      expect((mark.label, mark.kind), ('1 of 3 refunded', RefundKind.partial));
     });
 
     test(
         'says Refund processing while approved units are still being paid back',
         () {
       expect(refundMarkFor(_marks, 'c', 1)!.label, 'Refund processing');
-      expect(refundMarkFor(_marks, 'c', 1)!.done, isFalse);
+      expect(refundMarkFor(_marks, 'c', 1)!.kind, RefundKind.processing);
       expect(refundMarkFor(_marks, 'a', 2)!.label, '1 refunded, 1 processing');
     });
 
@@ -79,6 +79,14 @@ void main() {
       expect(order.refundedItems.single.refunded, 1);
     });
 
+    test('knows when a refund request is not settled yet', () {
+      expect(
+          OrderModel.fromJson({...json(), 'activeRefundRequestId': 'r1'})
+              .refundRequestActive,
+          isTrue);
+      expect(OrderModel.fromJson(json()).refundRequestActive, isFalse);
+    });
+
     test('an order from an older server has no marks', () {
       final order = OrderModel.fromJson(json());
       expect(order.refundedItems, isEmpty);
@@ -89,14 +97,15 @@ void main() {
     test('says Fully refunded once everything paid was paid back', () {
       final mark = orderRefundLabel(
           paymentStatus: 'refunded', refundedAmountMinor: 3200)!;
-      expect((mark.label, mark.done), ('Fully refunded', true));
+      expect((mark.label, mark.kind), ('Fully refunded', RefundKind.full));
     });
 
     test('says Partially refunded when some money was paid back but not all',
         () {
       final mark = orderRefundLabel(
           paymentStatus: 'partially_refunded', refundedAmountMinor: 1080)!;
-      expect((mark.label, mark.done), ('Partially refunded', true));
+      expect(
+          (mark.label, mark.kind), ('Partially refunded', RefundKind.partial));
     });
 
     test(
@@ -104,7 +113,42 @@ void main() {
         () {
       final mark = orderRefundLabel(
           paymentStatus: 'captured', refundReservedAmountMinor: 1080)!;
-      expect((mark.label, mark.done), ('Refund processing', false));
+      expect((mark.label, mark.kind),
+          ('Refund processing', RefundKind.processing));
+    });
+
+    test('says Refund requested while a request still waits for the seller',
+        () {
+      final mark = orderRefundLabel(
+          paymentStatus: 'captured', refundRequestActive: true)!;
+      expect(
+          (mark.label, mark.kind), ('Refund requested', RefundKind.processing));
+    });
+
+    test(
+        'says Refund processing, not requested, once the seller approved and money is reserved',
+        () {
+      final mark = orderRefundLabel(
+          paymentStatus: 'captured',
+          refundRequestActive: true,
+          refundReservedAmountMinor: 1080)!;
+      expect((mark.label, mark.kind),
+          ('Refund processing', RefundKind.processing));
+    });
+
+    test(
+        'shows a refund in flight even when an earlier refund made the order partially refunded',
+        () {
+      final reserved = orderRefundLabel(
+          paymentStatus: 'partially_refunded',
+          refundedAmountMinor: 1080,
+          refundReservedAmountMinor: 500)!;
+      final requested = orderRefundLabel(
+          paymentStatus: 'partially_refunded',
+          refundedAmountMinor: 1080,
+          refundRequestActive: true)!;
+      expect(reserved.label, 'Refund processing');
+      expect(requested.label, 'Refund requested');
     });
 
     test('shows nothing for an order with no refund', () {

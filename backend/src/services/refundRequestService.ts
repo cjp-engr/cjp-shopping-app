@@ -223,14 +223,16 @@ export async function listSellerRefundRequests(sellerId: string, page = 1, limit
 async function sellerRequestViews(requests: ReadonlyArray<IRefundRequest>) {
   const [buyers, orders] = await Promise.all([
     User.find({ _id: { $in: [...new Set(requests.map(r => r.buyerId.toString()))] } }).select('firstName lastName').lean(),
-    Order.find({ _id: { $in: requests.map(r => r.orderId) } }).select('createdAt').lean(),
+    Order.find({ _id: { $in: requests.map(r => r.orderId) } }).select('createdAt paymentStatus').lean(),
   ]);
   const buyerNames = new Map(buyers.map(u => [u._id.toString(), `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim()]));
   const placedAt = new Map(orders.map(o => [o._id.toString(), o.createdAt]));
+  const orderPayment = new Map(orders.map(o => [o._id.toString(), o.paymentStatus ?? null]));
   return requests.map(r => ({
     ...refundRequestView(r),
     buyerName: buyerNames.get(r.buyerId.toString()) || null,
     orderPlacedAt: placedAt.get(r.orderId.toString()),
+      orderPaymentStatus: orderPayment.get(r.orderId.toString()) ?? null,
   }));
 }
 
@@ -259,15 +261,17 @@ export async function listCompletedBuyerRefundRequests(buyerId: string, page = 1
   // The tab shows an order-style card: the store name and the date the order was placed come with each refund.
   const [sellers, orders] = await Promise.all([
     User.find({ _id: { $in: [...new Set(requests.map(r => r.sellerId.toString()))] } }).select('firstName lastName').lean(),
-    Order.find({ _id: { $in: requests.map(r => r.orderId) } }).select('createdAt').lean(),
+    Order.find({ _id: { $in: requests.map(r => r.orderId) } }).select('createdAt paymentStatus').lean(),
   ]);
   const sellerNames = new Map(sellers.map(u => [u._id.toString(), `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim()]));
   const placedAt = new Map(orders.map(o => [o._id.toString(), o.createdAt]));
+  const orderPayment = new Map(orders.map(o => [o._id.toString(), o.paymentStatus ?? null]));
   return {
     requests: requests.map(r => ({
       ...refundRequestView(r),
       sellerName: sellerNames.get(r.sellerId.toString()) || null,
       orderPlacedAt: placedAt.get(r.orderId.toString()),
+      orderPaymentStatus: orderPayment.get(r.orderId.toString()) ?? null,
     })),
     page, pages: Math.ceil(total / limit), total,
   };

@@ -235,6 +235,7 @@ const adaptOrder = (order: RawOrder): AdaptedOrder => {
     refundRequestDeadlineAt: order.refundRequestDeadlineAt,
     refundedItems: order.refundedItems,
     refundedAmountMinor: order.refundedAmountMinor,
+    activeRefundRequestId: order.activeRefundRequestId,
     refundReservedAmountMinor: order.refundReservedAmountMinor,
     currency: order.currency,
     canSellerCancelPending: order.canSellerCancelPending,

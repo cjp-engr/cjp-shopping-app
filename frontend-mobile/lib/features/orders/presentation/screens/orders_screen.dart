@@ -361,6 +361,13 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
     final groupTotal = order.total;
     final itemCount = items.fold<int>(0, (s, i) => s + i.quantity);
     final paymentNotice = orderPaymentNotice(order);
+    final refundLabel = order.status == 'delivered'
+        ? orderRefundLabel(
+            paymentStatus: order.paymentStatus,
+            refundedAmountMinor: order.refundedAmountMinor,
+            refundReservedAmountMinor: order.refundReservedAmountMinor,
+            refundRequestActive: order.refundRequestActive)
+        : null;
 
     return InkWell(
       key: keys.orders.orderCard(order.id),
@@ -425,6 +432,15 @@ class _SellerOrderCardState extends State<_SellerOrderCard> {
                 ],
               ),
             ),
+
+            if (refundLabel != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+                child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: RefundItemBadge(mark: refundLabel)),
+              ),
 
             const Divider(height: 1),
 

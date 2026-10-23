@@ -138,7 +138,8 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
       iconColor: AppColors.success,
       iconBackground: AppColors.successSurface,
       title: AppStrings.confirmReceipt,
-      body: 'Have you received order #${widget.order.shortId}? This will mark the order as complete.',
+      body:
+          'Have you received order #${widget.order.shortId}? This will mark the order as complete.',
       cancelLabel: AppStrings.notYet,
       confirmLabel: AppStrings.yesReceived,
       confirmColor: AppColors.success,
@@ -181,9 +182,9 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     if (confirmed && context.mounted) {
       final user = context.read<AuthBloc>().state.user;
       if (user != null) {
-        context.read<OrderBloc>().add(
-            OrderCancelRequested(widget.order.id, user.id,
-                cancelReason: reason));
+        context.read<OrderBloc>().add(OrderCancelRequested(
+            widget.order.id, user.id,
+            cancelReason: reason));
       }
     }
   }
@@ -245,515 +246,539 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
           await _fetchReviews();
         },
         child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSizes.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Order header ────────────────────────────────────────────
-            _SectionCard(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Order #${order.shortId}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 18,
-                            color: context.onSurfaceColor,
-                          ),
-                        ),
-                        if (dateStr.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            'Placed on $dateStr',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: context.onSurfaceMuted,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: color.withAlpha(20),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(icon, size: 13, color: color),
-                        const SizedBox(width: 5),
-                        Text(
-                          statusLabel,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: color,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AppSizes.sm),
-
-            // ── Status section ──────────────────────────────────────────
-            _SectionCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _SectionTitle(label: AppStrings.status),
-                  const SizedBox(height: AppSizes.md),
-                  if (isCancelled)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSizes.md, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.danger.withAlpha(16),
-                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                        border:
-                            Border.all(color: AppColors.danger.withAlpha(40)),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.cancel_outlined,
-                              size: 16, color: AppColors.danger),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  cancelledBySellerNotice(order)?.title ??
-                                      AppStrings.orderCancelledNotice,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.danger,
-                                  ),
-                                ),
-                                if (order.cancelReason != null &&
-                                    order.cancelReason!.isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Reason: ${order.cancelReason}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.danger,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    _StatusStepper(currentStep: stepIndex),
-                ],
-              ),
-            ),
-
-            // ── Estimated delivery ──────────────────────────────────────
-            if (!isCancelled && deliveryStr.isNotEmpty) ...[
-              const SizedBox(height: AppSizes.sm),
+          padding: const EdgeInsets.all(AppSizes.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Order header ────────────────────────────────────────────
               _SectionCard(
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(20),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.local_shipping_outlined,
-                        size: 22,
-                        color: AppColors.primary,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Order #${order.shortId}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 18,
+                              color: context.onSurfaceColor,
+                            ),
+                          ),
+                          if (dateStr.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Placed on $dateStr',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: context.onSurfaceMuted,
+                              ),
+                            ),
+                          ],
+                          // Only a delivered order has refunds of its items; a cancelled order's refund
+                          // is explained by its payment notice below.
+                          if (order.status == 'delivered')
+                            RefundItemBadge(
+                                mark: orderRefundLabel(
+                                    paymentStatus: order.paymentStatus,
+                                    refundedAmountMinor:
+                                        order.refundedAmountMinor,
+                                    refundReservedAmountMinor:
+                                        order.refundReservedAmountMinor,
+                                    refundRequestActive:
+                                        order.refundRequestActive)),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: AppSizes.md),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppStrings.estimatedDelivery,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: context.onSurfaceMuted,
-                            fontWeight: FontWeight.w500,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: color.withAlpha(20),
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusFull),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(icon, size: 13, color: color),
+                          const SizedBox(width: 5),
+                          Text(
+                            statusLabel,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: color,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          deliveryStr,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: context.onSurfaceColor,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
 
-            const SizedBox(height: AppSizes.sm),
-
-            // ── Delivery information ────────────────────────────────────
-            _SectionCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _SectionTitle(label: AppStrings.deliveryInformation),
-                  const SizedBox(height: AppSizes.md),
-                  _InfoRow(
-                    icon: Icons.location_on_outlined,
-                    label: AppStrings.address,
-                    value: [
-                      addr.street,
-                      '${addr.city}, ${addr.state} ${addr.zipCode}',
-                      addr.country,
-                    ].where((s) => s.trim().isNotEmpty).join('\n'),
-                  ),
-                  const SizedBox(height: AppSizes.sm),
-                  _InfoRow(
-                    icon: Icons.payment_outlined,
-                    label: AppStrings.paymentMethod,
-                    value: order.paymentType
-                        .split(RegExp(r'[-_]'))
-                        .map((w) => w.isEmpty
-                            ? w
-                            : w[0].toUpperCase() + w.substring(1))
-                        .join(' '),
-                  ),
-                  if (order.selectedDeliveryOption != null) ...[
-                    const SizedBox(height: AppSizes.sm),
-                    _InfoRow(
-                      icon: Icons.local_shipping_outlined,
-                      label: 'Delivery Method',
-                      value: () {
-                        final opt = order.selectedDeliveryOption!;
-                        final name = opt[0].toUpperCase() + opt.substring(1);
-                        final shipping = displayShipping == 0
-                            ? ' (Free shipping)'
-                            : ' (Buyer pays)';
-                        return '$name$shipping';
-                      }(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AppSizes.sm),
-
-            // ── Payment notice (manual-capture orders) ──────────────────
-            if (paymentNotice != null) ...[
-              OrderPaymentNoticeCard(
-                notice: paymentNotice,
-                deadlineText: deadlineText,
-                shortWindowNote: deadlineText != null &&
-                        hasShortAcceptanceWindow(order)
-                    ? 'Your card authorization ends sooner than usual, so the seller has less time to accept this order.'
-                    : null,
-              ),
               const SizedBox(height: AppSizes.sm),
-            ],
 
-            if (order.status == 'delivered') ...[
-              RefundRequestPanel(key: ValueKey('refund_${order.id}'), orderId: order.id, refreshSignal: _refundRefresh, onUpdated: () => context.read<OrderBloc>().add(OrdersLoadRequested(order.userId))),
-              const SizedBox(height: AppSizes.sm),
-            ],
-
-            // ── Order items grouped by seller ───────────────────────────
-            _SectionCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const _SectionTitle(label: AppStrings.orderItems),
-                      const SizedBox(width: 8),
+              // ── Status section ──────────────────────────────────────────
+              _SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _SectionTitle(label: AppStrings.status),
+                    const SizedBox(height: AppSizes.md),
+                    if (isCancelled)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                            horizontal: AppSizes.md, vertical: 12),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(26),
+                          color: AppColors.danger.withAlpha(16),
                           borderRadius:
-                              BorderRadius.circular(AppSizes.radiusFull),
+                              BorderRadius.circular(AppSizes.radiusMd),
+                          border:
+                              Border.all(color: AppColors.danger.withAlpha(40)),
                         ),
-                        child: Text(
-                          '${filteredItems.length}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.cancel_outlined,
+                                size: 16, color: AppColors.danger),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    cancelledBySellerNotice(order)?.title ??
+                                        AppStrings.orderCancelledNotice,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.danger,
+                                    ),
+                                  ),
+                                  if (order.cancelReason != null &&
+                                      order.cancelReason!.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Reason: ${order.cancelReason}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.danger,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      _StatusStepper(currentStep: stepIndex),
+                  ],
+                ),
+              ),
+
+              // ── Estimated delivery ──────────────────────────────────────
+              if (!isCancelled && deliveryStr.isNotEmpty) ...[
+                const SizedBox(height: AppSizes.sm),
+                _SectionCard(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withAlpha(20),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.local_shipping_outlined,
+                          size: 22,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: AppSizes.md),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppStrings.estimatedDelivery,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.onSurfaceMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
+                          const SizedBox(height: 3),
+                          Text(
+                            deliveryStr,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: context.onSurfaceColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: AppSizes.sm),
+
+              // ── Delivery information ────────────────────────────────────
+              _SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _SectionTitle(label: AppStrings.deliveryInformation),
+                    const SizedBox(height: AppSizes.md),
+                    _InfoRow(
+                      icon: Icons.location_on_outlined,
+                      label: AppStrings.address,
+                      value: [
+                        addr.street,
+                        '${addr.city}, ${addr.state} ${addr.zipCode}',
+                        addr.country,
+                      ].where((s) => s.trim().isNotEmpty).join('\n'),
+                    ),
+                    const SizedBox(height: AppSizes.sm),
+                    _InfoRow(
+                      icon: Icons.payment_outlined,
+                      label: AppStrings.paymentMethod,
+                      value: order.paymentType
+                          .split(RegExp(r'[-_]'))
+                          .map((w) => w.isEmpty
+                              ? w
+                              : w[0].toUpperCase() + w.substring(1))
+                          .join(' '),
+                    ),
+                    if (order.selectedDeliveryOption != null) ...[
+                      const SizedBox(height: AppSizes.sm),
+                      _InfoRow(
+                        icon: Icons.local_shipping_outlined,
+                        label: 'Delivery Method',
+                        value: () {
+                          final opt = order.selectedDeliveryOption!;
+                          final name = opt[0].toUpperCase() + opt.substring(1);
+                          final shipping = displayShipping == 0
+                              ? ' (Free shipping)'
+                              : ' (Buyer pays)';
+                          return '$name$shipping';
+                        }(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: AppSizes.sm),
+
+              // ── Payment notice (manual-capture orders) ──────────────────
+              if (paymentNotice != null) ...[
+                OrderPaymentNoticeCard(
+                  notice: paymentNotice,
+                  deadlineText: deadlineText,
+                  shortWindowNote: deadlineText != null &&
+                          hasShortAcceptanceWindow(order)
+                      ? 'Your card authorization ends sooner than usual, so the seller has less time to accept this order.'
+                      : null,
+                ),
+                const SizedBox(height: AppSizes.sm),
+              ],
+
+              if (order.status == 'delivered') ...[
+                RefundRequestPanel(
+                    key: ValueKey('refund_${order.id}'),
+                    orderId: order.id,
+                    refreshSignal: _refundRefresh,
+                    onUpdated: () => context
+                        .read<OrderBloc>()
+                        .add(OrdersLoadRequested(order.userId))),
+                const SizedBox(height: AppSizes.sm),
+              ],
+
+              // ── Order items grouped by seller ───────────────────────────
+              _SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const _SectionTitle(label: AppStrings.orderItems),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withAlpha(26),
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusFull),
+                          ),
+                          child: Text(
+                            '${filteredItems.length}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSizes.sm),
+                    for (var g = 0; g < groupEntries.length; g++) ...[
+                      _DetailSellerHeader(
+                        sellerName: groupEntries[g].value.first.sellerName,
+                      ),
+                      const SizedBox(height: AppSizes.xs),
+                      ...groupEntries[g].value.asMap().entries.map((e) {
+                        final isLastItem =
+                            e.key == groupEntries[g].value.length - 1;
+                        final review = _reviews[e.value.productId];
+                        final item = e.value;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _OrderItemRow(
+                                item: item,
+                                mark: refundMarkFor(widget.order.refundedItems,
+                                    item.lineId, item.quantity)),
+                            if (review != null)
+                              _ReviewCard(
+                                review: review,
+                                productId: item.productId,
+                                productName: item.productName,
+                                productImage: item.displayImage,
+                                orderId: order.id,
+                                onUpdated: (updated) => setState(
+                                  () => _reviews[item.productId] = updated,
+                                ),
+                              ),
+                            if (!isLastItem) const Divider(height: AppSizes.md),
+                          ],
+                        );
+                      }),
+                      // Message to seller
+                      Builder(builder: (ctx) {
+                        final key = groupEntries[g].key;
+                        final msg = order.sellerMessages[key] ?? '';
+                        if (msg.isEmpty) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: AppSizes.sm),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSizes.sm, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: ctx.surfaceVariantColor,
+                              borderRadius:
+                                  BorderRadius.circular(AppSizes.radiusMd),
+                              border: Border.all(
+                                  color: ctx.borderColor, width: 0.5),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(Icons.chat_bubble_outline_rounded,
+                                    size: 14, color: ctx.onSurfaceMuted),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        AppStrings.messageToSeller,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: ctx.onSurfaceMuted,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        msg,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: ctx.onSurfaceColor,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                      if (g < groupEntries.length - 1)
+                        Padding(
+                          padding:
+                              const EdgeInsets.symmetric(vertical: AppSizes.sm),
+                          child: Divider(
+                              height: 1,
+                              color: AppColors.primary.withAlpha(100),
+                              thickness: 0.4),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: AppSizes.sm),
+
+              // ── Order summary ───────────────────────────────────────────
+              _SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _SectionTitle(label: AppStrings.orderDetails),
+                    const SizedBox(height: AppSizes.md),
+                    _SummaryRow(
+                      label: AppStrings.orderAmount,
+                      value: '\$${displaySubtotal.toStringAsFixed(2)}',
+                    ),
+                    if (displayProductDiscount > 0) ...[
+                      const SizedBox(height: 8),
+                      _SummaryRow(
+                        label: AppStrings.discount,
+                        value:
+                            '-\$${displayProductDiscount.toStringAsFixed(2)}',
+                        valueColor: AppColors.success,
+                      ),
+                    ],
+                    if (displayDiscount > 0) ...[
+                      const SizedBox(height: 8),
+                      _SummaryRow(
+                        label: 'Voucher',
+                        value: '-\$${displayDiscount.toStringAsFixed(2)}',
+                        valueColor: AppColors.success,
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    _SummaryRow(
+                      label: AppStrings.shipping,
+                      value: displayShipping == 0
+                          ? AppStrings.free
+                          : '\$${displayShipping.toStringAsFixed(2)}',
+                    ),
+                    const SizedBox(height: 8),
+                    _SummaryRow(
+                      label: AppStrings.taxLabel,
+                      value: '\$${displayTax.toStringAsFixed(2)}',
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: AppSizes.sm),
+                      child: Divider(height: 1),
+                    ),
+                    _SummaryRow(
+                      label: AppStrings.total,
+                      value: '\$${displayTotal.toStringAsFixed(2)}',
+                      isTotal: true,
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Confirm received (buyer, shipped orders only) ───────────
+              if (order.status == 'shipped') ...[
+                const SizedBox(height: AppSizes.md),
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(12),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    border: Border.all(color: AppColors.primary.withAlpha(40)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.local_shipping_outlined,
+                              size: 16, color: AppColors.primary),
+                          SizedBox(width: 6),
+                          Text(
+                            AppStrings.orderOnTheWay,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        AppStrings.confirmReceiptInstruction,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.onSurfaceSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.sm),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 44,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppSizes.radiusMd),
+                            ),
+                          ),
+                          icon:
+                              const Icon(Icons.check_circle_outline, size: 18),
+                          label: const Text(
+                            AppStrings.orderReceived,
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 14),
+                          ),
+                          onPressed: () => _showConfirmReceivedDialog(context),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSizes.sm),
-                  for (var g = 0; g < groupEntries.length; g++) ...[
-                    _DetailSellerHeader(
-                      sellerName: groupEntries[g].value.first.sellerName,
-                    ),
-                    const SizedBox(height: AppSizes.xs),
-                    ...groupEntries[g].value.asMap().entries.map((e) {
-                      final isLastItem =
-                          e.key == groupEntries[g].value.length - 1;
-                      final review = _reviews[e.value.productId];
-                      final item = e.value;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _OrderItemRow(
-                              item: item,
-                              mark: refundMarkFor(widget.order.refundedItems,
-                                  item.lineId, item.quantity)),
-                          if (review != null)
-                            _ReviewCard(
-                              review: review,
-                              productId: item.productId,
-                              productName: item.productName,
-                              productImage: item.displayImage,
-                              orderId: order.id,
-                              onUpdated: (updated) => setState(
-                                () => _reviews[item.productId] = updated,
-                              ),
-                            ),
-                          if (!isLastItem) const Divider(height: AppSizes.md),
-                        ],
-                      );
-                    }),
-                    // Message to seller
-                    Builder(builder: (ctx) {
-                      final key = groupEntries[g].key;
-                      final msg = order.sellerMessages[key] ?? '';
-                      if (msg.isEmpty) return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: AppSizes.sm),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: AppSizes.sm, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: ctx.surfaceVariantColor,
-                            borderRadius:
-                                BorderRadius.circular(AppSizes.radiusMd),
-                            border:
-                                Border.all(color: ctx.borderColor, width: 0.5),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(Icons.chat_bubble_outline_rounded,
-                                  size: 14, color: ctx.onSurfaceMuted),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      AppStrings.messageToSeller,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: ctx.onSurfaceMuted,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      msg,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: ctx.onSurfaceColor,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                    if (g < groupEntries.length - 1)
-                      Padding(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: AppSizes.sm),
-                        child: Divider(
-                            height: 1,
-                            color: AppColors.primary.withAlpha(100),
-                            thickness: 0.4),
-                      ),
-                  ],
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AppSizes.sm),
-
-            // ── Order summary ───────────────────────────────────────────
-            _SectionCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _SectionTitle(label: AppStrings.orderDetails),
-                  const SizedBox(height: AppSizes.md),
-                  _SummaryRow(
-                    label: AppStrings.orderAmount,
-                    value: '\$${displaySubtotal.toStringAsFixed(2)}',
-                  ),
-                  if (displayProductDiscount > 0) ...[
-                    const SizedBox(height: 8),
-                    _SummaryRow(
-                      label: AppStrings.discount,
-                      value: '-\$${displayProductDiscount.toStringAsFixed(2)}',
-                      valueColor: AppColors.success,
-                    ),
-                  ],
-                  if (displayDiscount > 0) ...[
-                    const SizedBox(height: 8),
-                    _SummaryRow(
-                      label: 'Voucher',
-                      value: '-\$${displayDiscount.toStringAsFixed(2)}',
-                      valueColor: AppColors.success,
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  _SummaryRow(
-                    label: AppStrings.shipping,
-                    value: displayShipping == 0
-                        ? AppStrings.free
-                        : '\$${displayShipping.toStringAsFixed(2)}',
-                  ),
-                  const SizedBox(height: 8),
-                  _SummaryRow(
-                    label: AppStrings.taxLabel,
-                    value: '\$${displayTax.toStringAsFixed(2)}',
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: AppSizes.sm),
-                    child: Divider(height: 1),
-                  ),
-                  _SummaryRow(
-                    label: AppStrings.total,
-                    value: '\$${displayTotal.toStringAsFixed(2)}',
-                    isTotal: true,
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Confirm received (buyer, shipped orders only) ───────────
-            if (order.status == 'shipped') ...[
-              const SizedBox(height: AppSizes.md),
-              Container(
-                padding: const EdgeInsets.all(AppSizes.md),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withAlpha(12),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  border: Border.all(color: AppColors.primary.withAlpha(40)),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.local_shipping_outlined,
-                            size: 16, color: AppColors.primary),
-                        SizedBox(width: 6),
-                        Text(
-                          AppStrings.orderOnTheWay,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      AppStrings.confirmReceiptInstruction,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.onSurfaceSecondary,
-                        height: 1.4,
+              ],
+
+              // ── Cancel order ────────────────────────────────────────────
+              if (canBuyerCancel(order)) ...[
+                const SizedBox(height: AppSizes.md),
+                SizedBox(
+                  height: AppSizes.buttonHeight,
+                  child: OutlinedButton.icon(
+                    key: keys.orders.cancelOrderButton,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.danger,
+                      side: const BorderSide(color: AppColors.danger),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                       ),
                     ),
-                    const SizedBox(height: AppSizes.sm),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.success,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppSizes.radiusMd),
-                          ),
-                        ),
-                        icon: const Icon(Icons.check_circle_outline, size: 18),
-                        label: const Text(
-                          AppStrings.orderReceived,
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 14),
-                        ),
-                        onPressed: () => _showConfirmReceivedDialog(context),
-                      ),
+                    icon: const Icon(Icons.cancel_outlined, size: 18),
+                    label: const Text(
+                      AppStrings.cancelOrder,
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                     ),
-                  ],
+                    onPressed: () => _showCancelDialog(context),
+                  ),
                 ),
-              ),
+              ],
+
+              const SizedBox(height: AppSizes.xl),
             ],
-
-            // ── Cancel order ────────────────────────────────────────────
-            if (canBuyerCancel(order)) ...[
-              const SizedBox(height: AppSizes.md),
-              SizedBox(
-                height: AppSizes.buttonHeight,
-                child: OutlinedButton.icon(
-                  key: keys.orders.cancelOrderButton,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.danger,
-                    side: const BorderSide(color: AppColors.danger),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    ),
-                  ),
-                  icon: const Icon(Icons.cancel_outlined, size: 18),
-                  label: const Text(
-                    AppStrings.cancelOrder,
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                  ),
-                  onPressed: () => _showCancelDialog(context),
-                ),
-              ),
-            ],
-
-            const SizedBox(height: AppSizes.xl),
-          ],
-        ),
+          ),
         ),
       ),
     );
@@ -932,7 +957,9 @@ class _CancelReasonFieldState extends State<_CancelReasonField> {
           color: isDark ? const Color(0xFF64748B) : AppColors.textMuted,
         ),
         helperText: 'Optional — helps sellers improve',
-        helperStyle: TextStyle(fontSize: 12, color: isDark ? const Color(0xFF475569) : AppColors.textMuted),
+        helperStyle: TextStyle(
+            fontSize: 12,
+            color: isDark ? const Color(0xFF475569) : AppColors.textMuted),
         filled: true,
         fillColor: isDark ? const Color(0xFF0F172A) : AppColors.surfaceVariant,
         border: OutlineInputBorder(
@@ -943,7 +970,8 @@ class _CancelReasonFieldState extends State<_CancelReasonField> {
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
     );
   }
@@ -957,7 +985,10 @@ class _SummaryRow extends StatelessWidget {
   final bool isTotal;
   final Color? valueColor;
   const _SummaryRow(
-      {required this.label, required this.value, this.isTotal = false, this.valueColor});
+      {required this.label,
+      required this.value,
+      this.isTotal = false,
+      this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -977,7 +1008,8 @@ class _SummaryRow extends StatelessWidget {
           value,
           style: TextStyle(
             fontSize: isTotal ? 16 : 13,
-            color: valueColor ?? (isTotal ? AppColors.primary : context.onSurfaceColor),
+            color: valueColor ??
+                (isTotal ? AppColors.primary : context.onSurfaceColor),
             fontWeight: isTotal ? FontWeight.w900 : FontWeight.w500,
           ),
         ),

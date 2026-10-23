@@ -5,7 +5,7 @@ import Order from '../../models/Order.js';
 import User from '../../models/User.js';
 import RefundRequest from '../../models/RefundRequest.js';
 import { getSellerOrders } from '../sellerService.js';
-import { listSellerOrderRefundRequests } from '../refundRequestService.js';
+import { listSellerOrderRefundRequests, listCompletedBuyerRefundRequests } from '../refundRequestService.js';
 import { connectIntegrationDb } from './integrationDb.js';
 
 const buyer = new mongoose.Types.ObjectId(); const seller = new mongoose.Types.ObjectId(); const otherSeller = new mongoose.Types.ObjectId();
@@ -67,5 +67,31 @@ describe('refunds on the seller order pages (replica set)', () => {
     const byId = (id: mongoose.Types.ObjectId) => orders.find(o => o._id.toString() === id.toString())!;
     expect(byId(withRefunds._id).refundedItems).toEqual([{ lineId: lineA.toString(), refunded: 1, processing: 1 }]);
     expect(byId(without._id).refundedItems).toEqual([]);
+  });
+
+  it('sends the unsettled request id and the reserved amount so the clients can say Refund requested or Refund processing', async () => {
+    const waiting = await order(productId); const approved = await order(productId); const none = await order(productId);
+    await Order.updateOne({ _id: waiting._id }, { $set: { activeRefundRequestId: new mongoose.Types.ObjectId() } });
+    await Order.updateOne({ _id: approved._id }, { $set: { activeRefundRequestId: new mongoose.Types.ObjectId(), refundReservedAmountMinor: 1080 } });
+
+    const orders = await getSellerOrders(seller.toString()) as unknown as Array<{ _id: mongoose.Types.ObjectId; activeRefundRequestId?: unknown; refundReservedAmountMinor?: number }>;
+    const byId = (id: mongoose.Types.ObjectId) => orders.find(o => o._id.toString() === id.toString())!;
+
+    expect(byId(waiting._id).activeRefundRequestId).toBeTruthy();
+    expect(byId(waiting._id).refundReservedAmountMinor ?? 0).toBe(0);
+    expect(byId(approved._id)).toMatchObject({ refundReservedAmountMinor: 1080 });
+    expect(byId(approved._id).activeRefundRequestId).toBeTruthy();
+    expect(byId(none._id).activeRefundRequestId).toBeFalsy();
+  });
+
+  it('tells the order payment status with each request, on the seller order list and the buyer Return/Refund list', async () => {
+    const o = await order(productId);
+    await refund(o._id, seller, 'refunded', [{ lineId: lineA, ordinal: 1 }], 'k1');
+
+    const [sellerView] = await listSellerOrderRefundRequests(o.id, seller.toString());
+    const buyerList = await listCompletedBuyerRefundRequests(buyer.toString());
+
+    expect(sellerView).toMatchObject({ orderPaymentStatus: 'partially_refunded' });
+    expect(buyerList.requests[0]).toMatchObject({ orderPaymentStatus: 'partially_refunded' });
   });
 });

@@ -23,6 +23,7 @@ export const refundSchemas = {
     sellerName: { type: 'string', nullable: true, description: 'Seller display name; only on the buyer Return/Refund list. Null if the seller account is missing.' },
     buyerName: { type: 'string', nullable: true, description: 'Buyer display name; only on the seller refund list. Null if the buyer account is missing.' },
     orderPlacedAt: { ...date, description: 'When the order was placed; only on the buyer and seller refund lists.' },
+    orderPaymentStatus: { type: 'string', nullable: true, description: 'Payment status of the whole order (for example refunded or partially_refunded), so a card can say Fully or Partially refunded; only on the buyer and seller refund lists and the seller order refund history.' },
   } },
   RefundEligibility: { type: 'object', required: ['orderId', 'eligible', 'lines'], properties: {
     orderId: string, eligible: { type: 'boolean' }, requestsEnabled: { type: 'boolean' }, reason: string, currency: string, deliveredAt: date, deadlineAt: date, shippingRefundableMinor: integer,

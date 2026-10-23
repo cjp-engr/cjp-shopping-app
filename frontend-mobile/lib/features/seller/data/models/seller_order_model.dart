@@ -196,6 +196,9 @@ class SellerOrderData {
   final DateTime? acceptBy;
   final DateTime? authorizationExpiresAt;
   final int refundedAmountMinor, refundReservedAmountMinor;
+
+  /// A refund request is not settled yet: waiting for the seller, or approved and being paid back.
+  final bool refundRequestActive;
   final String currency;
 
   /// Items with refunded units, for marking them in the order views.
@@ -231,6 +234,7 @@ class SellerOrderData {
     this.authorizationExpiresAt,
     this.refundedAmountMinor = 0,
     this.refundReservedAmountMinor = 0,
+    this.refundRequestActive = false,
     this.refundedItems = const [],
     this.currency = 'usd',
     this.canSellerCancelPending = false,
@@ -287,6 +291,7 @@ class SellerOrderData {
         authorizationExpiresAt: authorizationExpiresAt,
         refundedAmountMinor: refundedAmountMinor,
         refundReservedAmountMinor: refundReservedAmountMinor,
+        refundRequestActive: refundRequestActive,
         refundedItems: refundedItems,
         currency: currency,
         canSellerCancelPending: canSellerCancelPending,
@@ -363,6 +368,8 @@ class SellerOrderData {
       refundedAmountMinor: (json['refundedAmountMinor'] as num?)?.toInt() ?? 0,
       refundReservedAmountMinor:
           (json['refundReservedAmountMinor'] as num?)?.toInt() ?? 0,
+      refundRequestActive: json['activeRefundRequestId'] != null &&
+          json['activeRefundRequestId'].toString().isNotEmpty,
       refundedItems: [
         for (final m in (json['refundedItems'] as List? ?? const []))
           if (m is Map && m['lineId'] != null)

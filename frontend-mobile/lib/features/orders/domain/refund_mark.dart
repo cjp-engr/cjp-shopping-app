@@ -6,11 +6,14 @@ class RefundedItemMark {
       {required this.lineId, required this.refunded, required this.processing});
 }
 
-/// How an order item with refunded units is marked: [label], and whether it is [done] (nothing still processing).
+/// What a refund chip shows: all paid back, some paid back, or approved and still being paid back.
+enum RefundKind { full, partial, processing }
+
+/// How an order or one of its items is marked: the [label] and the [kind] of refund (the chip's fill and icon).
 class RefundMark {
   final String label;
-  final bool done;
-  const RefundMark(this.label, this.done);
+  final RefundKind kind;
+  const RefundMark(this.label, this.kind);
 }
 
 /// "Refunded" when all of the item was paid back, a count when only some was, and "Refund processing"
@@ -21,34 +24,39 @@ RefundMark? refundMarkFor(
   final mark = marks.where((m) => m.lineId == lineId).firstOrNull;
   if (mark == null || mark.refunded + mark.processing == 0) return null;
   if (mark.processing == 0) {
-    return RefundMark(
-        mark.refunded >= quantity
-            ? 'Refunded'
-            : '${mark.refunded} of $quantity refunded',
-        true);
+    return mark.refunded >= quantity
+        ? const RefundMark('Refunded', RefundKind.full)
+        : RefundMark(
+            '${mark.refunded} of $quantity refunded', RefundKind.partial);
   }
   return RefundMark(
       mark.refunded == 0
           ? 'Refund processing'
           : '${mark.refunded} refunded, ${mark.processing} processing',
-      false);
+      RefundKind.processing);
 }
 
-/// How a whole order is labelled once money was paid back: fully or partly refunded, or a refund still
-/// being paid back (not [RefundMark.done]). Null when nothing was refunded.
+/// How a whole order is labelled for its refunds. A refund still in flight comes first, because it is
+/// what the reader has to watch: "Refund processing" once the seller approved it (money is reserved),
+/// "Refund requested" while it still waits for the seller. Otherwise fully or partly refunded; null when
+/// there is none.
 RefundMark? orderRefundLabel({
   String? paymentStatus,
   int refundedAmountMinor = 0,
   int refundReservedAmountMinor = 0,
+  bool refundRequestActive = false,
 }) {
+  if (refundReservedAmountMinor > 0) {
+    return const RefundMark('Refund processing', RefundKind.processing);
+  }
+  if (refundRequestActive) {
+    return const RefundMark('Refund requested', RefundKind.processing);
+  }
   if (paymentStatus == 'refunded') {
-    return const RefundMark('Fully refunded', true);
+    return const RefundMark('Fully refunded', RefundKind.full);
   }
   if (refundedAmountMinor > 0) {
-    return const RefundMark('Partially refunded', true);
-  }
-  if (refundReservedAmountMinor > 0) {
-    return const RefundMark('Refund processing', false);
+    return const RefundMark('Partially refunded', RefundKind.partial);
   }
   return null;
 }

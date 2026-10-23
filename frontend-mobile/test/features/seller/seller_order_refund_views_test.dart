@@ -173,4 +173,38 @@ void main() {
     expect(find.text('Refunds'), findsNothing);
     expect(find.textContaining('refunded'), findsNothing);
   });
+
+  testWidgets(
+      'an order whose refund request waits for the seller says Refund requested on the card and in the sheet',
+      (tester) async {
+    await pumpOrders(tester, [
+      sellerOrder(
+          status: 'delivered',
+          paymentStatus: 'captured',
+          items: const [_mouse],
+          refundRequestActive: true)
+    ]);
+
+    expect(find.text('Refund requested'), findsOneWidget);
+
+    await openSheet(tester);
+
+    expect(find.text('Refund requested'), findsWidgets);
+  });
+
+  testWidgets(
+      'an approved refund that is still being paid back says Refund processing',
+      (tester) async {
+    await pumpOrders(tester, [
+      sellerOrder(
+          status: 'delivered',
+          paymentStatus: 'captured',
+          items: const [_mouse],
+          refundRequestActive: true,
+          refundReservedAmountMinor: 1080)
+    ]);
+
+    expect(find.text('Refund processing'), findsOneWidget);
+    expect(find.text('Refund requested'), findsNothing);
+  });
 }

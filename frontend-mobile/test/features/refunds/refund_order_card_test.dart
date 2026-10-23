@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:toko_mart/core/constants/app_colors.dart';
 import 'package:toko_mart/core/theme/app_theme.dart';
 import 'package:toko_mart/features/refunds/data/refund_models.dart';
+import 'package:toko_mart/features/orders/presentation/widgets/refund_item_badge.dart';
 import 'package:toko_mart/features/refunds/presentation/refund_order_card.dart';
 
 Map<String, dynamic> _json({
@@ -471,5 +472,82 @@ void main() {
 
     final style = tester.widget<Text>(find.text(r'$100.38')).style!;
     expect((style.fontSize, style.fontWeight), (16.0, FontWeight.w900));
+  });
+
+  group('status label on the Return/Refund tab', () {
+    testWidgets('says Partially refunded or Fully refunded for the whole order',
+        (tester) async {
+      await tester.pumpWidget(
+          _card(_json(extra: {'orderPaymentStatus': 'partially_refunded'})));
+      expect(find.text('Partially refunded'), findsOneWidget);
+
+      await tester
+          .pumpWidget(_card(_json(extra: {'orderPaymentStatus': 'refunded'})));
+      expect(find.text('Fully refunded'), findsOneWidget);
+    });
+
+    testWidgets(
+        'keeps Refunded without order information and on the order page',
+        (tester) async {
+      await tester.pumpWidget(_card(_json()));
+      expect(find.text('Refunded'), findsWidgets);
+      expect(find.text('Partially refunded'), findsNothing);
+
+      await tester.pumpWidget(_card(
+          _json(extra: {'orderPaymentStatus': 'partially_refunded'}),
+          inOrder: true));
+      expect(find.text('Partially refunded'), findsNothing);
+    });
+
+    testWidgets('a refund that is not settled keeps its own label',
+        (tester) async {
+      await tester.pumpWidget(_card(_json(
+          state: 'processing',
+          extra: {'orderPaymentStatus': 'partially_refunded'})));
+      expect(find.text('Refund processing'), findsOneWidget);
+    });
+  });
+
+  group('chip design on the card', () {
+    Finder chip(String label) => find.descendant(
+        of: find.byType(RefundItemBadge), matching: find.text(label));
+
+    testWidgets(
+        'a settled refund is a violet chip: full, or partial for part of the order',
+        (tester) async {
+      await tester
+          .pumpWidget(_card(_json(extra: {'orderPaymentStatus': 'refunded'})));
+      expect(chip('Fully refunded'), findsOneWidget);
+
+      await tester.pumpWidget(
+          _card(_json(extra: {'orderPaymentStatus': 'partially_refunded'})));
+      expect(chip('Partially refunded'), findsOneWidget);
+
+      await tester.pumpWidget(_card(_json()));
+      expect(chip('Refunded'), findsOneWidget);
+    });
+
+    testWidgets(
+        'a refund that is requested or being paid back is an amber chip',
+        (tester) async {
+      await tester.pumpWidget(_card(_json(state: 'processing')));
+      expect(chip('Refund processing'), findsOneWidget);
+
+      await tester.pumpWidget(_card(_json(state: 'requested')));
+      expect(chip('Awaiting seller review'), findsOneWidget);
+    });
+
+    testWidgets('a rejected request keeps its red pill', (tester) async {
+      await tester.pumpWidget(_card(
+          _json(state: 'rejected', extra: {'rejectionReason': 'Used item'})));
+
+      expect(find.byType(RefundItemBadge), findsNothing);
+      expect(find.text('Rejected'), findsOneWidget);
+    });
+
+    testWidgets('the order page card uses the chip too', (tester) async {
+      await tester.pumpWidget(_card(_json(), inOrder: true));
+      expect(chip('Refunded'), findsOneWidget);
+    });
   });
 }

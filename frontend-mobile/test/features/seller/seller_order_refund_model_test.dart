@@ -59,4 +59,17 @@ void main() {
     expect(changed.refundedItems.single.refunded, 2);
     expect(changed.refundReservedAmountMinor, 100);
   });
+
+  test('knows an order has a refund request that is not settled yet', () {
+    final waiting = SellerOrderData.fromJson(
+        {..._json(), 'activeRefundRequestId': '6ad4d9ac1234567890abcdef'});
+    final none = SellerOrderData.fromJson(_json());
+    final cleared =
+        SellerOrderData.fromJson({..._json(), 'activeRefundRequestId': null});
+
+    expect(waiting.refundRequestActive, isTrue);
+    expect(waiting.copyWith(status: 'cancelled').refundRequestActive, isTrue);
+    expect(none.refundRequestActive, isFalse);
+    expect(cleared.refundRequestActive, isFalse);
+  });
 }

@@ -18,6 +18,8 @@ export interface Order {
   deliveredAt?: string;
   refundRequestDeadlineAt?: string;
   refundedAmountMinor?: number;
+  /** The refund request that is not settled yet (waiting for the seller, or being paid back); absent when none. */
+  activeRefundRequestId?: string;
   refundReservedAmountMinor?: number;
   currency?: string;
   id: string;

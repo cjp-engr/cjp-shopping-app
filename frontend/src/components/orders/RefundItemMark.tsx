@@ -1,6 +1,5 @@
-import { RotateCcw } from 'lucide-react';
-import { Badge } from '../common/Badge';
 import { refundMark } from '../../utils/refund';
+import { RefundChip } from './RefundChip';
 
 interface Props {
   marks?: ReadonlyArray<{ lineId: string; refunded: number; processing: number }>;
@@ -12,9 +11,5 @@ interface Props {
 export function RefundItemMark({ marks, lineId, quantity }: Props) {
   const mark = refundMark(marks, lineId, quantity);
   if (!mark) return null;
-  return (
-    <Badge variant={mark.done ? 'success' : 'warning'} size="sm" className="mt-1.5 gap-1">
-      <RotateCcw className="h-3 w-3" aria-hidden />{mark.label}
-    </Badge>
-  );
+  return <RefundChip kind={mark.kind} label={mark.label} size="sm" className="mt-1.5" />;
 }

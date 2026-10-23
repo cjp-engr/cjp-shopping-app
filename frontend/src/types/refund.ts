@@ -6,7 +6,7 @@ export interface RefundRequest {
   amountMinor: number; shippingMinor?: number; currency: string; state: 'requested' | 'rejected' | 'processing' | 'refunded' | 'needs_review';
   reasonCode: RefundReason; description: string; submittedAt: string; completedAt?: string; decidedAt?: string; rejectionReason?: string; errorCode?: string; canDecide?: boolean;
   /** Only on the buyer Return/Refund list: the store's display name (null if the account is gone) and when the order was placed. */
-  sellerName?: string | null; orderPlacedAt?: string;
+  sellerName?: string | null; orderPlacedAt?: string; orderPaymentStatus?: string | null;
   /** Only on the seller refund list: the buyer's display name (null if the account is gone). */
   buyerName?: string | null;
 }

@@ -157,6 +157,7 @@ class OrderModel extends OrderEntity {
     super.refundRequestDeadlineAt,
     super.refundedAmountMinor,
     super.refundReservedAmountMinor,
+    super.refundRequestActive,
     super.refundedItems,
     super.currency,
     super.cancelledByRole,
@@ -226,6 +227,8 @@ class OrderModel extends OrderEntity {
       refundedAmountMinor: (json['refundedAmountMinor'] as num?)?.toInt() ?? 0,
       refundReservedAmountMinor:
           (json['refundReservedAmountMinor'] as num?)?.toInt() ?? 0,
+      refundRequestActive: json['activeRefundRequestId'] != null &&
+          json['activeRefundRequestId'].toString().isNotEmpty,
       refundedItems: [
         for (final m in (json['refundedItems'] as List? ?? const []))
           if (m is Map && m['lineId'] != null)

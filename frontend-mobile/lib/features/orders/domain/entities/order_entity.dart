@@ -82,6 +82,9 @@ class OrderEntity extends Equatable {
   final DateTime? deliveredAt, refundRequestDeadlineAt;
   final int refundedAmountMinor, refundReservedAmountMinor;
 
+  /// A refund request is not settled yet: waiting for the seller, or approved and being paid back.
+  final bool refundRequestActive;
+
   /// Items with refunded units, for marking them in the order lists.
   final List<RefundedItemMark> refundedItems;
   final String currency;
@@ -118,6 +121,7 @@ class OrderEntity extends Equatable {
     this.refundRequestDeadlineAt,
     this.refundedAmountMinor = 0,
     this.refundReservedAmountMinor = 0,
+    this.refundRequestActive = false,
     this.refundedItems = const [],
     this.currency = 'usd',
     this.cancelledByRole,
@@ -142,6 +146,7 @@ class OrderEntity extends Equatable {
         refundRequestDeadlineAt,
         refundedAmountMinor,
         refundReservedAmountMinor,
+        refundRequestActive,
         refundedItems.map((m) => (m.lineId, m.refunded, m.processing)).toList(),
         currency,
       ];
