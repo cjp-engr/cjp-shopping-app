@@ -28,6 +28,38 @@
 | TC-054 | Cross-seller product edit blocked | P1 | Playwright-API |
 | TC-058 | Description max 200 chars | P2 | Playwright-API |
 | TC-061 | Web 6-step wizard parity | P2 | Playwright |
+| TC-155 | Accept pending card order, payment captured | P0 | Playwright |
+| TC-156 | Acceptance deadline shown while pending | P2 | Playwright / Component |
+| TC-157 | Cancel pending card order with reason; buyer sees why | P0 | Playwright |
+| TC-158 | Cancel reason required (1–1000) | P1 | Playwright |
+| TC-159 | Cancel pending COD order, no Stripe | P1 | Playwright |
+| TC-160 | No cancel from shipped; no card cancel after pending | P1 | Playwright |
+| TC-164 | Approve refund request; refund settles | P0 | Playwright |
+| TC-165 | Reject refund with required reason | P1 | Playwright |
+| TC-170 | Return/Refund tab groups and badge | P2 | Playwright / Component |
+| TC-171 | Offline banner | P2 | Playwright |
+
+### Seller API scenarios added 2026-10-24
+
+| TC ID | Title | Priority | Automation |
+|-------|-------|----------|------------|
+| TC-199 | Accept captures exactly the held amount | P0 | Playwright-API |
+| TC-200 | Repeat accept → 409 `order_not_pending` | P1 | Playwright-API |
+| TC-201 | Other seller cannot accept or cancel | P0 | Playwright-API |
+| TC-202 | Accept after deadline refused | P1 | Blocked |
+| TC-203 | Auto-cancel at the deadline | P1 | Manual / Blocked |
+| TC-204 | Accept vs cancel race, one winner | P1 | Blocked |
+| TC-209 | Seller cancel pending: 200 + paymentOperation | P0 | Playwright-API |
+| TC-210 | Seller cancel validation and ownership | P1 | Playwright-API |
+| TC-211 | Seller cancel conflicts and unsupported shapes | P1 | Playwright-API |
+| TC-212 | Seller cannot cancel shipped | P1 | Playwright-API |
+| TC-213 | `canSellerCancelPending` derivation | P1 | Playwright-API |
+| TC-222 | Seller isolation on refund decisions | P0 | Playwright-API |
+| TC-223 | Approve starts one refund; races converge | P0 | Playwright-API / Integration |
+| TC-224 | Rejection needs an explanation | P1 | Playwright-API |
+| TC-226 | Seller refund list pagination and filters | P2 | Playwright-API |
+| TC-227 | Delivery timestamps on every path | P1 | Playwright-API / Integration |
+| TC-231 | Drafts and manual-capture orders hidden from sellers | P1 | Playwright-API |
 
 ---
 
@@ -50,8 +82,13 @@
 | TC-094 | Preview as buyer (`hideEdit=1`) | P2 | Patrol |
 | TC-601 | 7-step wizard step count | P2 | Patrol |
 | TC-605 | Local order notification + deep link | P2 | Manual / Patrol |
+| TC-182 | Accept pending card order | P0 | Patrol |
+| TC-183 | Cancel pending order, reason required | P0 | Patrol |
+| TC-184 | Cancel hidden when not allowed | P2 | Patrol / Widget |
+| TC-186 | Approve or reject a refund request | P0 | Patrol (keys missing) |
+| TC-188 | Offline banner | P2 | Manual / Widget |
 
-**Total seller scenarios:** 17 web + 12 mobile
+**Added 2026-10-24:** 10 web + 5 mobile + 17 API seller-facing scenarios
 
 Full steps, expected results, and selectors: **`docs/test-cases/test-scenarios.md`**
 
@@ -60,7 +97,8 @@ Full steps, expected results, and selectors: **`docs/test-cases/test-scenarios.m
 ## P0 Seller Smoke
 
 **Web:** TC-041 → TC-042 → TC-064 → TC-047  
-**Mobile:** TC-089 → TC-090 → TC-091 → TC-092
+**Mobile:** TC-089 → TC-090 → TC-091 → TC-092  
+**Accept / cancel / refund (flags needed, see master):** Web TC-155 → TC-157 → TC-164 · Mobile TC-182 → TC-183 → TC-186 · API TC-199, TC-209, TC-223
 
 ---
 
@@ -84,3 +122,4 @@ Full steps, expected results, and selectors: **`docs/test-cases/test-scenarios.m
 | TC-061 | Web | 6-step wizard |
 | TC-601 | Mobile | 7-step wizard (variants separate) |
 | TC-605 | Mobile | Local notification → `/seller?tab=orders` |
+| TC-170 / TC-186 | Web / Mobile | Return/Refund tab with In Progress, Approved, Rejected groups and a badge |

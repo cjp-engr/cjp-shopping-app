@@ -66,6 +66,61 @@
 | TC-060 | Guest catalog access | P1 | Playwright |
 | TC-062 | Wishlist N/A on web | P3 | Blocked |
 | TC-063 | All cart items checkout | P2 | Playwright |
+| TC-137 | Save new address at checkout | P1 | Playwright |
+| TC-138 | Edit saved address | P1 | Playwright |
+| TC-139 | Saved address edit needs street + city | P2 | Playwright |
+| TC-140 | Default address preselected at checkout | P2 | Playwright |
+| TC-141 | Delete saved address (no dialog on web) | P2 | Playwright |
+| TC-142 | Saved cards: list, default, delete | P1 | Playwright |
+| TC-143 | Card checkout (new card) reserves, not charges | P0 | Playwright |
+| TC-144 | Card checkout (saved card) reserves | P1 | Playwright |
+| TC-145 | Reservation disclosure at checkout | P1 | Playwright |
+| TC-146 | Declined card places no order | P0 | Playwright |
+| TC-147 | 3-D Secure card | P1 | Playwright |
+| TC-148 | Multi-seller card checkout, separate holds | P0 | Playwright / Playwright-API |
+| TC-149 | Payment notice per payment state | P1 | Playwright / Component |
+| TC-150 | Short authorization window note | P3 | Manual |
+| TC-151 | Interrupted checkout resumes | P2 | Manual |
+| TC-152 | Cancel pending card order (hold released) | P0 | Playwright |
+| TC-153 | Cancel pending COD order | P1 | Playwright |
+| TC-154 | No cancel after seller accepts; Keep Order | P1 | Playwright |
+| TC-161 | Refund offered inside 7-day window | P1 | Playwright |
+| TC-162 | Submit partial refund request | P0 | Playwright |
+| TC-163 | Refund form validation | P1 | Playwright |
+| TC-166 | One active refund request per order | P1 | Playwright / Playwright-API |
+| TC-167 | Shipping refund rule | P2 | Playwright-API / Component |
+| TC-168 | Refund chips and order tabs | P1 | Playwright / Component |
+| TC-169 | Refund unavailable (COD, window, flag) | P1 | Playwright / Playwright-API |
+| TC-171 | Offline banner | P2 | Playwright |
+
+### Buyer API scenarios added 2026-10-24
+
+| TC ID | Title | Priority | Automation |
+|-------|-------|----------|------------|
+| TC-190 | Saved address CRUD and default | P1 | Playwright-API |
+| TC-191 | Saved address validation | P2 | Playwright-API |
+| TC-192 | Addresses and cards scoped to owner | P0 | Playwright-API |
+| TC-193 | Card order via old endpoint → 426 | P0 | Playwright-API |
+| TC-194 | `create-intent` → 426 | P0 | Playwright-API |
+| TC-195 | Session prices come from the server | P0 | Playwright-API |
+| TC-196 | Checkout session idempotency | P1 | Playwright-API |
+| TC-197 | Sessions and cards are owner-only | P0 | Playwright-API |
+| TC-198 | Insufficient stock aborts the session | P1 | Playwright-API |
+| TC-205 | Buyer cancel is idempotent | P0 | Playwright-API |
+| TC-206 | Buyer cancel after accept → 409 | P0 | Playwright-API |
+| TC-207 | Cancel reason max 500 | P2 | Playwright-API |
+| TC-208 | Cannot cancel another buyer's order | P0 | Playwright-API |
+| TC-214 | Refund eligibility | P0 | Playwright-API |
+| TC-215 | Ineligible refund reasons | P1 | Playwright-API |
+| TC-216 | Refund request validation | P1 | Playwright-API |
+| TC-217 | Refund request idempotency | P1 | Playwright-API |
+| TC-218 | One unresolved refund per order | P1 | Playwright-API |
+| TC-219 | Refunds switched off | P1 | Playwright-API |
+| TC-220 | Refund amount never from client | P0 | Playwright-API |
+| TC-221 | Buyer isolation on refund endpoints | P0 | Playwright-API |
+| TC-225 | Refund does not undo fulfillment | P1 | Playwright-API |
+| TC-227 | Delivery timestamps on every path | P1 | Playwright-API / Integration |
+| TC-231 | Draft orders hidden | P1 | Playwright-API |
 
 ---
 
@@ -112,8 +167,22 @@
 | TC-603 | Wishlist in-memory | P3 | Blocked |
 | TC-604 | Notifications bell stub | P3 | Manual |
 | TC-606 | 6-char password signup | P2 | Patrol |
+| TC-172 | Save new address at checkout | P1 | Patrol |
+| TC-173 | Edit saved address | P1 | Patrol |
+| TC-174 | Delete saved address asks to confirm | P2 | Patrol |
+| TC-175 | Payment Methods screen | P1 | Patrol |
+| TC-176 | Card checkout reserves, explains | P0 | Patrol |
+| TC-177 | Declined card places no order | P1 | Patrol |
+| TC-178 | 3-D Secure card | P1 | Manual |
+| TC-179 | Payment notices on order detail | P1 | Patrol / Widget |
+| TC-180 | Cancel pending order | P0 | Patrol |
+| TC-181 | No cancel after seller accepts | P2 | Patrol |
+| TC-185 | Request a refund (delivered order) | P0 | Patrol (keys missing) |
+| TC-187 | Return/Refund and Complete tabs | P1 | Patrol / Widget |
+| TC-188 | Offline banner | P2 | Manual / Widget |
+| TC-189 | Interrupted checkout resumes | P2 | Manual |
 
-**Total buyer scenarios:** ~50 web + ~35 mobile (overlap via parity on shared business rules)
+**Added 2026-10-24:** 26 web + 14 mobile + 24 API buyer-facing scenarios (overlap via parity on shared business rules)
 
 Full steps and selectors: **`docs/test-cases/test-scenarios.md`**
 
@@ -123,4 +192,5 @@ Full steps and selectors: **`docs/test-cases/test-scenarios.md`**
 
 **Web:** TC-001 → TC-013 → TC-016 → TC-022 → TC-098 → TC-030  
 **Mobile:** TC-067 → TC-072 → TC-073 → TC-076 → TC-101 → TC-095 → TC-084  
-**Multi-seller:** Web TC-021+025 · Mobile TC-083
+**Multi-seller:** Web TC-021+025 · Mobile TC-083  
+**Authorize / cancel / refund (flags needed, see master):** Web TC-143 → TC-152 → TC-162 · Mobile TC-176 → TC-180 → TC-185 · API TC-193, TC-205, TC-214

@@ -561,6 +561,8 @@
 - Redirect to order confirmation / orders
 - Order status `pending`; payment shows "Cash on Delivery"
 - Cart cleared
+- COD always uses `POST /api/orders` (never a checkout session); order carries `paymentStatus: not_required`, a persisted `sellerId` and a 24-hour `acceptBy`, under both `CHECKOUT_FLOW` values
+- *Updated 2026-10-24:* no Stripe call is made (see TC-153, TC-159 for COD cancellation)
 **Business Rule**: §4 Payment methods, §4 Post-checkout  
 **Selectors/API**: `checkout-page`, `shipping-section`, `payment-section`, `place-order-btn`, `POST /api/orders`  
 **Suggested Layer**: E2E Web
@@ -583,6 +585,7 @@
 
 **Expected Results**:
 - Order created; card last4 shown on order detail
+- *Updated 2026-10-24:* result depends on `CHECKOUT_FLOW`. `legacy`: `POST /api/orders` with the card, payment captured at once. `manual_capture`: checkout session, hold only (`requires_capture`), order `pending` / `authorized`, see TC-144
 **Business Rule**: §4 Payment methods, §8 Saved cards  
 **Selectors/API**: `payment-section`, `place-order-btn`  
 **Suggested Layer**: E2E Web
@@ -606,6 +609,7 @@
 **Expected Results**:
 - Client validation passes for 16-digit card, 3–4 digit CVV
 - Order created successfully
+- *Updated 2026-10-24:* the card is entered in the Stripe `CardElement`; use Stripe test card `4242 4242 4242 4242`. Under `manual_capture` the card is authorized, not charged, see TC-143. Declined and 3DS cards: TC-146, TC-147
 **Business Rule**: §10 Web checkout card validation  
 **Selectors/API**: `payment-section`, `place-order-btn`  
 **Suggested Layer**: E2E Web
@@ -748,6 +752,7 @@
 
 **Expected Results**:
 - Each tab shows only matching orders
+- *Updated 2026-10-24:* tabs are All, Pending, Preparing, To Ship, To Receive, Complete, **Return/Refund**, Cancelled. A fully refunded order leaves Complete (its refund is under Return/Refund) but stays under All. See TC-168
 **Business Rule**: §5 Order lifecycle  
 **Selectors/API**: `orders-page`, `order-tabs`, `order-tab-{key}`, `order-card-{id}`  
 **Suggested Layer**: E2E Web
@@ -788,6 +793,7 @@
 
 **Expected Results**:
 - Status → `cancelled`; stock restored (variant-aware)
+- *Updated 2026-10-24:* the buyer can cancel **pending orders only** (the Cancel button was removed for `preparing`). Cancel opens a "Cancel Order" dialog with an optional reason (max 500 characters); "Keep Order" closes it without cancelling, "Yes, Cancel Order" confirms. Card orders: see TC-152; COD orders: TC-153; no cancel once the seller accepts: TC-154
 **Business Rule**: §5 Buyer cancel, §5 Stock restore  
 **Selectors/API**: `order-detail-page`, `PUT /api/orders/:id/status`  
 **Suggested Layer**: E2E Web + Playwright-API
@@ -1393,6 +1399,7 @@
 **Expected Results**:
 - Each transition succeeds; status badge updates
 - `shippedAt` set on shipped
+- *Updated 2026-10-24:* `pending → preparing` is the **acceptance** step: the action is labelled "Accept & start preparing", is rejected after `acceptBy`, and for a card order captures the held amount (TC-155). From `shipped` a seller can only move to `delivered`; `shipped → cancelled` is no longer allowed (TC-160, TC-212)
 **Business Rule**: §5 Seller transitions  
 **Selectors/API**: `seller-order-card-{id}`, `order-action-{id}`, `seller-order-action-btn`  
 **Suggested Layer**: E2E Web
@@ -1413,6 +1420,7 @@
 
 **Expected Results**:
 - Status → `cancelled`
+- *Updated 2026-10-24:* split by state. **Pending** orders (card or COD) are cancelled with a **required** reason of 1–1000 characters and only when the server sets `canSellerCancelPending` (TC-157, TC-158, TC-159). **Preparing/processing** orders can be cancelled by the seller for COD only, with an optional reason; card orders show no Cancel button (TC-160)
 **Business Rule**: §5 Cancellation  
 **Selectors/API**: `seller-cancel-order-btn`, `seller-order-detail-page`  
 **Suggested Layer**: E2E Web
@@ -1658,3 +1666,782 @@
 
 ---
 
+## Added 2026-10-24 — features shipped since the last review
+
+> **Environment flags used by these scenarios** (set on the backend and web build under test; see `docs/authorize-capture-open-items.md`):
+> `CHECKOUT_FLOW=manual_capture` + web `VITE_CHECKOUT_FLOW=manual_capture` (authorize at checkout, capture on seller acceptance) · `SELLER_SEES_MANUAL_CAPTURE=true` (sellers can see manual-capture orders) · `DELIVERED_REFUNDS_ENABLED=true` (refund requests and decisions).
+> Needs a MongoDB **replica set** and Stripe **test mode** only. Stripe test cards: success `4242 4242 4242 4242`, declined `4000 0000 0000 0002`, 3DS `4000 0025 0000 3155`.
+> Selectors listed are `data-testid` values found in `frontend/src` on 2026-10-24; scenarios without one say so.
+
+---
+
+## Buyer — Saved Addresses & Saved Cards (Web)
+
+### TC-137: Save a new address at checkout
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-172)
+**Automation**: Playwright
+**Preconditions**: Buyer logged in; cart with items; choose "new address" at checkout
+**Steps**:
+1. Open `/checkout`; choose the new-address option and fill street, city, state, ZIP, email and phone
+2. Tick "Save this address to my profile"
+3. Place the order (COD)
+4. Open `/profile` → Saved Addresses
+
+**Expected Results**:
+- The order is placed with the entered address
+- The address appears once in Saved Addresses; leaving the box unticked saves nothing
+**Business Rule**: §8 Saved addresses
+**Selectors/API**: `shipping-section`, `place-order-btn`, checkbox label "Save this address to my profile", `POST /api/auth/saved-addresses`
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-138: Edit a saved address in the profile
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-173)
+**Automation**: Playwright
+**Preconditions**: Buyer has ≥ 1 saved address
+**Steps**:
+1. Open `/profile` → Saved Addresses
+2. Click the edit (pencil, title "Edit address") control on an address
+3. Change the street and city; click Save
+
+**Expected Results**:
+- The address row shows the new values; the default flag is unchanged
+- A page reload and the checkout address picker show the same values
+**Business Rule**: §8 Saved addresses
+**Selectors/API**: title "Edit address", `PUT /api/auth/saved-addresses/:id`
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-139: Saved address edit requires street and city
+**Category**: Negative
+**Priority**: P2
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both
+**Automation**: Playwright
+**Preconditions**: Buyer has ≥ 1 saved address
+**Steps**:
+1. Open the edit form for an address
+2. Clear the street (then repeat with the city) and click Save
+3. Click Cancel on a second edit after changing a field
+
+**Expected Results**:
+- The text "Street and city are required" is shown; no request is sent and the address is unchanged
+- Cancel discards the edit
+**Business Rule**: §8 Saved addresses (`street` + `city` required)
+**Selectors/API**: inline error text, `PUT /api/auth/saved-addresses/:id` (see TC-191)
+**Suggested Layer**: E2E Web + Component
+
+---
+
+### TC-140: Set a default address; checkout preselects it
+**Category**: Business Rule
+**Priority**: P2
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both
+**Automation**: Playwright
+**Preconditions**: Buyer has ≥ 2 saved addresses, the first is default
+**Steps**:
+1. In `/profile`, set the second address as default
+2. Open `/checkout`
+
+**Expected Results**:
+- Exactly one address carries the "Default" badge (the second); the first loses it
+- Checkout preselects the default address
+**Business Rule**: §8 Saved addresses (one default)
+**Selectors/API**: "Default" badge, `PUT /api/auth/saved-addresses/:id/default`
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-141: Delete a saved address (web removes it without a dialog)
+**Category**: Platform Parity
+**Priority**: P2
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Divergent (mobile asks for confirmation, TC-174)
+**Automation**: Playwright
+**Preconditions**: Buyer has ≥ 2 saved addresses
+**Steps**:
+1. In `/profile`, click the delete control (title "Delete address") on a non-default address
+
+**Expected Results**:
+- The address is removed immediately; no confirmation dialog appears on web
+- The other addresses are unchanged
+**Business Rule**: §8 Saved addresses
+**Selectors/API**: title "Delete address", `DELETE /api/auth/saved-addresses/:id`
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-142: Saved cards on the profile — list, set default, delete
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-175)
+**Automation**: Playwright
+**Preconditions**: Buyer has ≥ 2 saved cards (add through checkout with "save card", or `POST /api/auth/payment-methods`)
+**Steps**:
+1. Open `/profile` → Saved Cards
+2. Set the non-default card as default
+3. Delete one card
+
+**Expected Results**:
+- Each card shows brand, last 4 digits and expiry; only one card is default
+- The deleted card disappears and is no longer offered in checkout
+- Duplicate cards (same last4 + expiry) are never listed twice
+**Business Rule**: §8 Saved cards
+**Selectors/API**: `PATCH /api/auth/payment-methods/:id/default`, `DELETE /api/auth/payment-methods/:id`
+**Suggested Layer**: E2E Web
+
+---
+
+## Buyer — Authorize-at-Checkout (Web, `CHECKOUT_FLOW=manual_capture`)
+
+### TC-143: Card checkout with a new card reserves the amount without charging
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-176)
+**Automation**: Playwright
+**Preconditions**: Manual-capture flow enabled; buyer logged in; cart with one seller's items; Stripe test mode
+**Steps**:
+1. Open `/checkout`; fill the address; choose credit card; enter `4242 4242 4242 4242` with a future expiry and any CVC in the card element
+2. Click Review Order, then Place Order
+3. Open the new order's detail page
+
+**Expected Results**:
+- The order is placed with status `pending` and `paymentStatus: authorized`; the cart is cleared
+- Stripe shows the PaymentIntent as `requires_capture` with nothing captured (hold only)
+- Order detail shows the "Payment reserved" notice and the seller's acceptance deadline
+- No client-supplied amount is used; the amount equals the order total
+**Business Rule**: Authorize-capture §Checkout and authorization
+**Selectors/API**: `payment-section`, `card-authorization-panel`, `place-order-btn`, `payment-status-notice`, `acceptance-deadline`, `POST /api/checkout/sessions`, `POST /api/checkout/sessions/:id/confirm`
+**Suggested Layer**: E2E Web (Stripe test mode)
+
+---
+
+### TC-144: Card checkout with a saved card reserves the amount
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-176)
+**Automation**: Playwright
+**Preconditions**: As TC-143; buyer has a saved card
+**Steps**:
+1. Checkout; keep "Saved Card" mode; select the saved card
+2. Review Order → Place Order
+
+**Expected Results**:
+- Same outcome as TC-143: `pending` / `authorized`, hold only
+- The saved card must belong to the logged-in buyer (see TC-197 for the API check)
+**Business Rule**: Authorize-capture §Checkout and authorization; §8 Saved cards
+**Selectors/API**: `payment-section`, `place-order-btn`
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-145: Checkout explains the reservation before the buyer pays
+**Category**: UI State
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-176)
+**Automation**: Playwright
+**Preconditions**: Manual-capture flow; card payment selected
+**Steps**:
+1. Reach the Review step of `/checkout` with a card payment
+
+**Expected Results**:
+- `card-authorization-panel` shows "Your money is reserved now and charged when each seller starts preparing your order."
+- The panel also tells the buyer unaccepted orders cancel after 24 hours; for COD the panel is not shown
+**Business Rule**: Authorize-capture §API and client contracts
+**Selectors/API**: `card-authorization-panel`
+**Suggested Layer**: E2E Web + Component
+
+---
+
+### TC-146: Declined card places no order and loses nothing
+**Category**: Negative
+**Priority**: P0
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-177)
+**Automation**: Playwright
+**Preconditions**: Manual-capture flow; cart with items; note the product stock first
+**Steps**:
+1. Checkout with test card `4000 0000 0000 0002`
+2. Place Order
+
+**Expected Results**:
+- An actionable card-declined error is shown; no raw exception text
+- No order appears in `/orders`; the cart is intact
+- Product stock and coupon usage are back to their starting values once the draft is released
+**Business Rule**: Authorize-capture §Checkout (compensation on definitive failure)
+**Selectors/API**: `payment-section`, `place-order-btn`
+**Suggested Layer**: E2E Web + Playwright-API
+
+---
+
+### TC-147: 3-D Secure card completes only after authentication
+**Category**: Edge Case
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-178)
+**Automation**: Playwright
+**Preconditions**: Manual-capture flow; Stripe test mode
+**Steps**:
+1. Checkout with `4000 0025 0000 3155`; Place Order
+2. In the Stripe challenge, complete authentication (run 1) or abandon it (run 2)
+
+**Expected Results**:
+- Run 1: order placed `pending` / `authorized`
+- Run 2: no order is placed, the cart is kept, and the user can retry; no hold is left over after the draft expires (15 minutes)
+**Business Rule**: Authorize-capture §Checkout step 4
+**Selectors/API**: Stripe challenge iframe, `POST /api/checkout/sessions/:id/confirm`
+**Suggested Layer**: E2E Web (Stripe test mode)
+
+---
+
+### TC-148: Multi-seller card checkout holds each seller's amount separately
+**Category**: Business Rule
+**Priority**: P0
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both
+**Automation**: Playwright + Playwright-API
+**Preconditions**: Manual-capture flow; cart with items from 2 sellers
+**Steps**:
+1. Checkout with a card and place the order
+2. Open `/orders`; check both orders and their PaymentIntents in Stripe
+
+**Expected Results**:
+- Two orders, each `pending` / `authorized`, each with its own PaymentIntent for exactly that order's total
+- If one seller's authorization fails, every hold obtained for the session is released and no order is shown (all-or-nothing placement)
+**Business Rule**: Authorize-capture §Checkout (multi-seller), §Data and invariants
+**Selectors/API**: `order-card-{id}`, `POST /api/checkout/sessions`
+**Suggested Layer**: E2E Web + Playwright-API
+
+---
+
+### TC-149: Buyer order detail shows the payment state accurately
+**Category**: UI State
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-179)
+**Automation**: Playwright (with seeded orders) / Component
+**Preconditions**: Orders in these payment states: `authorized`, `capture_pending`, `captured`, `release_pending`, `released`, `refund_pending`, `refunded`, `partially_refunded`, `failed`
+**Steps**:
+1. Open each order's detail page
+
+**Expected Results**:
+- `payment-status-notice` shows, in order: "Payment reserved", "Charging payment", "Payment charged", "Releasing reservation", "Reservation released", "Refund in progress", "Refunded", "Partially refunded", "Payment problem"
+- Money is never described as returned until the release/refund is verified ("Releasing reservation" says you will not be charged, not that it is done)
+**Business Rule**: Authorize-capture §Recovery and Stripe events
+**Selectors/API**: `payment-status-notice`
+**Suggested Layer**: Component / E2E Web
+
+---
+
+### TC-150: Short card authorization window is disclosed
+**Category**: Edge Case
+**Priority**: P3
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both
+**Automation**: Manual (needs a card whose authorization expires in under 24 hours)
+**Preconditions**: A placed order whose `acceptBy` is earlier than `placedAt + 24 h`
+**Steps**:
+1. Open the order detail
+
+**Expected Results**:
+- `short-authorization-note` explains the seller window is shorter than 24 hours for this card
+**Business Rule**: Authorize-capture §Checkout step 7
+**Selectors/API**: `short-authorization-note`
+**Suggested Layer**: Component + Manual
+
+---
+
+### TC-151: Interrupted checkout resumes without a second authorization
+**Category**: Edge Case
+**Priority**: P2
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-189)
+**Automation**: Manual (Playwright candidate)
+**Preconditions**: Manual-capture flow; card checkout in progress
+**Steps**:
+1. Place the order and reload the page / lose connection before the confirmation returns
+2. Return to `/checkout` and place the order again
+
+**Expected Results**:
+- The same checkout session is reused (same idempotency key); the buyer ends with one order per seller and one hold each, never duplicates
+**Business Rule**: Authorize-capture §Checkout (idempotency, resume)
+**Selectors/API**: `checkoutAttempt` storage, `POST /api/checkout/sessions`
+**Suggested Layer**: Manual + API (TC-196)
+
+---
+
+## Buyer — Cancelling a Pending Order (Web)
+
+### TC-152: Buyer cancels a pending card order — the hold is released
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-180)
+**Automation**: Playwright
+**Preconditions**: Manual-capture flow; a `pending` / `authorized` card order not yet accepted
+**Steps**:
+1. Open `/orders`; click Cancel on the order
+2. In the "Cancel Order" dialog enter a reason (optional) and click "Yes, Cancel Order"
+3. Open the order detail
+
+**Expected Results**:
+- Status `cancelled`; stock (and variant stock) and coupon use restored exactly once
+- Payment notice goes from "Releasing reservation" to "Reservation released"; the PaymentIntent in Stripe is `canceled` with nothing captured
+- The Cancelled tab lists the order
+**Business Rule**: Authorize-capture §Buyer cancellation
+**Selectors/API**: dialog title "Cancel Order", `payment-status-notice`, `PUT /api/orders/:id/status`
+**Suggested Layer**: E2E Web + Playwright-API (TC-205)
+
+---
+
+### TC-153: Buyer cancels a pending COD order
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both
+**Automation**: Playwright
+**Preconditions**: A `pending` COD order
+**Steps**:
+1. Cancel the order from `/orders` or the detail page without entering a reason
+
+**Expected Results**:
+- Status `cancelled` (reason optional); stock restored once
+- No payment notice is shown and no Stripe request is made
+- A second click or a repeated request does not restore stock again
+**Business Rule**: Authorize-capture §Buyer cancellation (COD)
+**Selectors/API**: `PUT /api/orders/:id/status`
+**Suggested Layer**: E2E Web + Playwright-API
+
+---
+
+### TC-154: Cancel is unavailable once the seller accepts; "Keep Order" cancels nothing
+**Category**: UI State
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-181)
+**Automation**: Playwright
+**Preconditions**: One `pending` order and one `preparing` order
+**Steps**:
+1. On the pending order open the cancel dialog and click "Keep Order"
+2. Look for a Cancel control on the `preparing` order and on a `capture_pending` order
+
+**Expected Results**:
+- "Keep Order" closes the dialog; the order stays `pending`
+- No Cancel button is offered for `preparing` (removed, PR #80) or for orders whose payment is being captured
+- A stale page that still sends the cancel gets a conflict message (TC-206), never a false "cancelled"
+**Business Rule**: §5 Buyer cancel (pending only)
+**Selectors/API**: `order-detail-page`, `order-card-{id}`
+**Suggested Layer**: E2E Web
+
+---
+
+## Seller — Acceptance and Cancellation (Web)
+
+### TC-155: Seller accepts a pending card order — payment is captured
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Seller
+**Platform**: Web
+**Parity**: Both (mobile TC-182)
+**Automation**: Playwright
+**Preconditions**: Manual-capture flow with `SELLER_SEES_MANUAL_CAPTURE=true`; a `pending` / `authorized` card order for this seller, before `acceptBy`
+**Steps**:
+1. Open `/seller` → Orders (or `/seller/orders/:id`)
+2. Click "Accept & start preparing"; wait for the charging state to finish
+3. Open the same order as the buyer
+
+**Expected Results**:
+- The button stays busy while capturing (`seller-order-charging`); the order becomes `preparing`
+- Stripe shows the PaymentIntent `succeeded` for exactly the held amount; order `paymentStatus: captured`
+- The buyer sees "Payment charged"; the buyer's Cancel button is gone
+**Business Rule**: Authorize-capture §Seller acceptance and capture
+**Selectors/API**: `seller-order-action-btn`, `order-action-{id}`, `seller-order-charging`, `order-charging-{id}`, `PUT /api/seller/orders/:id/status`
+**Suggested Layer**: E2E Web + Playwright-API (TC-199)
+
+---
+
+### TC-156: Seller sees the acceptance deadline only while the order is pending
+**Category**: UI State
+**Priority**: P2
+**Role**: Seller
+**Platform**: Web
+**Parity**: Both
+**Automation**: Playwright / Component
+**Preconditions**: A pending manual-capture order and an already accepted one
+**Steps**:
+1. Open the seller order list and the order detail for each
+
+**Expected Results**:
+- The pending order shows its deadline (`order-accept-deadline-{id}` in the list, `seller-order-accept-deadline` on detail)
+- The accepted order shows no deadline
+- Buyer view shows `acceptance-deadline` for the pending order only
+**Business Rule**: Authorize-capture §Seller acceptance
+**Selectors/API**: `order-accept-deadline-{id}`, `seller-order-accept-deadline`, `acceptance-deadline`
+**Suggested Layer**: Component / E2E Web
+
+---
+
+### TC-157: Seller cancels a pending card order with a reason — hold released, buyer sees why
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Seller
+**Platform**: Web
+**Parity**: Both (mobile TC-183)
+**Automation**: Playwright
+**Preconditions**: Manual-capture flow; a `pending` / `authorized` card order for this seller (`canSellerCancelPending: true`)
+**Steps**:
+1. Open the seller order detail; click Cancel order
+2. Enter a reason (e.g. "Out of stock") and confirm
+3. Open the order as the buyer
+
+**Expected Results**:
+- Response succeeds even if the release is still processing; the seller sees the release as pending, then completed
+- The PaymentIntent is `canceled`, nothing captured; stock, sold count and coupon use restored once
+- Buyer detail shows `order-cancelled-by-seller`: "The seller cancelled this order. Reason: Out of stock"
+- Repeating the cancel returns the same cancelled order with the original actor
+**Business Rule**: Seller pending cancellation spec §Approved policy
+**Selectors/API**: `seller-cancel-order-btn`, `seller-cancel-reason`, `seller-cancel-confirm`, `order-cancelled-by-seller`, `PUT /api/seller/orders/:id/status`
+**Suggested Layer**: E2E Web + Playwright-API (TC-209)
+
+---
+
+### TC-158: Seller pending cancellation needs a valid reason
+**Category**: Negative
+**Priority**: P1
+**Role**: Seller
+**Platform**: Web
+**Parity**: Both (mobile TC-183)
+**Automation**: Playwright
+**Preconditions**: A cancellable pending order
+**Steps**:
+1. Open the cancel dialog; confirm with an empty reason, then with spaces only
+2. Enter 1001 characters and confirm
+3. Double-click Confirm with a valid reason
+
+**Expected Results**:
+- Empty/blank and over-1000 reasons show `seller-cancel-error` and the order is not cancelled
+- A valid reason cancels once; the double click does not send two requests
+**Business Rule**: Seller pending cancellation spec §Approved policy (1–1000 chars)
+**Selectors/API**: `seller-cancel-reason`, `seller-cancel-error`, `seller-cancel-confirm`
+**Suggested Layer**: E2E Web + Playwright-API (TC-210)
+
+---
+
+### TC-159: Seller cancels a pending COD order without any Stripe request
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Seller
+**Platform**: Web
+**Parity**: Both (mobile TC-184)
+**Automation**: Playwright
+**Preconditions**: A `pending` COD order (`paymentStatus: not_required`)
+**Steps**:
+1. Cancel it with a reason
+2. Check the buyer's order and the Stripe dashboard
+
+**Expected Results**:
+- Order `cancelled`; stock restored once; no payment operation in the response and no payment notice for the buyer
+- Stripe's PaymentIntent list is unchanged
+**Business Rule**: Seller pending cancellation spec §Approved policy
+**Selectors/API**: `seller-cancel-order-btn`, `seller-cancel-confirm`
+**Suggested Layer**: E2E Web + Playwright-API
+
+---
+
+### TC-160: Seller cannot cancel from shipped, and cannot cancel card orders after pending
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Seller
+**Platform**: Web
+**Parity**: Both (mobile TC-184)
+**Automation**: Playwright
+**Preconditions**: A `shipped` order; a `preparing` card order; a `preparing` COD order
+**Steps**:
+1. Open each order's seller detail page
+
+**Expected Results**:
+- `shipped`: no Cancel button (only the move to delivered)
+- `preparing` card order: no Cancel button
+- `preparing` COD order: Cancel is available with an optional reason
+**Business Rule**: Authorize-capture §Seller cancellation (pending/preparing/processing only; no `shipped`); Seller pending cancellation spec
+**Selectors/API**: `seller-cancel-order-btn` (absent), `PUT /api/seller/orders/:id/status` (see TC-212)
+**Suggested Layer**: E2E Web + Playwright-API
+
+---
+
+## Delivered-Item Refunds (Web, `DELIVERED_REFUNDS_ENABLED=true`)
+
+### TC-161: Refund request is offered for a delivered card order inside the 7-day window
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-185)
+**Automation**: Playwright
+**Preconditions**: A `delivered` card order with `paymentStatus: captured`, delivered less than 7 days ago
+**Steps**:
+1. Open the order detail
+
+**Expected Results**:
+- The refund request panel lists each item with how many units are still available, the deadline (delivery + 7 days) and the policy text ("Request within seven days of recorded delivery", "No return is needed")
+- No "Change of mind" reason is offered after delivery
+**Business Rule**: Delivered-item refund spec §Delivery time and eligibility
+**Selectors/API**: `GET /api/orders/:id/refund-eligibility`, refund panel, `#refund-reason`
+**Suggested Layer**: E2E Web
+
+---
+
+### TC-162: Buyer submits a partial refund request
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-185)
+**Automation**: Playwright
+**Preconditions**: A delivered, captured card order with ≥ 2 units
+**Steps**:
+1. Open the refund panel; use the quantity stepper to select 1 unit of one item
+2. Choose reason "Damaged item"; enter a description
+3. Check the quote, then submit
+
+**Expected Results**:
+- The quote equals the paid price of that unit after product and coupon discounts plus its share of the original tax (shipping excluded for a partial selection); the amount is computed by the server, not typed by the buyer
+- The request shows "Awaiting seller review" (`refund-card-{id}`); the order stays `delivered` and its total does not change
+**Business Rule**: Delivered-item refund spec §Refund amount allocation
+**Selectors/API**: `QuantityStepper` labels "Increase refund quantity for …", `#refund-reason`, `#refund-description`, `POST /api/orders/:id/refund-requests`
+**Suggested Layer**: E2E Web + Playwright-API
+
+---
+
+### TC-163: Refund form validation
+**Category**: Negative
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-185)
+**Automation**: Playwright
+**Preconditions**: Same as TC-162
+**Steps**:
+1. Try to submit with no item selected
+2. Select an item but leave the description empty or spaces only
+3. Type 1001 characters into the description
+
+**Expected Results**:
+- Submit stays blocked; the form says an item must be selected and the issue described
+- The description counter stops at 1000 (`maxLength`)
+- Nothing is sent to the API
+**Business Rule**: Delivered-item refund spec §Approved first-version policy (1–1000 characters)
+**Selectors/API**: `#refund-description`, character counter "n/1000"
+**Suggested Layer**: E2E Web + Component
+
+---
+
+### TC-164: Seller approves a refund request — refund settles
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Seller
+**Platform**: Web
+**Parity**: Both (mobile TC-186)
+**Automation**: Playwright
+**Preconditions**: A requested refund (TC-162); Stripe test mode
+**Steps**:
+1. Seller opens `/seller` → Return/Refund → In Progress
+2. Review the items and exact amount; click Approve
+3. Open the buyer's order later and the Stripe refund
+
+**Expected Results**:
+- The request moves to "Refund processing" (amber), then "Refunded" once Stripe confirms; it moves to the Approved group
+- Stripe shows one refund for exactly the quoted amount; order `paymentStatus: partially_refunded` (or `refunded` if everything was refunded)
+- Fulfillment stays `delivered`; stock, sold counters and coupon use are not restored; the order total is unchanged
+- Seller revenue subtracts confirmed refunds only
+**Business Rule**: Delivered-item refund spec §API and concurrency
+**Selectors/API**: `refund-group-in_progress`, `refund-group-approved`, `refund-card-{id}`, `PUT /api/seller/refund-requests/:id/decision`
+**Suggested Layer**: E2E Web + Playwright-API (TC-223)
+
+---
+
+### TC-165: Seller rejects a refund request with a required explanation
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Seller
+**Platform**: Web
+**Parity**: Both (mobile TC-186)
+**Automation**: Playwright
+**Preconditions**: A requested refund
+**Steps**:
+1. Click Reject; leave the reason empty and try to confirm
+2. Enter a reason and confirm
+3. Open the buyer's order
+
+**Expected Results**:
+- Confirming with an empty reason is blocked
+- The request goes to Rejected; the buyer sees "The seller rejected this request." with the reason
+- The rejected units remain refundable (a new request is allowed within the 7-day window)
+**Business Rule**: Delivered-item refund spec §Approved first-version policy
+**Selectors/API**: `refund-group-rejected`, label "Rejection reason for <id>"
+**Suggested Layer**: E2E Web + Playwright-API (TC-224)
+
+---
+
+### TC-166: Only one active request per order; a second request follows resolution
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both
+**Automation**: Playwright + Playwright-API
+**Preconditions**: A delivered, captured order with ≥ 2 units, inside the window
+**Steps**:
+1. Submit a request for 1 unit (TC-162); try to open another while it is unresolved
+2. Seller approves it (TC-164)
+3. Submit a request for the remaining unit; then check the panel when nothing is left
+
+**Expected Results**:
+- While the first is unresolved the panel says a request is in progress; the API answers 409 `refund_conflict`
+- After approval the remaining units can be requested within the original window; the refunded unit cannot be selected again
+- With no units left the panel says there is nothing left to refund
+**Business Rule**: Delivered-item refund spec §Approved first-version policy
+**Selectors/API**: `POST /api/orders/:id/refund-requests`, `GET /api/orders/:id/refund-eligibility` (reasons `active_request`, `no_units_left`)
+**Suggested Layer**: E2E Web + Playwright-API (TC-218)
+
+---
+
+### TC-167: Shipping is refunded only with the last paid unit for a seller-fault reason
+**Category**: Business Rule
+**Priority**: P2
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both
+**Automation**: Playwright-API / Component
+**Preconditions**: A delivered, captured order that paid a shipping fee
+**Steps**:
+1. Request a partial selection with reason "Damaged item"
+2. Request every unit with reason "Other"
+3. Request every unit with reason "Wrong item"
+
+**Expected Results**:
+- (1) and (2): shipping is excluded; the form explains when shipping would be included
+- (3): the quote includes the original allocated shipping and the form shows "Shipping (…) is included in your refund."
+**Business Rule**: Delivered-item refund spec §Approved first-version policy (shipping amendment)
+**Selectors/API**: refund breakdown "Shipping refund"
+**Suggested Layer**: Playwright-API + Component
+
+---
+
+### TC-168: Refund chips and order tabs reflect refund state
+**Category**: UI State
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-187)
+**Automation**: Playwright / Component
+**Preconditions**: Orders that are fully refunded, partially refunded, refund-processing and refund-requested
+**Steps**:
+1. Open `/orders` tabs All, Complete and Return/Refund
+2. Open a partially refunded order and look at the item chips
+
+**Expected Results**:
+- Chips: "Fully refunded", "Partially refunded" (outlined), "Refund processing" (amber), "Refund requested" / "Awaiting seller review"
+- A fully refunded order is missing from Complete but present under All; Return/Refund lists approved refunds (`CompletedRefunds`)
+- Item marks read "Refunded", "1 of 2 refunded" or "1 refunded, 1 processing"; the chips differ by fill and icon, not only by colour (also in dark mode)
+**Business Rule**: Delivered-item refund spec §Clients; PR #86, #87
+**Selectors/API**: `order-tab-refunds`, `order-card-{id}`, `view-refund-order-btn`
+**Suggested Layer**: Component / E2E Web
+
+---
+
+### TC-169: Refund is unavailable when the order is not eligible
+**Category**: Negative
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Web
+**Parity**: Both (mobile TC-185)
+**Automation**: Playwright / Playwright-API
+**Preconditions**: A delivered COD order; a delivered card order older than 7 days; a run with `DELIVERED_REFUNDS_ENABLED=false`
+**Steps**:
+1. Open the detail of each order
+
+**Expected Results**:
+- COD: not eligible (unsupported payment); older than 7 days: "window closed"; flag off: new requests are unavailable but existing requests stay readable
+- No request form is submitted successfully in any of these cases
+**Business Rule**: Delivered-item refund spec §Approved first-version policy
+**Selectors/API**: `GET /api/orders/:id/refund-eligibility` (`unsupported_payment`, `window_closed`, `requestsEnabled: false`)
+**Suggested Layer**: Playwright-API + Component (TC-215, TC-219)
+
+---
+
+### TC-170: Seller Return/Refund tab groups requests and shows a badge
+**Category**: UI State
+**Priority**: P2
+**Role**: Seller
+**Platform**: Web
+**Parity**: Both (mobile TC-186)
+**Automation**: Playwright / Component
+**Preconditions**: Requests in progress, approved and rejected
+**Steps**:
+1. Open `/seller` and look at the Return/Refund tab badge
+2. Switch between In Progress, Approved and Rejected
+
+**Expected Results**:
+- The badge counts requests still waiting for the seller
+- Empty groups say "No refund requests in progress.", "No approved refunds yet.", "No rejected requests."
+- Each card shows the buyer's reason, description, items and exact amount
+**Business Rule**: Delivered-item refund spec §Clients
+**Selectors/API**: `seller-tab-refunds`, `refund-group-in_progress`, `refund-group-approved`, `refund-group-rejected`
+**Suggested Layer**: Component / E2E Web
+
+---
+
+## Cross-cutting — Offline handling (Web)
+
+### TC-171: Offline banner appears when the connection drops
+**Category**: UI State
+**Priority**: P2
+**Role**: Both
+**Platform**: Web
+**Parity**: Both (mobile TC-188)
+**Automation**: Playwright (`context.setOffline`)
+**Preconditions**: Any page loaded while online
+**Steps**:
+1. Switch the browser context offline
+2. Switch it back online
+
+**Expected Results**:
+- `offline-banner` shows "You're offline. Check your connection."; it disappears when the connection returns
+- Failed actions while offline show a friendly message, not a raw network error
+**Business Rule**: Offline handling spec 2026-08-06
+**Selectors/API**: `offline-banner`
+**Suggested Layer**: E2E Web
+
+---
