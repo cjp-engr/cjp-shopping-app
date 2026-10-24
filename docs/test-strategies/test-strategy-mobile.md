@@ -2,22 +2,22 @@
 
 *Filtered view of `docs/test-strategies/test-strategy.md` — do not edit independently.*
 
-**Platform filter:** Mobile | Both  
-**Input:** 50 mobile-native TCs from `docs/test-cases/test-scenarios-mobile.md`
+**Platform filter:** Mobile (78 scenarios in `docs/test-cases/test-scenarios-mobile.md`)  
+**Updated:** 2026-10-24
 
 ---
 
-## Pyramid (Mobile)
+## Pyramid (Mobile, 78)
 
-| Layer | Count | Focus | Est. run time | Tool |
-|-------|-------|-------|---------------|------|
-| API (shared) | 3 | TC-025, TC-053, TC-057 legs used by mobile | ~1 min | Playwright-API |
-| E2E Mobile | 38 | Auth, cart checkbox, checkout, wizard, orders | ~20–30 min | Patrol |
-| Multi (API + Patrol) | 2 | TC-083, TC-611 | +2 min | Both |
-| Manual | 2 | TC-604, TC-605 | — | Manual |
-| Blocked | 1 | TC-603 | — | — |
+| Layer | Count | Focus | Tool |
+|-------|-------|-------|------|
+| E2E Mobile | 59 | Auth, cart checkbox, checkout, wizard, orders, seller CRUD, settings screens | Patrol |
+| Multi (widget + Patrol, or API + Patrol) | 8 | TC-083, TC-611 (older); TC-176, 180, 182, 183, 185, 186 (new S5–S7 legs) | `flutter_test` + Patrol |
+| Component / widget | 6 | TC-177, 179, 181, 184, 187, 188 | `flutter_test` |
+| Manual | 4 | TC-178, TC-189, TC-604, TC-605 | Manual |
+| Blocked | 1 | TC-603 | — |
 
-**Keys status:** 2 TCs key-ready (TC-067, TC-074 partial) · 36 TCs need `ValueKey`s before Patrol implementation
+**Keys status (2026-10-24):** `auth`, `products`, `orders`, `seller` and `cart.checkoutButton` keys exist (including seller accept/cancel and the orders payment notice). Refund request and review screens, the save-address toggle, the payment-methods screen and the offline banner have **no keys** yet. Android Patrol is blocked by the Gradle loopback error until the owner fixes it.
 
 ---
 
@@ -28,6 +28,9 @@
 | S2 | Login → browse → cart | E2E | Patrol | `patrol_test/login_test.dart` | **Partial** — login only (TC-067) |
 | S3 | Become seller → simple + variant listing | E2E | Patrol | `seller/product_wizard_test.dart` | Blocked on keys |
 | S4 | 2-seller cart → 2 orders | Multi | Patrol + API | `multi_seller_checkout_test.dart` + `orders.api.spec.ts` | Blocked on keys |
+| S5 | Card checkout reserves → seller accepts → captured | Multi | `flutter_test` + Patrol | TC-176, TC-182 | Keys exist (`orders_*`, `seller_acceptOrderButton_<id>`); candidates: `manual_capture_*_card_verification_test.dart` |
+| S6 | Pending order cancelled by buyer and by seller | Multi | `flutter_test` + Patrol | TC-180, TC-183 | Keys exist (`orders_cancelOrderButton`, `seller_cancelOrderButton_<id>`) |
+| S7 | Delivered order → refund requested → approved | Multi | `flutter_test` + Patrol | TC-185, TC-186 | **Keys missing** for the refund screens |
 
 ---
 
@@ -165,7 +168,8 @@
 
 | Gap | Unblocker |
 |-----|-----------|
-| 36 Patrol tests blocked on keys | Phase M1 — add `ValueKey`s before any new Patrol file |
+| Patrol tests for cart, orders detail, wishlist and the new refund / saved-address / payment-methods / offline screens lack keys | Phase M1 — add `ValueKey`s before any new Patrol file; `orders`, `seller` and `auth`/`products` keys already exist (checkout, seller CRUD and accept/cancel are keyed) |
+| Android Patrol build blocked (Gradle loopback error) | Owner-only system change; see `docs/authorize-capture-open-items.md` |
 | TC-603 wishlist persistence | Manual only — no backend API |
 | TC-605 native notifications | Device permissions + poll timing; Manual primary |
 | Variant image permission flow | Patrol native dialog in TC-091 — document in test module |
@@ -180,5 +184,35 @@
 | Patrol for coupon validation codes | API TC-057 + TC-082 UI only |
 | Playwright for mobile flows | Patrol only |
 | Skipping TC-078 checkbox tests | Highest mobile-specific value |
+
+## Added 2026-10-24 — Mobile scenarios (23)
+
+Layers, sources, rationale and existing-coverage candidates for every row are in **`test-strategy.md` §4c–§4d**. Included: scenarios added on 2026-10-24 and older scenarios the strategy had never assigned.
+
+| ID | Scenario | Final layer | Tool | Priority |
+|----|----------|-------------|------|----------|
+| TC-102 | Add to cart blocked without variant — mobile guard (Patrol) | E2E | Patrol | P1 |
+| TC-172 | Save a new address at checkout (mobile) | E2E | Patrol | P1 |
+| TC-173 | Edit a saved address (mobile) | E2E | Patrol | P1 |
+| TC-174 | Deleting a saved address asks for confirmation (mobile) | E2E | Patrol | P2 |
+| TC-175 | Payment Methods screen — list, set default, delete a card (mobile) | E2E | Patrol | P1 |
+| TC-176 | Card checkout reserves the amount and explains it (mobile) | Multi | flutter_test + Patrol | P0 |
+| TC-177 | Declined card places no order (mobile) | Component | flutter_test | P1 |
+| TC-178 | 3-D Secure card on mobile | Manual | Manual | P1 |
+| TC-179 | Buyer order detail shows payment notices (mobile) | Component | flutter_test | P1 |
+| TC-180 | Buyer cancels a pending order (mobile) | Multi | Playwright-API + Patrol | P0 |
+| TC-181 | No cancel after the seller accepts (mobile) | Component | flutter_test | P2 |
+| TC-182 | Seller accepts a pending card order (mobile) | Multi | flutter_test + Patrol | P0 |
+| TC-183 | Seller cancels a pending order with a required reason (mobile) | Multi | flutter_test + Patrol | P0 |
+| TC-184 | Cancel is hidden when the seller may not cancel (mobile) | Component | flutter_test | P2 |
+| TC-185 | Buyer requests a refund for a delivered order (mobile) | Multi | flutter_test + Patrol | P0 |
+| TC-186 | Seller approves or rejects a refund request (mobile) | Multi | flutter_test + Patrol | P0 |
+| TC-187 | Return/Refund tab and Complete tab behaviour (mobile) | Component | flutter_test | P1 |
+| TC-188 | Offline banner (mobile) | Component | flutter_test + Manual | P2 |
+| TC-189 | Interrupted card checkout resumes (mobile) | Manual | Manual | P2 |
+| TC-621 | Initial product list loads first 20 products | E2E | Patrol | P1 |
+| TC-622 | Scrolling to the bottom loads more products | E2E | Patrol | P1 |
+| TC-623 | Loading spinner visible while fetching more products | E2E | Patrol | P1 |
+| TC-624 | No further fetch when all products are loaded | E2E | Patrol | P1 |
 
 Full master strategy: **`docs/test-strategies/test-strategy.md`**

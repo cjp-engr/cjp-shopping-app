@@ -491,6 +491,7 @@
 **Expected Results**:
 - `POST /api/orders` succeeds; order status `pending`
 - Order payment shows saved card type + last4 on order detail
+- *Updated 2026-10-24:* under `CHECKOUT_FLOW=manual_capture` card checkout uses `/api/checkout/sessions` and only holds the amount (`authorized`); `POST /api/orders` with a card returns 426. See TC-176
 - Checked-out items removed from cart; order visible on `/orders` (`orders_ordersScreen`)
 **Business Rule**: §4 Payment methods, §8 Saved cards  
 **Selectors/API**: `cart_checkoutButton`, `orders_checkoutStreetField`, `orders_paymentNewCardTab`, `orders_placeOrderButton`, `orders_ordersScreen`, `POST /api/orders` — **saved card row keys missing**  
@@ -518,6 +519,7 @@
 - Client validation passes for card fields before submit
 - Order created successfully; payment method persisted on order
 - Order visible in `/orders` history
+- *Updated 2026-10-24:* Stripe test card `4242 4242 4242 4242`; the payment screen shows the authorization disclosure ("Your money is reserved now and charged when each seller starts preparing your order"). See TC-176, TC-177, TC-178
 **Business Rule**: §4 Payment methods, §10 Checkout card validation  
 **Selectors/API**: `cart_checkoutButton`, `orders_paymentOption_credit-card`, `orders_paymentNewCardTab`, `orders_placeOrderButton`, `orders_ordersScreen` — **card field keys missing**  
 **Suggested Layer**: E2E Mobile
@@ -701,6 +703,7 @@
 **Expected Results**:
 - Tabs filter orders correctly
 - Detail shows items, totals, status badge
+- *Updated 2026-10-24:* tabs are Pending, Preparing, To Ship, To Receive, Complete, **Return/Refund**, Cancelled (no "All" tab on mobile). A fully refunded order is hidden from Complete (TC-187). Detail also shows the payment notice (TC-179) and the "Cancelled by the seller" notice with reason (TC-183)
 **Business Rule**: §7 Order history  
 **Selectors/API**: `/orders`, `/orders/:id` — **keys missing**  
 **Suggested Layer**: E2E Mobile
@@ -723,7 +726,7 @@
 - Status advances to delivered (or buyer-confirmed state per API)
 - Review action becomes available
 **Business Rule**: §7 Confirm receipt  
-**Selectors/API**: `PATCH /api/orders/:id/confirm` — **keys missing**  
+**Selectors/API**: `PUT /api/orders/:id/confirm-received` — **keys missing** *(corrected 2026-10-24: the endpoint was listed as `PATCH .../confirm`; confirming also records `deliveredAt` and starts the 7-day refund window, TC-227)*  
 **Suggested Layer**: E2E Mobile
 
 ---
@@ -876,6 +879,7 @@
 
 **Expected Results**:
 - Each transition accepted; status badge updates
+- *Updated 2026-10-24:* `pending → preparing` is the acceptance step, labelled "Accept & start preparing" (`seller_acceptOrderButton_<id>`); it shows the acceptance deadline (`seller_acceptDeadlineText_<id>`) and a charging state while a card is captured (`seller_capturePendingText_<id>`), see TC-182. No cancel is offered from `shipped`
 **Business Rule**: §12 Order pipeline  
 **Selectors/API**: `PATCH /api/seller/orders/:id/status` — **keys missing**  
 **Suggested Layer**: E2E Mobile
@@ -1311,5 +1315,401 @@
 **Business Rule**: §10 Password rules  
 **Selectors/API**: Signup form — **keys missing**  
 **Suggested Layer**: E2E Mobile
+
+---
+## Added 2026-10-24 — features shipped since the last review
+
+> **Environment flags** (same as the web section): `CHECKOUT_FLOW=manual_capture`, `SELLER_SEES_MANUAL_CAPTURE=true`, `DELIVERED_REFUNDS_ENABLED=true`; MongoDB replica set; Stripe **test mode** only (`4242 4242 4242 4242` success, `4000 0000 0000 0002` declined, `4000 0025 0000 3155` 3DS).
+> Keys listed exist in `lib/features/*/keys.dart` on 2026-10-24. "keys missing" means the widget has no `ValueKey` yet; add one before automating. Per `docs/authorize-capture-open-items.md` the Android Patrol build was blocked by a Gradle loopback error, so Patrol coverage here depends on that being fixed by the owner.
+
+---
+
+## Mobile — Saved Addresses & Payment Methods
+
+### TC-172: Save a new address at checkout (mobile)
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Both (web TC-137)
+**Automation**: Patrol
+**Preconditions**: Buyer logged in; cart with checked items; no matching saved address
+**Steps**:
+1. Cart → checkout; choose the new-address option (`orders_checkoutNewAddressOption`) and fill street, city, state, ZIP
+2. Turn on the save-address toggle
+3. Place the order (COD)
+4. Open Profile → Saved Addresses
+
+**Expected Results**:
+- The order is placed; the address appears once in Saved Addresses
+- With the toggle off nothing is saved
+**Business Rule**: §8 Saved addresses
+**Selectors/API**: `orders_checkoutNewAddressOption`, `orders_checkoutStreetField`, `orders_checkoutCityField`, `orders_checkoutStateField`, `orders_checkoutZipField`, `orders_placeOrderButton`; save toggle — **key missing**
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-173: Edit a saved address (mobile)
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Both (web TC-138)
+**Automation**: Patrol
+**Preconditions**: Buyer has ≥ 1 saved address
+**Steps**:
+1. Profile → Saved Addresses → edit an address (bottom sheet)
+2. Change street/city and save; try saving with the street empty
+
+**Expected Results**:
+- The list shows the new values; an empty street/city is rejected with a message and nothing is sent
+**Business Rule**: §8 Saved addresses (`street` + `city` required)
+**Selectors/API**: address sheet — **keys missing**; `PUT /api/auth/saved-addresses/:id`
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-174: Deleting a saved address asks for confirmation (mobile)
+**Category**: Platform Parity
+**Priority**: P2
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Divergent (web deletes without a dialog, TC-141)
+**Automation**: Patrol
+**Preconditions**: Buyer has ≥ 2 saved addresses
+**Steps**:
+1. Tap delete on an address; read the dialog; tap Cancel
+2. Tap delete again and confirm
+
+**Expected Results**:
+- The dialog shows "Delete address" and the address text; Cancel keeps it, confirming removes it (PR #77)
+**Business Rule**: §8 Saved addresses
+**Selectors/API**: confirm dialog — **keys missing**; `DELETE /api/auth/saved-addresses/:id`
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-175: Payment Methods screen — list, set default, delete a card (mobile)
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Both (web TC-142)
+**Automation**: Patrol
+**Preconditions**: Buyer has ≥ 2 saved cards; route `/payment-methods`
+**Steps**:
+1. Profile → Payment Methods
+2. Tap "Set as default" on the non-default card
+3. Delete a card and confirm; open the screen with no cards saved
+
+**Expected Results**:
+- Each row shows brand, `•••• last4` and expiry; exactly one "Default" label
+- Delete asks to confirm ("Delete card" with brand and last4), then shows "card deleted" feedback
+- No cards: the empty state "no saved cards" is shown; a load failure shows a Retry button
+**Business Rule**: §8 Saved cards
+**Selectors/API**: `ValueKey(method.id)` rows; buttons by tooltip; `GET/DELETE /api/auth/payment-methods`, `PATCH .../:id/default`
+**Suggested Layer**: E2E Mobile
+
+---
+
+## Mobile — Authorize-at-Checkout
+
+### TC-176: Card checkout reserves the amount and explains it (mobile)
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Both (web TC-143, TC-144, TC-145)
+**Automation**: Patrol
+**Preconditions**: Manual-capture flow; cart with checked items; Stripe test mode
+**Steps**:
+1. Cart → checkout; fill/confirm the address
+2. Pay with a new card (`orders_paymentNewCardTab`, test card `4242…`) in one run and with a saved card (`orders_paymentSavedCardsTab`, `orders_savedPaymentCard_<id>`) in another
+3. Read the authorization disclosure; tap place order / `orders_paymentSubmitButton`
+4. Open the order detail
+
+**Expected Results**:
+- Disclosure: "Your money is reserved now and charged when each seller starts preparing your order. Orders a seller does not accept within 24 hours are cancelled…"
+- Order `pending` / `authorized`; Stripe PaymentIntent `requires_capture`, nothing captured
+- Detail shows the "Payment reserved" notice (`orders_paymentNoticeTitle_Payment reserved`)
+- Multi-seller carts get one order and one hold per seller
+**Business Rule**: Authorize-capture §Checkout and authorization
+**Selectors/API**: `orders_paymentOption_credit-card`, `orders_paymentNewCardTab`, `orders_paymentSavedCardsTab`, `orders_paymentSubmitButton`, `orders_placeOrderButton`, `POST /api/checkout/sessions`
+**Suggested Layer**: E2E Mobile (Stripe test mode)
+
+---
+
+### TC-177: Declined card places no order (mobile)
+**Category**: Negative
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Both (web TC-146)
+**Automation**: Patrol
+**Preconditions**: Manual-capture flow; cart with checked items
+**Steps**:
+1. Pay with `4000 0000 0000 0002` and submit
+
+**Expected Results**:
+- A readable decline message is shown (not a raw exception); no order is created
+- The cart items stay checked; stock is unchanged after the draft is released
+**Business Rule**: Authorize-capture §Checkout (compensation)
+**Selectors/API**: `orders_paymentSubmitButton` — error text **key missing**
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-178: 3-D Secure card on mobile
+**Category**: Edge Case
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Both (web TC-147)
+**Automation**: Manual (open item M4: 3DS Patrol flow not written)
+**Preconditions**: Manual-capture flow; Stripe test mode
+**Steps**:
+1. Pay with `4000 0025 0000 3155`; complete the challenge in one run, abandon it in another
+
+**Expected Results**:
+- Completed: order `pending` / `authorized`. Abandoned: no order, cart kept, retry possible, no hold left after expiry
+**Business Rule**: Authorize-capture §Checkout step 4
+**Selectors/API**: Stripe SDK native sheet
+**Suggested Layer**: Manual
+
+---
+
+### TC-179: Buyer order detail shows payment notices (mobile)
+**Category**: UI State
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Both (web TC-149)
+**Automation**: Patrol / Widget test
+**Preconditions**: Orders in `authorized`, `capture_pending`, `captured`, `release_pending`, `released`, `refund_pending`, `refunded`, `partially_refunded` and `failed` payment states
+**Steps**:
+1. Open each order's detail screen
+
+**Expected Results**:
+- Titles read "Payment reserved", "Charging payment", "Payment charged", "Releasing reservation", "Reservation released", "Refund in progress", "Refunded", "Partially refunded", "Payment problem"
+- A cancelled-by-seller order shows "Cancelled by the seller" and the reason
+- Known gap (open items): the 24-hour acceptance notice is hidden for COD orders
+**Business Rule**: Authorize-capture §Recovery and Stripe events
+**Selectors/API**: `orders_paymentNoticeTitle_<title>` (`OrdersKeys.paymentNoticeTitle`)
+**Suggested Layer**: Widget / E2E Mobile
+
+---
+
+### TC-189: Interrupted card checkout resumes (mobile)
+**Category**: Edge Case
+**Priority**: P2
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Both (web TC-151)
+**Automation**: Manual
+**Preconditions**: Manual-capture flow; `CheckoutAttemptStore` holds the attempt
+**Steps**:
+1. Submit a card checkout, then kill the app or drop the network before the confirmation returns
+2. Reopen the app and retry checkout
+
+**Expected Results**:
+- The same session is resumed; one order and one hold per seller, never duplicates
+**Business Rule**: Authorize-capture §Checkout (idempotency, resume)
+**Selectors/API**: `lib/features/checkout/data/checkout_attempt_store.dart`
+**Suggested Layer**: Manual
+
+---
+
+## Mobile — Cancelling a Pending Order
+
+### TC-180: Buyer cancels a pending order (mobile)
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Both (web TC-152, TC-153)
+**Automation**: Patrol
+**Preconditions**: A `pending` order (run once with a card hold, once with COD)
+**Steps**:
+1. Orders → Pending tab → open the order
+2. Tap Cancel (`orders_cancelOrderButton`); read the dialog; choose "Keep order" first, then cancel with a reason
+
+**Expected Results**:
+- "Keep order" changes nothing; confirming moves the order to the Cancelled tab with stock restored once
+- Card order: notice goes to "Releasing reservation" then "Reservation released"; COD: no payment notice
+**Business Rule**: Authorize-capture §Buyer cancellation
+**Selectors/API**: `orders_cancelOrderButton`, `orders_orderCard_<id>`, `PUT /api/orders/:id/status`
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-181: No cancel after the seller accepts (mobile)
+**Category**: UI State
+**Priority**: P2
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Both (web TC-154)
+**Automation**: Patrol
+**Preconditions**: A `preparing` order and a `capture_pending` order
+**Steps**:
+1. Open each order's detail
+
+**Expected Results**:
+- `orders_cancelOrderButton` is absent for both; a conflict from a stale screen is shown as a message, never as "cancelled"
+**Business Rule**: §5 Buyer cancel (pending only)
+**Selectors/API**: `orders_cancelOrderButton` (absent)
+**Suggested Layer**: E2E Mobile
+
+---
+
+## Mobile — Seller Acceptance and Cancellation
+
+### TC-182: Seller accepts a pending card order (mobile)
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Seller
+**Platform**: Mobile
+**Parity**: Both (web TC-155, TC-156)
+**Automation**: Patrol
+**Preconditions**: Manual-capture flow; `SELLER_SEES_MANUAL_CAPTURE=true`; a `pending` / `authorized` card order for this seller
+**Steps**:
+1. Seller dashboard → Orders; read the deadline text
+2. Tap "Accept & start preparing" and wait for the charging state
+
+**Expected Results**:
+- `seller_acceptDeadlineText_<id>` is visible while pending; `seller_capturePendingText_<id>` shows during capture
+- The order becomes `preparing`; the exact held amount is captured; the buyer's notice reads "Payment charged"
+**Business Rule**: Authorize-capture §Seller acceptance and capture
+**Selectors/API**: `seller_acceptOrderButton_<id>`, `seller_acceptDeadlineText_<id>`, `seller_capturePendingText_<id>`, `seller_ordersTab`
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-183: Seller cancels a pending order with a required reason (mobile)
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Seller
+**Platform**: Mobile
+**Parity**: Both (web TC-157, TC-158)
+**Automation**: Patrol
+**Preconditions**: A `pending` order with `canSellerCancelPending: true`
+**Steps**:
+1. Tap Cancel (`seller_cancelOrderButton_<id>`); try to confirm with an empty reason (the dialog stays open and shows an error)
+2. Enter a reason and confirm
+3. Open the order as the buyer
+
+**Expected Results**:
+- Empty/blank reasons are rejected in the dialog; a valid reason cancels once
+- Card order: hold released; COD: no Stripe call
+- The buyer sees "Cancelled by the seller" and `Reason: …` on the detail screen
+**Business Rule**: Seller pending cancellation spec §Approved policy, §Client experience
+**Selectors/API**: `seller_cancelOrderButton_<id>`, `seller_cancelReasonField`
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-184: Cancel is hidden when the seller may not cancel (mobile)
+**Category**: Business Rule
+**Priority**: P2
+**Role**: Seller
+**Platform**: Mobile
+**Parity**: Both (web TC-160)
+**Automation**: Patrol / Widget test
+**Preconditions**: A `shipped` order, a `preparing` card order, a `preparing` COD order, a `pending` order with `canSellerCancelPending: false`
+**Steps**:
+1. Open the seller order list
+
+**Expected Results**:
+- No Cancel for `shipped`, the `preparing` card order, or the pending order the server flags as not cancellable; Cancel with an optional reason for the `preparing` COD order
+**Business Rule**: Seller pending cancellation spec; `SellerOrderData.canCancel`
+**Selectors/API**: `seller_cancelOrderButton_<id>` (absent)
+**Suggested Layer**: Widget / E2E Mobile
+
+---
+
+## Mobile — Delivered-Item Refunds
+
+### TC-185: Buyer requests a refund for a delivered order (mobile)
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Both (web TC-161, TC-162, TC-163, TC-169)
+**Automation**: Patrol — **keys missing** for the refund screens
+**Preconditions**: `DELIVERED_REFUNDS_ENABLED=true`; a delivered, captured card order inside 7 days
+**Steps**:
+1. Order detail → "Request a refund"
+2. Select an item and quantity, a reason (default prompt "Select a reason"), enter a description
+3. Try submitting with nothing selected / no description, then submit properly
+
+**Expected Results**:
+- Validation messages "Select an item to refund." and "Describe the issue to continue."; the policy block explains the 7-day window, no return, and shipping rule
+- After submit the request shows as awaiting the seller; the order stays `delivered`
+- Ineligible orders (COD, window closed, flag off) show "This order is not eligible for a refund request." or "New refund requests are currently unavailable."
+**Business Rule**: Delivered-item refund spec
+**Selectors/API**: refund request panel — **keys missing**; `POST /api/orders/:id/refund-requests`
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-186: Seller approves or rejects a refund request (mobile)
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Seller
+**Platform**: Mobile
+**Parity**: Both (web TC-164, TC-165, TC-170)
+**Automation**: Patrol — **keys missing**
+**Preconditions**: A requested refund
+**Steps**:
+1. Seller dashboard → Return/Refund → In Progress; open the request
+2. Approve (button "Approve and refund" after the "Approval starts the refund immediately. The buyer keeps the item." notice), in one run
+3. Reject in another run: leave the reason empty, then enter one and confirm
+
+**Expected Results**:
+- Approve: request becomes processing, then refunded; shows under Approved; the Return/Refund badge decrements
+- Reject: an empty reason is blocked; the request moves to Rejected and the buyer sees the reason
+**Business Rule**: Delivered-item refund spec §API and concurrency
+**Selectors/API**: `RefundReviewPanel` — **keys missing**; `PUT /api/seller/refund-requests/:id/decision`
+**Suggested Layer**: E2E Mobile
+
+---
+
+### TC-187: Return/Refund tab and Complete tab behaviour (mobile)
+**Category**: UI State
+**Priority**: P1
+**Role**: Buyer
+**Platform**: Mobile
+**Parity**: Both (web TC-168)
+**Automation**: Patrol / Widget test (`ordersForTab`)
+**Preconditions**: Fully refunded, partially refunded and normal delivered orders
+**Steps**:
+1. Orders → Complete; then Return/Refund
+
+**Expected Results**:
+- A fully refunded order is not listed under Complete; approved refunds are listed under Return/Refund with "Fully refunded" / "Partially refunded"
+- Partially refunded orders stay under Complete with refund chips on their items
+**Business Rule**: Delivered-item refund spec §Clients; PR #86, #87
+**Selectors/API**: `orders_ordersScreen`, tab labels — **keys missing**
+**Suggested Layer**: Widget / E2E Mobile
+
+---
+
+## Mobile — Offline handling
+
+### TC-188: Offline banner (mobile)
+**Category**: UI State
+**Priority**: P2
+**Role**: Both
+**Platform**: Mobile
+**Parity**: Both (web TC-171)
+**Automation**: Manual (airplane mode) / Widget test (`ConnectivityCubit`)
+**Preconditions**: App running while online
+**Steps**:
+1. Turn the device network off, then on
+
+**Expected Results**:
+- The offline banner appears; network errors read "No internet connection." and disappear when back online
+**Business Rule**: Offline handling spec 2026-08-06
+**Selectors/API**: `core/widgets/offline_banner.dart`, `ConnectivityCubit`
+**Suggested Layer**: Widget + Manual
 
 ---
