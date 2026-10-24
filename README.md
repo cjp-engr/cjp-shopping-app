@@ -305,6 +305,7 @@ Use the [deployment guide](docs/deployment.md) and [payment rollout runbook](doc
 
 ## Documentation
 
+- [Feature documentation index](docs/features.md) — `docs/features.md`
 - [Backend API and setup](backend/README.md) — `backend/README.md`
 - [Mobile architecture and setup](frontend-mobile/README.md) — `frontend-mobile/README.md`
 - [Deployment](docs/deployment.md) — `docs/deployment.md`
@@ -316,4 +317,4 @@ Use the [deployment guide](docs/deployment.md) and [payment rollout runbook](doc
 - [Delivered-refund handoff](docs/delivered-refunds-handoff.md) — `docs/delivered-refunds-handoff.md`. Includes historical entries; use its latest updates and verify against code.
 - [Coding-agent and documentation rules](AGENTS.md) — `AGENTS.md`
 
-The feature-documentation convention is a grouped index at `docs/features.md`, linking to one file per feature under `docs/features/<area>/<feature-name>.md`. That inventory has not yet been populated; the feature summary above is an overview, not a substitute for verified per-feature documentation.
+The [feature documentation index](docs/features.md) links to separate files under `docs/features/<area>/<feature-name>.md` and is being populated incrementally. It currently includes the order-notification proposal and distinguishes existing behavior from planned work. The feature summary above is an overview, not a substitute for verified per-feature documentation.
