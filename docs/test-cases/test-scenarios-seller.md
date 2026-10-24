@@ -1,6 +1,8 @@
 # TokoMart Test Scenarios — Seller (Filtered)
 
-*Filtered view of `docs/test-cases/test-scenarios.md` — do not edit independently.*
+*Derived role index of the Web, API and Mobile scenario files; `test-scenarios.md` is the master index. Update this view together with its platform sources.*
+
+Automation labels below identify intended tools, not implemented or passing scripts. Read the platform case's tracking fields for implementation status, script mapping and run evidence. Repeated references in the journey/parity summaries are navigation aids, not extra test cases.
 
 **Role filter:** Seller | Both  
 **Platform:** Web + Mobile
@@ -60,6 +62,35 @@
 | TC-226 | Seller refund list pagination and filters | P2 | Playwright-API |
 | TC-227 | Delivery timestamps on every path | P1 | Playwright-API / Integration |
 | TC-231 | Drafts and manual-capture orders hidden from sellers | P1 | Playwright-API |
+| TC-232 | Login returns a token | P0 | Playwright-API |
+| TC-233 | Login rejects an invalid password | P1 | Playwright-API |
+| TC-234 | `GET /api/auth/me` returns the user | P1 | Playwright-API |
+| TC-246 | Create coupon, code stored upper case | P1 | Playwright-API |
+| TC-247 | Coupon creation validation and duplicates | P1 | Playwright-API |
+| TC-249 | Cannot change another seller's coupon | P0 | Playwright-API |
+| TC-250 | Update and delete own coupon | P2 | Playwright-API |
+| TC-252 | Applied coupon discounts order, counts one use | P1 | Playwright-API |
+| TC-253 | Out-of-range coupon values rejected | P2 | Playwright-API / Unit |
+| TC-264 | Rate limit resets after the window | P2 | Playwright-API |
+| TC-265 | Limit set to 0 disables rate limiting | P2 | Playwright-API |
+| TC-269 | Spoofed forwarding header cannot bypass limit | P1 | Playwright-API |
+| TC-270 | Separate clients behind the proxy | P1 | Manual |
+| TC-271 | 429 response body is consistent | P3 | Playwright-API |
+| TC-276 | Seller cannot review own product | P2 | Playwright-API |
+| TC-284 | Reviews cannot be deleted | P3 | Playwright-API |
+| TC-285 | Product ownership on both route sets | P1 | Playwright-API |
+| TC-286 | More protected routes return 401 without a token | P1 | Playwright-API |
+| TC-287 | Malformed, expired, foreign tokens rejected | P1 | Playwright-API |
+| TC-289 | Signup validation | P1 | Playwright-API |
+| TC-290 | Follow/unfollow counts and idempotence | P1 | Playwright-API |
+| TC-291 | Follow/unfollow bad inputs | P2 | Playwright-API |
+| TC-292 | User search | P2 | Playwright-API |
+| TC-293 | Search text with regex characters | P2 | Playwright-API |
+| TC-294 | Public profile, followers, following | P2 | Playwright-API |
+| TC-297 | Error responses use one envelope | P3 | Playwright-API |
+| TC-298 | Health and root endpoints respond | P1 | Playwright-API |
+| TC-299 | Unknown routes return JSON 404 | P3 | Playwright-API |
+| TC-300 | /health does not reflect the database | P3 | Manual |
 
 ---
 
@@ -88,7 +119,7 @@
 | TC-186 | Approve or reject a refund request | P0 | Patrol (keys missing) |
 | TC-188 | Offline banner | P2 | Manual / Widget |
 
-**Added 2026-10-24:** 10 web + 5 mobile + 17 API seller-facing scenarios
+**Added 2026-10-24 and 2026-10-25:** 10 web + 5 mobile + 46 API seller-facing scenarios
 
 Full steps, expected results, and selectors: **`docs/test-cases/test-scenarios.md`**
 

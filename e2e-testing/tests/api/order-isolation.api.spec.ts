@@ -3,7 +3,7 @@
 
 import { test, expect, request as pwRequest } from '@playwright/test';
 import {
-  authHeaders, login,
+  authHeaders, login, signupFreshUser,
   SELLER_EMAIL, TEST_PASSWORD,
 } from '../../helpers/api-client';
 import { randomShippingMultipart } from '../../helpers/test-data';
@@ -16,28 +16,20 @@ const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1556821840-3a63f956
 
 let buyer1Token: string;
 let buyer2Token: string;
+let sellerToken: string;
+let productId: string;
 let buyer1OrderId: string;
 
 test.beforeAll(async () => {
   const ctx = await pwRequest.newContext({ baseURL: API_URL });
 
-  // Buyer1 — seeded account
-  buyer1Token = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
-
-  // Buyer2 — fresh account with no orders
-  const ts = Date.now();
-  const signupRes = await ctx.post('/api/auth/signup', {
-    data: {
-      firstName: 'OrderIsolation',
-      lastName: 'Buyer2',
-      email: `order_isolation_buyer2_${ts}@test.com`,
-      password: 'Test750!!',
-    },
-  });
-  buyer2Token = (await signupRes.json()).token;
+  // Buyer1 and buyer2 are fresh buyer accounts, separate from the seller who owns the product
+  ({ token: buyer1Token } = await signupFreshUser(ctx, 'order_isolation_buyer1'));
+  ({ token: buyer2Token } = await signupFreshUser(ctx, 'order_isolation_buyer2'));
 
   // Seller creates a product for buyer1 to order
-  const sellerToken = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
+  const ts = Date.now();
+  sellerToken = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
   const productRes = await ctx.post('/api/seller/products', {
     multipart: {
       name: `Order Isolation Test Product ${ts}`,
@@ -50,7 +42,11 @@ test.beforeAll(async () => {
     },
     headers: authHeaders(sellerToken),
   });
-  const productId = (await productRes.json()).product._id;
+  const productBody = await productRes.json();
+  if (!productRes.ok() || !productBody.product?._id) {
+    throw new Error(`product creation failed: ${productRes.status()} ${JSON.stringify(productBody)}`);
+  }
+  productId = productBody.product._id;
 
   // Buyer1 places an order
   const orderRes = await ctx.post('/api/orders', {
@@ -70,31 +66,73 @@ test.beforeAll(async () => {
   await ctx.dispose();
 });
 
+test.afterAll(async () => {
+  // Cancel the order (restores stock), then remove the product, so repeated runs leave nothing behind
+  const ctx = await pwRequest.newContext({ baseURL: API_URL });
+  const cancelRes = await ctx.put(`/api/orders/${buyer1OrderId}/status`, {
+    data: { status: 'cancelled' },
+    headers: authHeaders(buyer1Token),
+  });
+  expect(cancelRes.ok()).toBeTruthy();
+  const deleteRes = await ctx.delete(`/api/seller/products/${productId}`, {
+    headers: authHeaders(sellerToken),
+  });
+  expect(deleteRes.ok()).toBeTruthy();
+  await ctx.dispose();
+});
+
 // ── TC-110 ──────────────────────────────────────────────────────────────────
 
 test.describe('TC-110: Order list isolation — buyer2 cannot see buyer1 orders', () => {
-  test('GET /api/orders with buyer2 token does not return buyer1 order', async ({ request }) => {
-    await test.step('Send GET /api/orders as buyer2 and assert buyer1 order is absent', async () => {
-      const res = await request.get('/api/orders', {
-        headers: authHeaders(buyer2Token),
+  test(
+    'GET /api/orders with buyer2 token does not return buyer1 order',
+    { tag: ['@TC-110', '@api', '@orders', '@security'] },
+    async ({ request }) => {
+      await test.step('Control: buyer1 sees their own order in GET /api/orders', async () => {
+        const res = await request.get('/api/orders', {
+          headers: authHeaders(buyer1Token),
+        });
+        expect(res.status()).toBe(200);
+        const body = await res.json();
+        const orderIds: string[] = (body.orders ?? []).map((o: any) => o._id);
+        expect(orderIds).toContain(buyer1OrderId);
       });
-      expect(res.status()).toBe(200);
-      const body = await res.json();
-      const orderIds: string[] = (body.orders ?? []).map((o: any) => o._id);
-      expect(orderIds).not.toContain(buyer1OrderId);
-    });
-  });
+
+      await test.step('Send GET /api/orders as buyer2 and assert buyer1 order is absent', async () => {
+        const res = await request.get('/api/orders', {
+          headers: authHeaders(buyer2Token),
+        });
+        expect(res.status()).toBe(200);
+        const body = await res.json();
+        const orderIds: string[] = (body.orders ?? []).map((o: any) => o._id);
+        expect(orderIds).not.toContain(buyer1OrderId);
+        // Buyer2 is a fresh account with no orders, so their own list is empty
+        expect(orderIds).toHaveLength(0);
+      });
+    },
+  );
 });
 
 // ── TC-111 ──────────────────────────────────────────────────────────────────
 
 test.describe('TC-111: Order detail isolation — buyer2 gets 403 on buyer1 order', () => {
-  test('GET /api/orders/:id returns 403 when buyer2 requests buyer1 order', async ({ request }) => {
-    await test.step('Send GET /api/orders/:id as buyer2 on buyer1 order and assert 403', async () => {
-      const res = await request.get(`/api/orders/${buyer1OrderId}`, {
-        headers: authHeaders(buyer2Token),
+  test(
+    'GET /api/orders/:id returns 403 when buyer2 requests buyer1 order',
+    { tag: ['@TC-111', '@api', '@orders', '@security'] },
+    async ({ request }) => {
+      await test.step('Control: buyer1 can read their own order detail', async () => {
+        const res = await request.get(`/api/orders/${buyer1OrderId}`, {
+          headers: authHeaders(buyer1Token),
+        });
+        expect(res.status()).toBe(200);
       });
-      expect(res.status()).toBe(403);
-    });
-  });
+
+      await test.step('Send GET /api/orders/:id as buyer2 on buyer1 order and assert 403', async () => {
+        const res = await request.get(`/api/orders/${buyer1OrderId}`, {
+          headers: authHeaders(buyer2Token),
+        });
+        expect(res.status()).toBe(403);
+      });
+    },
+  );
 });

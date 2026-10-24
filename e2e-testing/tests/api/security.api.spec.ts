@@ -22,6 +22,28 @@ let freshBuyerToken: string;
 let seller1Token: string;
 let seller2Token: string;
 
+// Created by TC-134 and removed in afterAll
+const orderIds: string[] = [];
+const productIds: string[] = [];
+
+test.afterAll(async () => {
+  const ctx = await pwRequest.newContext({ baseURL: API_URL });
+  const failures: string[] = [];
+  for (const id of orderIds) {
+    const res = await ctx.put(`/api/orders/${id}/status`, {
+      data: { status: 'cancelled' },
+      headers: authHeaders(freshBuyerToken),
+    });
+    if (!res.ok()) failures.push(`order ${id}`);
+  }
+  for (const id of productIds) {
+    const res = await ctx.delete(`/api/seller/products/${id}`, { headers: authHeaders(seller2Token) });
+    if (!res.ok()) failures.push(`product ${id}`);
+  }
+  await ctx.dispose();
+  expect(failures, 'cleanup should remove what the run created').toEqual([]);
+});
+
 test.beforeAll(async () => {
   const ctx = await pwRequest.newContext({ baseURL: API_URL });
 
@@ -114,6 +136,7 @@ test.describe('TC-134: Seller order list is scoped to own account', () => {
       });
       expect(productRes.status()).toBe(201);
       const seller2ProductId = (await productRes.json()).product._id as string;
+      productIds.push(seller2ProductId);
 
       // Buyer places an order on seller2's product
       const orderRes = await request.post('/api/orders', {
@@ -126,6 +149,15 @@ test.describe('TC-134: Seller order list is scoped to own account', () => {
       });
       expect(orderRes.status()).toBe(201);
       const seller2OrderId = (await orderRes.json()).orders[0]._id as string;
+      orderIds.push(seller2OrderId);
+
+      // Control: seller2 does see their own order, so an empty list cannot make this test pass
+      const seller2OrdersRes = await request.get('/api/seller/orders', {
+        headers: authHeaders(seller2Token),
+      });
+      expect(seller2OrdersRes.status()).toBe(200);
+      const seller2Ids = ((await seller2OrdersRes.json()).orders as { _id: string }[]).map(o => o._id);
+      expect(seller2Ids).toContain(seller2OrderId);
 
       // Seller1 fetches their own orders — must not see seller2's order
       const seller1OrdersRes = await request.get('/api/seller/orders', {

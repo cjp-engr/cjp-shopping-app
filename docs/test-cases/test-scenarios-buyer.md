@@ -1,6 +1,8 @@
 # TokoMart Test Scenarios — Buyer (Filtered)
 
-*Filtered view of `docs/test-cases/test-scenarios.md` — do not edit independently.*
+*Derived role index of the Web, API and Mobile scenario files; `test-scenarios.md` is the master index. Update this view together with its platform sources.*
+
+Automation labels below name intended tools, not implemented or passing scripts. Read the platform case's tracking fields for status and evidence. Retained aliases TC-060 → TC-008 and TC-613 → TC-102 must not be imported as independent coverage.
 
 **Role filter:** Buyer | Both  
 **Platform:** Web + Mobile
@@ -38,7 +40,6 @@
 | TC-098 | Checkout COD with variant product | P0 | Playwright |
 | TC-023 | Checkout saved card | P1 | Playwright |
 | TC-024 | Checkout new card | P1 | Playwright |
-| TC-098 | Checkout COD with variant product | P0 | Playwright |
 | TC-099 | Variant checkout insufficient stock | P1 | Playwright / Playwright-API |
 | TC-100 | Two variants same product in cart | P1 | Playwright |
 | TC-025 | Multi-seller → 2 orders | P0 | Playwright |
@@ -63,7 +64,7 @@
 | TC-056 | Insufficient stock at checkout | P1 | Playwright-API |
 | TC-057 | Coupon min order | P1 | Playwright-API |
 | TC-059 | Stale cart cleanup | P2 | Playwright |
-| TC-060 | Guest catalog access | P1 | Playwright |
+| TC-060 | Alias of TC-008: guest catalog access | P1 | Track under TC-008 |
 | TC-062 | Wishlist N/A on web | P3 | Blocked |
 | TC-063 | All cart items checkout | P2 | Playwright |
 | TC-137 | Save new address at checkout | P1 | Playwright |
@@ -121,6 +122,68 @@
 | TC-225 | Refund does not undo fulfillment | P1 | Playwright-API |
 | TC-227 | Delivery timestamps on every path | P1 | Playwright-API / Integration |
 | TC-231 | Draft orders hidden | P1 | Playwright-API |
+| TC-232 | Login returns a token | P0 | Playwright-API |
+| TC-233 | Login rejects an invalid password | P1 | Playwright-API |
+| TC-234 | `GET /api/auth/me` returns the user | P1 | Playwright-API |
+| TC-235 | Validate: percentage discount amount | P1 | Playwright-API |
+| TC-236 | Percentage discount capped by `maxDiscount` | P1 | Playwright-API / Unit |
+| TC-237 | Fixed coupon capped at the order amount | P1 | Playwright-API / Unit |
+| TC-238 | Unknown voucher code rejected | P1 | Playwright-API |
+| TC-239 | Inactive voucher rejected | P1 | Playwright-API |
+| TC-240 | Expired voucher rejected | P1 | Playwright-API |
+| TC-241 | Voucher at usage limit rejected | P1 | Playwright-API |
+| TC-242 | Voucher not valid for another seller | P1 | Playwright-API |
+| TC-243 | Validate needs code, seller id and token | P2 | Playwright-API |
+| TC-244 | Validate without order amount | P2 | Playwright-API |
+| TC-245 | Malformed seller id handled | P3 | Playwright-API |
+| TC-248 | Buyer cannot manage coupons | P0 | Playwright-API |
+| TC-251 | Available vouchers list filters | P1 | Playwright-API |
+| TC-252 | Applied coupon discounts order, counts one use | P1 | Playwright-API |
+| TC-254 | Order creation requires authentication | P1 | Playwright-API |
+| TC-255 | Order creation rejects an invalid body | P1 | Playwright-API |
+| TC-256 | Unknown product or variant returns 404 | P1 | Playwright-API |
+| TC-257 | Delivery option and shipping settings set the fee | P1 | Playwright-API / Unit |
+| TC-258 | Variant order uses variant price, discount, attributes | P1 | Playwright-API / Unit |
+| TC-259 | Unknown or ineligible coupon does not block the order | P2 | Playwright-API |
+| TC-260 | Order deducts stock and counts the sale; cancel restores | P1 | Playwright-API |
+| TC-261 | Ordered items leave the server cart | P2 | Playwright-API |
+| TC-262 | COD order starts pending with acceptance fields | P1 | Playwright-API |
+| TC-263 | Free-shipping boundary at $50 | P1 | Playwright-API / Unit |
+| TC-264 | Rate limit resets after the window | P2 | Playwright-API |
+| TC-265 | Limit set to 0 disables rate limiting | P2 | Playwright-API |
+| TC-266 | Checkout routes are rate limited | P2 | Playwright-API |
+| TC-268 | Auth routes share one bucket | P2 | Playwright-API |
+| TC-269 | Spoofed forwarding header cannot bypass limit | P1 | Playwright-API |
+| TC-270 | Separate clients behind the proxy | P1 | Manual |
+| TC-271 | 429 response body is consistent | P3 | Playwright-API |
+| TC-272 | Review endpoints require authentication | P1 | Playwright-API |
+| TC-273 | Create-review validation | P1 | Playwright-API |
+| TC-274 | Over-long or malformed values give a client error | P1 | Playwright-API |
+| TC-275 | Review needs own delivered order containing the product | P1 | Playwright-API |
+| TC-276 | Seller cannot review own product | P2 | Playwright-API |
+| TC-277 | Product rating and count follow reviews | P1 | Playwright-API |
+| TC-278 | Buyer edits own review | P1 | Playwright-API |
+| TC-279 | Cannot edit someone else's review | P0 | Playwright-API |
+| TC-280 | Review list public, paged, newest first | P1 | Playwright-API |
+| TC-281 | Odd paging values and ids handled safely | P2 | Playwright-API |
+| TC-282 | Check endpoint reports whether buyer reviewed | P2 | Playwright-API |
+| TC-283 | Two simultaneous reviews create one | P2 | Playwright-API |
+| TC-284 | Reviews cannot be deleted | P3 | Playwright-API |
+| TC-286 | More protected routes return 401 without a token | P1 | Playwright-API |
+| TC-287 | Malformed, expired, foreign tokens rejected | P1 | Playwright-API |
+| TC-288 | Buyer blocked from every seller-only route | P0 | Playwright-API |
+| TC-289 | Signup validation | P1 | Playwright-API |
+| TC-290 | Follow/unfollow counts and idempotence | P1 | Playwright-API |
+| TC-291 | Follow/unfollow bad inputs | P2 | Playwright-API |
+| TC-292 | User search | P2 | Playwright-API |
+| TC-293 | Search text with regex characters | P2 | Playwright-API |
+| TC-294 | Public profile, followers, following | P2 | Playwright-API |
+| TC-295 | Card order without a payment intent | P0 | Playwright-API |
+| TC-296 | Card order with unconfirmed or reused intent | P1 | Playwright-API / Unit |
+| TC-297 | Error responses use one envelope | P3 | Playwright-API |
+| TC-298 | Health and root endpoints respond | P1 | Playwright-API |
+| TC-299 | Unknown routes return JSON 404 | P3 | Playwright-API |
+| TC-300 | /health does not reflect the database | P3 | Manual |
 
 ---
 
@@ -156,7 +219,7 @@
 | TC-084 | Order history + detail | P1 | Patrol |
 | TC-085 | Confirm receipt | P1 | Patrol |
 | TC-612 | Invalid login | P1 | Patrol |
-| TC-613 | Variant required | P1 | Patrol |
+| TC-613 | Alias of TC-102: variant required | P1 | Track under TC-102 |
 | TC-614 | Qty stock cap | P1 | Patrol |
 | TC-086 | Wishlist add/remove | P1 | Patrol |
 | TC-087 | Wishlist clear all | P2 | Patrol |
@@ -182,7 +245,7 @@
 | TC-188 | Offline banner | P2 | Manual / Widget |
 | TC-189 | Interrupted checkout resumes | P2 | Manual |
 
-**Added 2026-10-24:** 26 web + 14 mobile + 24 API buyer-facing scenarios (overlap via parity on shared business rules)
+**Added 2026-10-24 and 2026-10-25:** 26 web + 14 mobile + 86 API buyer-facing scenarios (overlap via parity on shared business rules)
 
 Full steps and selectors: **`docs/test-cases/test-scenarios.md`**
 

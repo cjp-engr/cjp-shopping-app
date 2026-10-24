@@ -3,17 +3,26 @@
 > **Platform:** Playwright-API (`e2e-testing/tests/api/`). Tests hit the Express backend directly via HTTP — no browser required.  
 > Full master index: [test-scenarios.md](test-scenarios.md) · Web scenarios: [test-scenarios-web.md](test-scenarios-web.md) · Mobile scenarios: [test-scenarios-mobile.md](test-scenarios-mobile.md)
 
+Tracking fields follow [the master index conventions](test-scenarios.md#how-to-track-these-cases). Tool labels and existing script references are not proof of implemented or passing automation. Historical integration-coverage notes require an actual source/report audit before setting verified coverage.
+
 ---
 
 ## Buyer — Cart (API)
 
 ### TC-107: GET /api/cart returns authenticated buyer's own items
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: N/A  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/cart.api.spec.ts`  
 **Preconditions**: Buyer1 logged in; at least one product added to their server-side cart  
 **Steps**:
@@ -30,12 +39,19 @@
 ---
 
 ### TC-108: Cart isolation — buyer2 cannot access buyer1's cart contents (API)
+**Scenario status**: Active
 **Category**: Security / Isolation  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Web (TC-109)  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/cart.api.spec.ts`  
 **Preconditions**: Buyer1 has items in cart; buyer2 is a different account with an empty cart  
 **Steps**:
@@ -54,12 +70,19 @@
 ## Buyer — Orders (API)
 
 ### TC-110: GET /api/orders returns only the authenticated buyer's own orders
+**Scenario status**: Active
 **Category**: Security / Isolation  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Web (TC-112)  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/order-isolation.api.spec.ts`  
 **Preconditions**: Buyer1 has at least one placed order; buyer2 is a different account with no orders  
 **Steps**:
@@ -76,12 +99,19 @@
 ---
 
 ### TC-111: GET /api/orders/:id returns 403 when buyer2 requests buyer1's order
+**Scenario status**: Active
 **Category**: Security / Isolation  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: N/A (API-only enforcement)  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/order-isolation.api.spec.ts`  
 **Preconditions**: Buyer1 has a placed order; buyer2 is a different authenticated account  
 **Steps**:
@@ -99,12 +129,19 @@
 ## Security (API)
 
 ### TC-132: Protected routes return 401 with no token
+**Scenario status**: Active
 **Category**: Security  
 **Priority**: P1  
 **Role**: Any  
 **Platform**: API  
 **Parity**: N/A  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/security.api.spec.ts`  
 **Preconditions**: No Authorization header sent  
 **Steps**:
@@ -119,12 +156,19 @@
 ---
 
 ### TC-133: Tampered JWT returns 401
+**Scenario status**: Active
 **Category**: Security  
 **Priority**: P1  
 **Role**: Any  
 **Platform**: API  
 **Parity**: N/A  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/security.api.spec.ts`  
 **Preconditions**: A valid buyer token exists  
 **Steps**:
@@ -140,12 +184,19 @@
 ---
 
 ### TC-134: Seller order list is scoped to own account (IDOR)
+**Scenario status**: Active
 **Category**: Security / Isolation  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: API  
 **Parity**: N/A  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/security.api.spec.ts`  
 **Preconditions**: Two sellers (seller1, seller2); buyer places order on seller2's product  
 **Steps**:
@@ -162,12 +213,19 @@
 ---
 
 ### TC-135: Buyer blocked from all key seller routes
+**Scenario status**: Active
 **Category**: Security  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Web (extends TC-053)  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/security.api.spec.ts`  
 **Preconditions**: Fresh buyer token (non-seller account)  
 **Steps**:
@@ -182,12 +240,19 @@
 ---
 
 ### TC-136: Weak password on signup returns 400
+**Scenario status**: Active
 **Category**: Negative / Validation  
 **Priority**: P1  
 **Role**: Any  
 **Platform**: API  
 **Parity**: N/A  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/security.api.spec.ts`  
 **Preconditions**: None  
 **Steps**:
@@ -204,12 +269,19 @@
 ## Buyer — Checkout & Orders (API)
 
 ### TC-026: Order total matches pricing formula
+**Scenario status**: Active
 **Category**: Business Rule  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
 **Preconditions**: Known product price, discount, coupon, delivery  
 **Steps**:
@@ -219,6 +291,7 @@
 **Expected Results**:
 - `tax` = 8% of after-discount subtotal
 - `total` = afterDiscounts + tax + shipping (2 decimal places)
+- *Updated 2026-10-25:* the spec now also asserts the exact amounts for a $20 product (subtotal 20, tax 1.60, shipping 9.99, total 31.59) and a second case: a $100 product with a 10% product discount and a 10% seller coupon gives productDiscount 10, coupon discount 9 (on the $90 effective subtotal), tax 6.48, free shipping, total 87.48
 **Business Rule**: §4 Price calculation  
 **Selectors/API**: `POST /api/orders`, order response body  
 **Suggested Layer**: API
@@ -226,12 +299,19 @@
 ---
 
 ### TC-027: Default shipping $9.99 when subtotal after discounts < $50
+**Scenario status**: Active
 **Category**: Business Rule  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
 **Preconditions**: Seller without custom shipping; cart subtotal < $50 after discounts  
 **Steps**:
@@ -246,12 +326,19 @@
 ---
 
 ### TC-028: Free shipping when subtotal after discounts ≥ $50
+**Scenario status**: Active
 **Category**: Business Rule  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
 **Preconditions**: Default shipping rules; effective subtotal ≥ $50  
 **Steps**:
@@ -266,12 +353,19 @@
 ---
 
 ### TC-033: Buyer cannot cancel processing order
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
 **Preconditions**: Order status `processing`  
 **Steps**:
@@ -280,6 +374,7 @@
 **Expected Results**:
 - **400** — cancel not allowed
 - *Updated 2026-10-24:* the buyer can cancel **pending only**, so `preparing` is also rejected. Legacy-shape orders answer **400** `"You can only cancel pending orders"`; manual-capture card orders and COD orders with `paymentStatus: not_required` answer **409** `cancellation_conflict` (shared atomic claim). See TC-206
+- *Updated 2026-10-25:* `orders.api.spec.ts` places a COD order, so it asserts **409** `cancellation_conflict`; the 400 above applies to legacy-shaped orders only
 **Business Rule**: §5 Buyer cancel — pending only (preparing removed, PR #80)  
 **Selectors/API**: `PUT /api/orders/:id/status`  
 **Suggested Layer**: API
@@ -289,12 +384,19 @@
 ## Buyer — Reviews (API)
 
 ### TC-035: Duplicate review blocked
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/reviews.api.spec.ts`  
 **Preconditions**: User already reviewed product  
 **Steps**:
@@ -309,12 +411,19 @@
 ---
 
 ### TC-036: Review blocked before delivery
+**Scenario status**: Active
 **Category**: Security  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/reviews.api.spec.ts`  
 **Preconditions**: Order status `shipped` (not delivered)  
 **Steps**:
@@ -331,12 +440,19 @@
 ## Buyer — Social (API)
 
 ### TC-113: User cannot follow themselves (API)
+**Scenario status**: Active
 **Category**: Security  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/users.api.spec.ts`  
 **Preconditions**: Authenticated user  
 **Steps**:
@@ -353,12 +469,19 @@
 ## Seller — Orders (API)
 
 ### TC-048: Seller invalid status transition rejected
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/seller-access.api.spec.ts`  
 **Preconditions**: Order in `pending`  
 **Steps**:
@@ -376,12 +499,19 @@
 ## Security & Access Control (API)
 
 ### TC-053: Buyer blocked from seller API routes
+**Scenario status**: Active
 **Category**: Security  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/seller-access.api.spec.ts`  
 **Preconditions**: Buyer JWT  
 **Steps**:
@@ -396,12 +526,19 @@
 ---
 
 ### TC-054: Seller cannot edit another seller's product
+**Scenario status**: Active
 **Category**: Security  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/seller/seller-access.spec.ts`  
 **Preconditions**: Two seller accounts  
 **Steps**:
@@ -418,12 +555,19 @@
 ## Edge Cases (API)
 
 ### TC-056: Insufficient stock at checkout returns 400
+**Scenario status**: Active
 **Category**: Edge Case  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
 **Preconditions**: Cart qty exceeds stock at order time  
 **Steps**:
@@ -438,12 +582,19 @@
 ---
 
 ### TC-057: Coupon below minimum order amount rejected
+**Scenario status**: Active
 **Category**: Edge Case  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/coupons.api.spec.ts`  
 **Preconditions**: Coupon with `minOrderAmount` > cart subtotal  
 **Steps**:
@@ -458,12 +609,20 @@
 ---
 
 ### TC-058: Product description max 200 characters enforced
+**Scenario status**: Active
 **Category**: Edge Case  
 **Priority**: P2  
 **Role**: Seller  
 **Platform**: API  
 **Parity**: Both  
 **Automation**: Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller token  
 **Steps**:
 1. Create/update product with description > 200 chars
@@ -479,12 +638,19 @@
 ## Security & Infrastructure — Rate Limiting
 
 ### TC-114: Auth route response includes rate limit headers
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Any
 **Platform**: API
 **Parity**: API (backend shared with mobile)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/rate-limit.api.spec.ts`  
 **Preconditions**: Backend running with rate limiting middleware active
 **Steps**:
@@ -501,12 +667,19 @@
 ---
 
 ### TC-115: API route response includes rate limit headers
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Any
 **Platform**: API
 **Parity**: API (backend shared with mobile)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/rate-limit.api.spec.ts`  
 **Preconditions**: Backend running with rate limiting middleware active
 **Steps**:
@@ -523,12 +696,19 @@
 ---
 
 ### TC-116: RateLimit-Remaining decrements with each request
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Any
 **Platform**: API
 **Parity**: API (backend shared with mobile)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/rate-limit.api.spec.ts`  
 **Preconditions**: Backend running; window not exhausted
 **Steps**:
@@ -544,12 +724,19 @@
 ---
 
 ### TC-117: Auth route returns 429 after limit is exhausted
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P1
 **Role**: Any
 **Platform**: API
 **Parity**: API (backend shared with mobile)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/rate-limit.api.spec.ts`  
 **Preconditions**: Backend started with `RATE_LIMIT_AUTH_MAX=3` (low-limit mode)
 **Steps**:
@@ -567,12 +754,19 @@
 ---
 
 ### TC-118: 429 response includes Retry-After header
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P1
 **Role**: Any
 **Platform**: API
 **Parity**: API (backend shared with mobile)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/rate-limit.api.spec.ts`  
 **Preconditions**: Backend started with `RATE_LIMIT_AUTH_MAX=3` (low-limit mode)
 **Steps**:
@@ -589,12 +783,19 @@
 ---
 
 ### TC-119: General API route returns 429 after limit is exhausted
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P1
 **Role**: Any
 **Platform**: API
 **Parity**: API (backend shared with mobile)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/rate-limit.api.spec.ts`  
 **Preconditions**: Backend started with `RATE_LIMIT_API_MAX=5` (low-limit mode)
 **Steps**:
@@ -622,12 +823,20 @@
 ## Saved Addresses & Payment Methods (API)
 
 ### TC-190: Saved address create, update, default and delete
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both (web TC-137–141, mobile TC-172–174)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Authenticated buyer
 **Steps**:
 1. `POST /api/auth/saved-addresses` twice (street, city, state, zipCode, label)
@@ -645,12 +854,20 @@
 ---
 
 ### TC-191: Saved address requires street and city
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P2
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both (web TC-139)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Authenticated buyer
 **Steps**:
 1. `POST /api/auth/saved-addresses` without `street`; again without `city`
@@ -665,12 +882,20 @@
 ---
 
 ### TC-192: Saved addresses and cards are scoped to their owner
+**Scenario status**: Active
 **Category**: Security
 **Priority**: P0
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer A has a saved address and a saved card; buyer B authenticated
 **Steps**:
 1. As B, `PUT`, `DELETE` and `PUT .../default` on A's address id
@@ -689,12 +914,20 @@
 ## Authorize-at-Checkout (API, `CHECKOUT_FLOW=manual_capture`)
 
 ### TC-193: Card order through the old endpoint is refused with 426
+**Scenario status**: Active
 **Category**: Security
 **Priority**: P0
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: `CHECKOUT_FLOW=manual_capture`; cart with items
 **Steps**:
 1. `POST /api/orders` with `paymentMethod.type = credit-card` (then `debit-card`)
@@ -712,12 +945,20 @@
 ---
 
 ### TC-194: Client-trusted payment intent is refused with 426
+**Scenario status**: Active
 **Category**: Security
 **Priority**: P0
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: `CHECKOUT_FLOW=manual_capture`
 **Steps**:
 1. `POST /api/payments/create-intent` with an arbitrary `amount`
@@ -732,12 +973,20 @@
 ---
 
 ### TC-195: Checkout session prices from the server, never from the client
+**Scenario status**: Active
 **Category**: Security
 **Priority**: P0
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; cart/selection with known prices and a seller coupon
 **Steps**:
 1. `POST /api/checkout/sessions` with the selection and an extra tampered `amount`/`total` field and a lowered client price
@@ -755,12 +1004,20 @@
 ---
 
 ### TC-196: Checkout session is idempotent
+**Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P1
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow
 **Steps**:
 1. `POST /api/checkout/sessions` with idempotency key K and payload P
@@ -778,12 +1035,20 @@
 ---
 
 ### TC-197: Checkout sessions and saved cards are owner-only
+**Scenario status**: Active
 **Category**: Security
 **Priority**: P0
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer A has a session and a saved card; buyer B authenticated
 **Steps**:
 1. As B, `GET /api/checkout/sessions/:id` and `POST .../confirm` for A's session
@@ -800,12 +1065,20 @@
 ---
 
 ### TC-198: Insufficient stock aborts the whole session
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P1
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both (extends TC-056)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; a 2-seller selection where seller B's product has less stock than requested
 **Steps**:
 1. `POST /api/checkout/sessions`
@@ -820,12 +1093,20 @@
 ---
 
 ### TC-231: Draft (`awaiting_payment`) orders stay hidden
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: Both
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A checkout session created but not confirmed
 **Steps**:
 1. `GET /api/orders` and `GET /api/orders/:id` as the buyer
@@ -843,12 +1124,20 @@
 ## Seller Acceptance and Expiry (API)
 
 ### TC-199: Seller accept captures exactly the held amount
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Seller
 **Platform**: API
 **Parity**: Both (web TC-155, mobile TC-182)
 **Automation**: Playwright-API (Stripe test mode)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow with `SELLER_SEES_MANUAL_CAPTURE=true`; a `pending` / `authorized` card order, before `acceptBy`
 **Steps**:
 1. `PUT /api/seller/orders/:id/status` `{ status: "preparing" }`
@@ -864,12 +1153,20 @@
 ---
 
 ### TC-200: Repeat or late accept returns 409 `order_not_pending`
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P1
 **Role**: Seller
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: An order already `preparing` (or cancelled)
 **Steps**:
 1. Send `{ status: "preparing" }` again
@@ -883,12 +1180,20 @@
 ---
 
 ### TC-201: Another seller cannot accept or cancel the order
+**Scenario status**: Active
 **Category**: Security
 **Priority**: P0
 **Role**: Seller
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller A's pending order; seller B authenticated
 **Steps**:
 1. As B send `{ status: "preparing" }`, then `{ status: "cancelled", cancelReason: "x" }`
@@ -903,12 +1208,20 @@
 ---
 
 ### TC-202: Accept after the deadline is refused
+**Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P1
 **Role**: Seller
 **Platform**: API
 **Parity**: Both
 **Automation**: Blocked (needs clock control or a seeded past `acceptBy`; covered by backend integration tests)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A pending order whose `acceptBy` has passed (also a case where the card's own authorization deadline minus 5 minutes is earlier than 24 hours)
 **Steps**:
 1. Send `{ status: "preparing" }` at, then after, the deadline
@@ -922,12 +1235,20 @@
 ---
 
 ### TC-203: Unaccepted orders are cancelled automatically at the deadline
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: System
 **Platform**: API
 **Parity**: Both
 **Automation**: Manual / Blocked (set `ACCEPTANCE_SCAN_INTERVAL_MS` low and seed an expired order)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A pending card order and a pending COD order past `acceptBy`
 **Steps**:
 1. Wait for the scanner (or restart the server to run the startup catch-up)
@@ -941,12 +1262,20 @@
 ---
 
 ### TC-204: Accept racing cancel has exactly one winner
+**Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P1
 **Role**: Both
 **Platform**: API
 **Parity**: Both
 **Automation**: Blocked (needs controlled concurrency; covered by integration tests)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A pending authorized order
 **Steps**:
 1. Fire seller accept and buyer cancel (and separately seller cancel, and two accepts) at the same time, repeatedly
@@ -962,12 +1291,20 @@
 ## Cancellation (API)
 
 ### TC-205: Buyer cancels a pending order; the result is idempotent
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both (web TC-152, TC-153)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A pending card order (manual capture) and a pending COD order; note stock and coupon `usedCount`
 **Steps**:
 1. `PUT /api/orders/:id/status` `{ status: "cancelled", cancelReason: "changed my mind" }`
@@ -984,12 +1321,20 @@
 ---
 
 ### TC-206: Buyer cancel after acceptance is a conflict
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P0
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both (extends TC-033)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture/COD orders in `preparing` and in `capture_pending`
 **Steps**:
 1. Buyer sends the cancel request for each
@@ -1003,12 +1348,20 @@
 ---
 
 ### TC-207: Buyer cancel reason is limited to 500 characters
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P2
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A pending order
 **Steps**:
 1. Cancel with a 501-character reason; then with a non-string reason
@@ -1022,12 +1375,20 @@
 ---
 
 ### TC-208: Buyer cannot cancel someone else's order
+**Scenario status**: Active
 **Category**: Security
 **Priority**: P0
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both (extends TC-111)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer A's pending order; buyer B authenticated
 **Steps**:
 1. As B, `PUT /api/orders/:id/status` cancel; also `PUT .../confirm-received`
@@ -1041,12 +1402,20 @@
 ---
 
 ### TC-209: Seller cancels a pending order — 200 with the payment operation
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Seller
 **Platform**: API
 **Parity**: Both (web TC-157, TC-159; mobile TC-183)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A pending `authorized` card order and a pending COD order for the seller
 **Steps**:
 1. `PUT /api/seller/orders/:id/status` `{ status: "cancelled", cancelReason: "Out of stock" }` on each
@@ -1063,12 +1432,20 @@
 ---
 
 ### TC-210: Seller cancel validation and ownership errors
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P1
 **Role**: Seller
 **Platform**: API
 **Parity**: Both (web TC-158)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A pending order of seller A; seller B authenticated; a draft order id
 **Steps**:
 1. As A, cancel with no reason, a blank reason, and a 1001-character reason
@@ -1085,12 +1462,20 @@
 ---
 
 ### TC-211: Seller cancel conflicts and unsupported order shapes
+**Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P1
 **Role**: Seller
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API (seeded orders) / Integration
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Orders: pending `capture_pending`, a `preparing` card order, a legacy-shaped card order (captured automatically), an order without a persisted `sellerId`
 **Steps**:
 1. Seller sends the cancel request for each
@@ -1107,12 +1492,20 @@
 ---
 
 ### TC-212: Seller cannot cancel a shipped order
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: Seller
 **Platform**: API
 **Parity**: Both (web TC-160)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A `shipped` order
 **Steps**:
 1. `PUT /api/seller/orders/:id/status` `{ status: "cancelled" }`
@@ -1127,12 +1520,20 @@
 ---
 
 ### TC-213: `canSellerCancelPending` is derived by the server
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: Seller
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Orders in several states
 **Steps**:
 1. `GET /api/seller/orders` and read `canSellerCancelPending` on each
@@ -1149,12 +1550,20 @@
 ## Delivered-Item Refunds (API, `DELIVERED_REFUNDS_ENABLED=true`)
 
 ### TC-214: Refund eligibility for a delivered, captured card order
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both (web TC-161)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A delivered, captured card order inside 7 days
 **Steps**:
 1. `GET /api/orders/:id/refund-eligibility`
@@ -1168,12 +1577,20 @@
 ---
 
 ### TC-215: Ineligible refund reasons
+**Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P1
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both (web TC-169)
 **Automation**: Playwright-API (seeded orders)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Orders that are not delivered, delivered COD, delivered with no recorded delivery time, delivered more than 168 hours ago, with an active request, with no units left, and a payment needing review
 **Steps**:
 1. `GET /api/orders/:id/refund-eligibility` for each
@@ -1188,12 +1605,20 @@
 ---
 
 ### TC-216: Refund request body validation
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P1
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both (web TC-163)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: An eligible order
 **Steps**:
 1. `POST /api/orders/:id/refund-requests` with: no `items`; empty `items`; quantity 0, negative, fractional; an unknown `reasonCode` (and `change_of_mind`); empty or 1001-character `description`; missing `idempotencyKey`
@@ -1209,12 +1634,20 @@
 ---
 
 ### TC-217: Refund request idempotency
+**Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P1
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: An eligible order
 **Steps**:
 1. Create a request with key K
@@ -1230,12 +1663,20 @@
 ---
 
 ### TC-218: One unresolved refund request per order
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both (web TC-166)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A request in `requested`, `processing` or `needs_review` state
 **Steps**:
 1. Create a second request (new key) for other units
@@ -1250,12 +1691,20 @@
 ---
 
 ### TC-219: Refunds can be switched off
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: Both
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API (run with the flag off)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: `DELIVERED_REFUNDS_ENABLED=false` (or unset)
 **Steps**:
 1. Buyer creates a request; seller decides an existing request
@@ -1271,12 +1720,20 @@
 ---
 
 ### TC-220: Refund amount is never taken from the client
+**Scenario status**: Active
 **Category**: Security
 **Priority**: P0
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: An eligible order
 **Steps**:
 1. Create a request with extra `amount`, `amountMinor` and `shipping` fields, and with a lowered product price
@@ -1292,12 +1749,20 @@
 ---
 
 ### TC-221: Buyer isolation on refund endpoints
+**Scenario status**: Active
 **Category**: Security
 **Priority**: P0
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer A's delivered order and request; buyer B authenticated
 **Steps**:
 1. As B, call `GET .../refund-eligibility`, `GET` and `POST .../refund-requests` on A's order
@@ -1313,12 +1778,20 @@
 ---
 
 ### TC-222: Seller isolation and role checks on refund decisions
+**Scenario status**: Active
 **Category**: Security
 **Priority**: P0
 **Role**: Seller
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A request for seller A's order; seller B and a buyer authenticated
 **Steps**:
 1. As B, `GET /api/seller/refund-requests` and `PUT /api/seller/refund-requests/:id/decision`
@@ -1334,12 +1807,20 @@
 ---
 
 ### TC-223: Approve starts one refund; repeat and races converge
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P0
 **Role**: Seller
 **Platform**: API
 **Parity**: Both (web TC-164)
 **Automation**: Playwright-API (Stripe test mode); race cases Blocked → Integration
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A requested refund
 **Steps**:
 1. `PUT /api/seller/refund-requests/:id/decision` `{ decision: "approve" }`
@@ -1357,12 +1838,20 @@
 ---
 
 ### TC-224: Rejection needs an explanation
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P1
 **Role**: Seller
 **Platform**: API
 **Parity**: Both (web TC-165)
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A requested refund
 **Steps**:
 1. Decide `reject` with no reason, blank reason, and a 1001-character reason
@@ -1378,12 +1867,20 @@
 ---
 
 ### TC-225: A refund does not undo fulfillment
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: Both
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A delivered order with an approved, settled refund; note stock, `soldCount`, coupon `usedCount` and `order.total`
 **Steps**:
 1. Read the order, product and coupon after the refund
@@ -1398,12 +1895,20 @@
 ---
 
 ### TC-226: Seller refund list pagination and filters
+**Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P2
 **Role**: Seller
 **Platform**: API
 **Parity**: Both
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: ≥ 3 requests in mixed states
 **Steps**:
 1. `GET /api/seller/refund-requests?status=in_progress|approved|rejected&page=1&limit=2`
@@ -1418,12 +1923,20 @@
 ---
 
 ### TC-227: Delivery records `deliveredAt` and the 7-day deadline on every path
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: Both
 **Platform**: API
 **Parity**: Both (mobile TC-085)
 **Automation**: Playwright-API (buyer and seller paths); auto-complete path Manual / Integration
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Three `shipped` orders
 **Steps**:
 1. Buyer `PUT /api/orders/:id/confirm-received` on one
@@ -1443,12 +1956,20 @@
 ## Platform & Documentation (API)
 
 ### TC-228: API documentation is served outside production only
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P2
 **Role**: Any
 **Platform**: API
 **Parity**: API
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Backend with `NODE_ENV=development`, then with `NODE_ENV=production`
 **Steps**:
 1. `GET /api-docs.json` and open `/api-docs`
@@ -1464,12 +1985,20 @@
 ---
 
 ### TC-229: Stripe webhook rejects an invalid signature
+**Scenario status**: Active
 **Category**: Security
 **Priority**: P1
 **Role**: Any
 **Platform**: API
 **Parity**: API
 **Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Webhook secret configured
 **Steps**:
 1. `POST /api/payments/webhook` with a body and no `stripe-signature`, then with a wrong one
@@ -1482,21 +2011,2108 @@
 
 ---
 
-### TC-230: Payment events never advance fulfillment
+### TC-230: Payment events respect acceptance ownership and flag unexpected captures
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: System
 **Platform**: API
 **Parity**: API
-**Automation**: Blocked (needs signed Stripe events / Stripe CLI; covered by backend integration tests)
-**Preconditions**: A cancelled order and a pending authorized order
+**Automation**: Blocked (needs controlled provider state and signed events; integration is intended, coverage has not been audited here)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Independent manual-capture fixtures: a cancelled order, a pending authorized order, a claimed acceptance with `paymentStatus: capture_pending`, and an already captured order. Automated checks mock Stripe; real Stripe test-mode webhook verification is owner-run manual work
 **Steps**:
-1. Deliver signed `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_intent.canceled`, `payment_intent.amount_capturable_updated` events, duplicated, delayed and out of order
+1. Deliver duplicated, delayed and out-of-order `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_intent.canceled` and `payment_intent.amount_capturable_updated` events against the independent fixtures with controlled current provider state
+2. For unexpected capture on a cancelled order, make the current provider intent read back as `succeeded`; inspect the persisted error and unchanged fulfillment status
+3. For claimed acceptance, supply verified success for the matching intent and exact amount; repeat the event
 
 **Expected Results**:
-- Fulfillment status never moves to `processing` or back from `cancelled` because of an event; a late success on a cancelled order triggers a compensating full refund and an alert; duplicates are processed once (event inbox is unique); a failure event cannot cancel a captured order
+- Verified success may finalize an already claimed `capture_pending` acceptance to `preparing`/`captured`; it cannot independently accept a pending authorized order or advance fulfillment to `processing`
+- Unexpected success on a cancelled or otherwise unclaimed order records `paymentError.code: unexpected_capture` and logs a support-review alert. It does not restore cancelled fulfillment or automatically issue a compensating refund
+- Duplicate deliveries produce one inbox record per provider event ID and no repeated business side effects. Duplicate success or failure leaves already captured orders unchanged
+- Confirmed provider cancellation may cancel a still-pending `authorized` order, but cannot take over a `capture_pending` operation or cancel an already captured order
+**Known implementation gap**: Earlier wording promised automatic compensation after unexpected capture. The current handler requires support review instead. Automatic compensation remains an open product decision needing separate implementation; this correction does not claim it exists
 **Business Rule**: Authorize-capture §Recovery and Stripe events
 **Selectors/API**: `POST /api/payments/webhook`
 **Suggested Layer**: Integration
+
+---
+
+## Authentication (API) — added 2026-10-24 for the existing `auth.api.spec.ts`
+
+### TC-232: Login returns a token for valid credentials
+**Scenario status**: Active
+**Category**: Happy Path
+**Priority**: P0
+**Role**: Both
+**Platform**: API
+**Parity**: Both (web TC-001, mobile TC-067)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: `e2e-testing/tests/api/auth.api.spec.ts`
+**Preconditions**: Seeded user exists
+**Steps**:
+1. `POST /api/auth/login` with a valid email and password
+
+**Expected Results**:
+- 2xx; `success: true`, a non-empty `token`, and `user.email` equal to the email sent
+**Business Rule**: §1 Authentication
+**Selectors/API**: `POST /api/auth/login`
+**Suggested Layer**: API
+
+---
+
+### TC-233: Login rejects an invalid password
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Both
+**Platform**: API
+**Parity**: Both (web TC-002, mobile TC-612)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: `e2e-testing/tests/api/auth.api.spec.ts`
+**Preconditions**: Seeded user exists
+**Steps**:
+1. `POST /api/auth/login` with a valid email and a wrong password
+
+**Expected Results**:
+- Rejected with **401** `Invalid credentials` (the spec asserts any status ≥ 400; tighten it to 401); no token is returned
+**Business Rule**: §1 Authentication
+**Selectors/API**: `POST /api/auth/login`
+**Suggested Layer**: API
+
+---
+
+### TC-234: `GET /api/auth/me` returns the logged-in user
+**Scenario status**: Active
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: `e2e-testing/tests/api/auth.api.spec.ts`
+**Preconditions**: A valid token from TC-232
+**Steps**:
+1. `GET /api/auth/me` with `Authorization: Bearer <token>`
+
+**Expected Results**:
+- 2xx; `user.email` is the authenticated user's email
+- Without a token the same call returns 401 (covered by TC-132)
+**Business Rule**: §1 Authentication
+**Selectors/API**: `GET /api/auth/me`
+**Suggested Layer**: API
+
+---
+
+## Coupons / Vouchers (API) — added 2026-10-25
+
+> Related existing scenarios: TC-057 (minimum order), web TC-019, TC-020, TC-050, mobile TC-082, TC-093. Rules: `business-rules.md` §6. Code: `couponController.ts`, `couponRoutes.ts`, `checkoutPricing.ts` `couponDiscountFor`.
+> Seller routes are under `/api/coupons/seller`, buyer routes under `/api/coupons`. Create test coupons with unique codes and delete them afterwards.
+
+### TC-235: Validate returns the discount for a valid percentage coupon
+**Scenario status**: Active
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (web TC-019, mobile TC-082)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A seller's active 10% coupon with no minimum; a fresh buyer token
+**Steps**:
+1. `POST /api/coupons/validate` `{ code, sellerId, orderAmount: 200 }` as the buyer
+
+**Expected Results**:
+- **200** `success: true`; `discountAmount` = 20
+- `coupon` carries `id`, `code` (upper case), `discountType`, `discountValue`, `maxDiscount`, `description`
+**Business Rule**: §6 Discount amount
+**Selectors/API**: `POST /api/coupons/validate`
+**Suggested Layer**: API
+
+---
+
+### TC-236: Percentage discount is capped by `maxDiscount`
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A 50% coupon with `maxDiscount` 15
+**Steps**:
+1. Validate with `orderAmount` 100
+2. Validate with `orderAmount` 20
+
+**Expected Results**:
+- (1) `discountAmount` = 15 (capped); (2) `discountAmount` = 10 (below the cap)
+- The same cap is applied at checkout (`couponDiscountFor`), so the validated amount equals the order's coupon discount
+- Known edge: `maxDiscount: 0` is treated as "no cap" by the code
+**Business Rule**: §6 Discount amount
+**Selectors/API**: `POST /api/coupons/validate`; `checkoutPricing.ts`
+**Suggested Layer**: API + Unit
+
+---
+
+### TC-237: Fixed coupon never discounts more than the order amount
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A fixed coupon worth $20
+**Steps**:
+1. Validate with `orderAmount` 15
+2. Validate with `orderAmount` 50
+3. Place an order of 15 with the coupon and read its coupon discount
+
+**Expected Results**:
+- (2) `discountAmount` = 20
+- (1) and (3) `discountAmount` = 15, i.e. `min(discountValue, subtotal)` as `business-rules.md` §6 and checkout pricing define
+- **Open mismatch:** `validateCoupon` currently returns the full `discountValue` (20) for (1), while checkout applies 15. Decide whether to fix the endpoint; until then (1) fails against the rule
+**Business Rule**: §6 Discount amount (`fixed: min(discountValue, subtotal)`)
+**Selectors/API**: `POST /api/coupons/validate`; `couponDiscountFor`
+**Suggested Layer**: API + Unit
+
+---
+
+### TC-238: Unknown voucher code is rejected
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (API leg of web TC-020)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A code that does not exist
+**Steps**:
+1. `POST /api/coupons/validate` with the unknown code and a valid `sellerId`
+
+**Expected Results**:
+- **404** `Invalid voucher code`; `success: false`
+- The code is matched case-insensitively (a lower-case valid code is accepted)
+**Business Rule**: §6 Validation
+**Selectors/API**: `POST /api/coupons/validate`
+**Suggested Layer**: API
+
+---
+
+### TC-239: Inactive voucher is rejected
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A coupon the seller switched off (`PUT /api/coupons/seller/:id` `{ isActive: false }`)
+**Steps**:
+1. Validate the coupon as a buyer
+
+**Expected Results**:
+- **400** `This voucher is no longer active`; re-enabling it makes validation succeed again
+- An inactive coupon is also absent from `GET /api/coupons` (TC-251)
+**Business Rule**: §6 Validation
+**Selectors/API**: `POST /api/coupons/validate`, `PUT /api/coupons/seller/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-240: Expired voucher is rejected
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A coupon created with `expiresAt` in the past (the create endpoint accepts it)
+**Steps**:
+1. Validate the coupon as a buyer
+
+**Expected Results**:
+- **400** `This voucher has expired`
+- A coupon expiring in the future validates normally
+**Business Rule**: §6 Validation
+**Selectors/API**: `POST /api/coupons/validate`
+**Suggested Layer**: API
+
+---
+
+### TC-241: Voucher that reached its usage limit is rejected
+**Scenario status**: Active
+**Category**: Edge Case
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A coupon with `usageLimit` 1 and one order already placed with it (see TC-252)
+**Steps**:
+1. Validate the coupon again
+
+**Expected Results**:
+- **400** `This voucher has reached its usage limit`; it is also missing from `GET /api/coupons`
+- A second order that still submits the code gets no discount (`couponDiscountFor` rejects it)
+**Business Rule**: §6 Validation
+**Selectors/API**: `POST /api/coupons/validate`
+**Suggested Layer**: API
+
+---
+
+### TC-242: A voucher cannot be used with another seller
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A coupon owned by seller A; seller B's id
+**Steps**:
+1. Validate seller A's code with `sellerId` = seller B
+
+**Expected Results**:
+- **404** `Invalid voucher code` (the lookup is scoped to `code` + `sellerId`); no discount is returned
+- In a multi-seller cart the code only applies to seller A's order
+**Business Rule**: §6 Application scope (one coupon per seller)
+**Selectors/API**: `POST /api/coupons/validate`
+**Suggested Layer**: API
+
+---
+
+### TC-243: Validate needs a code, a seller id and a token
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P2
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: None
+**Steps**:
+1. `POST /api/coupons/validate` without `code`; then without `sellerId`
+2. `POST /api/coupons/validate` and `GET /api/coupons?sellerId=…` with no token
+
+**Expected Results**:
+- (1) **400** `code and sellerId are required`
+- (2) **401** for both
+**Business Rule**: §1 Authentication; §6 Validation
+**Selectors/API**: `POST /api/coupons/validate`
+**Suggested Layer**: API
+
+---
+
+### TC-244: Validate without an order amount skips the minimum check
+**Scenario status**: Active
+**Category**: Edge Case
+**Priority**: P2
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A percentage coupon with a $100 minimum
+**Steps**:
+1. Validate with no `orderAmount`
+
+**Expected Results**:
+- Current behaviour: **200**; the minimum is not checked and a percentage coupon returns `discountAmount` 0 (a fixed coupon returns its full value)
+- Decide whether this is intended or whether `orderAmount` should be required; update this scenario with the decision
+**Business Rule**: §6 Validation
+**Selectors/API**: `POST /api/coupons/validate`
+**Suggested Layer**: API
+
+---
+
+### TC-245: Malformed seller id is handled without a server error
+**Scenario status**: Active
+**Category**: Edge Case
+**Priority**: P3
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: None
+**Steps**:
+1. `POST /api/coupons/validate` with `sellerId: "abc"` (not an ObjectId)
+2. `GET /api/coupons?sellerId=abc`
+
+**Expected Results**:
+- A **4xx** (400 or 404) with a readable message
+- **Unverified risk:** the controllers pass the value straight to Mongoose, so a cast error probably surfaces as **500**; run it before relying on this result
+**Business Rule**: §6 Validation
+**Selectors/API**: `POST /api/coupons/validate`, `GET /api/coupons`
+**Suggested Layer**: API
+
+---
+
+### TC-246: Seller creates a coupon; the code is stored upper case
+**Scenario status**: Active
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Seller
+**Platform**: API
+**Parity**: Both (web TC-050, mobile TC-093)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Seller token
+**Steps**:
+1. `POST /api/coupons/seller` `{ code: "save10x", discountType: "percentage", discountValue: 10 }`
+2. `GET /api/coupons/seller`
+
+**Expected Results**:
+- **201**; `coupon.code` = `SAVE10X`; `minOrderAmount` defaults to 0; the seller owns it
+- The coupon appears in the seller's list and nowhere in another seller's list
+**Business Rule**: §6 Seller creates coupon
+**Selectors/API**: `POST /api/coupons/seller`, `GET /api/coupons/seller`
+**Suggested Layer**: API
+
+---
+
+### TC-247: Coupon creation validation and duplicate codes
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Seller
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: An existing coupon `DUP1`
+**Steps**:
+1. Create with no `code`, then with no `discountType`, then with no `discountValue`
+2. Create `DUP1` again, and again as `dup1`
+
+**Expected Results**:
+- (1) **400** `code, discountType, and discountValue are required`
+- (2) **409** `Coupon code already exists` for both spellings (codes are unique across sellers)
+**Business Rule**: §6 Seller creates coupon (duplicate → 409)
+**Selectors/API**: `POST /api/coupons/seller`
+**Suggested Layer**: API
+
+---
+
+### TC-248: A buyer cannot manage coupons
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P0
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (extends TC-135)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A fresh buyer token (role `buyer`); a seller's coupon id
+**Steps**:
+1. As the buyer call `GET /api/coupons/seller`, `POST /api/coupons/seller`, `PUT /api/coupons/seller/:id`, `DELETE /api/coupons/seller/:id`
+2. Repeat with no token
+
+**Expected Results**:
+- (1) **403** each; the coupon is unchanged
+- (2) **401** each
+**Business Rule**: §1 Roles
+**Selectors/API**: `/api/coupons/seller[/:id]`, `requireSeller`
+**Suggested Layer**: API
+
+---
+
+### TC-249: A seller cannot change or delete another seller's coupon
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P0
+**Role**: Seller
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Seller A's coupon; seller B authenticated
+**Steps**:
+1. As B `PUT /api/coupons/seller/:id` with `{ discountValue: 90 }`
+2. As B `DELETE /api/coupons/seller/:id`
+3. As A read the coupon
+
+**Expected Results**:
+- (1) and (2) **404** `Coupon not found`; (3) the coupon is unchanged and still validates
+**Business Rule**: §6; ownership (extends TC-054)
+**Selectors/API**: `PUT/DELETE /api/coupons/seller/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-250: Seller updates and deletes their own coupon
+**Scenario status**: Active
+**Category**: Happy Path
+**Priority**: P2
+**Role**: Seller
+**Platform**: API
+**Parity**: Both (mobile TC-093)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Seller's own coupon
+**Steps**:
+1. `PUT /api/coupons/seller/:id` with `discountValue`, `minOrderAmount`, `expiresAt`, `usageLimit`, `isActive`, `description`; also try `code` and `sellerId`
+2. `DELETE /api/coupons/seller/:id`; validate the code again
+
+**Expected Results**:
+- (1) **200** with the new values; `code` and `sellerId` are not changed (only the allowed fields are applied)
+- (2) **200** `Coupon deleted`; validation then returns 404
+**Business Rule**: §6 Seller creates coupon
+**Selectors/API**: `PUT/DELETE /api/coupons/seller/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-251: Available vouchers list only returns usable coupons
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (web TC-019, mobile TC-082)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: One seller with an active coupon, an inactive one, an expired one, a used-up one, and one with a $100 minimum
+**Steps**:
+1. `GET /api/coupons?sellerId=<seller>`
+2. `GET /api/coupons?sellerId=<seller>&orderAmount=50`
+3. `GET /api/coupons` with no `sellerId`
+
+**Expected Results**:
+- (1) Only active, unexpired, not-used-up coupons, sorted by `discountValue` descending
+- (2) The $100-minimum coupon is also excluded
+- (3) **400** `sellerId is required`
+**Business Rule**: §6 Application scope (`GET /api/coupons?sellerId=…&orderAmount=…`)
+**Selectors/API**: `GET /api/coupons`
+**Suggested Layer**: API
+
+---
+
+### TC-252: An applied coupon discounts the order and counts one use
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Both
+**Platform**: API
+**Parity**: Both (web TC-050)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A 10% coupon with `usageLimit` 1; a buyer; a product from the same seller
+**Steps**:
+1. Place a COD order with `couponCodes[sellerId]` = the code (legacy `POST /api/orders`)
+2. Read the order and the seller's coupon list
+3. Place a second order with the same code
+
+**Expected Results**:
+- (1) The order's `discount` equals the validated amount; `total` follows the pricing formula (coupon before 8% tax)
+- (2) `usedCount` = 1
+- (3) The second order gets no coupon discount (limit reached, TC-241)
+- Under `CHECKOUT_FLOW=manual_capture` the capacity is reserved at checkout and restored once on cancellation (see TC-205)
+**Business Rule**: §4 Price calculation; §6 Application scope
+**Selectors/API**: `POST /api/orders`, `GET /api/coupons/seller`
+**Suggested Layer**: API
+
+---
+
+### TC-253: Out-of-range coupon values are rejected
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P2
+**Role**: Seller
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Seller token
+**Steps**:
+1. Create a percentage coupon with `discountValue` 150
+2. Create coupons with a negative `discountValue`, `usageLimit` 0, and an invalid `discountType`
+3. If (1) is accepted, validate it with `orderAmount` 100 and place an order with it
+
+**Expected Results**:
+- Each invalid create returns a **400** with a readable message and creates nothing
+- A percentage coupon never discounts more than the order amount, and the order total never goes negative
+- **Current code (verify):** the model only enforces `discountValue >= 0`, `usageLimit >= 1` and the `discountType` enum, and the controller turns validation errors into **500**. A 150% coupon is accepted, and neither `validateCoupon` nor `couponDiscountFor` caps a percentage discount at the subtotal, so it would discount 150. Confirm and decide the intended limits
+**Business Rule**: §6 Seller creates coupon; §4 Price calculation
+**Selectors/API**: `POST /api/coupons/seller`, `POST /api/coupons/validate`
+**Suggested Layer**: API + Unit
+
+---
+
+## Order creation (API) — added 2026-10-25
+
+> Related existing scenarios: TC-025 (multi-seller), TC-026 (total formula), TC-027 and TC-028 (shipping), TC-056 (insufficient stock), TC-033 (buyer cancel), TC-193 (card order refused with 426 under `manual_capture`), TC-205 (buyer cancel). Rules: `business-rules.md` §4. Code: `orderService.ts` `createOrders`, `checkoutPricing.ts`, `orderValidators.ts`.
+> These use COD orders on the legacy `POST /api/orders` path, which stays available for COD under both `CHECKOUT_FLOW` values.
+
+### TC-254: Order creation requires authentication
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A valid product id
+**Steps**:
+1. `POST /api/orders` with a valid body and no token
+2. Repeat with a tampered token
+
+**Expected Results**:
+- **401** for both; no order is created and stock is unchanged
+- (`GET /api/orders` without a token is covered by TC-132)
+**Business Rule**: §1 Authentication
+**Selectors/API**: `POST /api/orders`
+**Suggested Layer**: API
+
+---
+
+### TC-255: Order creation rejects an invalid body
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (web TC-029)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Authenticated buyer; a valid product id
+**Steps**:
+1. `POST /api/orders` with `items: []`, then with no `items`
+2. Items with `quantity` 0, -1 and 1.5, and an item with no `productId`
+3. No `shippingAddress`; no `paymentMethod`
+4. A `shippingAddress` missing `street`, `city`, `state` or `zipCode`; an unsupported `paymentMethod.type`
+
+**Expected Results**:
+- (1)–(3) **400** with the validator message ("Order must contain at least one item", "Quantity must be a positive integer", "Shipping address is required", "Payment method is required"); no order is created
+- (4) Expected 400 from the Order model validation. **Verify:** the route validator only checks that `shippingAddress` and `paymentMethod` are non-empty, so confirm the model rejects incomplete addresses and unknown payment types rather than accepting them
+**Business Rule**: §4 Shipping address, §4 Payment methods
+**Selectors/API**: `POST /api/orders`
+**Suggested Layer**: API
+
+---
+
+### TC-256: Unknown product or variant returns 404 and changes nothing
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A valid product, a variant product, and a well-formed id that does not exist
+**Steps**:
+1. Order two items: a valid one and one with an unknown `productId`
+2. Order a variant product with an unknown `variantId`
+3. Order with a malformed `productId` (`abc`)
+
+**Expected Results**:
+- (1) **404** `Product not found: <id>`; the valid item's stock is unchanged and no order exists (products are validated before any stock is deducted)
+- (2) **404** `Variant not found for: <name>`
+- (3) A 4xx (the error handler maps a cast error to **400** `Invalid resource ID`); confirm it is not a 500
+**Business Rule**: §4 Stock validation at order time
+**Selectors/API**: `POST /api/orders`
+**Suggested Layer**: API
+
+---
+
+### TC-257: Delivery option and seller shipping settings set the fee
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (web TC-018, mobile TC-081)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Three products under $50: one with `shippingFee: free`; one with `shippingFee: buyer_pays` and `shippingFeeAmounts` `{ standard: 5, express: 15 }` with options standard and express; one with default shipping
+**Steps**:
+1. Order the free-shipping product
+2. Order the buyer-pays product with `deliverySelections[sellerId]` = `express`; again with `standard`; again with no selection
+3. Order the default-shipping product
+
+**Expected Results**:
+- (1) `shipping` 0 even though the amount is under $50
+- (2) `shipping` 15, 5, and the first configured option's fee; the order stores `selectedDeliveryOption` and `deliverySelections`
+- (3) `shipping` 9.99
+- Resolution order: the client selection for that seller, then the first value in `deliverySelections`, then the product's first option, then the first fee key
+**Business Rule**: §4 Shipping rules; delivery option resolution order
+**Selectors/API**: `POST /api/orders`; `computeSellerTotals`
+**Suggested Layer**: API + Unit
+
+---
+
+### TC-258: Variant order uses the variant's price, discount and attributes
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (web TC-098, mobile TC-101)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A product at $30 with a variant at $40 and a variant discount of 25%
+**Steps**:
+1. Order the variant with `variantId` and `selectedAttributes`
+2. Read the order and the product
+
+**Expected Results**:
+- The order item has `variantId`, `selectedAttributes`, `productPrice` 40 and `discountPercent` 25, so `subtotal` 40, `productDiscount` 10
+- The variant's stock decreases by the quantity, not the product's stock
+- A variant with no discount of its own does not inherit the product discount
+**Business Rule**: §2 Variant pricing
+**Selectors/API**: `POST /api/orders`; `priceLine`
+**Suggested Layer**: API + Unit
+
+---
+
+### TC-259: An unknown or ineligible coupon code does not block the order
+**Scenario status**: Active
+**Category**: Edge Case
+**Priority**: P2
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: An unknown code, an inactive coupon, an expired coupon, and a coupon with a $100 minimum
+**Steps**:
+1. Place an order under $100 with each code in `couponCodes[sellerId]`
+
+**Expected Results**:
+- Each order is **201** with `discount` 0 and no `couponCode`; the coupon's `usedCount` is unchanged
+- Current behaviour is silent: the buyer gets no error for a bad code at order time (validation errors only come from `POST /api/coupons/validate`, TC-238 to TC-241). Confirm that is intended
+**Business Rule**: §6 Validation; application scope
+**Selectors/API**: `POST /api/orders` with `couponCodes`
+**Suggested Layer**: API
+
+---
+
+### TC-260: Placing an order deducts stock and counts the sale; cancelling restores stock
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A product with stock 10 and `soldCount` 0
+**Steps**:
+1. Place a COD order for quantity 3 and read the product
+2. Cancel the pending order as the buyer and read the product again
+
+**Expected Results**:
+- (1) `stock` 7 and `soldCount` 3
+- (2) `stock` back to 10 and `soldCount` back to 0, restored once (repeating the cancel changes nothing, see TC-205)
+**Business Rule**: §4 Post-checkout; §5 Cancellation and stock restore
+**Selectors/API**: `POST /api/orders`, `PUT /api/orders/:id/status`, `GET /api/products/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-261: Ordered items leave the server cart; other items stay
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P2
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (web TC-006)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Server cart (`PUT /api/cart`) with product A, product B (another seller) and a variant product with two variants
+**Steps**:
+1. Order only product A; `GET /api/cart`
+2. Order one variant of the variant product; `GET /api/cart`
+
+**Expected Results**:
+- (1) Product A is gone, B stays, and empty seller groups are removed
+- (2) Only the ordered variant should leave the cart. **Verify:** the legacy path removes cart lines by `product` id (`$in: orderedProductIds`), so the other variant's line probably disappears too; the checkout-session path matches product and variant. Record the actual result and decide whether to fix
+**Business Rule**: §3 Cart; §4 Post-checkout (cart cleared after order)
+**Selectors/API**: `POST /api/orders`, `PUT /api/cart`, `GET /api/cart`
+**Suggested Layer**: API
+
+---
+
+### TC-262: A COD order starts pending with the acceptance fields set
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (web TC-022, mobile TC-095)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Authenticated buyer; backend run with each `CHECKOUT_FLOW` value
+**Steps**:
+1. Place a COD order for one seller's product
+2. Read the order from the response and from `GET /api/orders/:id`
+
+**Expected Results**:
+- `status` `pending`, `paymentStatus` `not_required`, no `paymentIntentId`
+- `sellerId` is the product owner's id; `placedAt` is set and `acceptBy` = `placedAt` + 24 hours
+- `estimatedDelivery` ≈ order date + 7 days; `paymentMethod.type` `cash-on-delivery`
+- The same shape under `CHECKOUT_FLOW=legacy` and `manual_capture`; the order has no Stripe call
+**Business Rule**: §4 Post-checkout; Seller pending cancellation spec §Amendment
+**Selectors/API**: `POST /api/orders`, `GET /api/orders/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-263: Free-shipping boundary at $50
+**Scenario status**: Active
+**Category**: Edge Case
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (boundary of TC-027 and TC-028)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: `e2e-testing/tests/api/orders.api.spec.ts`
+**Preconditions**: Two products with default shipping, priced $49.99 and $50.00
+**Steps**:
+1. Order one unit of the $49.99 product
+2. Order one unit of the $50.00 product
+
+**Expected Results**:
+- (1) `shipping` 9.99 (after-discount subtotal is below $50)
+- (2) `shipping` 0 (the threshold is inclusive: `>= 50`)
+- The threshold applies to the amount after product discount and coupon, so a $55 product with a 10% discount ($49.50) pays shipping
+**Business Rule**: §4 Shipping default
+**Selectors/API**: `POST /api/orders`; `FREE_SHIPPING_THRESHOLD` in `checkoutPricing.ts`
+**Suggested Layer**: API + Unit
+
+---
+
+## Rate limiting (API) — added 2026-10-25
+
+> Related existing scenarios: TC-114 to TC-119 (`rate-limit.api.spec.ts`). Code: `server.ts` (`authLimiter` on `/api/auth`, `apiLimiter` on products, orders, seller, cart, reviews, users, coupons and checkout), `config/deployment.ts` (`TRUST_PROXY_HOPS`).
+> Limits are per IP in a fixed 60-second window: `RATE_LIMIT_AUTH_MAX` (default 10) and `RATE_LIMIT_API_MAX` (default 100); `0` disables a limit. Scenarios marked low-limit need a backend started with small values (for example 3 and 5) and must run alone, because exhausting the bucket makes every other request from the same IP fail with 429 for up to a minute.
+
+### TC-264: The limit resets after the window
+**Scenario status**: Active
+**Category**: Edge Case
+**Priority**: P2
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Low-limit backend (auth limit 3); run alone
+**Steps**:
+1. Exhaust the auth limit and confirm the next login attempt returns 429 with `Retry-After`
+2. Wait for the number of seconds in `Retry-After` (up to 60)
+3. Send another login request
+
+**Expected Results**:
+- (3) is no longer 429 (a wrong password gives 401) and `RateLimit-Remaining` is back near the limit
+- `Retry-After` and `RateLimit-Reset` agree to within a second or two
+- This test takes about a minute; tag it as slow and keep it out of the default run
+**Business Rule**: Rate limiting (fixed 60 s window)
+**Selectors/API**: `POST /api/auth/login`
+**Suggested Layer**: API
+
+---
+
+### TC-265: A limit set to 0 disables rate limiting
+**Scenario status**: Active
+**Category**: Edge Case
+**Priority**: P2
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Backend started with `RATE_LIMIT_AUTH_MAX=0` and `RATE_LIMIT_API_MAX=0`
+**Steps**:
+1. Send 200 `GET /api/products` and 30 `POST /api/auth/login` requests
+2. Inspect the status codes and headers
+
+**Expected Results**:
+- No request returns 429
+- Current code maps `0` to `Infinity`; record which `RateLimit-*` headers (if any) are sent. TC-114 to TC-116 skip in this mode because there is no finite limit to assert
+**Business Rule**: Rate limiting (`0 = unlimited`, `server.ts`, the Swagger rate-limit text)
+**Selectors/API**: `GET /api/products`, `POST /api/auth/login`
+**Suggested Layer**: API
+
+---
+
+### TC-266: Checkout routes are rate limited like other API routes
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P2
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Authenticated buyer; default or low-limit backend
+**Steps**:
+1. `GET /api/checkout/sessions/000000000000000000000000` (a 404 is fine)
+2. In low-limit mode, repeat until the API limit is exhausted
+
+**Expected Results**:
+- The response carries `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`
+- In low-limit mode the next request is **429** with the standard message; the checkout routes share the same API bucket as products, orders and cart
+**Business Rule**: Rate limiting; `/api/checkout` uses `apiLimiter`
+**Selectors/API**: `/api/checkout/sessions/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-267: Payments routes, the Stripe webhook and health are never rate limited
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P1
+**Role**: System
+**Platform**: API
+**Parity**: API
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Low-limit backend (API limit 5); run alone
+**Steps**:
+1. Exhaust the API limit with `GET /api/products` until it returns 429
+2. Send 15 `POST /api/payments/webhook` requests with an invalid signature
+3. Send `GET /health`
+
+**Expected Results**:
+- (2) every response is **400** `Invalid signature`, never 429, and carries no `RateLimit-*` headers: Stripe retries must never be blocked by the limiter (the Swagger tag text says these routes are not behind the limiter)
+- (3) **200**
+**Business Rule**: Rate limiting scope; Authorize-capture §Recovery and Stripe events
+**Selectors/API**: `POST /api/payments/webhook`, `GET /health`
+**Suggested Layer**: API
+
+---
+
+### TC-268: All auth routes share one bucket, including profile, addresses and cards
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P2
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Low-limit backend (auth limit 3); a buyer token; run alone
+**Steps**:
+1. Send `GET /api/auth/me` three times
+2. Send `GET /api/auth/saved-addresses`, then `GET /api/auth/payment-methods`
+
+**Expected Results**:
+- (2) returns **429**: every `/api/auth/*` route (login, signup, `me`, profile, avatar, saved addresses, payment methods) counts against the same strict brute-force limit
+- **Product risk to decide:** at the default of 10 per minute, a signed-in user who edits addresses and cards, or who loads several screens, can reach 429 without any attack. Decide whether the saved-address and payment-method routes should use the general API limiter instead
+**Business Rule**: Rate limiting scope (`/api/auth` uses `authLimiter`)
+**Selectors/API**: `/api/auth/*`
+**Suggested Layer**: API
+
+---
+
+### TC-269: A spoofed forwarding header cannot bypass the limit
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P1
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Low-limit backend (auth limit 3) with `TRUST_PROXY_HOPS` unset (the default: forwarded headers are ignored); run alone
+**Steps**:
+1. Send 3 login attempts, each with a different `X-Forwarded-For` value
+2. Send a 4th attempt with yet another `X-Forwarded-For` value
+
+**Expected Results**:
+- (2) is **429**: the client IP, not the header, decides the bucket, so a script cannot dodge the limit by rotating the header
+- Starting the backend with a non-integer `TRUST_PROXY_HOPS` fails at startup (`TRUST_PROXY_HOPS must be a non-negative integer`)
+**Business Rule**: Rate limiting; `deployment.md` Proxy and rate limiting; `configureTrustProxy`
+**Selectors/API**: `POST /api/auth/login` with `X-Forwarded-For`
+**Suggested Layer**: API
+
+---
+
+### TC-270: Behind the real proxy, separate clients get separate buckets
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Manual
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: The hosted environment, with `TRUST_PROXY_HOPS` set to the verified number of proxies (for one reverse proxy, 1); two machines or networks
+**Steps**:
+1. From client A exhaust the auth limit until it gets 429
+2. From client B send a login request
+
+**Expected Results**:
+- Client B is **not** limited, and client A is still limited. If B is limited too, the app sees the proxy's address for everyone and the whole site is throttled as one client; raise or fix `TRUST_PROXY_HOPS`
+- `deployment.md` asks for exactly this check on the actual host
+**Business Rule**: `deployment.md` Proxy and rate limiting
+**Selectors/API**: `POST /api/auth/login` on the deployed host
+**Suggested Layer**: Manual
+
+---
+
+### TC-271: The 429 response has a consistent body
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P3
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Low-limit backend; run alone
+**Steps**:
+1. Trigger a 429 on an auth route and on an API route
+2. Compare the bodies with the documented `TooManyRequests` response and with other API errors
+
+**Expected Results**:
+- Both bodies are `{ success: false, message: "Too many requests, please try again later." }` plus the `Retry-After` and `RateLimit-*` headers
+- Known inconsistency: other errors carry a machine-readable `code`, but the limiter response does not, and `RATE_LIMITED` in `apiResponse.ts` is unused. Decide whether to add `code: "RATE_LIMITED"`, then assert it here
+**Business Rule**: Rate limiting; API error envelope
+**Selectors/API**: `POST /api/auth/login`, `GET /api/products`; `config/swagger.ts` `TooManyRequests`
+**Suggested Layer**: API
+
+---
+
+## Reviews (API) — added 2026-10-25
+
+> Related existing scenarios: TC-034 (leave a review, web UI), TC-035 (duplicate review), TC-036 (review before delivery). Rules: `business-rules.md` §7. Code: `reviewController.ts`, `reviewRoutes.ts`, `models/Review.ts`.
+> Endpoints: `POST /api/reviews`, `PUT /api/reviews/:id`, `GET /api/reviews/check/:productId` (all need a token); `GET /api/reviews/product/:productId` is public. There is no delete endpoint.
+> Several scenarios below record behaviour that looks wrong in the current code; they state the expected result and mark the current behaviour so the owner can decide.
+
+### TC-272: Review endpoints require authentication
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A product and an existing review id
+**Steps**:
+1. `POST /api/reviews`, `PUT /api/reviews/:id` and `GET /api/reviews/check/:productId` with no token, then with a tampered token
+2. `GET /api/reviews/product/:productId` with no token
+
+**Expected Results**:
+- (1) **401** for each; no review is created or changed
+- (2) **200**: the product's review list is public
+**Business Rule**: §1 Authentication; §7 Reviews
+**Selectors/API**: `/api/reviews`
+**Suggested Layer**: API
+
+---
+
+### TC-273: Create-review validation
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A fresh buyer with a delivered order for a product
+**Steps**:
+1. `POST /api/reviews` once each without `productId`, `orderId`, `rating` and `comment`
+2. Rating 0, 6 and -1
+
+**Expected Results**:
+- (1) **400** `productId, orderId, rating, and comment are required`
+- (2) **400** (rating 0 is rejected as "required", 6 and -1 as `Rating must be between 1 and 5`)
+- No review is created and the product rating is unchanged
+**Business Rule**: §7 Fields (`rating` 1–5, `comment` required)
+**Selectors/API**: `POST /api/reviews`
+**Suggested Layer**: API
+
+---
+
+### TC-274: Over-long or malformed values return a client error, not 500
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A delivered order; an existing review of your own
+**Steps**:
+1. `POST /api/reviews` with a 1001-character `comment`; with a 1000-character `comment`
+2. `POST /api/reviews` with `rating: "abc"`; with `rating: 4.5`
+3. `POST /api/reviews` with `orderId: "abc"` and with `productId: "abc"`
+4. `PUT /api/reviews/:id` with a 1001-character `comment`
+
+**Expected Results**:
+- (1) the 1001-character comment is **400** (business rules §7: max 1000); the 1000-character comment is **201**
+- (2) `abc` is **400**; decide whether 4.5 is allowed (the model accepts any number from 1 to 5)
+- (3) and (4) **400**
+- **Current behaviour (verify):** the controller only turns the duplicate-key error into a clean response, and every other failure becomes **500 `Server error`**. The model rejects the 1001-character comment and `abc` with a validation error, and a malformed id with a cast error, so (1) over-long, (2) `abc`, (3) and (4) are probably 500 today
+**Business Rule**: §7 Fields (`comment` max 1000)
+**Selectors/API**: `POST /api/reviews`, `PUT /api/reviews/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-275: A review needs the buyer's own delivered order that contains the product
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Buyer A with a delivered order for product P; buyer B authenticated; a second product Q; a cancelled order of buyer A; a well-formed order id that does not exist
+**Steps**:
+1. As B, review P using A's delivered order id
+2. As A, review Q using the delivered order that only contains P
+3. As A, review P using the cancelled order
+4. As A, review P using the nonexistent order id
+
+**Expected Results**:
+- (1), (3) and (4): **403** `You can only review products from delivered orders`
+- (2): **403** `This product is not in the specified order`
+- No review is created; the identical message for another buyer's, cancelled and nonexistent orders does not reveal which order ids exist
+**Business Rule**: §7 Eligibility
+**Selectors/API**: `POST /api/reviews`
+**Suggested Layer**: API
+
+---
+
+### TC-276: A seller cannot review their own product
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P2
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A seller who bought (and received) their own product
+**Steps**:
+1. Submit a review of that product as the seller
+
+**Expected Results**:
+- Proposed rule: **403**, because a self-review inflates the product's rating
+- **Current behaviour:** the controller has no such check, so the review is created (**201**) and counts toward the rating. This scenario needs an owner decision; the old `reviews.api.spec.ts` ran as the seller reviewing their own product, which is why the gap went unnoticed
+**Business Rule**: §7 (not specified; decision needed)
+**Selectors/API**: `POST /api/reviews`
+**Suggested Layer**: API
+
+---
+
+### TC-277: Product rating and count follow the reviews
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A new product with no reviews; three fresh buyers, each with a delivered order for it
+**Steps**:
+1. Buyer 1 reviews with rating 5; read the product
+2. Buyer 2 reviews with rating 4; read the product
+3. Buyer 3 reviews with rating 4; read the product
+
+**Expected Results**:
+- (1) `rating` 5, `reviews` 1; (2) `rating` 4.5, `reviews` 2; (3) `rating` 4.3 (4.333… rounded to one decimal), `reviews` 3
+- A rejected review (duplicate or ineligible) does not change either value
+**Business Rule**: §7 Product rating update (average, 1 decimal; count)
+**Selectors/API**: `POST /api/reviews`, `GET /api/products/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-278: Buyer edits their own review
+**Scenario status**: Active
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (mobile review sheet)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A buyer's review (rating 4) on a product with only that review
+**Steps**:
+1. `PUT /api/reviews/:id` `{ rating: 2 }`; read the product
+2. `PUT /api/reviews/:id` `{ comment: "Changed my mind" }`
+3. `PUT /api/reviews/:id` with an empty body; with rating 0 and 6
+
+**Expected Results**:
+- (1) **200**, `rating` 2, the comment unchanged; the product `rating` becomes 2 with `reviews` still 1
+- (2) **200**, the comment is saved (trimmed) and the rating stays 2
+- (3) **400** `Provide rating or comment to update`; ratings outside 1 to 5 give **400**
+- `PUT` cannot change the product or order the review belongs to
+**Business Rule**: §7 Buyer flow (edit); product rating update
+**Selectors/API**: `PUT /api/reviews/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-279: A buyer cannot edit someone else's review
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P0
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Buyer A's review; buyer B authenticated
+**Steps**:
+1. As B, `PUT /api/reviews/<A's review id>` with `{ rating: 1, comment: "spam" }`
+2. As B, `PUT /api/reviews/<nonexistent id>`
+3. As A, read the review and the product rating
+
+**Expected Results**:
+- (1) and (2) **404** `Review not found or not yours`: the response is the same whether the review exists or not
+- (3) the review and the product's rating are unchanged
+**Business Rule**: §7 Reviews; ownership
+**Selectors/API**: `PUT /api/reviews/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-280: The product review list is public, paged and newest first
+**Scenario status**: Active
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (web TC-034, mobile product detail)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A product with 3 reviews written one after another
+**Steps**:
+1. `GET /api/reviews/product/:productId` with no token
+2. `GET /api/reviews/product/:productId?limit=2&page=1`, then `page=2`
+3. `GET` the list for a product with no reviews
+
+**Expected Results**:
+- (1) **200** `{ success, data, total: 3, page: 1, pages: 1 }`; reviews are sorted newest first, each with `rating`, `comment` and the reviewer's `firstName`, `lastName`, `avatar` (no email or password)
+- (2) page 1 has 2 reviews and page 2 has 1; `pages` is 2
+- (3) `data: []`, `total: 0`
+**Business Rule**: §7 Reviews
+**Selectors/API**: `GET /api/reviews/product/:productId`
+**Suggested Layer**: API
+
+---
+
+### TC-281: Odd paging values and ids are handled safely
+**Scenario status**: Active
+**Category**: Edge Case
+**Priority**: P2
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A product with a few reviews
+**Steps**:
+1. `GET /api/reviews/product/:productId?page=0`, `page=-1`, `page=abc`
+2. `?limit=0`, `?limit=100000`, `?limit=abc`
+3. `GET /api/reviews/product/abc`
+
+**Expected Results**:
+- (1) and (2) fall back to the defaults (page 1, limit 10) or return a 4xx; never a 500. `limit` is capped (for example 50) so one request cannot return the whole collection
+- (3) **400** or an empty list, not 500
+- **Current behaviour (verify):** `page=0`, `limit=0` and `abc` fall back to the defaults because of `|| 1` / `|| 10`; `page=-1` probably becomes a negative `skip` and returns 500; `limit` has no upper bound; a malformed product id is a cast error and returns 500
+**Business Rule**: Pagination (extends TC-123 to TC-131 for the products list)
+**Selectors/API**: `GET /api/reviews/product/:productId`
+**Suggested Layer**: API
+
+---
+
+### TC-282: `GET /api/reviews/check/:productId` reports whether the buyer reviewed
+**Scenario status**: Active
+**Category**: Happy Path
+**Priority**: P2
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (web order detail, mobile order detail)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A delivered product that the buyer has not reviewed yet; a second buyer
+**Steps**:
+1. `GET /api/reviews/check/:productId` as the buyer
+2. Submit a review, then call it again
+3. Call it as a second buyer who has not reviewed
+
+**Expected Results**:
+- (1) `hasReviewed: false`, `review: null`; (2) `hasReviewed: true` with the review; (3) `hasReviewed: false`: the check is scoped to the caller
+**Business Rule**: §7 Buyer flow (check existing review)
+**Selectors/API**: `GET /api/reviews/check/:productId`
+**Suggested Layer**: API
+
+---
+
+### TC-283: Two simultaneous reviews create only one
+**Scenario status**: Active
+**Category**: Edge Case
+**Priority**: P2
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A buyer with a delivered order and no review of the product
+**Steps**:
+1. Send the same `POST /api/reviews` request twice at the same time (for example with `Promise.all`)
+2. Read the product and `GET /api/reviews/check/:productId`
+
+**Expected Results**:
+- One response is **201** and the other **409** `You have already reviewed this product` (the unique `(userId, productId)` index decides the race)
+- The product has `reviews` 1 and the rating equals the review's rating, not double-counted
+**Business Rule**: §7 One review per user per product
+**Selectors/API**: `POST /api/reviews`
+**Suggested Layer**: API
+
+---
+
+### TC-284: Reviews cannot be deleted
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P3
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A review and its product
+**Steps**:
+1. `DELETE /api/reviews/:id` as the review's author
+2. Delete the product as its seller, then `GET /api/reviews/product/:productId`
+
+**Expected Results**:
+- (1) **404** (the route does not exist). `business-rules.md` §7 says the product rating updates "after create/update/delete", but no delete exists; decide whether to add it or fix the doc, then update this scenario
+- (2) the product is removed but its reviews remain in the collection and are still returned by the list (orphans); decide whether deleting a product should remove or hide them
+**Business Rule**: §7 Product rating update
+**Selectors/API**: `DELETE /api/reviews/:id`, `DELETE /api/seller/products/:id`
+**Suggested Layer**: API
+
+---
+
+## Seller access, security, users, Stripe and health (API) — added 2026-10-25
+
+> Related existing scenarios: TC-048, TC-053, TC-054, TC-113, TC-132 to TC-136, TC-193, TC-229. Specs: `seller-access.api.spec.ts`, `security.api.spec.ts`, `users.api.spec.ts`, `stripe-webhook.api.spec.ts`, `health.api.spec.ts`.
+> Several scenarios record behaviour that looks wrong in the current code; they give the expected result and mark the current behaviour so the owner can decide.
+
+### TC-285: Product ownership holds on both product route sets
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P1
+**Role**: Seller
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Seller A's product; seller B and a buyer authenticated; a well-formed id that does not exist
+**Steps**:
+1. As B, `PUT` and `DELETE` on `/api/products/:id` and on `/api/seller/products/:id` for A's product
+2. As a buyer, repeat both
+3. As A, `PUT` and `DELETE` on a nonexistent id
+
+**Expected Results**:
+- (1) **403** on all four (the delete message is `Not authorized to delete this product`); A's product is unchanged
+- (2) **403** (seller-only route)
+- (3) **404** `Product not found`
+- TC-054 only exercises the `/api/products/:id` routes; the app also has the `/api/seller/products/:id` routes, which must enforce the same rule
+**Business Rule**: §2 Listing visibility; ownership
+**Selectors/API**: `/api/products/:id`, `/api/seller/products/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-286: More protected routes return 401 without a token
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P1
+**Role**: Both
+**Platform**: API
+**Parity**: Both (extends TC-132)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: None
+**Steps**:
+1. Call each of these with no `Authorization` header: `POST /api/orders`, `POST /api/checkout/sessions`, `GET /api/checkout/sessions/:id`, `POST /api/reviews`, `PUT /api/reviews/:id`, `GET /api/auth/saved-addresses`, `GET /api/auth/payment-methods`, `POST /api/payments/create-intent`, `POST /api/payments/save-card`, `POST /api/users/:id/follow`, `GET /api/coupons`, `POST /api/coupons/validate`, `GET /api/orders/:id/refund-eligibility`, `GET /api/seller/refund-requests`, `PUT /api/cart`, `DELETE /api/cart`
+
+**Expected Results**:
+- **401** with `success: false` for every one; nothing is created or changed
+- Public by design (must stay open): `GET /api/products`, `GET /api/products/:id`, `GET /api/reviews/product/:productId`, `GET /health`, `GET /`, and `POST /api/payments/webhook` (signature-checked instead)
+**Business Rule**: §1 Authentication
+**Selectors/API**: the routes above
+**Suggested Layer**: API
+
+---
+
+### TC-287: Malformed, expired and foreign tokens are rejected
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P1
+**Role**: Both
+**Platform**: API
+**Parity**: Both (extends TC-133)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A valid token for a fresh user
+**Steps**:
+1. `GET /api/auth/me` with `Authorization: <token>` (no `Bearer ` prefix), with `Bearer ` and nothing after it, and with `Bearer abc`
+2. With a token whose header is `alg: none` and whose payload is the valid one
+3. With a token signed by a different secret
+4. With a valid token whose user has been deleted
+5. With an expired token
+
+**Expected Results**:
+- **401** for each; (4) answers `User not found`, the others `Not authorized to access this route`
+- (5) needs a backend started with a very short `JWT_EXPIRES_IN` (for example 1 second) or an integration test; mark it slow
+**Business Rule**: §1 Authentication
+**Selectors/API**: `GET /api/auth/me`; `middleware/auth.ts`
+**Suggested Layer**: API + Integration
+
+---
+
+### TC-288: A buyer is blocked from every seller-only route
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P0
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (extends TC-053 and TC-135)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A fresh buyer token (never promoted); a seller's product, coupon, order and refund request ids
+**Steps**:
+1. As the buyer call every seller-only route: `POST/GET /api/seller/products`, `PUT/DELETE /api/seller/products/:id`, `GET /api/seller/orders`, `PUT /api/seller/orders/:id/status`, `GET /api/seller/orders/:id/refund-requests`, `GET /api/seller/refund-requests`, `PUT /api/seller/refund-requests/:id/decision`, `GET/POST /api/coupons/seller`, `PUT/DELETE /api/coupons/seller/:id`, `POST /api/products`, `PUT/DELETE /api/products/:id`, `POST /api/products/:id/image`, `POST /api/products/variant-image`
+
+**Expected Results**:
+- **403** with `success: false` for every call, and no data is changed or returned
+- A review of the route table in `sellerRoutes.ts`, `couponRoutes.ts` and `productRoutes.ts` finds no seller-only route outside this list; any new one must be added
+**Business Rule**: §1 Roles
+**Selectors/API**: the routes above; `requireSeller`
+**Suggested Layer**: API
+
+---
+
+### TC-289: Signup validation
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Both
+**Platform**: API
+**Parity**: Divergent (web needs 8 characters with upper, lower and a digit; mobile 6; the API only 6)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A fresh email
+**Steps**:
+1. `POST /api/auth/signup` with an invalid email (`abc`), with a 5-character password, then with exactly 6 characters
+2. With a missing, empty and spaces-only `firstName` and `lastName`
+3. Sign up with an email that already exists, and again with the same email in different letter case
+
+**Expected Results**:
+- (1) invalid email **400** `Valid email is required`; 5 characters **400** `Password must be at least 6 characters`; 6 characters **201** with a `token` and a `user` that has no password
+- (2) **400** `First name is required` / `Last name is required`
+- (3) **400** `User already exists with this email` for both spellings. **Decision:** it is a 400, not a 409, and the message confirms the email is registered (account enumeration), while login hides it behind `Invalid credentials`
+**Business Rule**: §1 Authentication; §10 Client-side validation
+**Selectors/API**: `POST /api/auth/signup`
+**Suggested Layer**: API
+
+---
+
+### TC-290: Follow and unfollow update the counts and are idempotent
+**Scenario status**: Active
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Both
+**Platform**: API
+**Parity**: Both (web TC-037, mobile TC-088)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Two fresh users, A and B
+**Steps**:
+1. A follows B; A follows B again
+2. `GET /api/users/:B` as A, then as B
+3. A unfollows B; A unfollows B again
+
+**Expected Results**:
+- (1) **200** `isFollowing: true`, `followersCount` 1 both times (no double count)
+- (2) as A `isFollowing: true`, as B `isFollowing: false`; `followersCount` 1; A's `followingCount` 1
+- (3) **200** `isFollowing: false`, `followersCount` 0 both times
+**Business Rule**: §8 Follow system
+**Selectors/API**: `POST/DELETE /api/users/:id/follow`, `GET /api/users/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-291: Follow and unfollow with bad inputs
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P2
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: An authenticated user
+**Steps**:
+1. Follow a well-formed id that does not exist; follow `abc`
+2. Unfollow a user never followed; unfollow `abc`
+3. Follow with no token
+
+**Expected Results**:
+- (1) **404** `User not found` and **400** `Invalid user id`
+- (2) never-followed returns **200** `isFollowing: false`; `abc` should be a **4xx**. **Verify:** the unfollow path has no id check, so a malformed id reaches Mongo and the error handler maps the cast error to 400 `Invalid resource ID`
+- (3) **401**. (Following yourself is TC-113.)
+**Business Rule**: §8 Follow system
+**Selectors/API**: `POST/DELETE /api/users/:id/follow`
+**Suggested Layer**: API
+
+---
+
+### TC-292: User search
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P2
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: At least 31 users exist; a user named with a unique string, for example "Zyxwv"
+**Steps**:
+1. `GET /api/users?q=zyx` as another user
+2. `GET /api/users` with no `q`
+3. Search for your own name
+4. Inspect the keys of a returned user
+
+**Expected Results**:
+- (1) the user is found by a partial, case-insensitive match on first or last name
+- (2) at most **30** users; (3) the caller is never in the results
+- (4) only `id`, `firstName`, `lastName`, `avatar`, `role`, `followersCount`, `followingCount`, `isFollowing`; no email, password or addresses
+**Business Rule**: §8 Follow system (`GET /api/users?q=`, max 30, excludes self)
+**Selectors/API**: `GET /api/users`
+**Suggested Layer**: API
+
+---
+
+### TC-293: Search text with regex characters is handled safely
+**Scenario status**: Active
+**Category**: Edge Case
+**Priority**: P2
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: An authenticated user
+**Steps**:
+1. `GET /api/users?q=(` and `?q=[` and `?q=*`
+2. `GET /api/users?q=.*` and a long repeated pattern such as `(a+)+$`
+
+**Expected Results**:
+- Each returns **200** treating the text literally (or a **400**), never a **500**, and the long pattern does not hang the request
+- **Current behaviour (verify):** `searchUsers` passes the trimmed text straight into a MongoDB `$regex`, so an invalid pattern such as `(` or `[` probably returns 500, `.*` matches every user, and a pathological pattern could be slow. The fix is to escape the text (or use a text index)
+**Business Rule**: §8 Follow system (search)
+**Selectors/API**: `GET /api/users?q=`
+**Suggested Layer**: API
+
+---
+
+### TC-294: Public profile, followers and following lists
+**Scenario status**: Active
+**Category**: Happy Path
+**Priority**: P2
+**Role**: Both
+**Platform**: API
+**Parity**: Both (web `/users/:id`, mobile `/seller-profile/:id`)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A follows B; C follows B; users A, B, C
+**Steps**:
+1. `GET /api/users/:B/followers` and `GET /api/users/:A/following` as C
+2. `GET /api/users/:id` with `abc` and with a nonexistent id
+3. `GET /api/users/:id/followers` for a nonexistent id; `GET /api/users/:id/following` for a nonexistent id
+4. All four calls with no token
+
+**Expected Results**:
+- (1) followers of B are A and C; A follows only B; each entry carries `isFollowing` from C's point of view
+- (2) **400** `Invalid user id` and **404** `User not found`
+- (3) following of an unknown user is **404**, but followers of an unknown user currently returns **200** with `[]`. Make the two consistent (404) and update this scenario
+- (4) **401**
+**Business Rule**: §8 Follow system
+**Selectors/API**: `/api/users/:id`, `/followers`, `/following`
+**Suggested Layer**: API
+
+---
+
+### TC-295: A card order without a payment intent
+**Scenario status**: Active
+**Category**: Security
+**Priority**: P0
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (extends TC-193)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: `e2e-testing/tests/api/stripe-webhook.api.spec.ts`
+**Preconditions**: A real product and a fresh buyer; run once with each `CHECKOUT_FLOW` value
+**Steps**:
+1. `POST /api/orders` with `paymentMethod.type: "credit-card"` (and again with `debit-card`) and no `paymentIntentId`
+
+**Expected Results**:
+- `CHECKOUT_FLOW=manual_capture`: **426** `{ success: false, error: { code: "update_required", details: { reason: "card_order_requires_session", requiredEndpoint: "/api/checkout/sessions" } } }`; no order
+- `CHECKOUT_FLOW=legacy`: **current behaviour** is **201**; `orderService.createOrders` skips Stripe verification when no intent is supplied ("saved/mock card path"), so an order marked as paid by card is created with nothing charged. The old `TC-STRIPE-WH-02` expected 402, which the code never returns for this case. **Decision needed:** keep the mock path only for development, or require a verified intent for every card order
+- The spec asserts 426 under `manual_capture` and records the legacy result as a known gap
+**Business Rule**: §4 Payment methods; Authorize-capture §API and client contracts
+**Selectors/API**: `POST /api/orders`; `rejectLegacyCardOrder`
+**Suggested Layer**: API
+
+---
+
+### TC-296: A card order with an unconfirmed or reused payment intent
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: `CHECKOUT_FLOW=legacy`; Stripe in test mode (or mocked); an intent that is not `succeeded` and one that is
+**Steps**:
+1. `POST /api/orders` with a card and a `paymentIntentId` whose status is not `succeeded`
+2. Place an order with a succeeded intent, then submit the same intent for a second order
+
+**Expected Results**:
+- (1) **402** `Payment not confirmed. Please complete payment before placing your order.`; no order or stock change
+- (2) the first order is created; the second is **409** `This payment has already been used for an order`
+- Best covered with Stripe mocked in the backend tests (`orderService.stripe.test.ts`); an API run needs real test-mode intents
+**Business Rule**: §4 Payment methods
+**Selectors/API**: `POST /api/orders` with `paymentIntentId`
+**Suggested Layer**: Integration + API
+
+---
+
+### TC-297: Error responses use one envelope
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P3
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: None
+**Steps**:
+1. Trigger one error of each kind: a service error (`GET /api/orders/<other buyer's id>`), a guarded route (`POST /api/orders` with a card under `manual_capture`), the rate limiter (low-limit mode), an invalid webhook signature, and an unknown route
+2. Compare the bodies
+
+**Expected Results**:
+- Current shapes: service errors `{ success, message, code? }`; `426` guards `{ success, error: { code, message, retryable, details } }`; the limiter `{ success, message }`; the webhook `{ error }`; unknown routes `{ success, message }`
+- Expected: one envelope with `success: false` and a machine-readable `code` everywhere (including 429 and the webhook), so clients can parse errors in one place. Decide the target shape, then assert it per route
+**Business Rule**: API error contract; Swagger `Error` schema
+**Selectors/API**: the routes above
+**Suggested Layer**: API
+
+---
+
+### TC-298: Health and root endpoints respond
+**Scenario status**: Active
+**Category**: Happy Path
+**Priority**: P1
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: `e2e-testing/tests/api/health.api.spec.ts`
+**Preconditions**: Backend running
+**Steps**:
+1. `GET /health`
+2. `GET /`
+
+**Expected Results**:
+- (1) **200** `{ success: true, message: "Server is running", timestamp }`
+- (2) **200** `{ success: true, message: "TokoMart API", version: "1.0.0" }`
+- Neither route needs a token and neither is rate limited
+**Business Rule**: Smoke
+**Selectors/API**: `GET /health`, `GET /`
+**Suggested Layer**: API
+
+---
+
+### TC-299: Unknown routes return a JSON 404
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P3
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: None
+**Steps**:
+1. `GET /api/does-not-exist` and `POST /nowhere`
+
+**Expected Results**:
+- **404** `{ success: false, message: "Not Found — <path>" }` as JSON, not an HTML page, and no stack trace outside `NODE_ENV=development`
+**Business Rule**: API error contract
+**Selectors/API**: `notFound` middleware
+**Suggested Layer**: API
+
+---
+
+### TC-300: `/health` does not reflect the database
+**Scenario status**: Active
+**Category**: Edge Case
+**Priority**: P3
+**Role**: Both
+**Platform**: API
+**Parity**: Both
+**Automation**: Manual
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A test backend whose MongoDB can be stopped (never the owner's standalone 27017 database)
+**Steps**:
+1. Stop the test database while the backend keeps running
+2. Call `GET /health` and `GET /api/products`
+
+**Expected Results**:
+- Current behaviour: `/health` still returns 200 (it does not query the database) while `/api/products` fails, so a load balancer using `/health` would keep sending traffic to a backend with no database
+- Decide whether to add a readiness check (`/health/ready` that pings the database) and then assert it here
+**Business Rule**: Deployment health checks (`docs/deployment.md`)
+**Selectors/API**: `GET /health`
+**Suggested Layer**: Manual
 
 ---

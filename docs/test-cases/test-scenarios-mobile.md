@@ -3,17 +3,26 @@
 > **Platform:** Flutter (`frontend-mobile/`). Mobile E2E automated with Patrol.  
 > Full master index: [test-scenarios.md](test-scenarios.md) · Web scenarios: [test-scenarios-web.md](test-scenarios-web.md)
 
+Tracking fields follow [the master index conventions](test-scenarios.md#how-to-track-these-cases). Tool labels and existing script references are not proof of implemented or passing automation; aliases retain historical IDs without adding independent coverage.
+
 ---
 
 ## Mobile — Authentication & Session
 
 ### TC-067: Mobile login smoke (Patrol baseline)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/0_auth/login_test.dart`  
 **Preconditions**: Seeded user; env vars `EMAIL`, `TEST_PASSWORD` for Patrol  
 **Steps**:
@@ -30,12 +39,19 @@
 ---
 
 ### TC-068: Auth gate redirects unauthenticated user to login
+**Scenario status**: Active
 **Category**: Security  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Divergent (mobile gates all routes; web allows guest browse)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/0_auth/signup_test.dart`  
 **Preconditions**: Fresh app launch; no stored session  
 **Steps**:
@@ -52,12 +68,20 @@
 ---
 
 ### TC-069: Authenticated user redirected away from login/signup
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: User logged in  
 **Steps**:
 1. Navigate to `/login` or `/signup` while authenticated
@@ -71,12 +95,20 @@
 ---
 
 ### TC-070: Mobile signup with minimum password rules
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Divergent (mobile min 6 chars; web requires 8 + upper + lower + number)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Unique email not in DB  
 **Steps**:
 1. From `/login`, navigate to signup
@@ -93,12 +125,20 @@
 ---
 
 ### TC-071: Mobile logout clears session and returns to login
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: User logged in  
 **Steps**:
 1. Open profile tab → sign out
@@ -114,12 +154,20 @@
 ---
 
 ### TC-607: Cart restored after re-login (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: User had server-synced cart items before logout  
 **Steps**:
 1. Add product to cart while logged in
@@ -137,12 +185,20 @@
 ## Mobile — Browse & Product Detail
 
 ### TC-072: Browse products home after login
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Logged-in buyer; seeded products  
 **Steps**:
 1. Complete TC-067 login
@@ -158,12 +214,20 @@
 ---
 
 ### TC-073: Open cart from products screen (S2 smoke)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Logged-in buyer  
 **Steps**:
 1. From products home, tap cart icon in app bar
@@ -178,12 +242,20 @@
 ---
 
 ### TC-074: Search products by keyword
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seeded product with known name  
 **Steps**:
 1. Enter keyword in search field on home
@@ -199,12 +271,20 @@
 ---
 
 ### TC-075: Filter products by category
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Products in multiple categories  
 **Steps**:
 1. Open category filter chips or sheet on home
@@ -219,12 +299,20 @@
 ---
 
 ### TC-076: Product detail — select variant and add to cart
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Product with variants in stock  
 **Steps**:
 1. Tap product card → `/products/:id`
@@ -241,12 +329,20 @@
 ---
 
 ### TC-608: Buyer sees new seller listing in catalog (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller created product via TC-090 or TC-091; buyer is different user  
 **Steps**:
 1. Login as buyer
@@ -261,12 +357,20 @@
 ---
 
 ### TC-609: Sale price strikethrough on product detail (mobile)
+**Scenario status**: Active
 **Category**: UI State  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Product or variant with active discount  
 **Steps**:
 1. Open discounted product detail
@@ -280,12 +384,20 @@
 ---
 
 ### TC-610: Seller's own products hidden from buyer catalog (mobile)
+**Scenario status**: Active
 **Category**: Business Rule  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller logged in with own active products  
 **Steps**:
 1. Browse products home as seller
@@ -301,12 +413,20 @@
 ## Mobile — Cart & Checkout
 
 ### TC-077: Add, update quantity, and remove cart item (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Product in stock; logged-in buyer  
 **Steps**:
 1. Add item via product detail
@@ -323,12 +443,20 @@
 ---
 
 ### TC-078: Cart checkbox subset checkout
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Mobile-only selection UX (web sends all items)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Cart with ≥2 items (same or different sellers)  
 **Steps**:
 1. Open `/cart`
@@ -345,12 +473,20 @@
 ---
 
 ### TC-079: Checkout button disabled when no items selected
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Mobile-only  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Cart with items; all checkboxes unchecked  
 **Steps**:
 1. Open cart and deselect all items
@@ -366,12 +502,20 @@
 ---
 
 ### TC-080: Select all / deselect all cart checkboxes
+**Scenario status**: Active
 **Category**: Edge Case  
 **Priority**: P2  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Mobile-only  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Cart with multiple items  
 **Steps**:
 1. Tap header "select all" checkbox
@@ -387,12 +531,20 @@
 ---
 
 ### TC-081: Per-seller delivery option on cart (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Cart with items from one seller; multiple delivery options  
 **Steps**:
 1. On cart, select delivery option for seller group
@@ -408,12 +560,20 @@
 ---
 
 ### TC-082: Voucher selection passed via route extra
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Valid seller voucher; cart items from that seller  
 **Steps**:
 1. From cart, open voucher picker for seller
@@ -429,12 +589,20 @@
 ---
 
 ### TC-083: Multi-seller checkout creates separate orders (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Cart with items from 2 sellers; all selected  
 **Steps**:
 1. Checkout with both seller groups selected
@@ -450,12 +618,19 @@
 ---
 
 ### TC-095: COD checkout complete flow (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/2_buyer/simple_cod_checkout_test.dart`  
 **Preconditions**: Buyer logged in (`b@test.com`); product in cart; saved or new shipping address  
 **Steps**:
@@ -473,12 +648,19 @@
 ---
 
 ### TC-096: Checkout with saved credit card (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both (web TC-023)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/2_buyer/simple_saved_credit_checkout_test.dart`  
 **Preconditions**: Buyer logged in (`b@test.com`); ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); cart with checked items; shipping address saved or entered on checkout  
 **Steps**:
@@ -500,12 +682,19 @@
 ---
 
 ### TC-097: Checkout with new card entry (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both (web TC-024)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/2_buyer/simple_new_credit_checkout_test.dart`  
 **Preconditions**: Buyer logged in; cart with checked items; no saved card selected (tap **+ New Card** if saved cards exist)  
 **Steps**:
@@ -527,12 +716,19 @@
 ---
 
 ### TC-101: COD checkout with variant product (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both (web TC-098)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/2_buyer/variant_cod_checkout_test.dart`  
 **Preconditions**: Buyer logged in (`b@test.com`); variant product in catalog (from TC-091 or seeded); cart empty  
 **Steps**:
@@ -554,12 +750,20 @@
 ---
 
 ### TC-102: Add to cart blocked without variant — mobile guard (Patrol)
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both (web TC-014)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Product requiring variant selection (same catalog as TC-101)  
 **Steps**:
 1. Open variant product detail without selecting size/color
@@ -570,17 +774,24 @@
 - No cart line added; cart badge unchanged
 **Business Rule**: §2 Variant pricing — selection required  
 **Selectors/API**: Add-to-cart control on `/products/:id` — **keys missing**  
-**Suggested Layer**: E2E Mobile (implements TC-613 with Patrol automation)
+**Suggested Layer**: E2E Mobile (canonical case; TC-613 is its historical alias)
 
 ---
 
 ### TC-103: Checkout with new credit card — variant product (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both (web TC-024 + TC-098 combined)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/2_buyer/variant_new_credit_checkout_test.dart`  
 **Preconditions**: Buyer logged in (`b@test.com`); variant product in catalog (from TC-091 or seeded `E2E Test Variant Tee`); cart empty; no saved card selected  
 **Steps**:
@@ -602,12 +813,19 @@
 ---
 
 ### TC-104: Checkout with saved credit card — variant product (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both (web TC-023 + TC-098 combined)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/2_buyer/variant_saved_credit_checkout_test.dart`  
 **Preconditions**: Buyer logged in (`b@test.com`); ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); variant product in catalog (from TC-091 or seeded `E2E Test Variant Tee`); cart empty  
 **Steps**:
@@ -628,12 +846,20 @@
 ---
 
 ### TC-612: Invalid login shows error (mobile)
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: None  
 **Steps**:
 1. Enter valid email with wrong password on login screen
@@ -648,12 +874,22 @@
 ---
 
 ### TC-613: Add to cart blocked without variant (mobile)
+**Scenario status**: Alias
+**Canonical case**: TC-102
+**Alias note**: Retained for historical references. Execute and track under TC-102 rather than creating a second independent script.
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Product requiring variant selection  
 **Steps**:
 1. Open product detail without selecting variant
@@ -668,12 +904,20 @@
 ---
 
 ### TC-614: Cart quantity capped at stock (mobile)
+**Scenario status**: Active
 **Category**: Edge Case  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Item with known stock limit  
 **Steps**:
 1. Increment quantity beyond available stock
@@ -689,12 +933,20 @@
 ## Mobile — Orders & Reviews
 
 ### TC-084: Order history tabs and detail (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer with orders in multiple statuses  
 **Steps**:
 1. Open orders tab
@@ -711,12 +963,20 @@
 ---
 
 ### TC-085: Confirm receipt when order shipped (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Order in `shipped` status  
 **Steps**:
 1. Open order detail
@@ -734,12 +994,20 @@
 ## Mobile — Wishlist (Mobile-only)
 
 ### TC-086: Add and remove product from wishlist
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Mobile-only  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Logged-in buyer; product on home or detail  
 **Steps**:
 1. Tap favorite/wishlist icon on product
@@ -756,12 +1024,20 @@
 ---
 
 ### TC-087: Wishlist clear all
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P2  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Mobile-only  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Wishlist with multiple items  
 **Steps**:
 1. Open wishlist → tap Clear all
@@ -778,12 +1054,20 @@
 ## Mobile — Follow & Profile
 
 ### TC-088: Follow and unfollow seller from seller profile
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P2  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Divergent (mobile route `/seller-profile/:sellerId` vs web `/users/:id`)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer logged in; target seller exists  
 **Steps**:
 1. Navigate to `/seller-profile/:sellerId`
@@ -800,12 +1084,20 @@
 ## Mobile — Seller
 
 ### TC-089: Become a seller (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer account  
 **Steps**:
 1. Profile → become seller / start selling
@@ -821,12 +1113,19 @@
 ---
 
 ### TC-090: Seller creates simple product — mobile 7-step wizard
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Divergent (7 steps: Basic → Pricing → Description → Images → Variants → Shipping → Review)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/1_seller/add_product_simple_test.dart`  
 **Preconditions**: Seller logged in  
 **Steps**:
@@ -844,12 +1143,19 @@
 ---
 
 ### TC-091: Seller creates variant product — mobile 7-step wizard
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Divergent (variants on dedicated step 4, separate from web combined pricing step)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/1_seller/add_product_variant_test.dart`  
 **Preconditions**: Seller logged in  
 **Steps**:
@@ -866,12 +1172,20 @@
 ---
 
 ### TC-092: Seller advances order through status pipeline (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Pending buyer order for this seller  
 **Steps**:
 1. Open seller dashboard → orders tab (`/seller?tab=orders`)
@@ -881,18 +1195,26 @@
 - Each transition accepted; status badge updates
 - *Updated 2026-10-24:* `pending → preparing` is the acceptance step, labelled "Accept & start preparing" (`seller_acceptOrderButton_<id>`); it shows the acceptance deadline (`seller_acceptDeadlineText_<id>`) and a charging state while a card is captured (`seller_capturePendingText_<id>`), see TC-182. No cancel is offered from `shipped`
 **Business Rule**: §12 Order pipeline  
-**Selectors/API**: `PATCH /api/seller/orders/:id/status` — **keys missing**  
+**Selectors/API**: `PUT /api/seller/orders/:id/status`; acceptance keys are listed above; remaining pipeline controls need a key audit before automation
 **Suggested Layer**: E2E Mobile
 
 ---
 
 ### TC-093: Seller voucher CRUD and buyer apply (mobile)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller account  
 **Steps**:
 1. Seller → vouchers tab → create voucher
@@ -907,12 +1229,20 @@
 ---
 
 ### TC-094: Preview product as buyer from seller dashboard
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P2  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Divergent (mobile uses `/products/:id?hideEdit=1`; web uses `/my-products`)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller with published product  
 **Steps**:
 1. From seller product list, tap preview/view as buyer
@@ -926,12 +1256,20 @@
 ---
 
 ### TC-611: Buyer blocked from seller routes (mobile auth gate + role)
+**Scenario status**: Active
 **Category**: Security  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Both  
 **Automation**: Patrol + Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer-only account  
 **Steps**:
 1. Attempt `/seller/add` or seller-only API as buyer
@@ -945,12 +1283,19 @@
 ---
 
 ### TC-615: Seller views simple product in seller dashboard (mobile Read)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Divergent (mobile: tap product tile → `/products/:id?hideEdit=1`; web TC-045: `/my-products` list with separate Preview button)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/1_seller/read_product_simple_test.dart`  
 **Preconditions**: Seller logged in; simple product exists (created via API before test)  
 **Steps**:
@@ -968,12 +1313,19 @@
 ---
 
 ### TC-616: Seller edits simple product from dashboard (mobile Update)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Divergent (mobile: 7-step wizard re-opens pre-filled; web TC-044: 6-step wizard)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/1_seller/edit_product_simple_test.dart`  
 **Preconditions**: Seller logged in; simple product exists (created via API before test)  
 **Steps**:
@@ -992,12 +1344,19 @@
 ---
 
 ### TC-617: Seller deletes simple product from dashboard (mobile Delete)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Both (TC-046 — same delete+confirm pattern; different UI chrome)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/1_seller/delete_product_simple_test.dart`  
 **Preconditions**: Seller logged in; simple product exists (created via API before test)  
 **Steps**:
@@ -1016,12 +1375,19 @@
 ---
 
 ### TC-618: Seller views variant product in dashboard (mobile Read)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Divergent (no web equivalent — web uses `/my-products` TC-121 with a Preview button)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/1_seller/read_product_variant_test.dart`  
 **Preconditions**: Seller logged in; variant product exists (created via `SellerApiClient.createVariantProduct()` before test)  
 **Steps**:
@@ -1039,12 +1405,19 @@
 ---
 
 ### TC-619: Seller edits variant product from dashboard (mobile Update)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Both (web equivalent: TC-120 — edit variant product)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/1_seller/edit_product_variant_test.dart`  
 **Preconditions**: Seller logged in; variant product exists (created via API before test)  
 **Steps**:
@@ -1065,12 +1438,19 @@
 ---
 
 ### TC-620: Seller deletes variant product from dashboard (mobile Delete)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Both (web equivalent: TC-046 — delete product, covers both simple and variant)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `frontend-mobile/patrol_test/1_seller/delete_product_variant_test.dart`  
 **Preconditions**: Seller logged in; variant product exists (created via API before test)  
 **Steps**:
@@ -1089,12 +1469,20 @@
 ---
 
 ### TC-621: Initial product list loads first 20 products
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Divergent (web uses numbered pagination — TC-123)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer logged in; 60+ products in seed  
 **Steps**:
 1. Navigate to the product list screen (Products tab)
@@ -1111,12 +1499,20 @@
 ---
 
 ### TC-622: Scrolling to the bottom loads more products
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Divergent (web uses next-page button — TC-123)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer logged in; more than 20 products in seed  
 **Steps**:
 1. Navigate to the product list screen
@@ -1135,12 +1531,20 @@
 ---
 
 ### TC-623: Loading spinner visible while fetching more products
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Divergent  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer logged in; more than 20 products in seed  
 **Steps**:
 1. Navigate to the product list screen; wait for initial load
@@ -1156,12 +1560,20 @@
 ---
 
 ### TC-624: No further fetch when all products are loaded
+**Scenario status**: Active
 **Category**: Edge Case  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Divergent  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer logged in; total product count in seed is finite and known  
 **Steps**:
 1. Navigate to the product list screen
@@ -1182,12 +1594,20 @@
 ## Mobile — Platform Parity
 
 ### TC-600: Mobile auth gate vs web guest browse
+**Scenario status**: Active
 **Category**: Platform Parity  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Divergent  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Not logged in  
 **Steps**:
 1. Cold launch app
@@ -1201,12 +1621,20 @@
 ---
 
 ### TC-601: Mobile 7-step seller wizard step count
+**Scenario status**: Active
 **Category**: Platform Parity  
 **Priority**: P2  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Divergent (vs TC-061 web 6-step)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller on `/seller/add`  
 **Steps**:
 1. Count wizard steps in `_WizardStepper`
@@ -1221,12 +1649,20 @@
 ---
 
 ### TC-602: Mobile cart checkbox subset (parity assertion)
+**Scenario status**: Active
 **Category**: Platform Parity  
 **Priority**: P2  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Divergent (vs TC-063 web all-items checkout)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Multi-item cart  
 **Steps**:
 1. Select subset → checkout
@@ -1240,12 +1676,20 @@
 ---
 
 ### TC-603: Wishlist in-memory only — no API persistence
+**Scenario status**: Active
 **Category**: Platform Parity  
 **Priority**: P3  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Mobile-only  
 **Automation**: Blocked (no wishlist API)  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Items in wishlist  
 **Steps**:
 1. Force-quit and relaunch app
@@ -1259,12 +1703,20 @@
 ---
 
 ### TC-604: Notifications bell is UI stub (no-op)
+**Scenario status**: Active
 **Category**: UI State  
 **Priority**: P3  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Mobile-only  
 **Automation**: Manual  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: On products home  
 **Steps**:
 1. Tap notifications icon in app bar
@@ -1278,21 +1730,30 @@
 ---
 
 ### TC-605: Seller local order notification and deep link
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P2  
 **Role**: Seller  
 **Platform**: Mobile  
 **Parity**: Mobile-only (web uses in-app toast TC-052)  
 **Automation**: Manual / Patrol (device notifications)  
-**Preconditions**: Seller logged in; polling active in `MainShell`  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Seller logged in with the app active in the foreground; device notification permission granted; the initial successful seller-orders poll in `MainShell` has established its baseline; a separate buyer session is ready
 **Steps**:
-1. Place new order as buyer for this seller
-2. Wait for poll interval; observe local notification
-3. Tap notification
+1. After the baseline response, place a new order for this seller from the separate buyer session
+2. Observe the visible local alert after the next successful 30-second poll with a bounded condition-based wait, rather than a fixed sleep
+3. Tap the notification
 
 **Expected Results**:
-- `NotificationService.showOrderNotification` fires
-- Tap payload `seller_orders_tab` navigates to `/seller?tab=orders`
+- A visible local new-order alert appears; existing orders found during the baseline do not generate an alert
+- Tapping payload `seller_orders_tab` opens the seller Orders tab at `/seller?tab=orders`
+- This verifies foreground polling/local alerts, not FCM or closed-app delivery. Permission-denied behavior needs a separate run and is not an alert-delivery failure
 **Business Rule**: §9 Seller notifications  
 **Selectors/API**: `NotificationService.onTap`, `main_shell.dart` polling  
 **Suggested Layer**: Manual / E2E Mobile
@@ -1300,12 +1761,20 @@
 ---
 
 ### TC-606: Mobile signup accepts 6-character password
+**Scenario status**: Active
 **Category**: Platform Parity  
 **Priority**: P2  
 **Role**: Buyer  
 **Platform**: Mobile  
 **Parity**: Divergent (contrast TC-004 web weak password rejection)  
 **Automation**: Patrol  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Unique email  
 **Steps**:
 1. Signup with password `abc123` (6 chars, no uppercase)
@@ -1327,12 +1796,20 @@
 ## Mobile — Saved Addresses & Payment Methods
 
 ### TC-172: Save a new address at checkout (mobile)
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Both (web TC-137)
 **Automation**: Patrol
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer logged in; cart with checked items; no matching saved address
 **Steps**:
 1. Cart → checkout; choose the new-address option (`orders_checkoutNewAddressOption`) and fill street, city, state, ZIP
@@ -1350,12 +1827,20 @@
 ---
 
 ### TC-173: Edit a saved address (mobile)
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Both (web TC-138)
 **Automation**: Patrol
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer has ≥ 1 saved address
 **Steps**:
 1. Profile → Saved Addresses → edit an address (bottom sheet)
@@ -1370,12 +1855,20 @@
 ---
 
 ### TC-174: Deleting a saved address asks for confirmation (mobile)
+**Scenario status**: Active
 **Category**: Platform Parity
 **Priority**: P2
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Divergent (web deletes without a dialog, TC-141)
 **Automation**: Patrol
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer has ≥ 2 saved addresses
 **Steps**:
 1. Tap delete on an address; read the dialog; tap Cancel
@@ -1390,12 +1883,20 @@
 ---
 
 ### TC-175: Payment Methods screen — list, set default, delete a card (mobile)
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Both (web TC-142)
 **Automation**: Patrol
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer has ≥ 2 saved cards; route `/payment-methods`
 **Steps**:
 1. Profile → Payment Methods
@@ -1415,12 +1916,20 @@
 ## Mobile — Authorize-at-Checkout
 
 ### TC-176: Card checkout reserves the amount and explains it (mobile)
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Both (web TC-143, TC-144, TC-145)
 **Automation**: Patrol
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; cart with checked items; Stripe test mode
 **Steps**:
 1. Cart → checkout; fill/confirm the address
@@ -1440,12 +1949,20 @@
 ---
 
 ### TC-177: Declined card places no order (mobile)
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Both (web TC-146)
 **Automation**: Patrol
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; cart with checked items
 **Steps**:
 1. Pay with `4000 0000 0000 0002` and submit
@@ -1460,12 +1977,20 @@
 ---
 
 ### TC-178: 3-D Secure card on mobile
+**Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Both (web TC-147)
 **Automation**: Manual (open item M4: 3DS Patrol flow not written)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; Stripe test mode
 **Steps**:
 1. Pay with `4000 0025 0000 3155`; complete the challenge in one run, abandon it in another
@@ -1479,12 +2004,20 @@
 ---
 
 ### TC-179: Buyer order detail shows payment notices (mobile)
+**Scenario status**: Active
 **Category**: UI State
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Both (web TC-149)
 **Automation**: Patrol / Widget test
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Orders in `authorized`, `capture_pending`, `captured`, `release_pending`, `released`, `refund_pending`, `refunded`, `partially_refunded` and `failed` payment states
 **Steps**:
 1. Open each order's detail screen
@@ -1500,12 +2033,20 @@
 ---
 
 ### TC-189: Interrupted card checkout resumes (mobile)
+**Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P2
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Both (web TC-151)
 **Automation**: Manual
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; `CheckoutAttemptStore` holds the attempt
 **Steps**:
 1. Submit a card checkout, then kill the app or drop the network before the confirmation returns
@@ -1522,12 +2063,20 @@
 ## Mobile — Cancelling a Pending Order
 
 ### TC-180: Buyer cancels a pending order (mobile)
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Both (web TC-152, TC-153)
 **Automation**: Patrol
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A `pending` order (run once with a card hold, once with COD)
 **Steps**:
 1. Orders → Pending tab → open the order
@@ -1543,12 +2092,20 @@
 ---
 
 ### TC-181: No cancel after the seller accepts (mobile)
+**Scenario status**: Active
 **Category**: UI State
 **Priority**: P2
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Both (web TC-154)
 **Automation**: Patrol
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A `preparing` order and a `capture_pending` order
 **Steps**:
 1. Open each order's detail
@@ -1564,12 +2121,20 @@
 ## Mobile — Seller Acceptance and Cancellation
 
 ### TC-182: Seller accepts a pending card order (mobile)
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Seller
 **Platform**: Mobile
 **Parity**: Both (web TC-155, TC-156)
 **Automation**: Patrol
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; `SELLER_SEES_MANUAL_CAPTURE=true`; a `pending` / `authorized` card order for this seller
 **Steps**:
 1. Seller dashboard → Orders; read the deadline text
@@ -1585,12 +2150,20 @@
 ---
 
 ### TC-183: Seller cancels a pending order with a required reason (mobile)
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Seller
 **Platform**: Mobile
 **Parity**: Both (web TC-157, TC-158)
 **Automation**: Patrol
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A `pending` order with `canSellerCancelPending: true`
 **Steps**:
 1. Tap Cancel (`seller_cancelOrderButton_<id>`); try to confirm with an empty reason (the dialog stays open and shows an error)
@@ -1608,12 +2181,20 @@
 ---
 
 ### TC-184: Cancel is hidden when the seller may not cancel (mobile)
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P2
 **Role**: Seller
 **Platform**: Mobile
 **Parity**: Both (web TC-160)
 **Automation**: Patrol / Widget test
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A `shipped` order, a `preparing` card order, a `preparing` COD order, a `pending` order with `canSellerCancelPending: false`
 **Steps**:
 1. Open the seller order list
@@ -1629,12 +2210,20 @@
 ## Mobile — Delivered-Item Refunds
 
 ### TC-185: Buyer requests a refund for a delivered order (mobile)
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Both (web TC-161, TC-162, TC-163, TC-169)
 **Automation**: Patrol — **keys missing** for the refund screens
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: `DELIVERED_REFUNDS_ENABLED=true`; a delivered, captured card order inside 7 days
 **Steps**:
 1. Order detail → "Request a refund"
@@ -1652,21 +2241,31 @@
 ---
 
 ### TC-186: Seller approves or rejects a refund request (mobile)
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Seller
 **Platform**: Mobile
 **Parity**: Both (web TC-164, TC-165, TC-170)
 **Automation**: Patrol — **keys missing**
-**Preconditions**: A requested refund
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Three independent requested refunds on separate eligible orders owned by the seller: A for approval, B for rejection validation, C for successful rejection. Never reuse an approved request to test rejection
 **Steps**:
-1. Seller dashboard → Return/Refund → In Progress; open the request
-2. Approve (button "Approve and refund" after the "Approval starts the refund immediately. The buyer keeps the item." notice), in one run
-3. Reject in another run: leave the reason empty, then enter one and confirm
+1. TC-186-A: Open request A from seller Return/Refund → In Progress; read "Approval starts the refund immediately. The buyer keeps the item." and tap "Approve and refund"
+2. TC-186-B: Open fresh request B and attempt rejection with an empty/whitespace-only explanation
+3. TC-186-C: Open fresh request C, enter a valid explanation and confirm rejection
 
 **Expected Results**:
-- Approve: request becomes processing, then refunded; shows under Approved; the Return/Refund badge decrements
-- Reject: an empty reason is blocked; the request moves to Rejected and the buyer sees the reason
+- A: approval moves the request to `processing` and under Approved; wait separately for confirmed `refunded` before asserting completed money movement. The requested-count badge decrements after approval; an uncertain outcome is not completed
+- B: rejection is blocked; the request stays `requested`/In Progress and its badge count does not change
+- C: the request moves to Rejected, the requested-count badge decrements and the buyer can read the explanation
+- Record subcases independently; the parent passes only when A, B and C pass
 **Business Rule**: Delivered-item refund spec §API and concurrency
 **Selectors/API**: `RefundReviewPanel` — **keys missing**; `PUT /api/seller/refund-requests/:id/decision`
 **Suggested Layer**: E2E Mobile
@@ -1674,12 +2273,20 @@
 ---
 
 ### TC-187: Return/Refund tab and Complete tab behaviour (mobile)
+**Scenario status**: Active
 **Category**: UI State
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Mobile
 **Parity**: Both (web TC-168)
 **Automation**: Patrol / Widget test (`ordersForTab`)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Fully refunded, partially refunded and normal delivered orders
 **Steps**:
 1. Orders → Complete; then Return/Refund
@@ -1696,12 +2303,20 @@
 ## Mobile — Offline handling
 
 ### TC-188: Offline banner (mobile)
+**Scenario status**: Active
 **Category**: UI State
 **Priority**: P2
 **Role**: Both
 **Platform**: Mobile
 **Parity**: Both (web TC-171)
 **Automation**: Manual (airplane mode) / Widget test (`ConnectivityCubit`)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: App running while online
 **Steps**:
 1. Turn the device network off, then on

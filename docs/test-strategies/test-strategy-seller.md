@@ -7,19 +7,19 @@
 
 ---
 
-## Pyramid (Seller, 73 scenarios; 33 added 2026-10-24)
+## Pyramid (Seller, 102 scenarios; 62 added 2026-10-24 and 2026-10-25)
 
 Role = Seller or Both across web, mobile and API. Counts are recomputed from the master; the old per-platform split is replaced by one table.
 
 | Layer | Count | Of which added 2026-10-24 |
 |-------|-------|---------------------------|
 | E2E (Playwright + Patrol) | 33 | 0 |
-| Multi (≥ 2 layers) | 14 | 13 |
-| API | 12 | 8 |
+| Multi (≥ 2 layers) | 15 | 14 |
+| API | 38 | 34 |
 | Component / widget | 5 | 5 |
 | Integration | 4 | 4 |
 | Unit | 3 | 3 |
-| Manual | 2 | 0 |
+| Manual | 4 | 2 |
 
 ---
 
@@ -115,7 +115,7 @@ Role = Seller or Both across web, mobile and API. Counts are recomputed from the
 | TC-605 | Manual | Manual/Patrol | P2 |
 | TC-610 | E2E | Patrol | P1 |
 
-## Added 2026-10-24 — Seller scenarios (38, all platforms)
+## Added 2026-10-24 and 2026-10-25 — Seller scenarios (67, all platforms)
 
 Layers, sources, rationale and existing-coverage candidates for every row are in **`test-strategy.md` §4c–§4d**. Included: scenarios added on 2026-10-24 and older scenarios the strategy had never assigned.
 
@@ -159,5 +159,34 @@ Layers, sources, rationale and existing-coverage candidates for every row are in
 | TC-226 | Seller refund list pagination and filters | Unit | Vitest | P2 |
 | TC-227 | Delivery records `deliveredAt` and the 7-day deadline on every path | Multi | Vitest (integration) + Playwright-API | P1 |
 | TC-231 | Draft (`awaiting_payment`) orders stay hidden | Multi | Vitest + Playwright-API | P1 |
+| TC-232 | Login returns a token for valid credentials | API | Playwright-API | P0 |
+| TC-233 | Login rejects an invalid password | API | Playwright-API | P1 |
+| TC-234 | `GET /api/auth/me` returns the logged-in user | API | Playwright-API | P1 |
+| TC-246 | Seller creates a coupon; the code is stored upper case | API | Playwright-API | P1 |
+| TC-247 | Coupon creation validation and duplicate codes | API | Playwright-API | P1 |
+| TC-249 | A seller cannot change or delete another seller's coupon | API | Playwright-API | P0 |
+| TC-250 | Seller updates and deletes their own coupon | API | Playwright-API | P2 |
+| TC-252 | An applied coupon discounts the order and counts one use | API | Playwright-API | P1 |
+| TC-253 | Out-of-range coupon values are rejected | Multi | Vitest + Playwright-API | P2 |
+| TC-264 | The limit resets after the window | API | Playwright-API | P2 |
+| TC-265 | A limit set to 0 disables rate limiting | API | Playwright-API | P2 |
+| TC-269 | A spoofed forwarding header cannot bypass the limit | API | Playwright-API | P1 |
+| TC-270 | Behind the real proxy, separate clients get separate buckets | Manual | Manual | P1 |
+| TC-271 | The 429 response has a consistent body | API | Playwright-API | P3 |
+| TC-276 | A seller cannot review their own product | API | Playwright-API | P2 |
+| TC-284 | Reviews cannot be deleted | API | Playwright-API | P3 |
+| TC-285 | Product ownership holds on both product route sets | API | Playwright-API | P1 |
+| TC-286 | More protected routes return 401 without a token | API | Playwright-API | P1 |
+| TC-287 | Malformed, expired and foreign tokens are rejected | API | Playwright-API | P1 |
+| TC-289 | Signup validation | API | Playwright-API | P1 |
+| TC-290 | Follow and unfollow update the counts and are idempotent | API | Playwright-API | P1 |
+| TC-291 | Follow and unfollow with bad inputs | API | Playwright-API | P2 |
+| TC-292 | User search | API | Playwright-API | P2 |
+| TC-293 | Search text with regex characters is handled safely | API | Playwright-API | P2 |
+| TC-294 | Public profile, followers and following lists | API | Playwright-API | P2 |
+| TC-297 | Error responses use one envelope | API | Playwright-API | P3 |
+| TC-298 | Health and root endpoints respond | API | Playwright-API | P1 |
+| TC-299 | Unknown routes return a JSON 404 | API | Playwright-API | P3 |
+| TC-300 | `/health` does not reflect the database | Manual | Manual | P3 |
 
 Full detail: **`docs/test-strategies/test-strategy.md`** · Mobile phases: **`test-strategy-mobile.md`**
