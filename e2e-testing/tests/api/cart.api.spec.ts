@@ -1,6 +1,6 @@
 // TC coverage: TC-107 (GET /api/cart returns buyer's own items),
 //              TC-108 (cart isolation — buyer2 cannot access buyer1's cart at API layer),
-//              TC-109 (unauthenticated GET /api/cart → 401)
+//              TC-132 (unauthenticated GET /api/cart → 401; also in security.api.spec.ts)
 
 import { test, expect, request as pwRequest } from '@playwright/test';
 import {
@@ -47,39 +47,53 @@ test.beforeAll(async () => {
   await ctx.dispose();
 });
 
-test.describe('Cart isolation: buyer2 cannot access buyer1 cart contents', () => {
-  test('TC-107: GET /api/cart returns buyer1 items for buyer1', async ({ request }) => {
-    await test.step('Send GET /api/cart as buyer1 and assert own items returned', async () => {
-      const res = await request.get('/api/cart', {
-        headers: authHeaders(buyer1Token),
+test.describe('Cart API: own cart and isolation between buyers', () => {
+  test(
+    'TC-107: GET /api/cart returns buyer1 items for buyer1',
+    { tag: ['@TC-107', '@api', '@cart'] },
+    async ({ request }) => {
+      await test.step('Send GET /api/cart as buyer1 and assert own items returned', async () => {
+        const res = await request.get('/api/cart', {
+          headers: authHeaders(buyer1Token),
+        });
+        expect(res.status()).toBe(200);
+        const { sellers } = await res.json();
+        const allProductIds = (sellers as any[]).flatMap(s =>
+          s.items.map((i: any) => i.product?._id ?? i.product?.toString()),
+        );
+        expect(allProductIds).toContain(testProductId);
       });
-      expect(res.status()).toBe(200);
-      const { sellers } = await res.json();
-      const allProductIds = (sellers as any[]).flatMap(s =>
-        s.items.map((i: any) => i.product?._id ?? i.product?.toString()),
-      );
-      expect(allProductIds).toContain(testProductId);
-    });
-  });
+    },
+  );
 
-  test('TC-108: GET /api/cart returns empty cart for buyer2, not buyer1 items', async ({ request }) => {
-    await test.step('Send GET /api/cart as buyer2 and assert buyer1 items are absent', async () => {
-      const res = await request.get('/api/cart', {
-        headers: authHeaders(buyer2Token),
+  test(
+    'TC-108: GET /api/cart returns empty cart for buyer2, not buyer1 items',
+    { tag: ['@TC-108', '@api', '@cart', '@security'] },
+    async ({ request }) => {
+      await test.step('Send GET /api/cart as buyer2 and assert buyer1 items are absent', async () => {
+        const res = await request.get('/api/cart', {
+          headers: authHeaders(buyer2Token),
+        });
+        expect(res.status()).toBe(200);
+        const { sellers } = await res.json();
+        const allProductIds = (sellers as any[]).flatMap(s =>
+          s.items.map((i: any) => i.product?._id ?? i.product?.toString()),
+        );
+        expect(allProductIds).not.toContain(testProductId);
+        // Buyer2 is a fresh account: their own cart is empty
+        expect(sellers).toHaveLength(0);
       });
-      expect(res.status()).toBe(200);
-      const { sellers } = await res.json();
-      const allProductIds = (sellers as any[]).flatMap(s =>
-        s.items.map((i: any) => i.product?._id ?? i.product?.toString()),
-      );
-      expect(allProductIds).not.toContain(testProductId);
-    });
-  });
+    },
+  );
 
-  test('GET /api/cart without auth returns 401', async ({ request }) => {
-    await test.step('Send GET /api/cart without auth token and assert 401', async () => {
-      const res = await request.get('/api/cart');
-      expect(res.status()).toBe(401);
-    });
-  });
+  test(
+    'TC-132: GET /api/cart without auth returns 401',
+    { tag: ['@TC-132', '@api', '@cart', '@security'] },
+    async ({ request }) => {
+      await test.step('Send GET /api/cart without auth token and assert 401', async () => {
+        const res = await request.get('/api/cart');
+        expect(res.status()).toBe(401);
+      });
+    },
+  );
 });

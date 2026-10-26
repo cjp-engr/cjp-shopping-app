@@ -7,19 +7,19 @@
 
 ---
 
-## Pyramid (Buyer, 178 scenarios; 65 added 2026-10-24)
+## Pyramid (Buyer, 240 scenarios; 127 added 2026-10-24 and 2026-10-25)
 
 Role = Buyer or Both across web, mobile and API. Counts are recomputed from the master; the old per-platform split is replaced by one table.
 
 | Layer | Count | Of which added 2026-10-24 |
 |-------|-------|---------------------------|
 | E2E (Playwright + Patrol) | 99 | 10 |
-| API | 30 | 15 |
-| Multi (≥ 2 layers) | 25 | 19 |
+| API | 84 | 69 |
+| Multi (≥ 2 layers) | 31 | 25 |
 | Component / widget | 10 | 10 |
 | Unit | 6 | 6 |
 | Integration | 3 | 3 |
-| Manual | 3 | 2 |
+| Manual | 5 | 4 |
 | Blocked | 2 | 0 |
 
 ---
@@ -100,7 +100,7 @@ Role = Buyer or Both across web, mobile and API. Counts are recomputed from the 
 | TC-604 | Manual | Manual | P3 |
 | TC-611 | Multi | Patrol + API | P0 |
 
-## Added 2026-10-24 — Buyer scenarios (80, all platforms)
+## Added 2026-10-24 and 2026-10-25 — Buyer scenarios (142, all platforms)
 
 Layers, sources, rationale and existing-coverage candidates for every row are in **`test-strategy.md` §4c–§4d**. Included: scenarios added on 2026-10-24 and older scenarios the strategy had never assigned.
 
@@ -182,6 +182,68 @@ Layers, sources, rationale and existing-coverage candidates for every row are in
 | TC-225 | A refund does not undo fulfillment | API | Playwright-API | P1 |
 | TC-227 | Delivery records `deliveredAt` and the 7-day deadline on every path | Multi | Vitest (integration) + Playwright-API | P1 |
 | TC-231 | Draft (`awaiting_payment`) orders stay hidden | Multi | Vitest + Playwright-API | P1 |
+| TC-232 | Login returns a token for valid credentials | API | Playwright-API | P0 |
+| TC-233 | Login rejects an invalid password | API | Playwright-API | P1 |
+| TC-234 | `GET /api/auth/me` returns the logged-in user | API | Playwright-API | P1 |
+| TC-235 | Validate returns the discount for a valid percentage coupon | API | Playwright-API | P1 |
+| TC-236 | Percentage discount is capped by `maxDiscount` | Multi | Vitest + Playwright-API | P1 |
+| TC-237 | Fixed coupon never discounts more than the order amount | Multi | Vitest + Playwright-API | P1 |
+| TC-238 | Unknown voucher code is rejected | API | Playwright-API | P1 |
+| TC-239 | Inactive voucher is rejected | API | Playwright-API | P1 |
+| TC-240 | Expired voucher is rejected | API | Playwright-API | P1 |
+| TC-241 | Voucher that reached its usage limit is rejected | API | Playwright-API | P1 |
+| TC-242 | A voucher cannot be used with another seller | API | Playwright-API | P1 |
+| TC-243 | Validate needs a code, a seller id and a token | API | Playwright-API | P2 |
+| TC-244 | Validate without an order amount skips the minimum check | API | Playwright-API | P2 |
+| TC-245 | Malformed seller id is handled without a server error | API | Playwright-API | P3 |
+| TC-248 | A buyer cannot manage coupons | API | Playwright-API | P0 |
+| TC-251 | Available vouchers list only returns usable coupons | API | Playwright-API | P1 |
+| TC-252 | An applied coupon discounts the order and counts one use | API | Playwright-API | P1 |
+| TC-254 | Order creation requires authentication | API | Playwright-API | P1 |
+| TC-255 | Order creation rejects an invalid body | API | Playwright-API | P1 |
+| TC-256 | Unknown product or variant returns 404 and changes nothing | API | Playwright-API | P1 |
+| TC-257 | Delivery option and seller shipping settings set the fee | Multi | Vitest + Playwright-API | P1 |
+| TC-258 | Variant order uses the variant's price, discount and attributes | Multi | Vitest + Playwright-API | P1 |
+| TC-259 | An unknown or ineligible coupon code does not block the order | API | Playwright-API | P2 |
+| TC-260 | Placing an order deducts stock and counts the sale; cancelling restores stock | API | Playwright-API | P1 |
+| TC-261 | Ordered items leave the server cart; other items stay | API | Playwright-API | P2 |
+| TC-262 | A COD order starts pending with the acceptance fields set | API | Playwright-API | P1 |
+| TC-263 | Free-shipping boundary at $50 | Multi | Vitest + Playwright-API | P1 |
+| TC-264 | The limit resets after the window | API | Playwright-API | P2 |
+| TC-265 | A limit set to 0 disables rate limiting | API | Playwright-API | P2 |
+| TC-266 | Checkout routes are rate limited like other API routes | API | Playwright-API | P2 |
+| TC-268 | All auth routes share one bucket, including profile, addresses and cards | API | Playwright-API | P2 |
+| TC-269 | A spoofed forwarding header cannot bypass the limit | API | Playwright-API | P1 |
+| TC-270 | Behind the real proxy, separate clients get separate buckets | Manual | Manual | P1 |
+| TC-271 | The 429 response has a consistent body | API | Playwright-API | P3 |
+| TC-272 | Review endpoints require authentication | API | Playwright-API | P1 |
+| TC-273 | Create-review validation | API | Playwright-API | P1 |
+| TC-274 | Over-long or malformed values return a client error, not 500 | API | Playwright-API | P1 |
+| TC-275 | A review needs the buyer's own delivered order that contains the product | API | Playwright-API | P1 |
+| TC-276 | A seller cannot review their own product | API | Playwright-API | P2 |
+| TC-277 | Product rating and count follow the reviews | API | Playwright-API | P1 |
+| TC-278 | Buyer edits their own review | API | Playwright-API | P1 |
+| TC-279 | A buyer cannot edit someone else's review | API | Playwright-API | P0 |
+| TC-280 | The product review list is public, paged and newest first | API | Playwright-API | P1 |
+| TC-281 | Odd paging values and ids are handled safely | API | Playwright-API | P2 |
+| TC-282 | `GET /api/reviews/check/:productId` reports whether the buyer reviewed | API | Playwright-API | P2 |
+| TC-283 | Two simultaneous reviews create only one | API | Playwright-API | P2 |
+| TC-284 | Reviews cannot be deleted | API | Playwright-API | P3 |
+| TC-286 | More protected routes return 401 without a token | API | Playwright-API | P1 |
+| TC-287 | Malformed, expired and foreign tokens are rejected | API | Playwright-API | P1 |
+| TC-288 | A buyer is blocked from every seller-only route | API | Playwright-API | P0 |
+| TC-289 | Signup validation | API | Playwright-API | P1 |
+| TC-290 | Follow and unfollow update the counts and are idempotent | API | Playwright-API | P1 |
+| TC-291 | Follow and unfollow with bad inputs | API | Playwright-API | P2 |
+| TC-292 | User search | API | Playwright-API | P2 |
+| TC-293 | Search text with regex characters is handled safely | API | Playwright-API | P2 |
+| TC-294 | Public profile, followers and following lists | API | Playwright-API | P2 |
+| TC-295 | A card order without a payment intent | API | Playwright-API | P0 |
+| TC-296 | A card order with an unconfirmed or reused payment intent | Multi | Vitest + Playwright-API | P1 |
+| TC-297 | Error responses use one envelope | API | Playwright-API | P3 |
+| TC-298 | Health and root endpoints respond | API | Playwright-API | P1 |
+| TC-299 | Unknown routes return a JSON 404 | API | Playwright-API | P3 |
+| TC-300 | `/health` does not reflect the database | Manual | Manual | P3 |
 | TC-621 | Initial product list loads first 20 products | E2E | Patrol | P1 |
 | TC-622 | Scrolling to the bottom loads more products | E2E | Patrol | P1 |
 | TC-623 | Loading spinner visible while fetching more products | E2E | Patrol | P1 |

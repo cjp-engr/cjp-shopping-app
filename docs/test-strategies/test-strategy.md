@@ -1,6 +1,6 @@
 # TokoMart Test Strategy
 
-> **Input mode:** A — from `docs/test-cases/test-scenarios.md` and its web, mobile and API files (256 scenarios: web 108, mobile 78, API 70)  
+> **Input mode:** A — from `docs/test-cases/test-scenarios.md` and its web, mobile and API files (325 scenarios: web 108, mobile 78, API 139)  
 > **Date:** 2026-08-03; **updated 2026-10-24** (code reviewed on branch `main` at `2251348`; no tests were run for this update)  
 > **Platform scope:** Web (Playwright) + Mobile (Patrol) + API, with unit, integration, component and widget layers
 
@@ -9,7 +9,7 @@
 ## 1. Summary
 
 Test strategy for the **full scenario suite**. The 2026-10-24 update:
-- assigns a layer to the **95 scenarios added for the authorize-at-checkout, cancellation, refund, saved-address and offline features** (TC-137–231, new §4c),
+- assigns a layer to the **164 scenarios added for the authorize-at-checkout, cancellation, refund, saved-address and offline features** (TC-137–300, new §4c),
 - assigns the **23 older scenarios the strategy had never listed** (TC-099–100, TC-102, TC-105–106, TC-123–136, TC-621–624; new §4d),
 - corrects the tooling status (the unit, integration, component and widget layers **now exist**, so most new rules are pushed down to them),
 - adds an **Integration** layer (backend tests against a MongoDB replica set with Stripe mocked), and an automation status map (§10).
@@ -38,20 +38,20 @@ Test strategy for the **full scenario suite**. The 2026-10-24 update:
 
 ## 2. Pyramid distribution
 
-Counts are recomputed from the assignment tables in §4–§4d (256 scenarios, each counted once by its primary layer). Run times were not measured for this update.
+Counts are recomputed from the assignment tables in §4–§4d (325 scenarios, each counted once by its primary layer). Run times were not measured for this update.
 
 | Layer | Count | Focus | Tool |
 |-------|-------|-------|------|
 | Unit | 10 | Pure rules: payment notices, deadlines, button visibility, refund validators and shipping, query rules | Vitest (backend, web) |
 | Integration | 7 | Acceptance deadline, races, seller-cancel edge shapes, refund eligibility, webhooks, flag off | Vitest, `vitest.integration.config.ts` (replica set, Stripe mocked) |
-| API | 51 | Orders, coupons, auth, reviews, rate limiting, cancellation, refund and checkout-session contracts, isolation | Playwright `request` |
+| API | 111 | Orders, coupons, auth, reviews, rate limiting, cancellation, refund and checkout-session contracts, isolation | Playwright `request` |
 | Component / widget | 13 | Refund panels, chips, tabs, notices, offline banner, seller dialogs | Vitest + RTL, `flutter_test` |
 | E2E Web | 72 | Auth, cart, checkout, seller wizard, catalog, pagination, saved addresses, Stripe checkout | Playwright `page` |
 | E2E Mobile | 59 | Auth gate, cart checkbox, checkout, 7-step wizard, seller CRUD, new settings screens | Patrol |
-| Multi (≥ 2 layers) | 37 | Web 17 · Mobile 8 · API 12: card authorization, capture, cancellation, refunds, multi-seller | Mixed |
-| Manual / Blocked | 7 | Manual: TC-052, TC-178, TC-189, TC-604, TC-605 · Blocked: TC-062, TC-603 | — |
+| Multi (≥ 2 layers) | 44 | Web 17 · Mobile 8 · API 19: card authorization, capture, cancellation, refunds, multi-seller | Mixed |
+| Manual / Blocked | 9 | Manual: TC-052, TC-178, TC-189, TC-270, TC-300, TC-604, TC-605 · Blocked: TC-062, TC-603 | — |
 
-*E2E is 131 of 256 scenarios (51%) before counting the E2E legs inside the 37 Multi rows, so the pyramid is still top-heavy. The 95 scenarios added in 2026-10 are better shaped: 10 E2E, 30 Multi, 23 API, 13 Component, 10 Unit, 7 Integration, 2 Manual. The older E2E-heavy block is a candidate for pushing logic down; see §8.*
+*E2E is 131 of 325 scenarios (40%) before counting the E2E legs inside the 44 Multi rows, so the pyramid is still top-heavy. The 164 scenarios added in 2026-10 are better shaped: 10 E2E, 37 Multi, 83 API, 13 Component, 10 Unit, 7 Integration, 4 Manual. The older E2E-heavy block is a candidate for pushing logic down; see §8.*
 
 ---
 
@@ -290,7 +290,7 @@ Counts are recomputed from the assignment tables in §4–§4d (256 scenarios, e
 | TC-188 | Offline banner (mobile) | Component | flutter_test + Manual | Mobile | P2 | `ConnectivityCubit`, `offline_banner.dart` | Cubit and banner are unit-testable; airplane-mode check stays manual | yes | None |
 | TC-189 | Interrupted card checkout resumes (mobile) | Manual | Manual | Mobile | P2 | `checkout_attempt_store.dart` | Kill/restart timing; store logic is covered indirectly |  | Candidate: `payment_bloc_checkout_session_test.dart` (indirect) |
 
-### 4c-3. API (TC-190–231)
+### 4c-3. API (TC-190–300)
 
 | ID | Scenario | Final layer | Tool | Platform | Priority | Source | Rationale | Override | Existing coverage |
 |----|----------|-------------|------|----------|----------|--------|-----------|----------|-------------------|
@@ -336,6 +336,75 @@ Counts are recomputed from the assignment tables in §4–§4d (256 scenarios, e
 | TC-229 | Stripe webhook rejects an invalid signature | API | Playwright-API | API | P1 | `paymentController.ts` signature check | Security |  | Candidate: `api/stripe-webhook.api.spec.ts` (untagged), `paymentController.test.ts` |
 | TC-230 | Payment events never advance fulfillment | Integration | Vitest | API | P1 | `checkoutWebhook.integration.test.ts`, `stripeInboxWorker.integration.test.ts` | Needs signed events; integration suite has them; downgraded from Blocked because the harness exists | yes | Candidate: both files |
 | TC-231 | Draft (`awaiting_payment`) orders stay hidden | Multi | Vitest + Playwright-API | API | P1 | `orderVisibility.ts` | Visibility rule is unit; API proves routes honour it |  | Candidate: `orderVisibility.test.ts`, `orderVisibility.integration.test.ts` |
+| TC-232 | Login returns a token for valid credentials | API | Playwright-API | API | P0 | `POST /api/auth/login`; `auth.api.spec.ts` | Contract and token issue; also the shared proof for web TC-001 and mobile TC-067 | | Exists (tagged): `api/auth.api.spec.ts` |
+| TC-233 | Login rejects an invalid password | API | Playwright-API | API | P1 | `POST /api/auth/login` → 401 | Status code and no token; the spec asserts any status >= 400, tighten to 401 | | Exists (tagged): `api/auth.api.spec.ts` |
+| TC-234 | `GET /api/auth/me` returns the logged-in user | API | Playwright-API | API | P1 | `GET /api/auth/me` | Authenticated read; the no-token case is TC-132 | | Exists (tagged): `api/auth.api.spec.ts` |
+| TC-235 | Validate returns the discount for a valid percentage coupon | API | Playwright-API | API | P1 | `POST /api/coupons/validate` | Contract and amount | | None |
+| TC-236 | Percentage discount is capped by `maxDiscount` | Multi | Vitest + Playwright-API | API | P1 | `couponDiscountFor` in `checkoutPricing.ts` | Cap math is pure and shared with checkout; one API check that validate agrees | | None (`couponDiscountFor` has no direct unit test) |
+| TC-237 | Fixed coupon never discounts more than the order amount | Multi | Vitest + Playwright-API | API | P1 | `couponDiscountFor`; `validateCoupon` | Rule is pure; the validate endpoint disagrees with it today (open mismatch) | | None |
+| TC-238 | Unknown voucher code is rejected | API | Playwright-API | API | P1 | `validateCoupon` 404 | API leg of web TC-020 | | None |
+| TC-239 | Inactive voucher is rejected | API | Playwright-API | API | P1 | `validateCoupon` 400 | Status and message | | None |
+| TC-240 | Expired voucher is rejected | API | Playwright-API | API | P1 | `validateCoupon` 400 | The create endpoint accepts a past date, so no clock control is needed | | None |
+| TC-241 | Voucher that reached its usage limit is rejected | API | Playwright-API | API | P1 | `usageLimit`, `usedCount` | Needs one order first (TC-252) | | None |
+| TC-242 | A voucher cannot be used with another seller | API | Playwright-API | API | P1 | `code` + `sellerId` lookup | Cross-seller isolation | | None |
+| TC-243 | Validate needs a code, a seller id and a token | API | Playwright-API | API | P2 | `validateCoupon` 400/401 | Input and auth | | None |
+| TC-244 | Validate without an order amount skips the minimum check | API | Playwright-API | API | P2 | `validateCoupon` | Documents current behaviour; needs a decision | | None |
+| TC-245 | Malformed seller id is handled without a server error | API | Playwright-API | API | P3 | Mongoose cast on `sellerId` | Probably 500 today; verify first | | None |
+| TC-246 | Seller creates a coupon; the code is stored upper case | API | Playwright-API | API | P1 | `POST /api/coupons/seller` | Contract and normalisation | | None |
+| TC-247 | Coupon creation validation and duplicate codes | API | Playwright-API | API | P1 | `createCoupon` 400/409 | Validation and uniqueness | | None |
+| TC-248 | A buyer cannot manage coupons | API | Playwright-API | API | P0 | `requireSeller` on `/seller` routes | Role enforcement (extends TC-135) | | None |
+| TC-249 | A seller cannot change or delete another seller's coupon | API | Playwright-API | API | P0 | `updateCoupon`, `deleteCoupon` | Ownership (extends TC-054) | | None |
+| TC-250 | Seller updates and deletes their own coupon | API | Playwright-API | API | P2 | `PUT/DELETE /api/coupons/seller/:id` | Allowed-field list and delete | | None |
+| TC-251 | Available vouchers list only returns usable coupons | API | Playwright-API | API | P1 | `getAvailableCoupons` | Filters and sort are server-side | | None |
+| TC-252 | An applied coupon discounts the order and counts one use | API | Playwright-API | API | P1 | `POST /api/orders`; `orderService.ts` `usedCount` | Money rule; the session flow reserves capacity (see TC-205) | | Candidate: `orderService.cod.integration.test.ts` |
+| TC-253 | Out-of-range coupon values are rejected | Multi | Vitest + Playwright-API | API | P2 | model validators; `couponDiscountFor` | Limits are model/pricing rules; API shows the status code | | None |
+| TC-254 | Order creation requires authentication | API | Playwright-API | API | P1 | `POST /api/orders` 401 | Auth guard | | None |
+| TC-255 | Order creation rejects an invalid body | API | Playwright-API | API | P1 | `createOrderRules`; Order model validation | Validator messages; address and payment-type checks need verifying | | None (no validator test found) |
+| TC-256 | Unknown product or variant returns 404 and changes nothing | API | Playwright-API | API | P1 | `createOrders` 404s | Status plus "nothing changed" assertions | | None |
+| TC-257 | Delivery option and seller shipping settings set the fee | Multi | Vitest + Playwright-API | API | P1 | `computeSellerTotals` in `checkoutPricing.ts` | Resolution order and fee table are pure; API proves the wiring | | Candidate: `checkoutPricing.test.ts` |
+| TC-258 | Variant order uses the variant's price, discount and attributes | Multi | Vitest + Playwright-API | API | P1 | `priceLine` | Pure price rule; API proves variant stock and stored attributes | | Candidate: `checkoutPricing.test.ts` |
+| TC-259 | An unknown or ineligible coupon code does not block the order | API | Playwright-API | API | P2 | `applyCoupon` | Documents silent fallback; needs a decision | | None |
+| TC-260 | Placing an order deducts stock and counts the sale; cancelling restores stock | API | Playwright-API | API | P1 | `createOrders`, `cancelOrderAsBuyer` | Cross-resource assertions (order, product) | | Candidate: `orderService.cod.integration.test.ts`, `orderCancellation.integration.test.ts` |
+| TC-261 | Ordered items leave the server cart; other items stay | API | Playwright-API | API | P2 | `createOrders` cart `$pull` | Legacy path removes by product id (verify variants) | | None |
+| TC-262 | A COD order starts pending with the acceptance fields set | API | Playwright-API | API | P1 | `createOrders` acceptance block | Shape under both `CHECKOUT_FLOW` values | | Candidate: `orderService.cod.integration.test.ts` |
+| TC-263 | Free-shipping boundary at $50 | Multi | Vitest + Playwright-API | API | P1 | `FREE_SHIPPING_THRESHOLD`; `orders.api.spec.ts` | Boundary is pure; one API check | | Exists (tagged): `api/orders.api.spec.ts` |
+| TC-264 | The limit resets after the window | API | Playwright-API | API | P2 | `POST /api/auth/login`, `Retry-After` | Takes about a minute; tag slow and run alone in low-limit mode | | None |
+| TC-265 | A limit set to 0 disables rate limiting | API | Playwright-API | API | P2 | `server.ts` `authMax`/`apiMax` (0 becomes Infinity) | Needs a backend started with 0; separate run | | None |
+| TC-266 | Checkout routes are rate limited like other API routes | API | Playwright-API | API | P2 | `/api/checkout` behind `apiLimiter` | Headers always; 429 in low-limit mode | | None |
+| TC-267 | Payments routes, the Stripe webhook and health are never rate limited | API | Playwright-API | API | P1 | `/api/payments`, `/health` | Stripe retries must never be blocked; low-limit mode | | Candidate: `api/stripe-webhook.api.spec.ts` (invalid signature only) |
+| TC-268 | All auth routes share one bucket, including profile, addresses and cards | API | Playwright-API | API | P2 | `authLimiter` on `/api/auth` | Low-limit mode; records a product risk | | None |
+| TC-269 | A spoofed forwarding header cannot bypass the limit | API | Playwright-API | API | P1 | `configureTrustProxy` in `config/deployment.ts` | Security; low-limit mode, `TRUST_PROXY_HOPS` unset | | Candidate: `config/__tests__/deployment.test.ts` (trust-proxy parsing) |
+| TC-270 | Behind the real proxy, separate clients get separate buckets | Manual | Manual | API | P1 | hosted host, `TRUST_PROXY_HOPS` | Needs two real clients behind the proxy; asked for by `deployment.md` | | None |
+| TC-271 | The 429 response has a consistent body | API | Playwright-API | API | P3 | `TooManyRequests` in `config/swagger.ts` | Contract check; decide on a `code` first | | Candidate: `config/__tests__/swagger.test.ts` |
+| TC-272 | Review endpoints require authentication | API | Playwright-API | API | P1 | `reviewRoutes.ts` (`protect` after the public list) | Auth guard per endpoint | | None |
+| TC-273 | Create-review validation | API | Playwright-API | API | P1 | `createReview` 400s | Required fields and 1 to 5 rating | | None |
+| TC-274 | Over-long or malformed values return a client error, not 500 | API | Playwright-API | API | P1 | `Review` model validators; controller catch | Probably 500 today; decide the expected result first | | None |
+| TC-275 | A review needs the buyer's own delivered order that contains the product | API | Playwright-API | API | P1 | `createReview` order lookup | Ownership and eligibility, same message for every case | | None |
+| TC-276 | A seller cannot review their own product | API | Playwright-API | API | P2 | `createReview` (no owner check) | Not enforced today; needs a decision | | None |
+| TC-277 | Product rating and count follow the reviews | API | Playwright-API | API | P1 | `Review.aggregate` in `createReview` | Cross-resource assertion over several buyers | | None |
+| TC-278 | Buyer edits their own review | API | Playwright-API | API | P1 | `PUT /api/reviews/:id` | Edit and recalculation | | None |
+| TC-279 | A buyer cannot edit someone else's review | API | Playwright-API | API | P0 | `updateReview` ownership filter | IDOR, same 404 for missing and foreign | | None |
+| TC-280 | The product review list is public, paged and newest first | API | Playwright-API | API | P1 | `getProductReviews` | Contract, order, privacy of reviewer fields | | None |
+| TC-281 | Odd paging values and ids are handled safely | API | Playwright-API | API | P2 | `getProductReviews` paging | No cap on limit; negative page probably 500; verify | | None |
+| TC-282 | `GET /api/reviews/check/:productId` reports whether the buyer reviewed | API | Playwright-API | API | P2 | `checkUserReview` | Caller-scoped flag | | None |
+| TC-283 | Two simultaneous reviews create only one | API | Playwright-API | API | P2 | unique `(userId, productId)` index; `err.code === 11000` | Race decided by the index; `Promise.all` in one test | | None |
+| TC-284 | Reviews cannot be deleted | API | Playwright-API | API | P3 | no `DELETE /api/reviews/:id` | Documents a doc/code mismatch; needs a decision | | None |
+| TC-285 | Product ownership holds on both product route sets | API | Playwright-API | API | P1 | `/api/products/:id`, `/api/seller/products/:id` | Ownership (IDOR) on the second route set | | Candidate: `api/seller-access.api.spec.ts` (first set only) |
+| TC-286 | More protected routes return 401 without a token | API | Playwright-API | API | P1 | route table across `*Routes.ts` | Extends TC-132; table-driven | | Candidate: `api/security.api.spec.ts` (TC-132, 5 routes) |
+| TC-287 | Malformed, expired and foreign tokens are rejected | API | Playwright-API | API | P1 | `middleware/auth.ts`, `utils/jwt.ts` | Extends TC-133; the expired case needs a short `JWT_EXPIRES_IN` | | Candidate: `api/security.api.spec.ts` (TC-133, one variant) |
+| TC-288 | A buyer is blocked from every seller-only route | API | Playwright-API | API | P0 | `requireSeller` on seller, coupon and product routes | Extends TC-053 and TC-135; table-driven | | Candidate: `api/security.api.spec.ts` (TC-135, 4 routes) |
+| TC-289 | Signup validation | API | Playwright-API | API | P1 | `signupRules`, `signupUser` | Includes the 400-not-409 duplicate and enumeration decision | | Candidate: `api/security.api.spec.ts` (TC-136, one case) |
+| TC-290 | Follow and unfollow update the counts and are idempotent | API | Playwright-API | API | P1 | `userService.followUser` (`$addToSet`) | Counts and idempotence | | None |
+| TC-291 | Follow and unfollow with bad inputs | API | Playwright-API | API | P2 | `userService` id checks | Unfollow has no id check; verify | | Candidate: `api/users.api.spec.ts` (TC-113 only) |
+| TC-292 | User search | API | Playwright-API | API | P2 | `userService.searchUsers` | Cap, self-exclusion, public fields | | None |
+| TC-293 | Search text with regex characters is handled safely | API | Playwright-API | API | P2 | `searchUsers` `$regex` | Probably 500 on `(`; verify and fix by escaping | | None |
+| TC-294 | Public profile, followers and following lists | API | Playwright-API | API | P2 | `getUserProfile`, `getFollowers`, `getFollowing` | Shape, `isFollowing`, inconsistent 404 | | None |
+| TC-295 | A card order without a payment intent | API | Playwright-API | API | P0 | `rejectLegacyCardOrder`; `createOrders` mock-card path | Replaces the stale `TC-STRIPE-WH-02`; legacy gap needs a decision | | Exists (tagged): `api/stripe-webhook.api.spec.ts` |
+| TC-296 | A card order with an unconfirmed or reused payment intent | Multi | Vitest + Playwright-API | API | P1 | `orderService.createOrders` 402/409 | Stripe is mocked in the backend test; API needs real intents | | Candidate: `orderService.stripe.test.ts` |
+| TC-297 | Error responses use one envelope | API | Playwright-API | API | P3 | `errorHandler`, `sendError`, limiter, webhook | Contract consistency; decide the target shape | | None |
+| TC-298 | Health and root endpoints respond | API | Playwright-API | API | P1 | `GET /health`, `GET /` | Smoke | | Exists (tagged): `api/health.api.spec.ts` |
+| TC-299 | Unknown routes return a JSON 404 | API | Playwright-API | API | P3 | `notFound` middleware | Error shape | | None |
+| TC-300 | `/health` does not reflect the database | Manual | Manual | API | P3 | `GET /health` | Needs a stoppable test database | | None |
 
 ### 4d. Previously unassigned scenarios (23)
 
@@ -386,7 +455,7 @@ Counts are recomputed from the assignment tables in §4–§4d (256 scenarios, e
 10. **API:** `orders.api.spec.ts` — TC-033, TC-048, TC-056, TC-032 (API leg)
 11. **API:** `reviews.api.spec.ts` — TC-035, TC-036
 12. **API:** `products.api.spec.ts` — TC-054, TC-058
-13. **API:** `coupons.api.spec.ts` — TC-020 (API leg)
+13. **API:** `coupons.api.spec.ts` — TC-020 (API leg) = TC-238; the rest of the coupon rules are TC-235 to TC-253 (Phase 9, item 48a)
 
 ### Phase 4 — P1 E2E remainder
 14. **E2E Web:** `checkout.spec.ts` — TC-023, TC-024, TC-029, TC-025 (E2E leg)
@@ -444,10 +513,15 @@ Needs the matching backend flags (see the master scenarios file) and a Stripe te
 46. **P0 security and contract:** TC-193, TC-194 (426 guards), TC-195 (server pricing), TC-197, TC-201, TC-208, TC-221, TC-222 (IDOR/role), TC-192
 47. **P0 flows:** TC-199 (capture), TC-205, TC-206 (buyer cancel), TC-209 (seller cancel), TC-214, TC-220, TC-223 (refund)
 48. **P1:** TC-190, TC-191, TC-196, TC-198, TC-200, TC-207, TC-210, TC-212, TC-213, TC-217, TC-218, TC-224, TC-225, TC-227, TC-229, TC-231; **P2:** TC-226
+48a. **Coupons (TC-235 to TC-253):** P0 TC-248, TC-249; P1 TC-235 to TC-243, TC-246, TC-247, TC-251, TC-252 (TC-236, TC-237 also as unit tests on `couponDiscountFor`); P2/P3 TC-244, TC-245, TC-250, TC-253. Decide TC-237, TC-244, TC-245 and TC-253 first, they record behaviour that may be wrong.
+48b. **Order creation (TC-254 to TC-262):** P1 TC-254 to TC-258, TC-260, TC-262; P2 TC-259, TC-261 (TC-257, TC-258 also as unit tests, they exist in `checkoutPricing.test.ts`). Decide TC-259 and TC-261 first, they record behaviour that may be wrong.
+48c. **Rate limiting (TC-264 to TC-271):** P1 TC-267, TC-269 (low-limit run, alone), TC-270 manual on the hosted host; P2 TC-264 to TC-266, TC-268; P3 TC-271. Decide TC-268 and TC-271 first, they record behaviour that may be wrong.
+48d. **Reviews (TC-272 to TC-284):** P0 TC-279; P1 TC-272 to TC-275, TC-277, TC-278, TC-280; P2 TC-276, TC-281 to TC-283; P3 TC-284. Decide TC-274, TC-276, TC-281 and TC-284 first, they record behaviour that may be wrong.
+48e. **Seller access, security, users, Stripe, health (TC-285 to TC-300):** P0 TC-288, TC-295; P1 TC-285 to TC-287, TC-289, TC-290, TC-296, TC-298; P2 TC-291 to TC-294; P3 TC-297, TC-299, TC-300 (manual). Decide TC-289, TC-293, TC-295 and TC-297 first, they record behaviour that may be wrong.
 
 ### Phase 10 — 2026-10 smoke S5–S7 (E2E) — owner
 
-49. **Web (Playwright):** S5 TC-143 → TC-155; S6 TC-152 → TC-157; S7 TC-162 → TC-164. Tag the existing untagged specs (`card-checkout-authorization.spec.ts`, `stripe-checkout.spec.ts`, `local-payment-settlement.spec.ts`) where they already cover these.
+49. **Web (Playwright):** S5 TC-143 → TC-155; S6 TC-152 → TC-157; S7 TC-162 → TC-164. Map the existing specs that use their own ids (`card-checkout-authorization.spec.ts`, `stripe-checkout.spec.ts`, `local-payment-settlement.spec.ts`) to these scenario ids where they already cover them.
 50. **Mobile (Patrol):** first add `ValueKey`s for the refund request and review screens, the save-address toggle, and the payment-methods screen; then S5 TC-176 → TC-182; S6 TC-180 → TC-183; S7 TC-185 → TC-186. The Android build is blocked until the Gradle loopback issue is fixed by the owner.
 
 ### Phase 11 — 2026-10 remainder — owner
@@ -493,7 +567,7 @@ Rules or behaviours with no assigned or verified test. "Harness exists" means th
 | Offline banner (web `OfflineBanner`, `useOnlineStatus`; mobile `ConnectivityCubit`) | Offline spec 2026-08-06 | Component | **No test found on either platform**; harness exists (TC-171, TC-188) |
 | Checkout authorization panel copy (web) | Authorize-capture §Clients | Component | No page-level test for `Checkout.tsx`; harness exists (TC-145) |
 | Saved-address and saved-card screens (web `Profile.tsx`, mobile `profile_screen.dart`, `payment_methods_screen.dart`) | §8 Profile | Component / E2E | No component or widget tests; the web edit form is private to the page (TC-139, TC-173, TC-175) |
-| Coupon discount amount math | §6 | Unit + API | No backend coupon unit test file was found; only the API check TC-057 exists. Unit-test the percentage cap and fixed `min` rule |
+| Coupon discount amount math | §6 | Unit + API | Scenarios now exist (TC-236, TC-237, TC-253) but `couponDiscountFor` has no direct unit test and only TC-057 is automated at API. Open mismatch: `validateCoupon` does not cap a fixed coupon at the order amount (TC-237); a percentage coupon over 100% is not capped (TC-253) |
 | Sale strikethrough component | §5 Display | Component | Harness now exists; no `ProductCard` test found (TC-012 is E2E only) |
 | Seller revenue subtracts confirmed refunds only | Delivered-item refund spec §Clients | Integration / Component | Not tied to a scenario; check `sellerOrderRefunds.integration.test.ts` and add a TC if missing |
 | Seller cancel of `preparing`/`processing` COD orders restores product-level stock only | §13 | API / Integration | Known limitation (domain gap 10); document it with a test or fix it |
@@ -501,7 +575,7 @@ Rules or behaviours with no assigned or verified test. "Harness exists" means th
 | `legacy_payment_review` shown to the user | Authorize-capture open items | Component | No client shows a specific message; product gap, not only a test gap |
 | Stripe inbox retries forever (no attempt cap) | Open items §9 | Integration | Decision needed (cap or dead-letter) before a test can assert behaviour |
 | COD buyers are not told about the 24-hour deadline on mobile (web hides it for any non-manual-capture order) | Open items §9 | Component | Decide intended behaviour; TC-179 records it |
-| Test traceability for the Stripe/manual-capture specs | — | — | `card-checkout-authorization.spec.ts`, `stripe-checkout.spec.ts`, `local-payment-settlement.spec.ts`, `stripe-webhook.api.spec.ts` and the Patrol `manual_capture_*` and `local_payment_settlement` tests carry no `TC-` ids (§10) |
+| Test traceability for the Stripe/manual-capture specs | — | — | `card-checkout-authorization.spec.ts`, `stripe-checkout.spec.ts`, `local-payment-settlement.spec.ts`, and the Patrol `manual_capture_*` tests use their own `TC-AUTH-xx` / `TC-STRIPE-xx` ids, which have no scenario entry; `local_payment_settlement_test.dart` and `role-switch.smoke.spec.ts` have none (§10) |
 | Patrol keys for refund screens, save-address toggle, payment-methods, offline banner | §11 | E2E Mobile | Add `ValueKey`s before any Patrol test for TC-172–175, TC-185–188 |
 
 Closed since the last version: pure 8% tax and pricing math (candidate `checkoutPricing.test.ts`), auto-complete shipped→delivered (candidates `jobs/__tests__/autoCompleteOrders.test.ts`, `orderDelivery.integration.test.ts`), and the "no unit or component harness" blocker.
@@ -512,10 +586,10 @@ Closed since the last version: pure 8% tax and pricing math (candidate `checkout
 
 | Issue | Status | Action |
 |-------|--------|--------|
-| E2E is 131 of 256 scenarios (51%), above the share the pyramid allows | **Risk** | Treat the older E2E block as candidates to push down (TC-001–066 validation and display rules); no new logic-only scenario should be E2E |
+| E2E is 131 of 325 scenarios (40%), above the share the pyramid allows | **Risk** | Treat the older E2E block as candidates to push down (TC-001–066 validation and display rules); no new logic-only scenario should be E2E |
 | Money state machines (capture, release, refund, webhooks) tested only through the UI | Avoid | Integration first; one E2E per smoke flow (S5–S7) |
 | Flag-dependent scenarios run without declaring the flag | **Risk** | Every S5–S7 and TC-143–231 run states `CHECKOUT_FLOW`, `SELLER_SEES_MANUAL_CAPTURE`, `DELIVERED_REFUNDS_ENABLED` (see the scenarios master) |
-| Specs with no `TC-` ids | Existing | Tag them (§10) so coverage can be traced to scenarios |
+| Specs whose ids are not in the scenario docs, or that have none | Existing | Map or rename them (§10) so coverage can be traced to scenarios |
 | Pricing tested only at E2E | Avoid | TC-026/027/028 at API; TC-195 at unit + API |
 | Playwright for TC-062/086 wishlist | N/A | Patrol for TC-086; TC-062 Blocked on web |
 | Patrol without keys | **Risk** | Refund, saved-address, payment-methods and offline screens need keys first |
@@ -560,22 +634,36 @@ Read-only grep of `TC-` ids in the existing specs. This is a traceability map, n
 | | `seller/seller-product-wizard.spec.ts` | TC-064 |
 | | `seller/seller-simple-product-crud.spec.ts` | TC-042, TC-044, TC-045, TC-046, TC-122 |
 | | `seller/seller-variant-product-crud.spec.ts` | TC-046, TC-120, TC-121 |
-| Playwright API | `api/cart.api.spec.ts` | TC-107, TC-108 (also references TC-109) |
-| | `api/coupons.api.spec.ts` | TC-057 |
-| | `api/order-isolation.api.spec.ts` | TC-110, TC-111 |
-| | `api/orders.api.spec.ts` | TC-025, TC-026, TC-027, TC-028, TC-033, TC-056 |
-| | `api/rate-limit.api.spec.ts` | TC-114 to TC-119 |
-| | `api/reviews.api.spec.ts` | TC-035, TC-036 |
-| | `api/security.api.spec.ts` | TC-053, TC-132 to TC-136 |
-| | `api/seller-access.api.spec.ts` | TC-048, TC-053, TC-054 |
-| | `api/users.api.spec.ts` | TC-113 |
+| Playwright API | `api/auth.api.spec.ts` | TC-232, TC-233, TC-132, TC-234 (`{ tag }` annotations added 2026-10-24) |
+| | `api/cart.api.spec.ts` | TC-107, TC-108, TC-132 (`{ tag }` annotations; the old TC-109 reference was wrong, TC-109 is the web UI scenario) |
+| | `api/coupons.api.spec.ts` | TC-057 (`{ tag }` annotation added 2026-10-25; uses a fresh buyer and deletes its coupon) |
+| | `api/order-isolation.api.spec.ts` | TC-110, TC-111 (`{ tag }` annotations added 2026-10-25; fresh buyers, positive controls, cleanup) |
+| | `api/orders.api.spec.ts` | TC-025, TC-026, TC-027, TC-028, TC-033, TC-056, TC-263 (`{ tag }` annotations added 2026-10-25; fresh buyer, exact amounts, discount + coupon and boundary cases, cleanup; TC-033 now asserts 409 for COD) |
+| | `api/rate-limit.api.spec.ts` | TC-114 to TC-119 (`{ tag }` annotations added 2026-10-25; limits probed from the backend, serial mode, `@low-limit` tag for TC-117 to TC-119) |
+| | `api/reviews.api.spec.ts` | TC-035, TC-036 (`{ tag }` annotations added 2026-10-25; fresh buyer, TC-036 covers a pending and a shipped order, TC-035 checks the product rating and count, cleanup of what the API allows) |
+| | `api/security.api.spec.ts` | TC-132 to TC-136 (tag annotations existed; TC-134 now has a positive control and cleanup 2026-10-25) |
+| | `api/stripe-webhook.api.spec.ts` | TC-229 (WH-01), TC-295 and TC-193 (WH-02 rewritten 2026-10-25) |
+| | `api/health.api.spec.ts` | TC-298 (tags added 2026-10-25) |
+| | `api/seller-access.api.spec.ts` | TC-048, TC-053, TC-054 (`{ tag }` annotations added 2026-10-25; fresh buyer, unique product names, cleanup) |
+| | `api/users.api.spec.ts` | TC-113 (`{ tag }` annotation added 2026-10-25) |
 | Patrol | `0_auth/login_test.dart` | TC-067 |
 | | `0_auth/signup_test.dart` | tagged TC-068, but its comment describes signup with valid data, which is TC-070; TC-068 (auth-gate redirect) is not covered by this file. Fix the tag |
 | | `1_seller/*` (8 files) | TC-090, TC-091, TC-615 to TC-620 |
 | | `2_buyer/simple_cod`, `simple_new_credit`, `simple_saved_credit` | TC-095, TC-097, TC-096 |
 | | `2_buyer/variant_cod`, `variant_new_credit`, `variant_saved_credit` | TC-101, TC-103, TC-104 |
 
-**Untagged automation (no `TC-` id found):** web `buyer/card-checkout-authorization.spec.ts`, `buyer/stripe-checkout.spec.ts`, `buyer/local-payment-settlement.spec.ts`, `mixed/role-switch.smoke.spec.ts`; API `auth.api.spec.ts`, `health.api.spec.ts`, `stripe-webhook.api.spec.ts`; Patrol `2_buyer/local_payment_settlement_test.dart`, `manual_capture_new_card_verification_test.dart`, `manual_capture_saved_card_verification_test.dart`. The first three web and the two `manual_capture` Patrol files are the likely homes for TC-143, TC-144, TC-176 once checked.
+**Automation with its own id series (not in the scenario docs):** these files carry ids that have no scenario entry, so they are not traceable to the 259 scenarios yet.
+
+| File | Own ids | Likely scenarios |
+|------|---------|------------------|
+| web `buyer/card-checkout-authorization.spec.ts` | TC-AUTH-01 to 06 | TC-143, TC-144, TC-146, TC-147 (check) |
+| web `buyer/stripe-checkout.spec.ts` | TC-STRIPE-01, 02, 04 | TC-143, TC-144, TC-142 (check) |
+| web `buyer/local-payment-settlement.spec.ts` | TC-AUTH-03 | S5 settlement path (check) |
+| API `stripe-webhook.api.spec.ts` | TC-STRIPE-WH-01, 02 (now also tagged TC-229, TC-295, TC-193) | WH-01 is TC-229. WH-02 was rewritten on 2026-10-25: it used to expect 402 for a missing payment intent, which the code never returns; it now uses a real product and asserts 426 under `manual_capture` and records the legacy result (order accepted unverified) as a known gap, TC-295 |
+| Patrol `2_buyer/manual_capture_new_card_verification_test.dart` | TC-AUTH-01 | TC-176 (check) |
+| Patrol `2_buyer/manual_capture_saved_card_verification_test.dart` | TC-AUTH-02, 03 | TC-176 (check) |
+
+**No ids at all:** web `mixed/role-switch.smoke.spec.ts`; Patrol `2_buyer/local_payment_settlement_test.dart`. Recommended fix (owner): either add scenarios for the `TC-AUTH-xx` / `TC-STRIPE-xx` ids, or rename them to the scenario ids above.
 
 **Not yet automated at E2E or API:** all of TC-137–231 except where the untagged files above already cover them, plus the pagination, mobile browse/cart/wishlist and most P1 mobile scenarios listed in §4b.
 

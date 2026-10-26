@@ -3,17 +3,26 @@
 > **Platform:** React frontend (`frontend/`). Web E2E automated with Playwright.  
 > Full master index: [test-scenarios.md](test-scenarios.md) · API scenarios: [test-scenarios-api.md](test-scenarios-api.md) · Mobile scenarios: [test-scenarios-mobile.md](test-scenarios-mobile.md)
 
+Tracking fields follow [the master index conventions](test-scenarios.md#how-to-track-these-cases). Tool labels and existing script references are not proof of implemented or passing automation; aliases retain historical IDs without adding independent coverage.
+
 ---
 
 ## Buyer — Authentication & Session
 
 ### TC-001: Successful login with valid credentials
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/buyer/login.spec.ts`  
 **Preconditions**: Seeded user exists (`test@example.com` / `password123`)  
 **Steps**:
@@ -31,12 +40,20 @@
 ---
 
 ### TC-002: Login failure with invalid credentials
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: None  
 **Steps**:
 1. Navigate to `/login`
@@ -54,12 +71,20 @@
 ---
 
 ### TC-003: Successful signup as new buyer
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Divergent (web password rules stricter than mobile)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Unique email not in DB  
 **Steps**:
 1. Navigate to `/signup`
@@ -77,12 +102,20 @@
 ---
 
 ### TC-004: Signup blocked by weak password (web rules)
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Divergent (mobile accepts min 6 only)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: None  
 **Steps**:
 1. Navigate to `/signup`
@@ -99,12 +132,20 @@
 ---
 
 ### TC-005: Logout clears local session
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: User logged in  
 **Steps**:
 1. Open user menu → Sign out
@@ -120,12 +161,20 @@
 ---
 
 ### TC-006: Cart restored after re-login
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: User had items in cart before logout  
 **Steps**:
 1. Add product to cart while logged in
@@ -142,12 +191,20 @@
 ---
 
 ### TC-007: Checkout redirect when unauthenticated
+**Scenario status**: Active
 **Category**: Security  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Divergent (mobile auth-gates all routes)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Guest (not logged in)  
 **Steps**:
 1. Navigate directly to `/checkout`
@@ -164,16 +221,23 @@
 ## Buyer — Guest Browse (Web-only)
 
 ### TC-008: Guest can browse products without login
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/mixed/product-catalog-visibility.spec.ts`  
 **Preconditions**: Not logged in  
 **Steps**:
-1. Navigate to `/products`
+1. Open `/` and `/products` without a stored session
 2. Click a product card
 
 **Expected Results**:
@@ -187,12 +251,20 @@
 ---
 
 ### TC-009: Guest can view cart page
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Guest with local cart items (if supported) or empty cart  
 **Steps**:
 1. Navigate to `/cart` as guest
@@ -210,12 +282,19 @@
 ## Buyer — Browse & Product Detail
 
 ### TC-010: Search products by keyword
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/buyer/product-browse.spec.ts`  
 **Preconditions**: Seeded products exist  
 **Steps**:
@@ -232,12 +311,19 @@
 ---
 
 ### TC-011: Filter products by category
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/buyer/product-browse.spec.ts`  
 **Preconditions**: Products in multiple categories seeded  
 **Steps**:
@@ -253,12 +339,19 @@
 ---
 
 ### TC-012: Product detail shows sale price with strikethrough
+**Scenario status**: Active
 **Category**: UI State  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/buyer/product-detail.spec.ts`  
 **Preconditions**: Product or variant with discount > 0  
 **Steps**:
@@ -274,12 +367,19 @@
 ---
 
 ### TC-013: Select variant before add to cart
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/buyer/product-detail.spec.ts`  
 **Preconditions**: Product with variants (e.g. size/color)  
 **Steps**:
@@ -297,12 +397,19 @@
 ---
 
 ### TC-014: Add to cart blocked when variant not selected
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/buyer/product-detail.spec.ts`  
 **Preconditions**: Product with required variants  
 **Steps**:
@@ -318,12 +425,20 @@
 ---
 
 ### TC-015: Seller's own products hidden from public listing
+**Scenario status**: Active
 **Category**: Business Rule  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Logged in as seller who owns listed products  
 **Steps**:
 1. Navigate to `/products`
@@ -339,12 +454,19 @@
 ---
 
 ### TC-065: Buyer sees new seller listing in public catalog
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/mixed/product-catalog-visibility.spec.ts`  
 **Preconditions**: Seller account created product via TC-042 or TC-064; **different** buyer account logged in (not the seller)  
 **Steps**:
@@ -366,12 +488,20 @@
 ---
 
 ### TC-066: Buyer finds new listing via search and category filter
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller published product with known unique name and category (e.g. `Electronics`)  
 **Steps**:
 1. As Buyer (not seller): open `/products`
@@ -395,12 +525,20 @@
 ## Buyer — Cart
 
 ### TC-016: Add, update quantity, and remove cart item
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Logged in; product in stock  
 **Steps**:
 1. Add product to cart
@@ -417,12 +555,20 @@
 ---
 
 ### TC-017: Cart quantity capped at available stock
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Product with known stock (e.g. stock = 3)  
 **Steps**:
 1. Add to cart; increment qty beyond stock
@@ -436,12 +582,20 @@
 ---
 
 ### TC-018: Per-seller delivery option selection
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Divergent (mobile passes via route extra)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Cart with items from one seller offering standard + express  
 **Steps**:
 1. Open `/cart`
@@ -458,12 +612,20 @@
 ---
 
 ### TC-019: Apply valid seller voucher at cart
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Active seller coupon; cart meets min order  
 **Steps**:
 1. Open cart for seller group
@@ -478,12 +640,20 @@
 ---
 
 ### TC-020: Invalid voucher shows validation error
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Cart with items  
 **Steps**:
 1. Apply expired or wrong-seller coupon code
@@ -497,12 +667,20 @@
 ---
 
 ### TC-021: Multi-seller cart displays separate seller groups
+**Scenario status**: Active
 **Category**: Business Rule  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Cart items from 2+ sellers  
 **Steps**:
 1. Open `/cart`
@@ -517,12 +695,19 @@
 ---
 
 ### TC-109: Cart isolation — buyer2 sees own empty cart in UI, not buyer1's items (Web)
+**Scenario status**: Active
 **Category**: Security / Isolation  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: API (TC-108)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/mixed/cart-isolation.spec.ts`  
 **Preconditions**: Buyer1 has items in server-side cart; buyer2 is a fresh account with empty cart  
 **Steps**:
@@ -543,12 +728,19 @@
 ## Buyer — Checkout & Orders
 
 ### TC-022: Complete checkout with Cash on Delivery
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/buyer/checkout.spec.ts`  
 **Preconditions**: Logged in; cart with items; saved or new address  
 **Steps**:
@@ -570,12 +762,19 @@
 ---
 
 ### TC-023: Checkout with saved credit card
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/buyer/checkout.spec.ts`  
 **Preconditions**: User has saved card in profile  
 **Steps**:
@@ -593,12 +792,19 @@
 ---
 
 ### TC-024: Checkout with new card entry
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/buyer/checkout.spec.ts`  
 **Preconditions**: Logged in; no saved card selected  
 **Steps**:
@@ -617,12 +823,19 @@
 ---
 
 ### TC-098: Checkout COD with variant product (web)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both (mobile TC-101)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/buyer/variant-checkout.spec.ts`  
 **Preconditions**: Buyer logged in; variant product in catalog with known attributes (e.g. Size S/M/L from TC-064 or API seed); cart empty  
 **Steps**:
@@ -649,12 +862,20 @@
 ---
 
 ### TC-099: Variant checkout — insufficient stock (web)
+**Scenario status**: Active
 **Category**: Edge Case  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright / Playwright-API  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Variant product with Size L stock = 1 in cart; L stock depleted before checkout (second session, API, or concurrent order)  
 **Steps**:
 1. Add Size L variant to cart as Buyer A
@@ -671,12 +892,20 @@
 ---
 
 ### TC-100: Cart holds two variants of same product (web)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Variant product with Size S and M in stock  
 **Steps**:
 1. Open product detail → select Size S → add to cart
@@ -697,12 +926,19 @@
 ---
 
 ### TC-025: Multi-seller checkout creates separate orders
+**Scenario status**: Active
 **Category**: Business Rule  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
 **Preconditions**: Cart with items from 2 sellers  
 **Steps**:
@@ -719,12 +955,20 @@
 ---
 
 ### TC-029: Checkout blocked with missing address fields
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: New address form shown  
 **Steps**:
 1. Leave required fields empty (street, city, state, zip)
@@ -739,12 +983,20 @@
 ---
 
 ### TC-030: Order history tabs filter by status
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Divergent (mobile uses different tab labels)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: User with orders in multiple statuses  
 **Steps**:
 1. Open `/orders`
@@ -760,12 +1012,20 @@
 ---
 
 ### TC-031: Confirm receipt when order shipped
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Order in `shipped` status  
 **Steps**:
 1. Open order detail
@@ -781,12 +1041,20 @@
 ---
 
 ### TC-032: Buyer cancel order in pending status
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Order status `pending`  
 **Steps**:
 1. Cancel order from detail or history
@@ -801,12 +1069,19 @@
 ---
 
 ### TC-112: Buyer2's order history page shows only their own orders, not buyer1's
+**Scenario status**: Active
 **Category**: Security / Isolation  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: API (TC-110)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/mixed/order-isolation.spec.ts`  
 **Preconditions**: Buyer1 has a placed order; buyer2 is a fresh account with no orders  
 **Steps**:
@@ -827,12 +1102,20 @@
 ## Buyer — Reviews & Social
 
 ### TC-034: Leave review after order delivered
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Delivered order containing product; no existing review  
 **Steps**:
 1. Open order detail
@@ -848,12 +1131,20 @@
 ---
 
 ### TC-037: Follow and unfollow seller from public profile
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P2  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both (mobile route `/seller-profile/:id`)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Two users; target is seller  
 **Steps**:
 1. Navigate to `/users/:id`
@@ -871,12 +1162,20 @@
 ## Buyer — UI & Web-only
 
 ### TC-038: Toggle dark mode persists across navigation
+**Scenario status**: Active
 **Category**: UI State  
 **Priority**: P2  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: None  
 **Steps**:
 1. Click theme toggle in navbar
@@ -892,12 +1191,20 @@
 ---
 
 ### TC-039: Order card displays persisted total not raw sum
+**Scenario status**: Active
 **Category**: UI State  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Order with product discount + coupon applied  
 **Steps**:
 1. View order in history
@@ -911,12 +1218,20 @@
 ---
 
 ### TC-040: Loading and empty states on products page
+**Scenario status**: Active
 **Category**: UI State  
 **Priority**: P2  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: None  
 **Steps**:
 1. Load `/products`; observe loading spinner
@@ -935,12 +1250,20 @@
 ## Seller — Onboarding & Products
 
 ### TC-041: Become a seller (one-way promotion)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Logged in as buyer  
 **Steps**:
 1. Profile → Become a Seller
@@ -956,12 +1279,19 @@
 ---
 
 ### TC-042: Seller creates simple product listing (web 6-step wizard)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Divergent (mobile 7-step — Variants separate)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`  
 **Preconditions**: Seller logged in (`test@example.com` promoted, or dedicated seller account)  
 **Steps**:
@@ -990,12 +1320,19 @@
 ---
 
 ### TC-064: Seller creates product listing with variants (web)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Divergent (mobile 7-step — dedicated Variants step + permission flow)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/seller/seller-product-wizard.spec.ts`  
 **Preconditions**: Seller logged in; backend image upload available  
 **Steps**:
@@ -1022,12 +1359,20 @@
 ---
 
 ### TC-043: Wizard validation — missing required fields
+**Scenario status**: Active
 **Category**: Negative  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller on add product wizard  
 **Steps**:
 1. Attempt next/submit without name, images, or shipping options
@@ -1041,12 +1386,19 @@
 ---
 
 ### TC-044: Edit product price and stock
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`  
 **Preconditions**: Existing seller product  
 **Steps**:
@@ -1062,12 +1414,19 @@
 ---
 
 ### TC-120: Edit variant product — update variant price, stock, and options
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/seller/seller-variant-product-crud.spec.ts`  
 **Preconditions**: Seller has an existing variant product (e.g. created via TC-064 or TC-091)  
 **Steps**:
@@ -1091,12 +1450,19 @@
 ---
 
 ### TC-045: Preview simple product as buyer via My Products page
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P2  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`  
 **Preconditions**: Seller has an existing simple product (no variants)  
 **Steps**:
@@ -1114,12 +1480,19 @@
 ---
 
 ### TC-121: Preview variant product as buyer via My Products page
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P2  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/seller/seller-variant-product-crud.spec.ts`  
 **Preconditions**: Seller has an existing variant product (e.g. created via TC-064)  
 **Steps**:
@@ -1139,12 +1512,19 @@
 ---
 
 ### TC-122: Seller views product list on My Products page
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`  
 **Preconditions**: Seller has at least one simple and one variant product  
 **Steps**:
@@ -1166,12 +1546,20 @@
 ---
 
 ### TC-123: Products page — navigate to next page loads different products
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Divergent (mobile uses infinite scroll)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: More than one page of products exists in seed (60+ products); buyer logged in  
 **Steps**:
 1. Navigate to `/products`
@@ -1189,12 +1577,20 @@
 ---
 
 ### TC-124: Products page — category filter resets to page 1
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Divergent  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: More than one page of products; buyer logged in  
 **Steps**:
 1. Navigate to `/products` and navigate to page 2
@@ -1211,12 +1607,20 @@
 ---
 
 ### TC-125: Products page — sort change resets to page 1
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Divergent  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: More than one page of products; buyer logged in  
 **Steps**:
 1. Navigate to `/products` and navigate to page 2
@@ -1232,12 +1636,20 @@
 ---
 
 ### TC-126: Products page — count label shows total across all pages
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Divergent  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: More than one page of products; buyer logged in  
 **Steps**:
 1. Navigate to `/products` with no filters
@@ -1255,12 +1667,20 @@
 ---
 
 ### TC-127: Products page — pagination hidden when results fit on one page
+**Scenario status**: Active
 **Category**: Edge Case  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Divergent  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer logged in  
 **Steps**:
 1. Navigate to `/products`
@@ -1277,12 +1697,20 @@
 ---
 
 ### TC-128: MyProducts page — navigate to next page
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Divergent  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller has more products than the page size (requires seeded seller with 10+ products); seller logged in  
 **Steps**:
 1. Navigate to `/my-products`
@@ -1300,12 +1728,20 @@
 ---
 
 ### TC-129: MyProducts page — category filter resets to page 1
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Divergent  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller has more products than the page size across multiple categories; seller logged in  
 **Steps**:
 1. Navigate to `/my-products` and navigate to page 2
@@ -1321,12 +1757,20 @@
 ---
 
 ### TC-130: MyProducts page — next button disabled on last page
+**Scenario status**: Active
 **Category**: Edge Case  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Divergent  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller has more than one page of products; seller logged in  
 **Steps**:
 1. Navigate to `/my-products`
@@ -1341,12 +1785,20 @@
 ---
 
 ### TC-131: MyProducts page — pagination hidden when products fit on one page
+**Scenario status**: Active
 **Category**: Edge Case  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Divergent  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller has fewer products than the page size; seller logged in  
 **Steps**:
 1. Navigate to `/my-products`
@@ -1361,12 +1813,19 @@
 ---
 
 ### TC-046: Delete product from seller dashboard
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P2  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/seller/seller-simple-product-crud.spec.ts`  
 **Preconditions**: Deletable product (no blocking orders)  
 **Steps**:
@@ -1385,12 +1844,20 @@
 ## Seller — Orders & Vouchers
 
 ### TC-047: Seller advances order through valid status pipeline
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P0  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: New buyer order in `pending`  
 **Steps**:
 1. Seller dashboard → orders tab
@@ -1407,12 +1874,20 @@
 ---
 
 ### TC-049: Seller cancel order with reason
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Order in `pending` or `preparing`  
 **Steps**:
 1. Cancel from seller order detail
@@ -1428,12 +1903,20 @@
 ---
 
 ### TC-050: Create and apply seller voucher end-to-end
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Both  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller account  
 **Steps**:
 1. Seller creates voucher in dashboard
@@ -1449,12 +1932,20 @@
 ---
 
 ### TC-051: Seller order detail shows formatted payment and delivery labels
+**Scenario status**: Active
 **Category**: UI State  
 **Priority**: P1  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Both  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Order with COD and express delivery  
 **Steps**:
 1. Open `/seller/orders/:id`
@@ -1469,22 +1960,31 @@
 ---
 
 ### TC-052: New order toast notification (web polling)
+**Scenario status**: Active
 **Category**: UI State  
 **Priority**: P2  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Manual | Playwright (timing-sensitive)  
-**Preconditions**: Seller logged in; buyer places new order  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: Seller logged in with the app active; the initial successful seller-orders poll has established its baseline; a separate buyer session is ready
 **Steps**:
-1. Keep seller dashboard open
-2. Place order as buyer in separate session
+1. Keep the seller app active after the baseline response; existing orders must not produce an alert
+2. Place a new order for this seller from the separate buyer session
+3. Observe the toast after the next successful poll with a bounded condition-based wait allowing the 30-second interval, rather than a fixed sleep; click it
 
 **Expected Results**:
-- In-app toast appears for new order (polling)
+- A new-order toast appears; clicking opens `/seller?tab=orders`. Orders belonging only to another seller do not produce this seller's alert
 **Business Rule**: §9 Platform — web toast polling  
 **Selectors/API**: `seller-dashboard`  
-**Suggested Layer**: E2E Web (optional — flaky)
+**Suggested Layer**: E2E Web (baseline synchronization and bounded polling required)
 
 ---
 
@@ -1492,12 +1992,20 @@
 ## Security & Access Control
 
 ### TC-055: Protected routes require authentication
+**Scenario status**: Active
 **Category**: Security  
 **Priority**: P0  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Divergent (mobile gates more routes)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Guest session  
 **Steps**:
 1. Visit `/orders`, `/profile`, `/seller` without login
@@ -1514,12 +2022,20 @@
 ## Edge Cases
 
 ### TC-059: Stale product removed from cart on load (web)
+**Scenario status**: Active
 **Category**: Edge Case  
 **Priority**: P2  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Web-only (web stale cleanup)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Cart contains deleted product  
 **Steps**:
 1. Load `/cart` after product deleted
@@ -1536,12 +2052,22 @@
 ## Platform Parity (Web perspective)
 
 ### TC-060: Web guest browse — no login required for catalog
+**Scenario status**: Alias
+**Canonical case**: TC-008
+**Alias note**: Retained for historical references. Execute and count under TC-008, including `/`, `/products` and `/products/:id` as route variants.
 **Category**: Platform Parity  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Web-only  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Guest  
 **Steps**:
 1. Browse `/`, `/products`, `/products/:id` without auth
@@ -1555,12 +2081,20 @@
 ---
 
 ### TC-061: Web 6-step seller wizard vs mobile 7-step
+**Scenario status**: Active
 **Category**: Platform Parity  
 **Priority**: P2  
 **Role**: Seller  
 **Platform**: Web  
 **Parity**: Divergent  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Seller on web  
 **Steps**:
 1. Count wizard steps on web add product flow
@@ -1575,12 +2109,20 @@
 ---
 
 ### TC-062: Wishlist not available on web
+**Scenario status**: Active
 **Category**: Platform Parity  
 **Priority**: P3  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Mobile-only feature  
 **Automation**: Blocked (no web wishlist)  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: N/A  
 **Steps**:
 1. Confirm no `/wishlist` route on web
@@ -1595,12 +2137,20 @@
 ---
 
 ### TC-063: Web cart includes all items — no checkbox selection
+**Scenario status**: Active
 **Category**: Platform Parity  
 **Priority**: P2  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: Divergent  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Cart with multiple items  
 **Steps**:
 1. Proceed to checkout from cart without per-item selection
@@ -1614,12 +2164,19 @@
 ---
 
 ### TC-105: Checkout with new card — variant product (web)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: TC-103 (mobile)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/buyer/variant-checkout.spec.ts`  
 **Preconditions**: Buyer logged in (`test@example.com`); variant product in catalog (seeded or created via API); cart empty; no saved card selected  
 **Steps**:
@@ -1641,12 +2198,19 @@
 ---
 
 ### TC-106: Checkout with saved card — variant product (web)
+**Scenario status**: Active
 **Category**: Happy Path  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: Web  
 **Parity**: TC-104 (mobile)  
 **Automation**: Playwright  
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
 **Test File**: `e2e-testing/tests/web/buyer/variant-checkout.spec.ts`  
 **Preconditions**: Buyer logged in; ≥ 1 saved card on profile (`GET /api/auth/payment-methods`); variant product in catalog; cart empty  
 **Steps**:
@@ -1678,12 +2242,20 @@
 ## Buyer — Saved Addresses & Saved Cards (Web)
 
 ### TC-137: Save a new address at checkout
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-172)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer logged in; cart with items; choose "new address" at checkout
 **Steps**:
 1. Open `/checkout`; choose the new-address option and fill street, city, state, ZIP, email and phone
@@ -1701,12 +2273,20 @@
 ---
 
 ### TC-138: Edit a saved address in the profile
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-173)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer has ≥ 1 saved address
 **Steps**:
 1. Open `/profile` → Saved Addresses
@@ -1723,12 +2303,20 @@
 ---
 
 ### TC-139: Saved address edit requires street and city
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P2
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer has ≥ 1 saved address
 **Steps**:
 1. Open the edit form for an address
@@ -1745,12 +2333,20 @@
 ---
 
 ### TC-140: Set a default address; checkout preselects it
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P2
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer has ≥ 2 saved addresses, the first is default
 **Steps**:
 1. In `/profile`, set the second address as default
@@ -1766,12 +2362,20 @@
 ---
 
 ### TC-141: Delete a saved address (web removes it without a dialog)
+**Scenario status**: Active
 **Category**: Platform Parity
 **Priority**: P2
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Divergent (mobile asks for confirmation, TC-174)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer has ≥ 2 saved addresses
 **Steps**:
 1. In `/profile`, click the delete control (title "Delete address") on a non-default address
@@ -1786,12 +2390,20 @@
 ---
 
 ### TC-142: Saved cards on the profile — list, set default, delete
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-175)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Buyer has ≥ 2 saved cards (add through checkout with "save card", or `POST /api/auth/payment-methods`)
 **Steps**:
 1. Open `/profile` → Saved Cards
@@ -1811,12 +2423,20 @@
 ## Buyer — Authorize-at-Checkout (Web, `CHECKOUT_FLOW=manual_capture`)
 
 ### TC-143: Card checkout with a new card reserves the amount without charging
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-176)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow enabled; buyer logged in; cart with one seller's items; Stripe test mode
 **Steps**:
 1. Open `/checkout`; fill the address; choose credit card; enter `4242 4242 4242 4242` with a future expiry and any CVC in the card element
@@ -1835,12 +2455,20 @@
 ---
 
 ### TC-144: Card checkout with a saved card reserves the amount
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-176)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: As TC-143; buyer has a saved card
 **Steps**:
 1. Checkout; keep "Saved Card" mode; select the saved card
@@ -1856,12 +2484,20 @@
 ---
 
 ### TC-145: Checkout explains the reservation before the buyer pays
+**Scenario status**: Active
 **Category**: UI State
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-176)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; card payment selected
 **Steps**:
 1. Reach the Review step of `/checkout` with a card payment
@@ -1876,12 +2512,20 @@
 ---
 
 ### TC-146: Declined card places no order and loses nothing
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P0
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-177)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; cart with items; note the product stock first
 **Steps**:
 1. Checkout with test card `4000 0000 0000 0002`
@@ -1898,12 +2542,20 @@
 ---
 
 ### TC-147: 3-D Secure card completes only after authentication
+**Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-178)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; Stripe test mode
 **Steps**:
 1. Checkout with `4000 0025 0000 3155`; Place Order
@@ -1919,12 +2571,20 @@
 ---
 
 ### TC-148: Multi-seller card checkout holds each seller's amount separately
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P0
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both
 **Automation**: Playwright + Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; cart with items from 2 sellers
 **Steps**:
 1. Checkout with a card and place the order
@@ -1940,12 +2600,20 @@
 ---
 
 ### TC-149: Buyer order detail shows the payment state accurately
+**Scenario status**: Active
 **Category**: UI State
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-179)
 **Automation**: Playwright (with seeded orders) / Component
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Orders in these payment states: `authorized`, `capture_pending`, `captured`, `release_pending`, `released`, `refund_pending`, `refunded`, `partially_refunded`, `failed`
 **Steps**:
 1. Open each order's detail page
@@ -1960,12 +2628,20 @@
 ---
 
 ### TC-150: Short card authorization window is disclosed
+**Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P3
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both
 **Automation**: Manual (needs a card whose authorization expires in under 24 hours)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A placed order whose `acceptBy` is earlier than `placedAt + 24 h`
 **Steps**:
 1. Open the order detail
@@ -1979,12 +2655,20 @@
 ---
 
 ### TC-151: Interrupted checkout resumes without a second authorization
+**Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P2
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-189)
 **Automation**: Manual (Playwright candidate)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; card checkout in progress
 **Steps**:
 1. Place the order and reload the page / lose connection before the confirmation returns
@@ -2001,12 +2685,20 @@
 ## Buyer — Cancelling a Pending Order (Web)
 
 ### TC-152: Buyer cancels a pending card order — the hold is released
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-180)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; a `pending` / `authorized` card order not yet accepted
 **Steps**:
 1. Open `/orders`; click Cancel on the order
@@ -2024,12 +2716,20 @@
 ---
 
 ### TC-153: Buyer cancels a pending COD order
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A `pending` COD order
 **Steps**:
 1. Cancel the order from `/orders` or the detail page without entering a reason
@@ -2045,12 +2745,20 @@
 ---
 
 ### TC-154: Cancel is unavailable once the seller accepts; "Keep Order" cancels nothing
+**Scenario status**: Active
 **Category**: UI State
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-181)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: One `pending` order and one `preparing` order
 **Steps**:
 1. On the pending order open the cancel dialog and click "Keep Order"
@@ -2069,12 +2777,20 @@
 ## Seller — Acceptance and Cancellation (Web)
 
 ### TC-155: Seller accepts a pending card order — payment is captured
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Seller
 **Platform**: Web
 **Parity**: Both (mobile TC-182)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow with `SELLER_SEES_MANUAL_CAPTURE=true`; a `pending` / `authorized` card order for this seller, before `acceptBy`
 **Steps**:
 1. Open `/seller` → Orders (or `/seller/orders/:id`)
@@ -2092,12 +2808,20 @@
 ---
 
 ### TC-156: Seller sees the acceptance deadline only while the order is pending
+**Scenario status**: Active
 **Category**: UI State
 **Priority**: P2
 **Role**: Seller
 **Platform**: Web
 **Parity**: Both
 **Automation**: Playwright / Component
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A pending manual-capture order and an already accepted one
 **Steps**:
 1. Open the seller order list and the order detail for each
@@ -2113,12 +2837,20 @@
 ---
 
 ### TC-157: Seller cancels a pending card order with a reason — hold released, buyer sees why
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Seller
 **Platform**: Web
 **Parity**: Both (mobile TC-183)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Manual-capture flow; a `pending` / `authorized` card order for this seller (`canSellerCancelPending: true`)
 **Steps**:
 1. Open the seller order detail; click Cancel order
@@ -2137,12 +2869,20 @@
 ---
 
 ### TC-158: Seller pending cancellation needs a valid reason
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P1
 **Role**: Seller
 **Platform**: Web
 **Parity**: Both (mobile TC-183)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A cancellable pending order
 **Steps**:
 1. Open the cancel dialog; confirm with an empty reason, then with spaces only
@@ -2159,12 +2899,20 @@
 ---
 
 ### TC-159: Seller cancels a pending COD order without any Stripe request
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P1
 **Role**: Seller
 **Platform**: Web
 **Parity**: Both (mobile TC-184)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A `pending` COD order (`paymentStatus: not_required`)
 **Steps**:
 1. Cancel it with a reason
@@ -2180,12 +2928,20 @@
 ---
 
 ### TC-160: Seller cannot cancel from shipped, and cannot cancel card orders after pending
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: Seller
 **Platform**: Web
 **Parity**: Both (mobile TC-184)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A `shipped` order; a `preparing` card order; a `preparing` COD order
 **Steps**:
 1. Open each order's seller detail page
@@ -2203,12 +2959,20 @@
 ## Delivered-Item Refunds (Web, `DELIVERED_REFUNDS_ENABLED=true`)
 
 ### TC-161: Refund request is offered for a delivered card order inside the 7-day window
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-185)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A `delivered` card order with `paymentStatus: captured`, delivered less than 7 days ago
 **Steps**:
 1. Open the order detail
@@ -2223,12 +2987,20 @@
 ---
 
 ### TC-162: Buyer submits a partial refund request
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-185)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A delivered, captured card order with ≥ 2 units
 **Steps**:
 1. Open the refund panel; use the quantity stepper to select 1 unit of one item
@@ -2245,12 +3017,20 @@
 ---
 
 ### TC-163: Refund form validation
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-185)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Same as TC-162
 **Steps**:
 1. Try to submit with no item selected
@@ -2268,12 +3048,20 @@
 ---
 
 ### TC-164: Seller approves a refund request — refund settles
+**Scenario status**: Active
 **Category**: Happy Path
 **Priority**: P0
 **Role**: Seller
 **Platform**: Web
 **Parity**: Both (mobile TC-186)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A requested refund (TC-162); Stripe test mode
 **Steps**:
 1. Seller opens `/seller` → Return/Refund → In Progress
@@ -2292,12 +3080,20 @@
 ---
 
 ### TC-165: Seller rejects a refund request with a required explanation
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: Seller
 **Platform**: Web
 **Parity**: Both (mobile TC-186)
 **Automation**: Playwright
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A requested refund
 **Steps**:
 1. Click Reject; leave the reason empty and try to confirm
@@ -2315,21 +3111,30 @@
 ---
 
 ### TC-166: Only one active request per order; a second request follows resolution
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both
 **Automation**: Playwright + Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A delivered, captured order with ≥ 2 units, inside the window
 **Steps**:
 1. Submit a request for 1 unit (TC-162); try to open another while it is unresolved
-2. Seller approves it (TC-164)
-3. Submit a request for the remaining unit; then check the panel when nothing is left
+2. Seller approves it (TC-164); verify that a second request remains blocked while the first is `processing` or `needs_review`
+3. Wait for confirmed `refunded`, then request the remaining unit within the original refund window
+4. Wait for the second refund to complete and check when nothing is left. In a separate fresh-order subcase, reject the first request and verify its units become requestable again
 
 **Expected Results**:
 - While the first is unresolved the panel says a request is in progress; the API answers 409 `refund_conflict`
-- After approval the remaining units can be requested within the original window; the refunded unit cannot be selected again
+- Approval alone does not release the active-request guard. A second request is available after confirmed completion or rejection within the original window; refunded units cannot be selected again, while rejected units remain refundable
 - With no units left the panel says there is nothing left to refund
 **Business Rule**: Delivered-item refund spec §Approved first-version policy
 **Selectors/API**: `POST /api/orders/:id/refund-requests`, `GET /api/orders/:id/refund-eligibility` (reasons `active_request`, `no_units_left`)
@@ -2338,21 +3143,34 @@
 ---
 
 ### TC-167: Shipping is refunded only with the last paid unit for a seller-fault reason
+**Scenario status**: Active
 **Category**: Business Rule
 **Priority**: P2
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both
 **Automation**: Playwright-API / Component
-**Preconditions**: A delivered, captured order that paid a shipping fee
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
+**Preconditions**: A fresh eligible delivered/captured order per subcase, each with at least two paid units, known nonzero shipping and no prior refunds. Only sequential subcases reuse their own order
 **Steps**:
-1. Request a partial selection with reason "Damaged item"
-2. Request every unit with reason "Other"
-3. Request every unit with reason "Wrong item"
+1. TC-167-A: On order A, request fewer than all paid units for "Damaged item"
+2. TC-167-B: On order B, request every paid unit for "Other"
+3. TC-167-C: On order C, request every paid unit for "Wrong item"
+4. TC-167-D: On order D, refund one unit for "Damaged item" and wait for completion; request all remaining units for "Wrong item", then approve and wait for completion
+5. TC-167-E: On order E, refund one unit for "Other" and wait for completion; request all remaining units for "Wrong item"
 
 **Expected Results**:
-- (1) and (2): shipping is excluded; the form explains when shipping would be included
-- (3): the quote includes the original allocated shipping and the form shows "Shipping (…) is included in your refund."
+- A and B: shipping is excluded; the form explains when it would be included
+- C: the quote includes the original allocated shipping and the form shows "Shipping (…) is included in your refund."
+- D: only the final selection includes shipping, because every earlier completed refund was also for seller fault. Shipping is refunded once, including on retries
+- E: shipping stays excluded because an earlier refund used "Other"; covering all remaining units alone is insufficient
+- Record subcases independently; the parent passes only when all required subcases pass. Never reuse an unresolved request's order for independent quote examples
 **Business Rule**: Delivered-item refund spec §Approved first-version policy (shipping amendment)
 **Selectors/API**: refund breakdown "Shipping refund"
 **Suggested Layer**: Playwright-API + Component
@@ -2360,12 +3178,20 @@
 ---
 
 ### TC-168: Refund chips and order tabs reflect refund state
+**Scenario status**: Active
 **Category**: UI State
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-187)
 **Automation**: Playwright / Component
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Orders that are fully refunded, partially refunded, refund-processing and refund-requested
 **Steps**:
 1. Open `/orders` tabs All, Complete and Return/Refund
@@ -2382,12 +3208,20 @@
 ---
 
 ### TC-169: Refund is unavailable when the order is not eligible
+**Scenario status**: Active
 **Category**: Negative
 **Priority**: P1
 **Role**: Buyer
 **Platform**: Web
 **Parity**: Both (mobile TC-185)
 **Automation**: Playwright / Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: A delivered COD order; a delivered card order older than 7 days; a run with `DELIVERED_REFUNDS_ENABLED=false`
 **Steps**:
 1. Open the detail of each order
@@ -2402,12 +3236,20 @@
 ---
 
 ### TC-170: Seller Return/Refund tab groups requests and shows a badge
+**Scenario status**: Active
 **Category**: UI State
 **Priority**: P2
 **Role**: Seller
 **Platform**: Web
 **Parity**: Both (mobile TC-186)
 **Automation**: Playwright / Component
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Requests in progress, approved and rejected
 **Steps**:
 1. Open `/seller` and look at the Return/Refund tab badge
@@ -2426,12 +3268,20 @@
 ## Cross-cutting — Offline handling (Web)
 
 ### TC-171: Offline banner appears when the connection drops
+**Scenario status**: Active
 **Category**: UI State
 **Priority**: P2
 **Role**: Both
 **Platform**: Web
 **Parity**: Both (mobile TC-188)
 **Automation**: Playwright (`context.setOffline`)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped
 **Preconditions**: Any page loaded while online
 **Steps**:
 1. Switch the browser context offline

@@ -2,7 +2,7 @@
 
 import { test, expect, request as pwRequest } from '@playwright/test';
 import {
-  authHeaders, login,
+  authHeaders, login, signupFreshUser,
   SELLER_EMAIL, TEST_PASSWORD,
 } from '../../helpers/api-client';
 
@@ -11,12 +11,14 @@ const API_URL = process.env.API_URL ?? 'http://localhost:5000';
 let buyerToken: string;
 let sellerToken: string;
 let sellerId: string;
+let couponId: string;
 let couponCode: string;
 
 test.beforeAll(async () => {
   const ctx = await pwRequest.newContext({ baseURL: API_URL });
 
-  buyerToken  = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
+  // The buyer is a fresh account, so validation runs as a plain buyer rather than as the coupon's owner
+  ({ token: buyerToken } = await signupFreshUser(ctx, 'coupon_buyer'));
   sellerToken = await login(ctx, SELLER_EMAIL, TEST_PASSWORD);
 
   // Resolve seller ID
@@ -37,27 +39,42 @@ test.beforeAll(async () => {
     headers: authHeaders(sellerToken),
   });
   expect(couponRes.status()).toBe(201);
+  const { coupon } = await couponRes.json();
+  couponId = coupon._id ?? coupon.id;
   couponCode = code;
 
+  await ctx.dispose();
+});
+
+test.afterAll(async () => {
+  // Remove the coupon so repeated runs do not accumulate MINTEST coupons
+  const ctx = await pwRequest.newContext({ baseURL: API_URL });
+  const res = await ctx.delete(`/api/coupons/seller/${couponId}`, { headers: authHeaders(sellerToken) });
+  expect(res.ok()).toBeTruthy();
   await ctx.dispose();
 });
 
 // ── TC-057 ──────────────────────────────────────────────────────────────────
 
 test.describe('TC-057: Coupon rejected when order is below minimum amount', () => {
-  test('POST /api/coupons/validate returns 400 when orderAmount < minOrderAmount', async ({ request }) => {
-    await test.step('Send validate request with order amount below $100 minimum', async () => {
-      const res = await request.post('/api/coupons/validate', {
-        data: {
-          code: couponCode,
-          sellerId,
-          orderAmount: 10,   // well below the $100 minimum
-        },
-        headers: authHeaders(buyerToken),
+  test(
+    'POST /api/coupons/validate returns 400 when orderAmount < minOrderAmount',
+    { tag: ['@TC-057', '@api', '@coupons'] },
+    async ({ request }) => {
+      await test.step('Send validate request with order amount below $100 minimum', async () => {
+        const res = await request.post('/api/coupons/validate', {
+          data: {
+            code: couponCode,
+            sellerId,
+            orderAmount: 10,   // well below the $100 minimum
+          },
+          headers: authHeaders(buyerToken),
+        });
+        expect(res.status()).toBe(400);
+        const body = await res.json();
+        expect(body.success).toBe(false);
+        expect(body.message).toMatch(/minimum order/i);
       });
-      expect(res.status()).toBe(400);
-      const body = await res.json();
-      expect(body.message).toMatch(/minimum order/i);
-    });
-  });
+    },
+  );
 });
