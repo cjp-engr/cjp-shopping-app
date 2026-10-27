@@ -632,6 +632,7 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 
 **Expected Results**:
 - **400** validation error
+- On `/api/seller/products` this is checked with the other value rules in TC-306 (create) and TC-307 (update). `POST /api/products` appears to answer 500 for it (from the code, not run); the apps do not use that route
 **Business Rule**: §2 description max 200  
 **Selectors/API**: `POST /api/products`  
 **Suggested Layer**: API
@@ -4179,7 +4180,7 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 - (1) `shipping` 9.99: a missing fee must never become free, or the seller would absorb the cost
 - (2) `shipping` 0: an explicit fee, including 0, is the seller's choice
 - (3) `shipping` 5: an option with no fee of its own falls back to the first configured fee
-- Create and update should also reject a `buyer_pays` product with no amounts; that validation is not in place yet, so the fallback is the safety net
+- Create and update now reject a `buyer_pays` product with no amounts (TC-303), so this fallback only protects older products
 **Business Rule**: §4 Shipping rules; delivery option resolution order
 **Selectors/API**: `POST /api/orders`; `computeSellerTotals`
 **Suggested Layer**: Unit
@@ -4215,6 +4216,286 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 - Another seller's product still answers 403 (ownership is checked before the shipping settings)
 **Business Rule**: §2 Product wizard (shipping step); §4 Shipping rules
 **Selectors/API**: `POST/PUT /api/seller/products`, `POST/PUT /api/products`
+**Suggested Layer**: API + Unit
+
+---
+
+### TC-304: Creating a product needs a name, description, price and category
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Seller
+**Platform**: API
+**Parity**: Both (the web and mobile wizards send the same fields)
+**Automation**: Playwright-API
+**Automation status**: Automated
+**Script mapping**: Verified: describe block "TC-304: Creating a product needs a name, description, price and category" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-304`
+**Latest result**: Passed
+**Last run**: 2026-10-27
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
+**Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
+**Preconditions**: An authenticated seller; the seller's current product count from `GET /api/seller/products`; valid shipping settings (`shippingOptions` `["standard"]`, `shippingFee` `free`) on every request, so only the field under test can fail
+**Steps**:
+1. Control: `POST /api/seller/products` (multipart) with `name`, `description`, `price` and `category` plus the shipping settings
+2. Repeat the request leaving out one field at a time: `name`, `description`, `price`, `category`
+3. Repeat with `name`, `description` and `category` each sent as an empty string
+4. Repeat with a `name` of only spaces
+5. Repeat with a `category` of only spaces
+6. `GET /api/seller/products` after each failed request
+
+**Expected Results**:
+- (1) **201**, `product.sellerId` is the caller, `product._id` returned
+- (2) and (3) **400** `{ success: false, message: "name, description, price, and category are required" }`; no `code` field
+- (4) **400** ``Path `name` is required.`` (the controller accepts the spaces, the model trims them to empty and rejects it)
+- (5) **400** from the model: spaces are not one of the allowed categories
+- (6) the seller's product count is unchanged after every 400
+- `price` of `0` is accepted (the check is "missing", not "falsy"); see TC-306 for negative prices and TC-310 for an empty price
+**Business Rule**: §2 Product wizard (required fields)
+**Selectors/API**: `POST /api/seller/products`
+**Suggested Layer**: API
+
+---
+
+### TC-305: Optional product fields can be left out and get their defaults
+**Scenario status**: Active
+**Category**: Positive
+**Priority**: P2
+**Role**: Seller
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Automated
+**Script mapping**: Verified: describe block "TC-305: Optional product fields can be left out and get their defaults" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-305`
+**Latest result**: Passed
+**Last run**: 2026-10-27
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
+**Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
+**Preconditions**: An authenticated seller
+**Steps**:
+1. `POST /api/seller/products` with only `name`, `description`, `price`, `category` and the shipping settings
+2. `POST` again with every optional field: `stock`, `tags`, `brand`, `condition: used`, `sku`, `discount` 10 and an `image` URL
+3. `POST` a variant product: `variantAttributes` and `variants` (each with `price`, `stock`, `sku`, `discount` and a single `image`), plus a top-level `price`
+4. `POST` with extra fields the seller must not control: `rating` 5, `soldCount` 99, `sellerId` of another user
+
+**Expected Results**:
+- (1) **201** with defaults: `stock` 0, `image` empty, `images` empty, `condition` `new`, no `discount`, no `tags`, no `variants`, `rating` 0, `reviews` 0, `soldCount` 0
+- (2) **201** and every value is stored as sent
+- (3) **201**; each variant's `image` is stored as `images: [image]`; the top-level `price` is still required for a variant product on this route
+- (4) **201** but the extra fields are ignored: `rating` stays 0, `soldCount` stays 0 and `sellerId` is the caller (the controller reads a fixed list of fields)
+**Business Rule**: §2 Product wizard (optional fields)
+**Selectors/API**: `POST /api/seller/products`
+**Suggested Layer**: API
+
+---
+
+### TC-306: Creating a product rejects values outside the allowed range
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Seller
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Automated
+**Script mapping**: Verified: describe block "TC-306: Creating a product rejects values outside the allowed range" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-306`
+**Latest result**: Passed
+**Last run**: 2026-10-27
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
+**Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
+**Preconditions**: An authenticated seller; a valid request body to change one field at a time; the seller's current product count
+**Steps**:
+1. `price` -1 and `price` "abc"
+2. `stock` -1 and `stock` "abc"
+3. `category` "Toys" (the allowed values are Electronics, Clothing, Home & Garden, Books, Sports & Outdoors)
+4. `description` of 201 characters; then 200 characters
+5. `discount` -1, 101 and "abc"
+6. `condition` "broken" (the allowed values are `new` and `used`)
+7. A `variantAttributes` entry with no `name`
+8. Variants with `price` -1, `stock` -1 and `discount` 101
+9. Two bad fields at once (`price` -1 and `stock` -1)
+
+**Expected Results**:
+- (1) to (3) and (5) to (8) **400** `{ success: false, message }` where the message comes from the model, for example "Path `price` (-1) is less than minimum allowed value (0)." for a negative number and "Cast to Number failed" for text; no `code` field
+- (4) 201 characters is **400** ("is longer than the maximum allowed length (200)"); 200 characters is **201** (the boundary of TC-058)
+- (9) one **400** whose message lists both problems, joined with ", "
+- No product is created by any 400 request (the product count is unchanged)
+**Business Rule**: §2 Product wizard (field limits); TC-058
+**Selectors/API**: `POST /api/seller/products`
+**Suggested Layer**: API
+
+---
+
+### TC-307: Updating a product needs no field, but a changed field must stay valid
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Seller
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Automated
+**Script mapping**: Verified: describe block "TC-307: Updating a product needs no field, but a changed field must stay valid" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-307`
+**Latest result**: Passed
+**Last run**: 2026-10-27
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
+**Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
+**Preconditions**: A seller with one valid product (created with all required fields and valid shipping settings)
+**Steps**:
+1. `PUT /api/seller/products/:id` with only `price` 25; then with only `stock` 0
+2. `PUT` with an empty body
+3. `PUT` with `name`, `description` and `category` each sent as an empty string, one request each; `name` of only spaces
+4. `PUT` with each value rule of TC-306: `price` -1, `stock` -1, `category` "Toys", a 201-character `description`, `discount` 101, `condition` "broken"
+5. `PUT` with no image after the product has one
+6. `GET /api/seller/products` after each request
+
+**Expected Results**:
+- (1) **200**, the changed field is updated and every other field keeps its stored value
+- (2) **200** and nothing changes (the stored shipping settings are still valid)
+- (3) **400** ``Path `name` is required.`` (and the same for `description` and `category`); an empty string is a value, so unlike creation the controller does not block it, the model does
+- (4) **400** with the model message of TC-306
+- (5) **200**, the existing `image` and `images` stay
+- (6) after every 400 the stored product is unchanged
+- Shipping settings on update: see TC-303
+**Business Rule**: §2 Product wizard (edit)
+**Selectors/API**: `PUT /api/seller/products/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-308: Updating a product with an unknown, malformed or someone else's id
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P2
+**Role**: Seller
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Automated
+**Script mapping**: Verified: describe block "TC-308: Updating a product with an unknown, malformed or someone else's id" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-308`
+**Latest result**: Passed
+**Last run**: 2026-10-27
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
+**Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
+**Preconditions**: Seller A with a product; seller B authenticated
+**Steps**:
+1. As A, `PUT /api/seller/products/<unknown but well-formed id>` with a valid body
+2. As A, `PUT /api/seller/products/not-an-id`
+3. As B, `PUT` A's product with a valid body
+4. As B, `PUT` A's product with an invalid body (`price` -1, and a missing shipping setting)
+
+**Expected Results**:
+- (1) **404** "Product not found"
+- (2) **400** "Invalid resource ID"
+- (3) **403** "Not authorized to update this product"; A's product is unchanged
+- (4) **403** as in (3): ownership is checked before the field rules, so B learns nothing about validation of A's product. The two checks the controller makes before it looks the product up are the exception: malformed JSON (TC-309) and an empty `price` or `stock` (TC-310) answer 400 whatever the owner
+- Ownership of the other routes: TC-054 and TC-285
+**Business Rule**: §2 Product ownership
+**Selectors/API**: `PUT /api/seller/products/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-309: Malformed JSON in a product field returns 400
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P2
+**Role**: Seller
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Automated
+**Script mapping**: Verified: describe block "TC-309: Malformed JSON in a product field returns 400" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-309`
+**Latest result**: Passed
+**Last run**: 2026-10-27
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
+**Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
+**Preconditions**: An authenticated seller; for `PUT`, one valid product
+**Steps**:
+1. `POST /api/seller/products` with `shippingOptions` set to `["standard"` (not valid JSON); then `shippingFeeAmounts` set to `{`; then `variants` set to `[{`; then `variantAttributes` set to `[{`
+2. `PUT /api/seller/products/:id` with the same four values, one request each
+
+**Expected Results**:
+- **400** `{ success: false, message: "<field> must be valid JSON.", code: "invalid_product_json" }` naming the field, and no product is created or changed
+- Blank text for one of these fields counts as not sent: for `POST` a blank `shippingOptions` gives the shipping 400 of TC-303, a blank `variants` creates a product without variants
+- Fixed 2026-10-27 (it used to answer **500**: the controller let the `SyntaxError` reach the error handler without a status code). Unit tests: `validators/__tests__/productInput.test.ts`, `controllers/__tests__/sellerProductController.test.ts`
+**Business Rule**: §2 Product wizard
+**Selectors/API**: `POST /api/seller/products`, `PUT /api/seller/products/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-310: Empty strings for number fields are never turned into 0
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P2
+**Role**: Seller
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Automated
+**Script mapping**: Verified: describe block "TC-310: Empty strings for number fields are never turned into 0" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-310`
+**Latest result**: Passed
+**Last run**: 2026-10-27
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
+**Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
+**Preconditions**: An authenticated seller; a valid product for the `PUT` steps
+**Steps**:
+1. `POST /api/seller/products` with `price` sent as an empty string
+2. `POST` with `stock` sent as an empty string; and with `discount` sent as an empty string
+3. `PUT` a valid product with `price` sent as an empty string
+4. `POST` with a `description` of only spaces
+
+**Expected Results**:
+- (1) **400** "name, description, price, and category are required": an empty or space-only price counts as missing; no product is created
+- (2) an empty `stock` is the default 0 and an empty `discount` means no discount; both **201**
+- (3) **400** "price cannot be empty." with `code: invalid_product_number`; the stored price is unchanged. An empty `stock` on update answers the same way. An empty `discount` on update is ignored and the stored discount stays
+- (4) **400** ``Path `description` is required.``: the model now trims the description, so spaces alone count as empty
+- Fixed 2026-10-27 (an empty price used to create a product at 0 and a space-only description was accepted). Unit tests: `productInput.test.ts`, `sellerProductController.test.ts`, `models/__tests__/Product.test.ts`
+**Business Rule**: §2 Product wizard (required fields)
+**Selectors/API**: `POST /api/seller/products`, `PUT /api/seller/products/:id`
+**Suggested Layer**: API
+
+---
+
+### TC-311: Leading and trailing spaces are trimmed before saving
+**Scenario status**: Active
+**Category**: Boundary
+**Priority**: P2
+**Role**: Seller
+**Platform**: API
+**Parity**: Both
+**Automation**: Playwright-API
+**Automation status**: Automated
+**Script mapping**: Verified: describe block "TC-311: Leading and trailing spaces are trimmed before saving" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-311`
+**Latest result**: Passed
+**Last run**: 2026-10-27
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (73 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the trim change
+**Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/models/__tests__/Product.test.ts`
+**Preconditions**: An authenticated seller; valid shipping settings on every request
+**Steps**:
+1. `POST /api/seller/products` with spaces around `name`, `description`, `brand`, `sku` and `tags`, and two spaces inside the name
+2. `POST` a variant product with spaces around the variant attribute `name` and `values`, around the keys and values of each variant's `attributes`, and around the variant `sku`
+3. `PUT` a product with spaces around `name`, `brand`, `tags`, the variant attributes and the variant `sku`
+4. `POST` with a `category` that has a space before it (` Electronics`)
+5. `POST` with a delivery option that has spaces around it (`[" standard "]`)
+
+**Expected Results**:
+- (1) **201**; the values are saved without the spaces at the start and end, and the spaces inside a value stay (`"Desk  Lamp"` keeps both spaces)
+- (2) **201**; `variantAttributes[].name` and `values`, the keys and values of `variants[].attributes`, and `variants[].sku` are saved trimmed
+- (3) **200**; the same fields are trimmed, and the stored product shows the trimmed values
+- (4) **400** "is not a valid enum value for path `category`": a value that must be one of a list is **not trimmed**, it is rejected
+- (5) **400** `invalid_shipping_settings` `Unknown delivery option " standard ". Use standard, express or pickup.`; the same rule applies to `condition` and `shippingFee`
+- The trimming is done by the product model (`trim` on the text fields, tags and attribute values, and a validation hook for the attribute keys), so `POST/PUT /api/products` trims the same way
+**Business Rule**: §2 Product wizard (text fields)
+**Selectors/API**: `POST /api/seller/products`, `PUT /api/seller/products/:id`
 **Suggested Layer**: API + Unit
 
 ---

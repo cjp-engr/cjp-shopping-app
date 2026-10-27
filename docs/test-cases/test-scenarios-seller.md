@@ -92,6 +92,14 @@ Automation labels below identify intended tools, not implemented or passing scri
 | TC-299 | Unknown routes return JSON 404 | P3 | Playwright-API |
 | TC-300 | /health does not reflect the database | P3 | Manual |
 | TC-303 | Shipping settings required on product create and update | P1 | Playwright-API / Unit |
+| TC-304 | Create product: name, description, price and category are required | P1 | Playwright-API |
+| TC-305 | Create product: optional fields and defaults; read-only fields ignored | P2 | Playwright-API |
+| TC-306 | Create product: price, stock, category, description, discount, condition, variants | P1 | Playwright-API |
+| TC-307 | Update product: partial updates, blank values and value rules | P1 | Playwright-API |
+| TC-308 | Update product: 404, 400 bad id, 403 before validation | P2 | Playwright-API |
+| TC-309 | Malformed JSON in shipping and variant fields | P2 | Playwright-API |
+| TC-310 | Empty price or stock rejected; empty discount ignored | P2 | Playwright-API |
+| TC-311 | Spaces around text, tags and variant attributes are trimmed | P2 | Playwright-API / Unit |
 
 ---
 
@@ -120,7 +128,7 @@ Automation labels below identify intended tools, not implemented or passing scri
 | TC-186 | Approve or reject a refund request | P0 | Patrol (keys missing) |
 | TC-188 | Offline banner | P2 | Manual / Widget |
 
-**Added 2026-10-24 and 2026-10-25:** 10 web + 5 mobile + 47 API seller-facing scenarios
+**Added 2026-10-24 and 2026-10-25:** 10 web + 5 mobile + 55 API seller-facing scenarios
 
 Full steps, expected results, and selectors: **`docs/test-cases/test-scenarios.md`**
 

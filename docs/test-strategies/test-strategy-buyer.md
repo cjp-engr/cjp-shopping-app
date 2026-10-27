@@ -14,10 +14,10 @@ Role = Buyer or Both across web, mobile and API. Counts are recomputed from the 
 | Layer | Count | Of which added 2026-10-24 |
 |-------|-------|---------------------------|
 | E2E (Playwright + Patrol) | 99 | 10 |
-| API | 84 | 69 |
-| Multi (≥ 2 layers) | 33 | 27 |
+| API | 82 | 69 |
+| Multi (≥ 2 layers) | 30 | 24 |
 | Component / widget | 10 | 10 |
-| Unit | 6 | 6 |
+| Unit | 11 | 9 |
 | Integration | 3 | 3 |
 | Manual | 5 | 4 |
 | Blocked | 2 | 0 |
