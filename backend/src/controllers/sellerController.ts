@@ -49,7 +49,8 @@ export const updateProduct = async (req: AuthRequest, res: Response, next: NextF
     const { name, description, price, category, stock, tags, brand, condition, sku, discount, shippingOptions, shippingFee, shippingFeeAmounts, image, imageUrls: rawImageUrls, variantAttributes, variants } = req.body;
     const files = (req.files as Express.Multer.File[]) ?? [];
     const parsedShippingOptions = parseJsonField('shippingOptions', shippingOptions);
-    const parsedFeeAmounts = parseJsonField('shippingFeeAmounts', shippingFeeAmounts) ?? {};
+    // Left undefined when not sent: an empty object here would replace the stored fees on every update.
+    const parsedFeeAmounts = parseJsonField('shippingFeeAmounts', shippingFeeAmounts);
     const parsedVariantAttributes = parseJsonField('variantAttributes', variantAttributes);
     const parsedVariants = parseJsonField('variants', variants);
     const linkedUrls = parseImageUrls(rawImageUrls);

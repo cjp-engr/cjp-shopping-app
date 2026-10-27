@@ -70,6 +70,7 @@ total          = afterDiscounts + tax + shipping
 |---|---|
 | **Implemented** | Yes, in the working tree on `feat/backend-shipping-change-10262026` (based on `e78ee44`), not committed |
 | **Verified** | 2026-10-26 and 2026-10-27: backend `shippingSettings.test.ts` and `sellerProductShipping.test.ts` (the required-settings rule, 29 tests), the Swagger contract tests, backend `checkoutPricing.test.ts` (18 tests), web `shipping.test.ts` (7), mobile `seller_shipping_test.dart`; backend `tsc`, web `tsc -b` and `eslint`, `flutter analyze` all clean. **Not run:** the API spec `orders.api.spec.ts`, the backend integration tests, Playwright, Patrol, any manual check |
+| **API verification** | 2026-10-27 on branch `update/create-update-product`: the TC-303 tests in `seller-products.api.spec.ts` passed 3 runs in a row (the whole spec, 101 tests) against a private backend and a test database. The older-product fallback cannot be reached through the API, so it stays unit-only. The same run found and fixed a bug: updating a product without sending its fees replaced the stored fees with an empty set |
 | **Enabled** | No flag: always on once the backend and apps are deployed |
 | **Deployed** | Not deployed |
 
@@ -87,6 +88,6 @@ total          = afterDiscounts + tax + shipping
 - Backend: `backend/src/validators/shippingSettings.ts` (the required-settings rule, used by `sellerService.ts` and `productController.ts`); `backend/src/services/checkoutPricing.ts` (`computeSellerTotals`, `STANDARD_SHIPPING_FEE`), used by `orderService.ts` (`POST /api/orders`) and `checkoutService.ts` (checkout sessions). Refund share: `refundShipping.ts`, `refundAllocation.ts`.
 - Web: `frontend/src/utils/shipping.ts` (`sellerShippingFee`), `pages/Cart.tsx`, `pages/Checkout.tsx`, `utils/constants.ts` (`DEFAULT_SHIPPING_FEE`).
 - Mobile: `frontend-mobile/lib/core/utils/seller_shipping.dart`, `cart_state.dart`, `checkout_screen.dart`.
-- Tests: `checkoutPricing.test.ts`, `shipping.test.ts`, `seller_shipping_test.dart`, `e2e-testing/tests/api/orders.api.spec.ts`.
+- Tests: `checkoutPricing.test.ts`, `shippingSettings.test.ts`, `sellerProductShipping.test.ts`, `shipping.test.ts`, `seller_shipping_test.dart`; Playwright `e2e-testing/tests/api/orders.api.spec.ts` (fee at checkout) and `e2e-testing/tests/api/seller-products.api.spec.ts` (TC-303: settings required on create and update, both product routes).
 - Scenarios (`docs/test-cases/test-scenarios-api.md`): TC-026, TC-027, TC-028, TC-257, TC-263, TC-301, TC-302, TC-303.
 - History: the $50 free-shipping promotion was removed from the apps in PR #22 (commit `9a15df9`, 2026-08-19) and the banner in `8a6011c` (2026-09-30).

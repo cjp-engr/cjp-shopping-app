@@ -1,4 +1,5 @@
-// TC coverage: TC-304 (create: name, description, price and category are required)
+// TC coverage: TC-303 (shipping settings are required on create and update)
+//              TC-304 (create: name, description, price and category are required)
 //              TC-305 (create: optional fields, defaults, read-only fields ignored)
 //              TC-306 (create: values outside the allowed range)
 //              TC-307 (update: no field required, a changed field must stay valid)
@@ -625,6 +626,149 @@ test.describe('TC-311: Leading and trailing spaces are trimmed before saving', (
       const res = await postProduct(request, validFields(name, { shippingOptions: JSON.stringify([' standard ']) }));
       await expectRejected(res, 'Unknown delivery option " standard ". Use standard, express or pickup.', 'invalid_shipping_settings');
       await expectNoProductNamed(request, name);
+    },
+  );
+});
+
+// ── TC-303 ──────────────────────────────────────────────────────────────────
+
+const SHIPPING = {
+  none: 'At least one delivery option is required.',
+  noFee: 'Shipping fee option is required.',
+  badFee: 'Shipping fee must be "free" or "buyer_pays".',
+  unknownOption: 'Unknown delivery option "drone". Use standard, express or pickup.',
+  amountFor: (option: string) => `Shipping fee amount is required for delivery option "${option}".`,
+  negativeFor: (option: string) => `Shipping fee amount for "${option}" cannot be negative.`,
+};
+
+const SHIPPING_CASES: Array<[string, Fields, string]> = [
+  ['no delivery option', { shippingOptions: undefined }, SHIPPING.none],
+  ['an empty list of delivery options', { shippingOptions: '[]' }, SHIPPING.none],
+  ['an unknown delivery option', { shippingOptions: '["drone"]' }, SHIPPING.unknownOption],
+  ['no fee option', { shippingFee: undefined }, SHIPPING.noFee],
+  ['an unknown fee option', { shippingFee: 'flat' }, SHIPPING.badFee],
+  ['buyer pays and no fee for a selected option', { shippingFee: 'buyer_pays', shippingOptions: '["standard","express"]', shippingFeeAmounts: '{"standard":5}' }, SHIPPING.amountFor('express')],
+  ['buyer pays and an empty fee', { shippingFee: 'buyer_pays', shippingFeeAmounts: '{"standard":""}' }, SHIPPING.amountFor('standard')],
+  ['buyer pays and a fee that is text', { shippingFee: 'buyer_pays', shippingFeeAmounts: '{"standard":"abc"}' }, SHIPPING.amountFor('standard')],
+  ['buyer pays and a negative fee', { shippingFee: 'buyer_pays', shippingFeeAmounts: '{"standard":-1}' }, SHIPPING.negativeFor('standard')],
+];
+
+/** The older route takes a JSON body, so arrays and objects go as they are, and an image is required. */
+async function postLegacyProduct(request: APIRequestContext, name: string, shipping: Fields) {
+  const parsed = Object.fromEntries(
+    Object.entries(shipping)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [key, key === 'shippingFee' ? value : JSON.parse(value as string)]),
+  );
+  return request.post('/api/products', {
+    data: { name, description: 'Seller products API test, safe to delete', price: 20, category: 'Electronics', stock: 5, image: IMAGE, ...parsed },
+    headers: authHeaders(sellerA.token),
+  });
+}
+
+test.describe('TC-303: Shipping settings are required when a product is created or updated', () => {
+  for (const [label, patch, message] of SHIPPING_CASES) {
+    test(
+      `creating with ${label} returns 400 invalid_shipping_settings and creates nothing`,
+      { tag: ['@TC-303', ...TAGS] },
+      async ({ request }) => {
+        const name = uniqueName(`TC-303 ${label}`);
+        await expectRejected(await postProduct(request, validFields(name, patch)), message, 'invalid_shipping_settings');
+        await expectNoProductNamed(request, name);
+      },
+    );
+  }
+
+  for (const [label, patch, message] of SHIPPING_CASES) {
+    test(
+      `POST /api/products with ${label} returns 400 with the same message`,
+      { tag: ['@TC-303', ...TAGS] },
+      async ({ request }) => {
+        const name = uniqueName(`TC-303 older route ${label}`);
+        const shipping: Fields = { shippingOptions: '["standard"]', shippingFee: 'free', ...patch };
+        await expectRejected(await postLegacyProduct(request, name, shipping), message);
+        await expectNoProductNamed(request, name);
+      },
+    );
+  }
+
+  test(
+    'a free product ignores shippingFeeAmounts, even a negative one',
+    { tag: ['@TC-303', ...TAGS] },
+    async ({ request }) => {
+      const product = await createProduct(request, 'TC-303 free with amounts', { shippingFee: 'free', shippingFeeAmounts: '{"standard":-5}' });
+      expect(product.shippingFee).toBe('free');
+    },
+  );
+
+  test(
+    'an explicit fee of 0 and a numeric string are accepted',
+    { tag: ['@TC-303', ...TAGS] },
+    async ({ request }) => {
+      const zero = await createProduct(request, 'TC-303 fee 0', { shippingFee: 'buyer_pays', shippingFeeAmounts: '{"standard":0}' });
+      expect(zero.shippingFeeAmounts).toEqual({ standard: 0 });
+      const text = await createProduct(request, 'TC-303 fee text', { shippingFee: 'buyer_pays', shippingFeeAmounts: '{"standard":"5"}' });
+      expect(text.shippingFeeAmounts).toEqual({ standard: 5 });
+    },
+  );
+
+  test(
+    'updating only the price keeps the shipping settings',
+    { tag: ['@TC-303', ...TAGS] },
+    async ({ request }) => {
+      const before = await createProduct(request, 'TC-303 price only', {
+        shippingFee: 'buyer_pays',
+        shippingOptions: '["standard","express"]',
+        shippingFeeAmounts: '{"standard":5,"express":15}',
+      });
+      const res = await putProduct(request, before._id, { price: '30' });
+      expect(res.status()).toBe(200);
+      expect((await res.json()).product).toMatchObject({
+        price: 30, shippingFee: 'buyer_pays', shippingOptions: ['standard', 'express'], shippingFeeAmounts: { standard: 5, express: 15 },
+      });
+    },
+  );
+
+  const UPDATE_CASES: Array<[string, Fields, string]> = [
+    ['an empty list of delivery options', { shippingOptions: '[]' }, SHIPPING.none],
+    ['an unknown delivery option', { shippingOptions: '["drone"]' }, SHIPPING.unknownOption],
+    ['an unknown fee option', { shippingFee: 'flat' }, SHIPPING.badFee],
+    ['buyer pays without any fee', { shippingFee: 'buyer_pays' }, SHIPPING.amountFor('standard')],
+    ['buyer pays and a negative fee', { shippingFee: 'buyer_pays', shippingFeeAmounts: '{"standard":-1}' }, SHIPPING.negativeFor('standard')],
+  ];
+  for (const [label, patch, message] of UPDATE_CASES) {
+    test(
+      `updating with ${label} returns 400 and the stored settings are unchanged`,
+      { tag: ['@TC-303', ...TAGS] },
+      async ({ request }) => {
+        const before = await createProduct(request, `TC-303 update ${label}`);
+        await expectRejected(await putProduct(request, before._id, patch), message, 'invalid_shipping_settings');
+        expect(await storedProduct(request, before._id)).toMatchObject({ shippingFee: 'free', shippingOptions: ['standard'] });
+      },
+    );
+  }
+
+  test(
+    'the merged product is checked: adding a delivery option without its fee returns 400',
+    { tag: ['@TC-303', ...TAGS] },
+    async ({ request }) => {
+      const before = await createProduct(request, 'TC-303 add option', { shippingFee: 'buyer_pays', shippingFeeAmounts: '{"standard":5}' });
+      const res = await putProduct(request, before._id, { shippingOptions: '["standard","express"]' });
+      await expectRejected(res, SHIPPING.amountFor('express'), 'invalid_shipping_settings');
+      const ok = await putProduct(request, before._id, { shippingOptions: '["standard","express"]', shippingFeeAmounts: '{"standard":5,"express":15}' });
+      expect(ok.status()).toBe(200);
+      expect((await ok.json()).product).toMatchObject({ shippingOptions: ['standard', 'express'], shippingFeeAmounts: { standard: 5, express: 15 } });
+    },
+  );
+
+  test(
+    'switching a product to buyer pays with a fee for its option is accepted',
+    { tag: ['@TC-303', ...TAGS] },
+    async ({ request }) => {
+      const before = await createProduct(request, 'TC-303 switch');
+      const res = await putProduct(request, before._id, { shippingFee: 'buyer_pays', shippingFeeAmounts: '{"standard":7}' });
+      expect(res.status()).toBe(200);
+      expect((await res.json()).product).toMatchObject({ shippingFee: 'buyer_pays', shippingFeeAmounts: { standard: 7 } });
     },
   );
 });

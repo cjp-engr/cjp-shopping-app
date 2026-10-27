@@ -123,6 +123,22 @@ describe('seller updateProduct controller', () => {
     expect(sellerService.updateSellerProduct).not.toHaveBeenCalled();
   });
 
+  it('leaves the shipping settings out of the update when they were not sent, so the stored ones stay', async () => {
+    await updateProduct(makeReq({ price: '25' }), makeRes(), vi.fn());
+
+    const updates = vi.mocked(sellerService.updateSellerProduct).mock.calls[0][2];
+    expect(updates.shippingFeeAmounts).toBeUndefined();
+    expect(updates.shippingOptions).toBeUndefined();
+    expect(updates.shippingFee).toBeUndefined();
+  });
+
+  it('passes the shipping settings on when they were sent', async () => {
+    await updateProduct(makeReq({ shippingFee: 'buyer_pays', shippingFeeAmounts: '{"standard":5}' }), makeRes(), vi.fn());
+
+    const updates = vi.mocked(sellerService.updateSellerProduct).mock.calls[0][2];
+    expect(updates).toMatchObject({ shippingFee: 'buyer_pays', shippingFeeAmounts: { standard: 5 } });
+  });
+
   it('treats an empty discount as not sent, so the stored discount stays', async () => {
     await updateProduct(makeReq({ discount: '' }), makeRes(), vi.fn());
 

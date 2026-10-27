@@ -4195,14 +4195,14 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 **Platform**: API
 **Parity**: Both (the web and mobile wizards ask for the same settings)
 **Automation**: Playwright-API
-**Automation status**: Needs review
-**Script mapping**: Unverified
-**Latest result**: Not recorded
-**Last run**: Not recorded
-**Run evidence**: Not recorded
-**Run baseline**: Not recorded
-**Test File**: Unmapped (unit: `backend/src/validators/__tests__/shippingSettings.test.ts`, `backend/src/services/__tests__/sellerProductShipping.test.ts`)
-**Preconditions**: A seller; a product with valid shipping settings; an older product with none (written straight to the database, since the API no longer creates one)
+**Automation status**: Automated (the older-product part is unit-only)
+**Script mapping**: Verified: describe block "TC-303: Shipping settings are required when a product is created or updated" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-303`
+**Latest result**: Passed
+**Last run**: 2026-10-27
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (101 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the update fix for stored fees
+**Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/shippingSettings.test.ts`, `backend/src/services/__tests__/sellerProductShipping.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`
+**Preconditions**: A seller; a product with valid shipping settings; an older product with none (written straight to the database, since the API no longer creates one; this part is covered by the unit tests only)
 **Steps**:
 1. `POST /api/seller/products` and `POST /api/products` with no `shippingOptions`, with `[]`, and with `["drone"]`
 2. The same two routes with no `shippingFee`, and with `shippingFee: "flat"`
@@ -4211,7 +4211,7 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 
 **Expected Results**:
 - (1) to (3) **400** with a specific message: "At least one delivery option is required.", `Unknown delivery option "drone". Use standard, express or pickup.`, "Shipping fee option is required.", `Shipping fee must be "free" or "buyer_pays".`, `Shipping fee amount is required for delivery option "<option>".`, `Shipping fee amount for "<option>" cannot be negative.`; `/api/seller/products` also returns `code: "invalid_shipping_settings"`; no product is created
-- (4) the valid product is updated; the older product is rejected with 400 until the update gives it valid settings, then it is saved
+- (4) the valid product is updated and keeps its stored shipping options, fee option and fees when only the price is sent; the older product is rejected with 400 until the update gives it valid settings, then it is saved (unit tests only). Fixed 2026-10-27: the update controller sent an empty fee set when none was sent, which replaced the stored fees and made a buyer-pays product impossible to edit without resending them
 - A `free` product ignores any `shippingFeeAmounts`; an explicit fee of 0 is accepted; numeric strings from multipart bodies are accepted
 - Another seller's product still answers 403 (ownership is checked before the shipping settings)
 **Business Rule**: §2 Product wizard (shipping step); §4 Shipping rules
@@ -4232,7 +4232,7 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 **Script mapping**: Verified: describe block "TC-304: Creating a product needs a name, description, price and category" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-304`
 **Latest result**: Passed
 **Last run**: 2026-10-27
-**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (101 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
 **Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
 **Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
 **Preconditions**: An authenticated seller; the seller's current product count from `GET /api/seller/products`; valid shipping settings (`shippingOptions` `["standard"]`, `shippingFee` `free`) on every request, so only the field under test can fail
@@ -4269,7 +4269,7 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 **Script mapping**: Verified: describe block "TC-305: Optional product fields can be left out and get their defaults" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-305`
 **Latest result**: Passed
 **Last run**: 2026-10-27
-**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (101 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
 **Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
 **Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
 **Preconditions**: An authenticated seller
@@ -4302,7 +4302,7 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 **Script mapping**: Verified: describe block "TC-306: Creating a product rejects values outside the allowed range" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-306`
 **Latest result**: Passed
 **Last run**: 2026-10-27
-**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (101 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
 **Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
 **Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
 **Preconditions**: An authenticated seller; a valid request body to change one field at a time; the seller's current product count
@@ -4340,7 +4340,7 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 **Script mapping**: Verified: describe block "TC-307: Updating a product needs no field, but a changed field must stay valid" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-307`
 **Latest result**: Passed
 **Last run**: 2026-10-27
-**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (101 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
 **Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
 **Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
 **Preconditions**: A seller with one valid product (created with all required fields and valid shipping settings)
@@ -4378,7 +4378,7 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 **Script mapping**: Verified: describe block "TC-308: Updating a product with an unknown, malformed or someone else's id" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-308`
 **Latest result**: Passed
 **Last run**: 2026-10-27
-**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (101 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
 **Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
 **Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
 **Preconditions**: Seller A with a product; seller B authenticated
@@ -4412,7 +4412,7 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 **Script mapping**: Verified: describe block "TC-309: Malformed JSON in a product field returns 400" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-309`
 **Latest result**: Passed
 **Last run**: 2026-10-27
-**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (101 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
 **Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
 **Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
 **Preconditions**: An authenticated seller; for `PUT`, one valid product
@@ -4442,7 +4442,7 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 **Script mapping**: Verified: describe block "TC-310: Empty strings for number fields are never turned into 0" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-310`
 **Latest result**: Passed
 **Last run**: 2026-10-27
-**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (68 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (101 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
 **Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the TC-309/TC-310 fixes
 **Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/validators/__tests__/productInput.test.ts`, `backend/src/controllers/__tests__/sellerProductController.test.ts`, `backend/src/models/__tests__/Product.test.ts`
 **Preconditions**: An authenticated seller; a valid product for the `PUT` steps
@@ -4476,7 +4476,7 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 **Script mapping**: Verified: describe block "TC-311: Leading and trailing spaces are trimmed before saving" in `e2e-testing/tests/api/seller-products.api.spec.ts`, tests tagged `@TC-311`
 **Latest result**: Passed
 **Last run**: 2026-10-27
-**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (73 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
+**Run evidence**: Local run, `npx playwright test --project=api` on the whole spec (101 tests, 3 runs in a row, all passed), against a private backend on port 5057 and database `tokomart_sp_test` on the replica set at 27018; no report file kept
 **Run baseline**: Branch `update/create-update-product`, uncommitted; backend with the trim change
 **Test File**: `e2e-testing/tests/api/seller-products.api.spec.ts`; unit: `backend/src/models/__tests__/Product.test.ts`
 **Preconditions**: An authenticated seller; valid shipping settings on every request
