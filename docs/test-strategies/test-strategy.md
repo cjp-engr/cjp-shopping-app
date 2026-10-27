@@ -1,6 +1,6 @@
 # TokoMart Test Strategy
 
-> **Input mode:** A — from `docs/test-cases/test-scenarios.md` and its web, mobile and API files (328 scenarios: web 108, mobile 78, API 142)  
+> **Input mode:** A — from `docs/test-cases/test-scenarios.md` and its web, mobile and API files (336 scenarios: web 108, mobile 78, API 150)  
 > **Date:** 2026-08-03; **updated 2026-10-24** (code reviewed on branch `main` at `2251348`; no tests were run for this update)  
 > **Platform scope:** Web (Playwright) + Mobile (Patrol) + API, with unit, integration, component and widget layers
 
@@ -9,7 +9,7 @@
 ## 1. Summary
 
 Test strategy for the **full scenario suite**. The 2026-10-24 update:
-- assigns a layer to the **167 scenarios added for the authorize-at-checkout, cancellation, refund, saved-address and offline features** (TC-137–303, new §4c),
+- assigns a layer to the **175 scenarios added for the authorize-at-checkout, cancellation, refund, saved-address and offline features** (TC-137–311, new §4c),
 - assigns the **23 older scenarios the strategy had never listed** (TC-099–100, TC-102, TC-105–106, TC-123–136, TC-621–624; new §4d),
 - corrects the tooling status (the unit, integration, component and widget layers **now exist**, so most new rules are pushed down to them),
 - adds an **Integration** layer (backend tests against a MongoDB replica set with Stripe mocked), and an automation status map (§10).
@@ -38,20 +38,20 @@ Test strategy for the **full scenario suite**. The 2026-10-24 update:
 
 ## 2. Pyramid distribution
 
-Counts are recomputed from the assignment tables in §4–§4d (328 scenarios, each counted once by its primary layer). Run times were not measured for this update.
+Counts are recomputed from the assignment tables in §4–§4d (336 scenarios, each counted once by its primary layer). Run times were not measured for this update.
 
 | Layer | Count | Focus | Tool |
 |-------|-------|-------|------|
 | Unit | 15 | Pure rules: payment notices, deadlines, button visibility, refund validators and shipping, query rules | Vitest (backend, web) |
 | Integration | 7 | Acceptance deadline, races, seller-cancel edge shapes, refund eligibility, webhooks, flag off | Vitest, `vitest.integration.config.ts` (replica set, Stripe mocked) |
-| API | 109 | Orders, coupons, auth, reviews, rate limiting, cancellation, refund and checkout-session contracts, isolation | Playwright `request` |
+| API | 117 | Orders, coupons, auth, reviews, rate limiting, cancellation, refund and checkout-session contracts, isolation | Playwright `request` |
 | Component / widget | 13 | Refund panels, chips, tabs, notices, offline banner, seller dialogs | Vitest + RTL, `flutter_test` |
 | E2E Web | 72 | Auth, cart, checkout, seller wizard, catalog, pagination, saved addresses, Stripe checkout | Playwright `page` |
 | E2E Mobile | 59 | Auth gate, cart checkbox, checkout, 7-step wizard, seller CRUD, new settings screens | Patrol |
 | Multi (≥ 2 layers) | 44 | Web 17 · Mobile 8 · API 19: card authorization, capture, cancellation, refunds, multi-seller | Mixed |
 | Manual / Blocked | 9 | Manual: TC-052, TC-178, TC-189, TC-270, TC-300, TC-604, TC-605 · Blocked: TC-062, TC-603 | — |
 
-*E2E is 131 of 328 scenarios (40%) before counting the E2E legs inside the 44 Multi rows, so the pyramid is still top-heavy. The 167 scenarios added in 2026-10 are better shaped: 10 E2E, 37 Multi, 83 API, 13 Component, 13 Unit, 7 Integration, 4 Manual. The older E2E-heavy block is a candidate for pushing logic down; see §8.*
+*E2E is 131 of 336 scenarios (39%) before counting the E2E legs inside the 44 Multi rows, so the pyramid is still top-heavy. The 175 scenarios added in 2026-10 are better shaped: 10 E2E, 37 Multi, 91 API, 13 Component, 13 Unit, 7 Integration, 4 Manual. The older E2E-heavy block is a candidate for pushing logic down; see §8.*
 
 ---
 
@@ -290,7 +290,7 @@ Counts are recomputed from the assignment tables in §4–§4d (328 scenarios, e
 | TC-188 | Offline banner (mobile) | Component | flutter_test + Manual | Mobile | P2 | `ConnectivityCubit`, `offline_banner.dart` | Cubit and banner are unit-testable; airplane-mode check stays manual | yes | None |
 | TC-189 | Interrupted card checkout resumes (mobile) | Manual | Manual | Mobile | P2 | `checkout_attempt_store.dart` | Kill/restart timing; store logic is covered indirectly |  | Candidate: `payment_bloc_checkout_session_test.dart` (indirect) |
 
-### 4c-3. API (TC-190–303)
+### 4c-3. API (TC-190–311)
 
 | ID | Scenario | Final layer | Tool | Platform | Priority | Source | Rationale | Override | Existing coverage |
 |----|----------|-------------|------|----------|----------|--------|-----------|----------|-------------------|
@@ -407,7 +407,15 @@ Counts are recomputed from the assignment tables in §4–§4d (328 scenarios, e
 | TC-300 | `/health` does not reflect the database | Manual | Manual | API | P3 | `GET /health` | Needs a stoppable test database | | None |
 | TC-301 | A product with no shipping fee pays the same flat $9.99 on every platform | Unit | Vitest + flutter_test | API | P1 | `computeSellerTotals`; `utils/shipping.ts`; `seller_shipping.dart` | One rule in three codebases, asserted by a unit test in each (the API cannot create the product) | | Candidate: `checkoutPricing.test.ts`, `shipping.test.ts`, `seller_shipping_test.dart` |
 | TC-302 | A buyer-pays product with no fee configured pays $9.99; an explicit 0 stays 0 | Unit | Vitest + flutter_test | API | P1 | `computeSellerTotals` buyer-pays branch | Pure fallback rule asserted by a unit test in each codebase (the API cannot create the product) | | Candidate: `checkoutPricing.test.ts`, `shipping.test.ts`, `seller_shipping_test.dart` |
-| TC-303 | Shipping settings are required when a product is created or updated | Multi | Vitest + Playwright-API | API | P1 | `validateShippingSettings`; `sellerService`; `productController` | One rule shared by both product route sets; unit tests exist, the API check is still to be written | | Candidate: `validators/__tests__/shippingSettings.test.ts`, `services/__tests__/sellerProductShipping.test.ts` |
+| TC-303 | Shipping settings are required when a product is created or updated | Multi | Vitest + Playwright-API | API | P1 | `validateShippingSettings`; `sellerService`; `productController` | One rule shared by both product route sets; unit and API tests exist, an older product without settings can only be tested at unit level | | Exists (tagged): `api/seller-products.api.spec.ts`; unit: `validators/__tests__/shippingSettings.test.ts`, `services/__tests__/sellerProductShipping.test.ts` |
+| TC-304 | Creating a product needs a name, description, price and category | API | Playwright-API | API | P1 | `POST /api/seller/products` | Controller check plus model trim; the wizards cannot send an empty required field, so only the API guards it | | Exists (tagged): `api/seller-products.api.spec.ts` |
+| TC-305 | Optional product fields can be left out and get their defaults | API | Playwright-API | API | P2 | `POST /api/seller/products` | Defaults and the fixed field list; also proves the client cannot set `rating`, `soldCount` or `sellerId` | | Exists (tagged): `api/seller-products.api.spec.ts` |
+| TC-306 | Creating a product rejects values outside the allowed range | API | Playwright-API | API | P1 | `POST /api/seller/products` | Model rules, one field at a time; includes the 200-character boundary of TC-058 | | Exists (tagged): `api/seller-products.api.spec.ts` |
+| TC-307 | Updating a product needs no field, but a changed field must stay valid | API | Playwright-API | API | P1 | `PUT /api/seller/products/:id` | Update has no required field; the model rejects a blank or out-of-range value on save | | Exists (tagged): `api/seller-products.api.spec.ts` |
+| TC-308 | Updating a product with an unknown, malformed or someone else's id | API | Playwright-API | API | P2 | `PUT /api/seller/products/:id` | Ownership is checked before the field rules; complements TC-054 and TC-285 | | Exists (tagged): `api/seller-products.api.spec.ts` |
+| TC-309 | Malformed JSON in a product field returns 400 | API | Playwright-API | API | P2 | `POST/PUT /api/seller/products` | Fixed 2026-10-27: 400 `invalid_product_json`; unit tests exist | | Exists (tagged): `api/seller-products.api.spec.ts` |
+| TC-310 | Empty strings for number fields are never turned into 0 | API | Playwright-API | API | P2 | `POST/PUT /api/seller/products` | Fixed 2026-10-27: an empty price or stock is rejected, a space-only description is rejected; unit tests exist | | Exists (tagged): `api/seller-products.api.spec.ts` |
+| TC-311 | Leading and trailing spaces are trimmed before saving | API | Playwright-API | API | P2 | `POST/PUT /api/seller/products` | Model `trim` on text, tags and attribute values plus a validation hook for attribute keys; list values (category, delivery option) are rejected, not trimmed | | Exists (tagged): `api/seller-products.api.spec.ts`; unit: `models/__tests__/Product.test.ts` |
 
 ### 4d. Previously unassigned scenarios (23)
 
@@ -521,7 +529,8 @@ Needs the matching backend flags (see the master scenarios file) and a Stripe te
 48c. **Rate limiting (TC-264 to TC-271):** P1 TC-267, TC-269 (low-limit run, alone), TC-270 manual on the hosted host; P2 TC-264 to TC-266, TC-268; P3 TC-271. Decide TC-268 and TC-271 first, they record behaviour that may be wrong.
 48d. **Reviews (TC-272 to TC-284):** P0 TC-279; P1 TC-272 to TC-275, TC-277, TC-278, TC-280; P2 TC-276, TC-281 to TC-283; P3 TC-284. Decide TC-274, TC-276, TC-281 and TC-284 first, they record behaviour that may be wrong.
 48e. **Seller access, security, users, Stripe, health (TC-285 to TC-300):** P0 TC-288, TC-295; P1 TC-285 to TC-287, TC-289, TC-290, TC-296, TC-298; P2 TC-291 to TC-294; P3 TC-297, TC-299, TC-300 (manual). Decide TC-289, TC-293, TC-295 and TC-297 first, they record behaviour that may be wrong.
-48f. **Shipping default and required settings (TC-301 to TC-303):** P1; the unit tests exist for all three codebases, the API check of TC-302 (buyer-pays with no fee) still needs to be written. The backend now rejects missing or invalid shipping settings on create and update (TC-303); its API check still needs to be written.
+48f. **Shipping default and required settings (TC-301 to TC-303):** P1; the unit tests exist for all three codebases, and the API can no longer create a product without shipping settings, so TC-301 and TC-302 are unit-only. The backend now rejects missing or invalid shipping settings on create and update (TC-303); its API tests are in `seller-products.api.spec.ts`, and only the older-product case stays unit-only.
+48g. **Seller product create and update validation (TC-304 to TC-311):** P1 TC-304, TC-306, TC-307; P2 TC-305, TC-308 to TC-311. One spec, `api/seller-products.api.spec.ts` (101 tests including TC-303, written and run 2026-10-27), runs on `/api/seller/products` (the route both apps use); `POST/PUT /api/products` is not used by the apps. TC-309 and TC-310 were fixed in the backend on 2026-10-27 (400 for malformed JSON; an empty price or stock is rejected, a space-only description is rejected); unit tests and the API tests exist.
 
 ### Phase 10 — 2026-10 smoke S5–S7 (E2E) — owner
 
@@ -590,7 +599,7 @@ Closed since the last version: pure 8% tax and pricing math (candidate `checkout
 
 | Issue | Status | Action |
 |-------|--------|--------|
-| E2E is 131 of 328 scenarios (40%), above the share the pyramid allows | **Risk** | Treat the older E2E block as candidates to push down (TC-001–066 validation and display rules); no new logic-only scenario should be E2E |
+| E2E is 131 of 336 scenarios (39%), above the share the pyramid allows | **Risk** | Treat the older E2E block as candidates to push down (TC-001–066 validation and display rules); no new logic-only scenario should be E2E |
 | Money state machines (capture, release, refund, webhooks) tested only through the UI | Avoid | Integration first; one E2E per smoke flow (S5–S7) |
 | Flag-dependent scenarios run without declaring the flag | **Risk** | Every S5–S7 and TC-143–231 run states `CHECKOUT_FLOW`, `SELLER_SEES_MANUAL_CAPTURE`, `DELIVERED_REFUNDS_ENABLED` (see the scenarios master) |
 | Specs whose ids are not in the scenario docs, or that have none | Existing | Map or rename them (§10) so coverage can be traced to scenarios |
@@ -643,6 +652,7 @@ Read-only grep of `TC-` ids in the existing specs. This is a traceability map, n
 | | `api/coupons.api.spec.ts` | TC-057 (`{ tag }` annotation added 2026-10-25; uses a fresh buyer and deletes its coupon) |
 | | `api/order-isolation.api.spec.ts` | TC-110, TC-111 (`{ tag }` annotations added 2026-10-25; fresh buyers, positive controls, cleanup) |
 | | `api/orders.api.spec.ts` | TC-025, TC-026, TC-033, TC-056, TC-257 (`{ tag }` annotations added 2026-10-25; fresh buyer, exact amounts, cleanup; TC-033 asserts 409 for COD; products now carry explicit shipping settings, TC-257 covers free, per-option fees and the first-option fallback) |
+| | `api/seller-products.api.spec.ts` | TC-303 to TC-311 (TC-303 and TC-304 to TC-311 new 2026-10-27; fresh sellers per worker, unique product names so tests run in parallel, cleanup in afterAll; 101 tests passed 3 times against a private backend and test database) |
 | | `api/rate-limit.api.spec.ts` | TC-114 to TC-119 (`{ tag }` annotations added 2026-10-25; limits probed from the backend, serial mode, `@low-limit` tag for TC-117 to TC-119) |
 | | `api/reviews.api.spec.ts` | TC-035, TC-036 (`{ tag }` annotations added 2026-10-25; fresh buyer, TC-036 covers a pending and a shipped order, TC-035 checks the product rating and count, cleanup of what the API allows) |
 | | `api/security.api.spec.ts` | TC-132 to TC-136 (tag annotations existed; TC-134 now has a positive control and cleanup 2026-10-25) |

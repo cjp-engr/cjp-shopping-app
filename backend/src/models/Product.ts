@@ -43,7 +43,7 @@ export interface IProduct extends Document {
 
 const ProductSchema = new Schema<IProduct>({
   name: { type: String, required: true, trim: true },
-  description: { type: String, required: true, maxlength: 200 },
+  description: { type: String, required: true, trim: true, maxlength: 200 },
   price: { type: Number, required: true, min: 0 },
   category: {
     type: String,
@@ -56,7 +56,7 @@ const ProductSchema = new Schema<IProduct>({
   rating: { type: Number, default: 0, min: 0, max: 5 },
   reviews: { type: Number, default: 0, min: 0 },
   soldCount: { type: Number, default: 0, min: 0 },
-  tags: [{ type: String }],
+  tags: [{ type: String, trim: true }],
   specifications: { type: Map, of: String },
   sellerId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   brand: { type: String, trim: true },
@@ -71,7 +71,7 @@ const ProductSchema = new Schema<IProduct>({
     values: [{ type: String, trim: true }],
   }],
   variants: [{
-    attributes: { type: Map, of: String, default: {} },
+    attributes: { type: Map, of: { type: String, trim: true }, default: {} },
     price: { type: Number, min: 0, default: 0 },
     stock: { type: Number, min: 0, default: 0 },
     sku: { type: String, trim: true },
@@ -79,6 +79,16 @@ const ProductSchema = new Schema<IProduct>({
     discount: { type: Number, min: 0, max: 100 },
   }],
 }, { timestamps: true });
+
+// A Map schema type trims its values but not its keys, so the keys of every variant attribute are trimmed here.
+// The variants are saved with save() or create(), which both run validation first.
+ProductSchema.pre('validate', function () {
+  for (const variant of this.variants ?? []) {
+    const attributes = variant.attributes as unknown as Map<string, string> | undefined;
+    if (!attributes) continue;
+    variant.attributes = new Map([...attributes.entries()].map(([key, value]) => [key.trim(), value])) as any;
+  }
+});
 
 ProductSchema.index({ name: 'text', description: 'text' });
 ProductSchema.index({ category: 1 });

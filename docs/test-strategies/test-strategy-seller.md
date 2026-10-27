@@ -7,7 +7,7 @@
 
 ---
 
-## Pyramid (Seller, 103 scenarios; 63 added 2026-10-24 to 2026-10-27)
+## Pyramid (Seller, 111 scenarios; 71 added 2026-10-24 to 2026-10-27)
 
 Role = Seller or Both across web, mobile and API. Counts are recomputed from the master; the old per-platform split is replaced by one table.
 
@@ -15,7 +15,7 @@ Role = Seller or Both across web, mobile and API. Counts are recomputed from the
 |-------|-------|---------------------------|
 | E2E (Playwright + Patrol) | 33 | 0 |
 | Multi (≥ 2 layers) | 16 | 15 |
-| API | 38 | 34 |
+| API | 46 | 42 |
 | Component / widget | 5 | 5 |
 | Integration | 4 | 4 |
 | Unit | 3 | 3 |
@@ -189,5 +189,13 @@ Layers, sources, rationale and existing-coverage candidates for every row are in
 | TC-299 | Unknown routes return a JSON 404 | API | Playwright-API | P3 |
 | TC-300 | `/health` does not reflect the database | Manual | Manual | P3 |
 | TC-303 | Shipping settings are required when a product is created or updated | Multi | Vitest + Playwright-API | P1 |
+| TC-304 | Creating a product needs a name, description, price and category | API | Playwright-API | P1 |
+| TC-305 | Optional product fields can be left out and get their defaults | API | Playwright-API | P2 |
+| TC-306 | Creating a product rejects values outside the allowed range | API | Playwright-API | P1 |
+| TC-307 | Updating a product needs no field, but a changed field must stay valid | API | Playwright-API | P1 |
+| TC-308 | Updating a product with an unknown, malformed or someone else's id | API | Playwright-API | P2 |
+| TC-309 | Malformed JSON in a product field returns 400 | API | Playwright-API | P2 |
+| TC-310 | Empty strings for number fields are never turned into 0 | API | Playwright-API | P2 |
+| TC-311 | Leading and trailing spaces are trimmed before saving | API | Playwright-API | P2 |
 
 Full detail: **`docs/test-strategies/test-strategy.md`** · Mobile phases: **`test-strategy-mobile.md`**
