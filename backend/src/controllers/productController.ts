@@ -5,6 +5,7 @@ import cloudinary from '../config/cloudinary.js';
 import { AuthRequest } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 import * as sellerService from '../services/sellerService.js';
+import { validateShippingSettings } from '../validators/shippingSettings.js';
 
 function parseTags(tags: unknown): string[] | undefined {
   if (!tags) return undefined;
@@ -171,18 +172,8 @@ function validateProductFields(fields: {
   if (!description?.trim()) return 'Description is required.';
   if (!imageUrls || imageUrls.length === 0) return 'At least one product image is required.';
 
-  if (!shippingOptions || shippingOptions.length === 0) return 'At least one delivery option is required.';
-  if (!shippingFee) return 'Shipping fee option is required.';
-  if (shippingFee !== 'free' && shippingFee !== 'buyer_pays') return 'Shipping fee must be "free" or "buyer_pays".';
-
-  if (shippingFee === 'buyer_pays') {
-    for (const opt of shippingOptions) {
-      const amount = shippingFeeAmounts?.[opt];
-      if (amount == null || isNaN(Number(amount))) {
-        return `Shipping fee amount is required for delivery option "${opt}".`;
-      }
-    }
-  }
+  const shippingError = validateShippingSettings({ shippingOptions, shippingFee, shippingFeeAmounts });
+  if (shippingError) return shippingError;
 
   if (!hasVariants) {
     if (price == null || isNaN(price) || price < 0) return 'Price is required and must be a non-negative number.';

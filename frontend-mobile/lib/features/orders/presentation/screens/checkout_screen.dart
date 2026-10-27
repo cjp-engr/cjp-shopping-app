@@ -9,6 +9,7 @@ import '../../../voucher/data/voucher_repository.dart';
 import '../../../voucher/presentation/select_voucher_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/seller_shipping.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/theme_colors.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -448,16 +449,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               }
               final selectedOpt = _deliverySelections[entry.key] ??
                   entry.value.first.product.shippingOptions.firstOrNull;
-              if (grpFee == 'free') {
-                // free - add nothing
-              } else if (grpFee == 'buyer_pays') {
-                totalShipping +=
-                    (selectedOpt != null ? grpFeeAmounts[selectedOpt] : null) ??
-                        grpFeeAmounts.values.firstOrNull ??
-                        0.0;
-              } else {
-                totalShipping += grpAfter < 50 ? 9.99 : 0.0;
-              }
+              totalShipping += sellerShippingFee(
+                shippingFee: grpFee,
+                shippingFeeAmounts: grpFeeAmounts,
+                selectedOption: selectedOpt,
+              );
               totalTax += grpAfter * 0.08;
             }
             final grandTotal = afterDiscount + totalShipping + totalTax;
@@ -532,19 +528,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               final sellerSelectedOpt =
                                   _deliverySelections[sellerKey] ??
                                       shippingOptions.firstOrNull;
-                              double sellerShipping;
-                              if (shippingFee == 'free') {
-                                sellerShipping = 0.0;
-                              } else if (shippingFee == 'buyer_pays') {
-                                sellerShipping = (sellerSelectedOpt != null
-                                        ? shippingFeeAmounts[sellerSelectedOpt]
-                                        : null) ??
-                                    shippingFeeAmounts.values.firstOrNull ??
-                                    0.0;
-                              } else {
-                                sellerShipping =
-                                    afterDiscount < 50 ? 9.99 : 0.0;
-                              }
+                              final sellerShipping = sellerShippingFee(
+                                shippingFee: shippingFee,
+                                shippingFeeAmounts: shippingFeeAmounts,
+                                selectedOption: sellerSelectedOpt,
+                              );
 
                               final sellerTax = afterDiscount * 0.08;
                               final storeTotal =

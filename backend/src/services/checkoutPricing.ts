@@ -1,6 +1,10 @@
 export const TAX_RATE = 0.08;
+/**
+ * The fee charged when a seller has not set one: a product with no `shippingFee`, or a buyer-pays product with
+ * no fee configured. It is a flat safety net so the cost is never left to the seller. Shipping is free only when
+ * the seller sets `free`. Keep in step with DEFAULT_SHIPPING_FEE (web) and defaultShippingFee (mobile).
+ */
 export const STANDARD_SHIPPING_FEE = 9.99;
-export const FREE_SHIPPING_THRESHOLD = 50;
 
 /** Minor-unit exponents. Only currencies listed here can be charged. */
 const CURRENCY_EXPONENTS: Record<string, number> = {
@@ -164,11 +168,12 @@ export function computeSellerTotals(input: SellerTotalsInput): SellerTotals {
   if (shippingFee === 'free') {
     shipping = 0;
   } else if (shippingFee === 'buyer_pays') {
+    // An explicit fee, including 0, is the seller's choice; the standard fee applies only when none is configured.
     shipping = (selectedDeliveryOption
       ? shippingFeeAmounts[selectedDeliveryOption]
-      : undefined) ?? Object.values(shippingFeeAmounts)[0] ?? 0;
+      : undefined) ?? Object.values(shippingFeeAmounts)[0] ?? STANDARD_SHIPPING_FEE;
   } else {
-    shipping = afterAllDiscounts >= FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_SHIPPING_FEE;
+    shipping = STANDARD_SHIPPING_FEE;
   }
 
   return {

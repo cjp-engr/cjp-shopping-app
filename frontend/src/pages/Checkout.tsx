@@ -49,6 +49,7 @@ import {
   Store,
 } from 'lucide-react';
 import { TAX_RATE } from '../utils/constants';
+import { sellerShippingFee } from '../utils/shipping';
 import type { CartItem } from '../types/cart';
 
 const DELIVERY_META: Record<string, { label: string; sub: string; Icon: React.ElementType }> = {
@@ -253,14 +254,11 @@ const CheckoutInner: React.FC = () => {
       const netSubtotal = Math.max(0, group.subtotal - group.voucherDiscount);
       const selectedOpt = deliverySelections[key] ?? group.shippingOptions[0];
       group.selectedDelivery = selectedOpt;
-      if (group.shippingFee === 'free') {
-        group.shipping = 0;
-      } else if (group.shippingFee === 'buyer_pays') {
-        const fee = selectedOpt != null ? group.shippingFeeAmounts[selectedOpt] : undefined;
-        group.shipping = fee ?? Object.values(group.shippingFeeAmounts)[0] ?? 0;
-      } else {
-        group.shipping = 0;
-      }
+      group.shipping = sellerShippingFee({
+        shippingFee: group.shippingFee,
+        shippingFeeAmounts: group.shippingFeeAmounts,
+        selectedOption: selectedOpt,
+      });
       group.tax = netSubtotal * TAX_RATE;
       group.storeTotal = netSubtotal + group.shipping + group.tax;
     }

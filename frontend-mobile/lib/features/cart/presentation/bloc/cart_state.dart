@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/utils/seller_shipping.dart';
 import '../../domain/entities/cart_item_entity.dart';
 
 enum CartSyncStatus { idle, syncing, error }
@@ -40,11 +41,20 @@ class CartState extends Equatable {
       final shippingFee = firstItem.product.shippingFee;
       if (shippingFee == 'free') continue;
 
-      // For 'buyer_pays' or other types, use the selected delivery option
+      if (shippingFee != 'buyer_pays') {
+        // The seller set no shipping fee: the flat default applies
+        total += defaultShippingFee;
+        continue;
+      }
+
+      // For 'buyer_pays', use the selected delivery option
       final selectedOption = deliverySelections[sellerKey];
       if (selectedOption != null) {
-        final shippingCost = firstItem.product.shippingFeeAmounts[selectedOption] ?? 0.0;
-        total += shippingCost;
+        total += sellerShippingFee(
+          shippingFee: shippingFee,
+          shippingFeeAmounts: firstItem.product.shippingFeeAmounts,
+          selectedOption: selectedOption,
+        );
       }
     }
     return total;

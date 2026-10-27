@@ -4,6 +4,7 @@ import {
   currencyExponent,
   priceLine,
   toMinorUnits,
+  STANDARD_SHIPPING_FEE,
   TAX_RATE,
   type ProductLike,
 } from '../checkoutPricing.js';
@@ -62,13 +63,42 @@ describe('computeSellerTotals', () => {
     expect(totals.total).toBeCloseTo(85 + 85 * TAX_RATE);
   });
 
-  it('charges standard shipping below the free-shipping threshold', () => {
-    const totals = computeSellerTotals({ ...base, subtotal: 40, firstProduct: {} });
+  it.each([0.01, 40, 49.99, 50, 99, 1000])(
+    'charges the flat standard shipping fee for a product with no shipping setting (subtotal %s)',
+    (subtotal) => {
+      const totals = computeSellerTotals({ ...base, subtotal, firstProduct: {} });
+      expect(totals.shipping).toBe(STANDARD_SHIPPING_FEE);
+      expect(totals.shipping).toBe(9.99);
+    },
+  );
+
+  it('never waives the standard fee for a large order, only a seller-set free fee does', () => {
+    const noSetting = computeSellerTotals({ ...base, subtotal: 500, firstProduct: {} });
+    const free = computeSellerTotals({ ...base, subtotal: 500, firstProduct: { shippingFee: 'free' } });
+    expect(noSetting.shipping).toBe(9.99);
+    expect(free.shipping).toBe(0);
+  });
+
+  it('does not change the standard fee when discounts shrink the order', () => {
+    const totals = computeSellerTotals({ ...base, subtotal: 100, productDiscount: 60, couponDiscount: 5, firstProduct: {} });
+    expect(totals.afterAllDiscounts).toBe(35);
+    expect(totals.shipping).toBe(9.99);
+    expect(totals.total).toBeCloseTo(35 + 35 * TAX_RATE + 9.99);
+  });
+
+  it('charges the standard fee when buyer-pays has no fee configured at all', () => {
+    const totals = computeSellerTotals({
+      ...base,
+      firstProduct: { shippingFee: 'buyer_pays', shippingFeeAmounts: {}, shippingOptions: ['standard'] },
+    });
     expect(totals.shipping).toBe(9.99);
   });
 
-  it('waives standard shipping at the threshold', () => {
-    const totals = computeSellerTotals({ ...base, subtotal: 50, firstProduct: {} });
+  it('keeps an explicit zero fee set by the seller for buyer-pays', () => {
+    const totals = computeSellerTotals({
+      ...base,
+      firstProduct: { shippingFee: 'buyer_pays', shippingFeeAmounts: { standard: 0 }, shippingOptions: ['standard'] },
+    });
     expect(totals.shipping).toBe(0);
   });
 

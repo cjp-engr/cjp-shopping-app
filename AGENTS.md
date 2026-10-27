@@ -30,6 +30,13 @@ These rules apply to every agent working in this repo (Claude Code, Codex, ChatG
 - Payment and order-state code must be safe under races and crashes: use the atomic claim pattern already in `backend/src/services/` (`orderAcceptance.ts`, `orderCancellation.ts`, `orderCapture.ts`), durable `PaymentOperation` records with stable idempotency keys, and never call Stripe inside a database transaction.
 - When a plan or request leaves a choice open, pick the safest reasonable option and list your choices in the final message.
 
+## Communicating with the owner
+
+- Begin every reply with the owner's message corrected and improved: fix grammar, spelling, and word choice, and make the wording clearer, while keeping the original meaning, intent, and technical terms. Label it **Your message, improved** and keep it to one or two sentences.
+- Add a short note on what changed only when it teaches something (for example tense, a missing article, or a verb form); skip the note for trivial fixes. If the message is already correct, say so in a few words.
+- The correction never replaces or delays the real answer, and it never changes what the owner asked for: answer and act on the original request.
+- Do not "correct" pasted content, code, commands, logs, file paths, or quoted text. Correct only the owner's own words.
+
 ## Feature inventory
 
 - Maintain `docs/features.md` as a short, grouped index linking to a separate Markdown file for every feature. Store feature files under `docs/features/<area>/<feature-name>.md`, using lowercase hyphenated names (for example, `docs/features/refunds/delivered-item-refunds.md`). Update the feature file and its index link whenever a feature is added, changed, or removed; create missing documentation when doing that work.

@@ -7,14 +7,14 @@
 
 ---
 
-## Pyramid (Seller, 102 scenarios; 62 added 2026-10-24 and 2026-10-25)
+## Pyramid (Seller, 103 scenarios; 63 added 2026-10-24 to 2026-10-27)
 
 Role = Seller or Both across web, mobile and API. Counts are recomputed from the master; the old per-platform split is replaced by one table.
 
 | Layer | Count | Of which added 2026-10-24 |
 |-------|-------|---------------------------|
 | E2E (Playwright + Patrol) | 33 | 0 |
-| Multi (≥ 2 layers) | 15 | 14 |
+| Multi (≥ 2 layers) | 16 | 15 |
 | API | 38 | 34 |
 | Component / widget | 5 | 5 |
 | Integration | 4 | 4 |
@@ -115,7 +115,7 @@ Role = Seller or Both across web, mobile and API. Counts are recomputed from the
 | TC-605 | Manual | Manual/Patrol | P2 |
 | TC-610 | E2E | Patrol | P1 |
 
-## Added 2026-10-24 and 2026-10-25 — Seller scenarios (67, all platforms)
+## Added 2026-10-24 to 2026-10-27 — Seller scenarios (68, all platforms)
 
 Layers, sources, rationale and existing-coverage candidates for every row are in **`test-strategy.md` §4c–§4d**. Included: scenarios added on 2026-10-24 and older scenarios the strategy had never assigned.
 
@@ -188,5 +188,6 @@ Layers, sources, rationale and existing-coverage candidates for every row are in
 | TC-298 | Health and root endpoints respond | API | Playwright-API | P1 |
 | TC-299 | Unknown routes return a JSON 404 | API | Playwright-API | P3 |
 | TC-300 | `/health` does not reflect the database | Manual | Manual | P3 |
+| TC-303 | Shipping settings are required when a product is created or updated | Multi | Vitest + Playwright-API | P1 |
 
 Full detail: **`docs/test-strategies/test-strategy.md`** · Mobile phases: **`test-strategy-mobile.md`**

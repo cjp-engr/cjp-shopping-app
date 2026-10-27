@@ -7,7 +7,7 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { formatCurrency } from '../utils/formatters';
 import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ShoppingBag, Lock, Ticket, Truck, Zap, Store } from 'lucide-react';
-import { TAX_RATE } from '../utils/constants';
+import { TAX_RATE, DEFAULT_SHIPPING_FEE } from '../utils/constants';
 import { SelectVoucherModal } from '../components/voucher/SelectVoucherModal';
 
 const getItemKey = (item: CartItem): string =>
@@ -193,7 +193,8 @@ export const Cart: React.FC = () => {
         const fee = selectedOpt ? group.items[0]?.product.shippingFeeAmounts?.[selectedOpt] : undefined;
         group.shipping = fee ?? -1;
       } else {
-        group.shipping = -1;
+        // The seller set no shipping fee: the flat default applies, whatever the order amount
+        group.shipping = DEFAULT_SHIPPING_FEE;
       }
       group.tax = netSubtotal * TAX_RATE;
       group.storeTotal = netSubtotal + Math.max(0, group.shipping) + group.tax;

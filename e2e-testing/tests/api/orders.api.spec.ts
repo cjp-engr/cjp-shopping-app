@@ -1,8 +1,12 @@
 // TC coverage: TC-026 (order total formula, incl. product discount + coupon),
-//              TC-027 (shipping $9.99 < $50), TC-028 (free shipping >= $50),
-//              TC-263 (free-shipping boundary at $50), TC-056 (insufficient stock → 400),
+//              TC-257 (the seller's shipping settings and the chosen delivery option set the fee),
+//              TC-056 (insufficient stock → 400),
 //              TC-033 (buyer cancel processing order → 409 for COD),
 //              TC-025 (multi-seller checkout → 2 orders)
+//
+// Shipping settings are required on every product, so the API can no longer create a product without them.
+// The flat $9.99 fallback (TC-027, TC-028, TC-263, TC-301, TC-302) only applies to older products and is
+// covered by the unit tests in checkoutPricing.test.ts, not here.
 
 import { test, expect, request as pwRequest } from '@playwright/test';
 import type { APIRequestContext } from '@playwright/test';
@@ -22,11 +26,10 @@ let buyerToken: string;
 let sellerToken: string;
 let sellerId: string;
 let seller2Token: string;
-let cheapProductId: string;          // $20
-let expensiveProductId: string;      // $99
-let justUnderProductId: string;      // $49.99
-let atThresholdProductId: string;    // $50.00
-let discountedProductId: string;     // $100 with 10% product discount
+let cheapProductId: string;          // $20, seller's flat $9.99 fee
+let discountedProductId: string;     // $100 with 10% product discount, seller's flat $9.99 fee
+let freeProductId: string;           // $20, seller set free shipping
+let twoOptionProductId: string;      // $20, buyer pays: standard $5, express $15
 let couponId: string;
 let couponCode: string;
 let seller2ProductId: string;
@@ -34,6 +37,20 @@ let seller2ProductId: string;
 // Everything the run creates, removed in afterAll so repeated runs leave nothing behind
 const createdOrderIds: string[] = [];
 const sellerProducts: { id: string; token: () => string }[] = [];
+
+// Shipping settings are required. Unless a product brings its own, it uses a flat $9.99 buyer-pays fee set by
+// the seller, so the totals stay predictable.
+const FLAT_FEE_SHIPPING = {
+  shippingOptions: JSON.stringify(['standard']),
+  shippingFee: 'buyer_pays',
+  shippingFeeAmounts: JSON.stringify({ standard: 9.99 }),
+};
+const FREE_SHIPPING = { shippingOptions: JSON.stringify(['standard']), shippingFee: 'free' };
+const TWO_OPTION_SHIPPING = {
+  shippingOptions: JSON.stringify(['standard', 'express']),
+  shippingFee: 'buyer_pays',
+  shippingFeeAmounts: JSON.stringify({ standard: 5, express: 15 }),
+};
 
 async function createProduct(
   ctx: APIRequestContext,
@@ -43,7 +60,6 @@ async function createProduct(
   stock: string,
   extra: Record<string, string> = {},
 ): Promise<string> {
-  // No shippingFee field, so the default $9.99 / free-over-$50 rule applies deterministically
   const res = await ctx.post('/api/seller/products', {
     multipart: {
       name,
@@ -52,6 +68,7 @@ async function createProduct(
       category: 'Electronics',
       stock,
       image: PLACEHOLDER_IMAGE,
+      ...('shippingFee' in extra ? {} : FLAT_FEE_SHIPPING),
       ...extra,
     },
     headers: authHeaders(token),
@@ -102,11 +119,10 @@ test.beforeAll(async () => {
     sellerProducts.push({ id, token: () => sellerToken });
     return id;
   };
-  cheapProductId       = await make('API Cheap', '20', '50');
-  expensiveProductId   = await make('API Expensive', '99', '20');
-  justUnderProductId   = await make('API Just Under 50', '49.99', '20');
-  atThresholdProductId = await make('API At 50', '50', '20');
-  discountedProductId  = await make('API Discounted', '100', '20', { discount: '10' });
+  cheapProductId     = await make('API Cheap', '20', '50');
+  discountedProductId = await make('API Discounted', '100', '20', { discount: '10' });
+  freeProductId      = await make('API Free Shipping', '20', '20', FREE_SHIPPING);
+  twoOptionProductId = await make('API Two Options', '20', '20', TWO_OPTION_SHIPPING);
 
   // 10% coupon for this seller, used by the discount + coupon case of TC-026
   couponCode = `ORDAPI${ts}`;
@@ -167,7 +183,7 @@ test.describe('TC-026: Order total matches pricing formula', () => {
       await test.step('Place order with the $20 product', async () => {
         const [o] = await placeOrder(request, [{ productId: cheapProductId, quantity: 1 }]);
 
-        await test.step('Assert the exact amounts for a $20 product with default shipping', async () => {
+        await test.step('Assert the exact amounts for a $20 product with a flat $9.99 seller fee', async () => {
           expect(o.subtotal).toBe(20);
           expect(o.productDiscount).toBe(0);
           expect(o.discount).toBe(0);
@@ -194,13 +210,13 @@ test.describe('TC-026: Order total matches pricing formula', () => {
           { couponCodes: { [sellerId]: couponCode } },
         );
 
-        await test.step('Assert $100 → 10% product discount → 10% coupon on $90 → tax → free shipping', async () => {
+        await test.step('Assert $100 → 10% product discount → 10% coupon on $90 → tax → flat shipping', async () => {
           expect(o.subtotal).toBe(100);
           expect(o.productDiscount).toBeCloseTo(10, 2);
           expect(o.discount).toBeCloseTo(9, 2);          // 10% of the $90 effective subtotal
           expect(o.tax).toBeCloseTo(6.48, 2);            // 8% of $81
-          expect(o.shipping).toBe(0);                    // $81 >= $50
-          expect(o.total).toBeCloseTo(87.48, 2);
+          expect(o.shipping).toBe(9.99);                 // the seller's fee; it does not depend on the order amount
+          expect(o.total).toBeCloseTo(97.47, 2);         // 81 + 6.48 + 9.99
           expectBreakdownConsistent(o);
         });
       });
@@ -208,63 +224,38 @@ test.describe('TC-026: Order total matches pricing formula', () => {
   );
 });
 
-// ── TC-027 ──────────────────────────────────────────────────────────────────
+// ── TC-257 ──────────────────────────────────────────────────────────────────
 
-test.describe('TC-027: Shipping $9.99 when effective subtotal < $50', () => {
+test.describe('TC-257: The shipping settings and the chosen delivery option set the fee', () => {
   test(
-    'order with cheap product gets $9.99 default shipping',
-    { tag: ['@TC-027', '@api', '@orders', '@pricing'] },
+    'free ships for $0, buyer-pays follows the chosen option, and the first option applies when none is chosen',
+    { tag: ['@TC-257', '@api', '@orders', '@shipping'] },
     async ({ request }) => {
-      await test.step('Place order with $20 product (subtotal < $50)', async () => {
-        const [o] = await placeOrder(request, [{ productId: cheapProductId, quantity: 1 }]);
-        const afterDiscounts = o.subtotal - o.productDiscount - o.discount;
-
-        await test.step('Assert effective subtotal < $50 and shipping = $9.99', async () => {
-          expect(afterDiscounts).toBeLessThan(50);
-          expect(o.shipping).toBe(9.99);
-        });
-      });
-    },
-  );
-});
-
-// ── TC-028 ──────────────────────────────────────────────────────────────────
-
-test.describe('TC-028: Free shipping when effective subtotal >= $50', () => {
-  test(
-    'order with expensive product gets $0 shipping',
-    { tag: ['@TC-028', '@api', '@orders', '@pricing'] },
-    async ({ request }) => {
-      await test.step('Place order with $99 product (subtotal >= $50)', async () => {
-        const [o] = await placeOrder(request, [{ productId: expensiveProductId, quantity: 1 }]);
-        const afterDiscounts = o.subtotal - o.productDiscount - o.discount;
-
-        await test.step('Assert effective subtotal >= $50 and shipping = $0', async () => {
-          expect(afterDiscounts).toBeGreaterThanOrEqual(50);
-          expect(o.shipping).toBe(0);
-        });
-      });
-    },
-  );
-});
-
-// ── TC-263 ──────────────────────────────────────────────────────────────────
-
-test.describe('TC-263: Free-shipping boundary at $50', () => {
-  test(
-    '$49.99 pays $9.99 shipping and $50.00 ships free',
-    { tag: ['@TC-263', '@TC-027', '@TC-028', '@api', '@orders', '@pricing'] },
-    async ({ request }) => {
-      await test.step('Place order with a $49.99 product and assert shipping = $9.99', async () => {
-        const [o] = await placeOrder(request, [{ productId: justUnderProductId, quantity: 1 }]);
-        expect(o.subtotal).toBeCloseTo(49.99, 2);
-        expect(o.shipping).toBe(9.99);
-      });
-
-      await test.step('Place order with a $50.00 product and assert shipping = $0', async () => {
-        const [o] = await placeOrder(request, [{ productId: atThresholdProductId, quantity: 1 }]);
-        expect(o.subtotal).toBe(50);
+      await test.step('A product the seller set to free ships for $0', async () => {
+        const [o] = await placeOrder(request, [{ productId: freeProductId, quantity: 1 }]);
         expect(o.shipping).toBe(0);
+        expect(o.total).toBeCloseTo(21.6, 2);          // 20 + 1.60 tax
+        expectBreakdownConsistent(o);
+      });
+
+      for (const [choice, fee] of [['express', 15], ['standard', 5]] as const) {
+        await test.step(`A buyer-pays product with the ${choice} option selected costs $${fee}`, async () => {
+          const [o] = await placeOrder(
+            request,
+            [{ productId: twoOptionProductId, quantity: 1 }],
+            { deliverySelections: { [sellerId]: choice } },
+          );
+          expect(o.shipping).toBe(fee);
+          expect(o.selectedDeliveryOption).toBe(choice);
+          expect(o.total).toBeCloseTo(20 + 1.6 + fee, 2);
+          expectBreakdownConsistent(o);
+        });
+      }
+
+      await test.step('With no option selected the first option applies', async () => {
+        const [o] = await placeOrder(request, [{ productId: twoOptionProductId, quantity: 1 }]);
+        expect(o.selectedDeliveryOption).toBe('standard');
+        expect(o.shipping).toBe(5);
       });
     },
   );
