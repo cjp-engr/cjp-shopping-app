@@ -121,7 +121,7 @@ export const schemas: Record<string, Schema> = {
     anyOf: [{ required: ['stock'] }, { required: ['variants'], properties: { variants: { type: 'array', minItems: 1 } } }],
   },
   ProductUpdateInput: { ...obj(productFields), description: 'Omitted fields use existing values during validation. Without variants the merged product needs non-negative price and stock. Use the dedicated image upload route or seller product route to replace images.' },
-  SellerProductCreateInput: { ...obj(multipartFields, ['name', 'description', 'price', 'category']), description: 'Seller route accepts file uploads, imageUrls, or image. Stock defaults to 0. Shipping options and images are optional on this route.' },
+  SellerProductCreateInput: { ...obj(multipartFields, ['name', 'description', 'price', 'category', 'shippingOptions', 'shippingFee']), description: 'Seller route accepts file uploads, imageUrls, or image. Stock defaults to 0. Shipping options and the shipping fee are required (a buyer-pays product needs a fee for every selected option); images are optional on this route.' },
   SellerProductUpdateInput: { ...obj(multipartFields), description: 'Omitted fields are preserved. Uploaded images and imageUrls replace the image list when nonempty; an image URL alone replaces the primary image.' },
   AvatarUploadInput: obj({ avatar: { type: 'string', format: 'binary', description: 'One JPG/JPEG, PNG or WebP image; maximum 2 MiB.' } }, ['avatar']),
   ProductImageUploadInput: obj({ image: { type: 'string', format: 'binary', description: 'One JPG/JPEG, PNG or WebP image; maximum 5 MiB.' } }, ['image']),

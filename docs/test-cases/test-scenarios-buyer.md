@@ -44,8 +44,8 @@ Automation labels below name intended tools, not implemented or passing scripts.
 | TC-100 | Two variants same product in cart | P1 | Playwright |
 | TC-025 | Multi-seller → 2 orders | P0 | Playwright |
 | TC-026 | Order total formula | P0 | Playwright-API |
-| TC-027 | Shipping $9.99 under $50 | P1 | Playwright-API |
-| TC-028 | Free shipping ≥ $50 | P1 | Playwright-API |
+| TC-027 | Flat $9.99 shipping when the seller set no fee | P1 | Unit (API blocked) |
+| TC-028 | A large order still pays the flat shipping fee | P1 | Unit (API blocked) |
 | TC-029 | Missing address blocked | P1 | Playwright |
 | TC-030 | Order history tabs | P1 | Playwright |
 | TC-031 | Confirm receipt | P1 | Playwright |
@@ -148,7 +148,7 @@ Automation labels below name intended tools, not implemented or passing scripts.
 | TC-260 | Order deducts stock and counts the sale; cancel restores | P1 | Playwright-API |
 | TC-261 | Ordered items leave the server cart | P2 | Playwright-API |
 | TC-262 | COD order starts pending with acceptance fields | P1 | Playwright-API |
-| TC-263 | Free-shipping boundary at $50 | P1 | Playwright-API / Unit |
+| TC-263 | No free-shipping boundary at $50 | P1 | Unit (API blocked) |
 | TC-264 | Rate limit resets after the window | P2 | Playwright-API |
 | TC-265 | Limit set to 0 disables rate limiting | P2 | Playwright-API |
 | TC-266 | Checkout routes are rate limited | P2 | Playwright-API |
@@ -184,6 +184,8 @@ Automation labels below name intended tools, not implemented or passing scripts.
 | TC-298 | Health and root endpoints respond | P1 | Playwright-API |
 | TC-299 | Unknown routes return JSON 404 | P3 | Playwright-API |
 | TC-300 | /health does not reflect the database | P3 | Manual |
+| TC-301 | Product with no shipping fee pays flat $9.99 on every platform | P1 | Unit (API blocked) |
+| TC-302 | Buyer-pays with no fee configured pays $9.99; explicit 0 stays 0 | P1 | Unit (API blocked) |
 
 ---
 
@@ -245,7 +247,7 @@ Automation labels below name intended tools, not implemented or passing scripts.
 | TC-188 | Offline banner | P2 | Manual / Widget |
 | TC-189 | Interrupted checkout resumes | P2 | Manual |
 
-**Added 2026-10-24 and 2026-10-25:** 26 web + 14 mobile + 86 API buyer-facing scenarios (overlap via parity on shared business rules)
+**Added 2026-10-24 and 2026-10-25:** 26 web + 14 mobile + 88 API buyer-facing scenarios (overlap via parity on shared business rules)
 
 Full steps and selectors: **`docs/test-cases/test-scenarios.md`**
 

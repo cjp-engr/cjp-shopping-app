@@ -7,7 +7,7 @@
 
 ---
 
-## Pyramid (Buyer, 240 scenarios; 127 added 2026-10-24 and 2026-10-25)
+## Pyramid (Buyer, 242 scenarios; 129 added 2026-10-24 to 2026-10-26)
 
 Role = Buyer or Both across web, mobile and API. Counts are recomputed from the master; the old per-platform split is replaced by one table.
 
@@ -15,7 +15,7 @@ Role = Buyer or Both across web, mobile and API. Counts are recomputed from the 
 |-------|-------|---------------------------|
 | E2E (Playwright + Patrol) | 99 | 10 |
 | API | 84 | 69 |
-| Multi (≥ 2 layers) | 31 | 25 |
+| Multi (≥ 2 layers) | 33 | 27 |
 | Component / widget | 10 | 10 |
 | Unit | 6 | 6 |
 | Integration | 3 | 3 |
@@ -68,7 +68,8 @@ Role = Buyer or Both across web, mobile and API. Counts are recomputed from the 
 | TC-065–066 | E2E | Playwright | P0–P1 |
 | TC-016–024 | E2E | Playwright | P0–P1 |
 | TC-025 | Multi | API + Playwright | P0 |
-| TC-026–028 | API | Playwright-API | P0–P1 |
+| TC-026 | API | Playwright-API | P0 |
+| TC-027–028 | Unit | Vitest | P1 |
 | TC-029–031 | E2E | Playwright | P1 |
 | TC-032 | Multi | Playwright + API | P1 |
 | TC-033 | API | Playwright-API | P1 |
@@ -100,7 +101,7 @@ Role = Buyer or Both across web, mobile and API. Counts are recomputed from the 
 | TC-604 | Manual | Manual | P3 |
 | TC-611 | Multi | Patrol + API | P0 |
 
-## Added 2026-10-24 and 2026-10-25 — Buyer scenarios (142, all platforms)
+## Added 2026-10-24 and 2026-10-25 — Buyer scenarios (144, all platforms)
 
 Layers, sources, rationale and existing-coverage candidates for every row are in **`test-strategy.md` §4c–§4d**. Included: scenarios added on 2026-10-24 and older scenarios the strategy had never assigned.
 
@@ -208,7 +209,7 @@ Layers, sources, rationale and existing-coverage candidates for every row are in
 | TC-260 | Placing an order deducts stock and counts the sale; cancelling restores stock | API | Playwright-API | P1 |
 | TC-261 | Ordered items leave the server cart; other items stay | API | Playwright-API | P2 |
 | TC-262 | A COD order starts pending with the acceptance fields set | API | Playwright-API | P1 |
-| TC-263 | Free-shipping boundary at $50 | Multi | Vitest + Playwright-API | P1 |
+| TC-263 | No free-shipping boundary at $50 | Unit | Vitest | P1 |
 | TC-264 | The limit resets after the window | API | Playwright-API | P2 |
 | TC-265 | A limit set to 0 disables rate limiting | API | Playwright-API | P2 |
 | TC-266 | Checkout routes are rate limited like other API routes | API | Playwright-API | P2 |
@@ -244,6 +245,8 @@ Layers, sources, rationale and existing-coverage candidates for every row are in
 | TC-298 | Health and root endpoints respond | API | Playwright-API | P1 |
 | TC-299 | Unknown routes return a JSON 404 | API | Playwright-API | P3 |
 | TC-300 | `/health` does not reflect the database | Manual | Manual | P3 |
+| TC-301 | A product with no shipping fee pays the same flat $9.99 on every platform | Unit | Vitest + flutter_test | P1 |
+| TC-302 | A buyer-pays product with no fee configured pays $9.99; an explicit 0 stays 0 | Unit | Vitest + flutter_test | P1 |
 | TC-621 | Initial product list loads first 20 products | E2E | Patrol | P1 |
 | TC-622 | Scrolling to the bottom loads more products | E2E | Patrol | P1 |
 | TC-623 | Loading spinner visible while fetching more products | E2E | Patrol | P1 |

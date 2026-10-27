@@ -2,7 +2,7 @@
 
 *Filtered view of `docs/test-strategies/test-strategy.md` — do not edit independently.*
 
-**Platform filter:** Web scenarios (`test-scenarios-web.md`, 108) · API scenarios (`test-scenarios-api.md`, 139) are listed in the shared-API section below  
+**Platform filter:** Web scenarios (`test-scenarios-web.md`, 108) · API scenarios (`test-scenarios-api.md`, 142) are listed in the shared-API section below  
 **Updated:** 2026-10-24. Mobile assignments are in `test-strategy-mobile.md`. The old assignment table below still lists some API rows under "Web"; the master uses the scenario files' platform tags.
 
 ---
@@ -19,12 +19,12 @@
 | Manual | 1 | TC-052 |
 | Blocked | 1 | TC-062 |
 
-## Pyramid (API scenarios, 139)
+## Pyramid (API scenarios, 142)
 
 | Layer | Count | Tool |
 |-------|-------|------|
 | API | 108 | Playwright-API |
-| Multi | 19 | Integration + API, or Vitest + API |
+| Multi | 22 | Integration + API, or Vitest + API |
 | Integration | 7 | Vitest, `vitest.integration.config.ts` (TC-202, 203, 204, 211, 215, 219, 230) |
 | Unit | 3 | Vitest (TC-216, TC-226, TC-228) |
 | Manual | 2 | TC-270 (hosted proxy check), TC-300 (database down) |
@@ -78,8 +78,8 @@
 | TC-106 | E2E | Playwright | P1 |
 | TC-025 | Multi | API + Playwright | P0 |
 | TC-026 | API | Playwright-API | P0 |
-| TC-027 | API | Playwright-API | P1 |
-| TC-028 | API | Playwright-API | P1 |
+| TC-027 | Unit | Vitest | P1 |
+| TC-028 | Unit | Vitest | P1 |
 | TC-029 | E2E | Playwright | P1 |
 | TC-030 | E2E | Playwright | P1 |
 | TC-031 | E2E | Playwright | P1 |
@@ -184,7 +184,7 @@ Layers, sources, rationale and existing-coverage candidates for every row are in
 | TC-170 | Seller Return/Refund tab groups requests and shows a badge | Component | Vitest + RTL | P2 |
 | TC-171 | Offline banner appears when the connection drops | Component | Vitest + RTL | P2 |
 
-## Shared API scenarios (116 added or previously unassigned)
+## Shared API scenarios (119 added or previously unassigned)
 
 These API scenarios are implemented once and used by web and mobile. Integration rows run in the backend suite, not in Playwright. Needs the flags listed in `test-scenarios.md`.
 
@@ -265,7 +265,7 @@ These API scenarios are implemented once and used by web and mobile. Integration
 | TC-260 | Placing an order deducts stock and counts the sale; cancelling restores stock | API | Playwright-API | P1 |
 | TC-261 | Ordered items leave the server cart; other items stay | API | Playwright-API | P2 |
 | TC-262 | A COD order starts pending with the acceptance fields set | API | Playwright-API | P1 |
-| TC-263 | Free-shipping boundary at $50 | Multi | Vitest + Playwright-API | P1 |
+| TC-263 | No free-shipping boundary at $50 | Unit | Vitest | P1 |
 | TC-264 | The limit resets after the window | API | Playwright-API | P2 |
 | TC-265 | A limit set to 0 disables rate limiting | API | Playwright-API | P2 |
 | TC-266 | Checkout routes are rate limited like other API routes | API | Playwright-API | P2 |
@@ -303,6 +303,9 @@ These API scenarios are implemented once and used by web and mobile. Integration
 | TC-298 | Health and root endpoints respond | API | Playwright-API | P1 |
 | TC-299 | Unknown routes return a JSON 404 | API | Playwright-API | P3 |
 | TC-300 | `/health` does not reflect the database | Manual | Manual | P3 |
+| TC-301 | A product with no shipping fee pays the same flat $9.99 on every platform | Unit | Vitest + flutter_test | P1 |
+| TC-302 | A buyer-pays product with no fee configured pays $9.99; an explicit 0 stays 0 | Unit | Vitest + flutter_test | P1 |
+| TC-303 | Shipping settings are required when a product is created or updated | Multi | Vitest + Playwright-API | P1 |
 | TC-232 | Login returns a token for valid credentials | API | Playwright-API | P0 |
 | TC-233 | Login rejects an invalid password | API | Playwright-API | P1 |
 | TC-234 | `GET /api/auth/me` returns the logged-in user | API | Playwright-API | P1 |

@@ -6,7 +6,8 @@ export const STORAGE_KEYS = {
 } as const;
 
 export const TAX_RATE = 0.08; // 8%
-export const SHIPPING_COST = 9.99;
+/** Flat fee when the seller set none. Must match STANDARD_SHIPPING_FEE in backend/src/services/checkoutPricing.ts. */
+export const DEFAULT_SHIPPING_FEE = 9.99;
 
 export const TOKEN_EXPIRY_HOURS = 24;
 

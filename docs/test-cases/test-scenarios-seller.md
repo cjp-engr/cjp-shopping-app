@@ -91,6 +91,7 @@ Automation labels below identify intended tools, not implemented or passing scri
 | TC-298 | Health and root endpoints respond | P1 | Playwright-API |
 | TC-299 | Unknown routes return JSON 404 | P3 | Playwright-API |
 | TC-300 | /health does not reflect the database | P3 | Manual |
+| TC-303 | Shipping settings required on product create and update | P1 | Playwright-API / Unit |
 
 ---
 
@@ -119,7 +120,7 @@ Automation labels below identify intended tools, not implemented or passing scri
 | TC-186 | Approve or reject a refund request | P0 | Patrol (keys missing) |
 | TC-188 | Offline banner | P2 | Manual / Widget |
 
-**Added 2026-10-24 and 2026-10-25:** 10 web + 5 mobile + 46 API seller-facing scenarios
+**Added 2026-10-24 and 2026-10-25:** 10 web + 5 mobile + 47 API seller-facing scenarios
 
 Full steps, expected results, and selectors: **`docs/test-cases/test-scenarios.md`**
 

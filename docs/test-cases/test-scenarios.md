@@ -31,7 +31,7 @@
 | Platform | File | Coverage |
 |----------|------|----------|
 | Web | [test-scenarios-web.md](test-scenarios-web.md) | TC-001–025, TC-029–032, TC-034, TC-037–047, TC-049–052, TC-055, TC-059–066, TC-098–100, TC-105–106, TC-109, TC-112, TC-120–131, **TC-137–171** |
-| API | [test-scenarios-api.md](test-scenarios-api.md) | TC-026–028, TC-033, TC-035–036, TC-048, TC-053–054, TC-056–058, TC-107–108, TC-110–111, TC-113–119, TC-132–136, **TC-190–300** |
+| API | [test-scenarios-api.md](test-scenarios-api.md) | TC-026–028, TC-033, TC-035–036, TC-048, TC-053–054, TC-056–058, TC-107–108, TC-110–111, TC-113–119, TC-132–136, **TC-190–303** |
 | Mobile | [test-scenarios-mobile.md](test-scenarios-mobile.md) | TC-067–097, TC-101–104, TC-600–624, **TC-172–189** |
 
 ---
@@ -98,9 +98,10 @@ Counts below are recomputed from the `### TC-` headings in the platform files on
 | **TC-264–271** | 8 | **New** Rate limiting API (window reset, limits disabled, checkout and payments scope, shared auth bucket, spoofed forwarding header, proxy check, 429 body), added 2026-10-25 |
 | **TC-272–284** | 13 | **New** Reviews API (auth, validation, over-long values, ownership, self-review, rating maths, edit, list and paging, check, concurrency, no delete), added 2026-10-25 |
 | **TC-285–300** | 16 | **New** Seller access, security, users, Stripe and health API (product ownership, wider 401 and token checks, signup, follow and search, card order without an intent, error envelopes, health), added 2026-10-25 |
-| **Total** | **325** | Web 108 · Mobile 78 · API 139 (164 added on 2026-10-24 and 2026-10-25) |
+| **TC-301–303** | 3 | **New** Shipping fee: flat $9.99 fallback on API, web and mobile, buyer-pays with no fee, and shipping settings required on product create and update, added 2026-10-26 and 2026-10-27 |
+| **Total** | **328** | Web 108 · Mobile 78 · API 142 (167 added between 2026-10-24 and 2026-10-27) |
 
-**Automation split of the new TCs (164):** Playwright / Playwright-API 138, Patrol 15 (the refund and several checkout screens still need widget keys), Manual 8, Blocked 3 (TC-202, TC-204, TC-230 need clock control, concurrency or signed Stripe events). The owner writes the automation (AGENTS.md rule 1); nothing under `e2e-testing/` or `patrol_test/` was changed.
+**Automation split of the new TCs (167):** Playwright / Playwright-API 141, Patrol 15 (the refund and several checkout screens still need widget keys), Manual 8, Blocked 3 (TC-202, TC-204, TC-230 need clock control, concurrency or signed Stripe events). The owner writes the automation (AGENTS.md rule 1); nothing under `e2e-testing/` or `patrol_test/` was changed.
 
 ---
 
@@ -136,6 +137,7 @@ Found while reviewing on 2026-10-24. The domain files were last edited on 2026-0
 10. **Stock restore** (§5, §13): pending cancellations are variant-aware for buyer and seller; the seller `preparing`/`processing` COD cancel path still restores product-level stock only (the old limitation remains there).
 11. **Credentials**: `SKILL.md` lists `test@example.com` / `password123`; `business-rules.md` lists `hello@world.com` / `Test750!!` and `seller@test.com`; existing TC-001 uses the first. Pick one source of truth. (Secrets are not reproduced here.)
 12. **Wizard steps** (§2): says 6 steps for web and mobile; mobile has 7 (see TC-601). `SKILL.md` still says Playwright is "not yet in repo".
+13. **Shipping default** (§4 Shipping rules): says "Neither (default): $9.99 if the after-discount subtotal is under $50, $0 at $50 or more". Since 2026-10-26 the default is a flat $9.99 at any amount; free shipping comes only from a seller-set `free`. A buyer-pays product with no fee configured also pays $9.99 (an explicit 0 stays 0). Not edited here.
 
 ### Known gaps worth a decision (from `docs/authorize-capture-open-items.md` and code reading)
 

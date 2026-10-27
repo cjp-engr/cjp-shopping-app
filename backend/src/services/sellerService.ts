@@ -1,6 +1,7 @@
 import Product from '../models/Product.js';
 import Order, { OrderStatus, type IOrder } from '../models/Order.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { assertValidShippingSettings } from '../validators/shippingSettings.js';
 import { isSellerVisibleOrder, sellerVisibleOrderFilter } from './orderVisibility.js';
 import { acceptOrder } from './orderAcceptance.js';
 import { markOrderDelivered } from './orderDelivery.js';
@@ -52,11 +53,20 @@ export async function getSellerProducts(sellerId: string) {
   return Product.find({ sellerId }).sort({ createdAt: -1 });
 }
 
+/** Stored fees are a Map on a Mongoose document and a plain object on a lean one. */
+function storedFeeAmounts(raw: unknown): Record<string, number> {
+  if (raw instanceof Map) return Object.fromEntries(raw) as Record<string, number>;
+  return (raw as Record<string, number> | undefined) ?? {};
+}
+
 export async function createSellerProduct(
   sellerId: string,
   data: { name: string; description: string; price: number; category: string; stock?: number; tags?: string[]; brand?: string; condition?: string; sku?: string; discount?: number; shippingOptions?: string[]; shippingFee?: string; shippingFeeAmounts?: Record<string, number>; image?: string; variantAttributes?: any[]; variants?: any[] },
   imageUrls: string[],
 ) {
+  // Shipping settings are required: without them the seller's shipping cost would fall back to the flat default.
+  assertValidShippingSettings(data);
+
   const normalizedVariants = (data.variants ?? []).map((v: any) => ({
     ...v,
     images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
@@ -79,6 +89,14 @@ export async function updateSellerProduct(
   const product = await Product.findById(productId);
   if (!product) throw new AppError(404, 'Product not found');
   if (product.sellerId?.toString() !== sellerId) throw new AppError(403, 'Not authorized to update this product');
+
+  // Check the product as it will be after the update: omitted fields keep their stored values, so a partial
+  // update is fine, but an older product still without shipping settings must get them now.
+  assertValidShippingSettings({
+    shippingOptions: updates.shippingOptions ?? [...(product.shippingOptions ?? [])],
+    shippingFee: updates.shippingFee ?? product.shippingFee,
+    shippingFeeAmounts: updates.shippingFeeAmounts ?? storedFeeAmounts(product.shippingFeeAmounts),
+  });
 
   const { image: imageUrl, variants: rawVariants, ...rest } = updates;
   const defined = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined));

@@ -291,65 +291,68 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 **Expected Results**:
 - `tax` = 8% of after-discount subtotal
 - `total` = afterDiscounts + tax + shipping (2 decimal places)
-- *Updated 2026-10-25:* the spec now also asserts the exact amounts for a $20 product (subtotal 20, tax 1.60, shipping 9.99, total 31.59) and a second case: a $100 product with a 10% product discount and a 10% seller coupon gives productDiscount 10, coupon discount 9 (on the $90 effective subtotal), tax 6.48, free shipping, total 87.48
+- A $20 product with no shipping fee: subtotal 20, tax 1.60, shipping 9.99, total 31.59
+- A $100 product at 10% off with a 10% seller coupon: product discount 10, coupon discount 9 (10% of the $90), tax 6.48, shipping 9.99, total 97.47
 **Business Rule**: §4 Price calculation  
 **Selectors/API**: `POST /api/orders`, order response body  
 **Suggested Layer**: API
 
 ---
 
-### TC-027: Default shipping $9.99 when subtotal after discounts < $50
+### TC-027: Shipping is a flat $9.99 when the seller set no shipping fee
 **Scenario status**: Active
 **Category**: Business Rule  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Both  
-**Automation**: Playwright-API  
+**Automation**: Blocked (the API cannot create a product without shipping settings; covered by unit tests)
 **Automation status**: Needs review
 **Script mapping**: Unverified
 **Latest result**: Not recorded
 **Last run**: Not recorded
 **Run evidence**: Not recorded
 **Run baseline**: Not recorded
-**Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
-**Preconditions**: Seller without custom shipping; cart subtotal < $50 after discounts  
+**Test File**: unit: `backend/src/services/__tests__/checkoutPricing.test.ts`
+**Preconditions**: A buyer who is not the seller; a product priced $20 with no `shippingFee` (an older product saved before shipping settings were required)
 **Steps**:
-1. Place order meeting conditions
+1. Place a COD order for one unit
+2. Read `shipping` and `total` on the order
 
 **Expected Results**:
-- `shipping` = 9.99 on order record
-**Business Rule**: §4 Shipping default  
-**Selectors/API**: `POST /api/orders`  
-**Suggested Layer**: API
-
+- `shipping` = 9.99, whatever the amount: there is no free-shipping threshold (larger amounts are TC-028 and TC-263)
+- `total` = after-discount amount + 8% tax + 9.99
+- Only a product the seller set to `free` ships for $0 (TC-257)
+**Business Rule**: §4 Shipping rules (default fee)
+**Selectors/API**: `POST /api/orders`; `computeSellerTotals`
+**Suggested Layer**: Unit
 ---
 
-### TC-028: Free shipping when subtotal after discounts ≥ $50
+### TC-028: A large order still pays the flat shipping fee
 **Scenario status**: Active
 **Category**: Business Rule  
 **Priority**: P1  
 **Role**: Buyer  
 **Platform**: API  
 **Parity**: Both  
-**Automation**: Playwright-API  
+**Automation**: Blocked (the API cannot create a product without shipping settings; covered by unit tests)
 **Automation status**: Needs review
 **Script mapping**: Unverified
 **Latest result**: Not recorded
 **Last run**: Not recorded
 **Run evidence**: Not recorded
 **Run baseline**: Not recorded
-**Test File**: `e2e-testing/tests/api/orders.api.spec.ts`  
-**Preconditions**: Default shipping rules; effective subtotal ≥ $50  
+**Test File**: unit: `backend/src/services/__tests__/checkoutPricing.test.ts`
+**Preconditions**: A no-fee product priced $99
 **Steps**:
-1. Place qualifying order
+1. Place a COD order for one unit
 
 **Expected Results**:
-- `shipping` = 0
-**Business Rule**: §4 Shipping default  
-**Selectors/API**: `POST /api/orders`  
-**Suggested Layer**: API
-
+- `shipping` = 9.99, even though the after-discount amount is above $50
+- Only a product the seller set to `free` ships for $0 (TC-257)
+**Business Rule**: §4 Shipping rules (default fee)
+**Selectors/API**: `POST /api/orders`
+**Suggested Layer**: Unit
 ---
 
 ### TC-033: Buyer cannot cancel processing order
@@ -2797,17 +2800,16 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 **Last run**: Not recorded
 **Run evidence**: Not recorded
 **Run baseline**: Not recorded
-**Test File**: Unmapped
-**Preconditions**: Three products under $50: one with `shippingFee: free`; one with `shippingFee: buyer_pays` and `shippingFeeAmounts` `{ standard: 5, express: 15 }` with options standard and express; one with default shipping
+**Test File**: `e2e-testing/tests/api/orders.api.spec.ts`
+**Preconditions**: Two products priced $20: one with `shippingFee: free`; one with `shippingFee: buyer_pays` and `shippingFeeAmounts` `{ standard: 5, express: 15 }` with options standard and express
 **Steps**:
 1. Order the free-shipping product
 2. Order the buyer-pays product with `deliverySelections[sellerId]` = `express`; again with `standard`; again with no selection
-3. Order the default-shipping product
 
 **Expected Results**:
-- (1) `shipping` 0 even though the amount is under $50
-- (2) `shipping` 15, 5, and the first configured option's fee; the order stores `selectedDeliveryOption` and `deliverySelections`
-- (3) `shipping` 9.99
+- (1) `shipping` 0, so the total is $20 + $1.60 tax = $21.60
+- (2) `shipping` 15 for express and 5 for standard; with no selection, the first option's fee (5); the order stores `selectedDeliveryOption` and `deliverySelections`
+- An older product with no shipping setting, or a buyer-pays product with no fee, pays the flat 9.99 (see TC-027, TC-302); the API can no longer create one
 - Resolution order: the client selection for that seller, then the first value in `deliverySelections`, then the product's first option, then the first fee key
 **Business Rule**: §4 Shipping rules; delivery option resolution order
 **Selectors/API**: `POST /api/orders`; `computeSellerTotals`
@@ -2962,34 +2964,31 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 
 ---
 
-### TC-263: Free-shipping boundary at $50
+### TC-263: No free-shipping boundary at $50
 **Scenario status**: Active
 **Category**: Edge Case
 **Priority**: P1
 **Role**: Buyer
 **Platform**: API
 **Parity**: Both (boundary of TC-027 and TC-028)
-**Automation**: Playwright-API
+**Automation**: Blocked (the API cannot create a product without shipping settings; covered by unit tests)
 **Automation status**: Needs review
 **Script mapping**: Unverified
 **Latest result**: Not recorded
 **Last run**: Not recorded
 **Run evidence**: Not recorded
 **Run baseline**: Not recorded
-**Test File**: `e2e-testing/tests/api/orders.api.spec.ts`
-**Preconditions**: Two products with default shipping, priced $49.99 and $50.00
+**Test File**: unit: `backend/src/services/__tests__/checkoutPricing.test.ts`
+**Preconditions**: Three no-fee products priced $49.99, $50.00 and $99
 **Steps**:
-1. Order one unit of the $49.99 product
-2. Order one unit of the $50.00 product
+1. Order one unit of each product
 
 **Expected Results**:
-- (1) `shipping` 9.99 (after-discount subtotal is below $50)
-- (2) `shipping` 0 (the threshold is inclusive: `>= 50`)
-- The threshold applies to the amount after product discount and coupon, so a $55 product with a 10% discount ($49.50) pays shipping
-**Business Rule**: §4 Shipping default
-**Selectors/API**: `POST /api/orders`; `FREE_SHIPPING_THRESHOLD` in `checkoutPricing.ts`
-**Suggested Layer**: API + Unit
-
+- `shipping` = 9.99 for all three: the amount does not change the fee
+- The unit tests for `computeSellerTotals`, the web helper and the mobile helper assert the same
+**Business Rule**: §4 Shipping rules (default fee)
+**Selectors/API**: `POST /api/orders`; `computeSellerTotals`
+**Suggested Layer**: Unit
 ---
 
 ## Rate limiting (API) — added 2026-10-25
@@ -4114,5 +4113,108 @@ Tracking fields follow [the master index conventions](test-scenarios.md#how-to-t
 **Business Rule**: Deployment health checks (`docs/deployment.md`)
 **Selectors/API**: `GET /health`
 **Suggested Layer**: Manual
+
+---
+
+## Shipping fee default (API, web and mobile) — added 2026-10-26
+
+> Rule: shipping is **free only when the seller sets `free`**; a buyer-pays product charges the seller's fee for the chosen option; anything else charges the **flat $9.99** safety fee, whatever the order amount.
+> Code: `computeSellerTotals` and `STANDARD_SHIPPING_FEE` in `backend/src/services/checkoutPricing.ts`; `sellerShippingFee` in `frontend/src/utils/shipping.ts` and `frontend-mobile/lib/core/utils/seller_shipping.dart`.
+> The product wizards on web and mobile already force the seller to pick `free` or `buyer_pays`, and the product API requires them too (TC-303), so the fallback is reached only by older products saved before that rule.
+
+### TC-301: A product with no shipping fee pays the same flat $9.99 on every platform
+**Scenario status**: Active
+**Category**: Business Rule
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both (web cart and checkout, mobile cart and checkout)
+**Automation**: Blocked (the API cannot create a product without shipping settings; covered by unit tests)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: unit: `backend/src/services/__tests__/checkoutPricing.test.ts`, `frontend/src/utils/shipping.test.ts`, `frontend-mobile/test/core/utils/seller_shipping_test.dart`
+**Preconditions**: Older products with no `shippingFee`, priced $10, $49.99, $50 and $500; one product with `shippingFee: free`
+**Steps**:
+1. Order each no-fee product through the API and read `shipping`
+2. Put the same products in the web cart and open web checkout; read the shipping line
+3. Do the same on the mobile cart and mobile checkout
+4. Order the `free` product
+
+**Expected Results**:
+- (1) `shipping` is 9.99 for all four amounts, and the order total is the after-discount amount + 8% tax + 9.99
+- (2) and (3) the shipping line reads $9.99 in the cart and in checkout, and the displayed total equals the order total the backend stores
+- (4) `shipping` is 0 (the only way to ship free)
+**Business Rule**: §4 Shipping rules (default)
+**Selectors/API**: `POST /api/orders`; `computeSellerTotals`; web `Cart.tsx`, `Checkout.tsx`; mobile `cart_state.dart`, `checkout_screen.dart`
+**Suggested Layer**: Unit
+
+---
+
+### TC-302: A buyer-pays product with no fee configured pays $9.99; an explicit 0 stays 0
+**Scenario status**: Active
+**Category**: Edge Case
+**Priority**: P1
+**Role**: Buyer
+**Platform**: API
+**Parity**: Both
+**Automation**: Blocked (the API cannot create a product without shipping settings; covered by unit tests)
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: unit: `backend/src/services/__tests__/checkoutPricing.test.ts`, `frontend/src/utils/shipping.test.ts`, `frontend-mobile/test/core/utils/seller_shipping_test.dart`
+**Preconditions**: A `buyer_pays` product with `shippingFeeAmounts` `{}` (an older product; the API no longer accepts it); one with `{ standard: 0 }`; one with `{ standard: 5 }` and options standard and express
+**Steps**:
+1. Order the product with no configured fee
+2. Order the product whose fee is an explicit 0
+3. Order the product with only a standard fee while selecting `express`
+
+**Expected Results**:
+- (1) `shipping` 9.99: a missing fee must never become free, or the seller would absorb the cost
+- (2) `shipping` 0: an explicit fee, including 0, is the seller's choice
+- (3) `shipping` 5: an option with no fee of its own falls back to the first configured fee
+- Create and update should also reject a `buyer_pays` product with no amounts; that validation is not in place yet, so the fallback is the safety net
+**Business Rule**: §4 Shipping rules; delivery option resolution order
+**Selectors/API**: `POST /api/orders`; `computeSellerTotals`
+**Suggested Layer**: Unit
+
+---
+
+### TC-303: Shipping settings are required when a product is created or updated
+**Scenario status**: Active
+**Category**: Negative
+**Priority**: P1
+**Role**: Seller
+**Platform**: API
+**Parity**: Both (the web and mobile wizards ask for the same settings)
+**Automation**: Playwright-API
+**Automation status**: Needs review
+**Script mapping**: Unverified
+**Latest result**: Not recorded
+**Last run**: Not recorded
+**Run evidence**: Not recorded
+**Run baseline**: Not recorded
+**Test File**: Unmapped (unit: `backend/src/validators/__tests__/shippingSettings.test.ts`, `backend/src/services/__tests__/sellerProductShipping.test.ts`)
+**Preconditions**: A seller; a product with valid shipping settings; an older product with none (written straight to the database, since the API no longer creates one)
+**Steps**:
+1. `POST /api/seller/products` and `POST /api/products` with no `shippingOptions`, with `[]`, and with `["drone"]`
+2. The same two routes with no `shippingFee`, and with `shippingFee: "flat"`
+3. With `shippingFee: "buyer_pays"` and no fee for one selected option; with an empty, text and a negative fee
+4. `PUT` only the price of the valid product; `PUT` only the price of the older product; `PUT` the older product with valid shipping settings
+
+**Expected Results**:
+- (1) to (3) **400** with a specific message: "At least one delivery option is required.", `Unknown delivery option "drone". Use standard, express or pickup.`, "Shipping fee option is required.", `Shipping fee must be "free" or "buyer_pays".`, `Shipping fee amount is required for delivery option "<option>".`, `Shipping fee amount for "<option>" cannot be negative.`; `/api/seller/products` also returns `code: "invalid_shipping_settings"`; no product is created
+- (4) the valid product is updated; the older product is rejected with 400 until the update gives it valid settings, then it is saved
+- A `free` product ignores any `shippingFeeAmounts`; an explicit fee of 0 is accepted; numeric strings from multipart bodies are accepted
+- Another seller's product still answers 403 (ownership is checked before the shipping settings)
+**Business Rule**: §2 Product wizard (shipping step); §4 Shipping rules
+**Selectors/API**: `POST/PUT /api/seller/products`, `POST/PUT /api/products`
+**Suggested Layer**: API + Unit
 
 ---
