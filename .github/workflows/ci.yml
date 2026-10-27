@@ -8,6 +8,11 @@ on:
     branches:
       - main
 
+# A newer push to the same pull request replaces the run still going; runs on main are never cancelled.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   backend:
     name: Backend build & tests
@@ -16,8 +21,8 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -37,8 +42,8 @@ jobs:
       TEST_MONGODB_URI: mongodb://127.0.0.1:27017/tokomart_payment_test?replicaSet=rs0
       NODE_ENV: test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -69,8 +74,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -83,17 +88,24 @@ jobs:
   flutter:
     name: Flutter analyze & unit tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: frontend-mobile
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v5
+      - name: Set up Flutter (SDK and pub packages are cached)
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.47.7
           cache: true
-      - run: cp .env.example .env
-      - run: flutter pub get
-      - run: flutter analyze
-      - run: flutter test
+      - name: Create the .env file
+        run: cp .env.example .env
+      - name: Get packages
+        run: flutter pub get
+      # pub get has just run, so the next two skip their own package check.
+      - name: Analyze
+        run: flutter analyze --no-pub
+      - name: Unit tests
+        run: flutter test --no-pub
